@@ -42,9 +42,21 @@ jobs:
             -v "$PWD/spike/project:/src:ro" --tmpfs /work:uid=10001 --tmpfs /tmp \
             spike-gate sh -c 'cp -r /src/. /work && kapitan compile --parallelism 2 && cat compiled/*/probe/*'
 
+      - name: Run hostile probes under gVisor
+        run: |
+          docker run --rm --runtime runsc-trace --network none --read-only \
+            --tmpfs /work:uid=10001 --tmpfs /tmp \
+            -v "$PWD/spike/probes.py:/probes.py:ro" spike-gate python /probes.py
+
       - name: Check trace
         run: |
           sudo chmod -R a+r /tmp/runsc
+          echo "== hostile probes =="
+          sudo grep -h -E ' X (connect|sendto|sendmsg|execve)\(' /tmp/runsc/* | grep -E 'Port: (443|53)|203\.0\.113|/tmp/x|"id"' | sed -E 's/^.*\] //; s/, 0x[0-9a-f]+ \["HOSTNAME.*\]\)/, <env>)/' | cut -c1-220
+          for pattern in 'X connect\(.*203\.0\.113\.1, Port: 443' 'X sendto\(.*203\.0\.113\.1, Port: 53' 'X sendmsg\(.*203\.0\.113\.1, Port: 53' 'E execve\(.*/tmp/x' 'E execve\(.*/usr/bin/id'; do
+            if sudo grep -q -E "$pattern" /tmp/runsc/*; then echo "seen: $pattern"; else echo "::error::not in trace: $pattern"; missing=1; fi
+          done
+          [ -z "${missing:-}" ]
           echo "== execve exits =="
           sudo grep -h -E ' X execve(at)?\(' /tmp/runsc/* | sed -E 's/^.*\] //; s/, 0x[0-9a-f]+ \["HOSTNAME.*\]\)/, <env>)/' | cut -c1-220 | sort | uniq -c | sort -rn | head -30
           echo "== network syscalls =="
