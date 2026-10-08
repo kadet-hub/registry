@@ -216,8 +216,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-4: The job that posts the review comment (REV-2) MUST run separately with
   `pull-requests: write` only and consume nothing but the gate's result file,
   rendered as escaped text.
-  - Test: none
-  - Since: not implemented
+  - Test: none (partial: `gate.yml` job permissions)
+  - Since: this change
 
 - GI-5: The required status check MUST be the `pull_request_target` gate job
   with GitHub Actions as expected source, and a fork workflow reporting a
@@ -564,8 +564,16 @@ code diff and the output diff, not only the verdict.
 
 - REV-2: The gate MUST post the comment described above on every pull request
   that adds or changes an entry.
-  - Test: none
-  - Since: not implemented
+
+  The comment job keeps one comment per pull request and edits it on every
+  run. It renders the gate's report in a code fence longer than any
+  backtick run in the report, so text from the entry or the generator tree
+  cannot add markup, links or mentions.
+
+  - Test: none (partial: results, review and warning lines and the compare
+    link; krab result, exceptions, capability changes and the output diff
+    follow with CMP-4, SEC-14, SEC-12 and SEC-13)
+  - Since: this change
 
 ## Publishing
 
