@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `policy/`, `sandbox/`, `scan/`, `tests/`, `.github/`, `renovate.json`
+Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `tests/`, `.github/`, `renovate.json`
 Verified against: none (new repository)
 
 ## Problem
@@ -127,19 +127,19 @@ fetched tree; this is the layout consumers use.
 
 - REG-1: An entry MUST pin `source.sha` to a full commit SHA, and the gate MUST
   fail when `source.tag` does not resolve to that SHA.
-  - Test: none
-  - Since: not implemented
+  - Test: none (partial: `gate/run` checks it; no sample yet)
+  - Since: this change
 
 - REG-2: `name` MUST match `^[a-z][a-z0-9-]{1,38}$`, MUST equal the entry's
   file name and MUST NOT be on `policy/reserved-names.txt`.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py` (`test_reserved_and_similar_names`, `test_bad_path_fails`)
+  - Since: this change
 
 - REG-3: The gate MUST fail a new entry whose name equals an existing or
   reserved name after removing `-` and `_`, and MUST flag it for the reviewer
   when it is within edit distance 1 of one.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Entry.test_reserved_and_similar_names`
+  - Since: this change
 
 - REG-4: A pull request adding an entry MUST be authored by one of the
   manifest's `owners` at `source.sha`, and the entry's `owners` MUST equal
@@ -148,18 +148,18 @@ fetched tree; this is the layout consumers use.
   A mirror of someone else's repository with an edited manifest is caught by
   review, not by this check.
 
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Manifest.test_failures`
+  - Since: this change
 
 - REG-5: A pull request changing an existing entry MUST be authored by one of
-  its owners, by a maintainer, or by Renovate identified by its GitHub App ID
-  with the head branch in the marketplace repository.
-  - Test: none
-  - Since: not implemented
+  its owners, by a maintainer, or by Renovate identified by the user ID of
+  `renovate[bot]` with the head branch in the marketplace repository.
+  - Test: `gate/test_check_entry.py` (`test_bump_by_stranger_and_repo_change`, `test_renovate_bump_needs_same_repo_branch`)
+  - Since: this change
 
 - REG-6: A version bump MUST increase the semver parsed from `source.tag`.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Entry.test_bump`
+  - Since: this change
 
 - REG-7: Renovate MUST open a pull request updating `tag` and `sha` when the
   source repository publishes a newer matching tag.
@@ -173,41 +173,45 @@ fetched tree; this is the layout consumers use.
 
   - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
     entries (partial: no CI check)
-  - Since: this change
+  - Since: #6
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Entry.test_bump_by_stranger_and_repo_change`
+  - Since: this change
 
 - REG-9: A removed entry's name MUST be added to `policy/reserved-names.txt`.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Entry.test_removal_reserves_name`
+  - Since: this change
 
 ## Gate integrity
 
 The gate runs as a `pull_request_target` workflow, so its definition comes
 from `main`. That event carries a write token; the requirements below keep it
-away from anything the pull request controls. Fork workflows require
-maintainer approval to run, and a maintainer never approves them.
+away from anything the pull request controls. It runs without approval,
+unlike `pull_request` workflows from forks such as the selftest, which
+require maintainer approval that a maintainer never gives.
+
+Maintainers are the GitHub numeric user IDs in `policy/maintainers.txt`,
+which only a maintainer pull request changes (GI-2, REV-1).
 
 - GI-1: The gate workflow MUST NOT check out or execute pull request content.
   It reads the changed entry file through the API, parses it with a safe YAML
   loader and validates it against `policy/entry.schema.json`.
-  - Test: none
-  - Since: not implemented
+  - Test: none (partial: `gate.yml` checks out `main` only; AC-9 pending)
+  - Since: this change
 
 - GI-2: A pull request from a non-maintainer MUST add or modify exactly one
   file, `generators/<name>.yaml` with `<name>` equal to the entry's `name`.
   Deletions and renames are maintainer pull requests.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Files`
+  - Since: this change
 
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
   sandbox.
-  - Test: none
-  - Since: not implemented
+  - Test: none (partial: `gate.yml` permissions; AC-9 pending)
+  - Since: this change
 
 - GI-4: The job that posts the review comment (REV-2) MUST run separately with
   `pull-requests: write` only and consume nothing but the gate's result file,
@@ -228,8 +232,8 @@ maintainer approval to run, and a maintainer never approves them.
 
 - GI-7: Any gate tool error, timeout or missing result MUST fail the gate. The
   gate job has a 30-minute timeout and the compile output a 50 MiB limit.
-  - Test: none
-  - Since: not implemented
+  - Test: none (partial: `gate/run` runs with `set -e`; job timeout in `gate.yml`)
+  - Since: this change
 
 - GI-8: Only the release workflow, triggered by a push or `workflow_dispatch`
   on `main` and bound to a `release` environment that admits only `main`, MAY
@@ -252,8 +256,8 @@ maintainer approval to run, and a maintainer never approves them.
   workflow validates both schemas again. `git check-ref-format` accepts tags
   such as `v1.0.0-$(id)`.
 
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Entry.test_schema_rejects_injection_and_bad_sha` (partial: workflow review by hand)
+  - Since: this change
 
 - GI-10: No workflow MAY use `actions/cache` or the cache options of `setup-*`
   actions; gate tools come from images pinned by digest.
@@ -366,8 +370,8 @@ review go into the review comment and do not fail the gate.
   template` without `--post-renderer`, `--post-renderer-args` or `plugin`,
   `helm version`, and `cue export`, `cue eval`, `cue vet`.
 
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Manifest.test_failures`
+  - Since: this change
 
 - SEC-8: Every declared chart MUST be fetched by the gate with `helm pull`,
   match its `sha256`, and pass SEC-1, SEC-2, SEC-5 and SEC-6; the index lists
@@ -503,8 +507,8 @@ review go into the review comment and do not fail the gate.
 
 - CMP-3: The manifest's `kapitan` range MUST include the pinned Kapitan
   version.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py::Manifest.test_failures`
+  - Since: this change
 
 - CMP-4: The fixture project MUST also be compiled with the pinned krab
   version under the same sandbox and the SEC-10, SEC-11 and SEC-12 checks,
@@ -538,8 +542,8 @@ review go into the review comment and do not fail the gate.
 
 - QA-5: The manifest MUST validate against `policy/manifest.schema.json` and
   the entry against `policy/entry.schema.json`.
-  - Test: none
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py` (`Entry`, `Manifest`)
+  - Since: this change
 
 ## Review
 
@@ -791,6 +795,9 @@ None.
 | `generators/<name>.yaml` | Marketplace entry (Registration) |
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9 |
+| `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
+| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, QA-5: `collect`, `check_entry.py`, `fetch_tree.py` |
+| `.github/actions/setup-gate/` | gVisor, scanners and sandbox image for `gate.yml` and `selftest.yml` |
 | `policy/semgrep/blocking/`, `policy/semgrep/review/`, `policy/imports.txt` | SEC-3 |
 | `policy/gitleaks.toml` | SEC-1, SEC-4 |
 | `scan/` | SEC-1 to SEC-6: `static-scan` runner, `tree_check.py`, scanner requirements |
