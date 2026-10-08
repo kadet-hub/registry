@@ -1,0 +1,140 @@
+name: release
+
+# PUB-1 to PUB-5. Only this workflow holds publishing permissions, and only
+# its sign and index jobs, bound to the release environment (GI-8).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/heads/main
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      names: ${{ steps.build.outputs.names }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build sandbox image
+        run: docker build -t kadet-hub/sandbox sandbox
+
+      - name: Fetch, validate and build
+        id: build
+        run: |
+          release/build-all "$RUNNER_TEMP/out"
+          echo "names=$(cat "$RUNNER_TEMP/out/names.json")" >>"$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-build
+          path: ${{ runner.temp }}/out
+          retention-days: 1
+
+  sign:
+    needs: build
+    if: needs.build.outputs.names != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: read
+      packages: write # push and tag on ghcr.io
+      id-token: write # Sigstore certificate for the attestation
+      attestations: write # store the attestation
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build.outputs.names) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+        with:
+          token: ${{ github.token }}
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-build
+          path: built
+
+      - name: Verify and push
+        id: push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: ${{ matrix.name }}
+        run: release/sign "$NAME" "built/$NAME"
+
+      - name: Attest
+        if: steps.push.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.push.outputs.ref }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+
+      - name: Tag
+        if: steps.push.outputs.publish == 'true'
+        env:
+          REF: ${{ steps.push.outputs.ref }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          VERSION: ${{ steps.push.outputs.version }}
+        run: oras tag -- "$REF@$DIGEST" "$VERSION"
+
+  index:
+    needs: [build, sign]
+    if: always() && needs.build.result == 'success' && (needs.sign.result == 'success' || needs.sign.result == 'skipped')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: read
+      packages: write # push and tag on ghcr.io
+      id-token: write # Sigstore certificate for the attestation
+      attestations: write # store the attestation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+        with:
+          token: ${{ github.token }}
+
+      - name: Build and push the index
+        id: push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGES_API: ${{ github.event.repository.owner.type == 'Organization' && 'orgs' || 'users' }}/${{ github.repository_owner }}
+        run: release/publish-index
+
+      - name: Attest
+        if: steps.push.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.push.outputs.ref }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+
+      - name: Tag
+        if: steps.push.outputs.publish == 'true'
+        env:
+          REF: ${{ steps.push.outputs.ref }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          SERIAL: ${{ steps.push.outputs.serial }}
+        run: oras tag -- "$REF@$DIGEST" "$SERIAL" latest

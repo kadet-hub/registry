@@ -6,6 +6,7 @@ on:
       - sandbox/**
       - scan/**
       - gate/**
+      - release/**
       - policy/**
       - tests/**
       - .github/actions/**
@@ -28,6 +29,7 @@ jobs:
         run: |
           python3 -m unittest discover -s sandbox -v
           python3 -m unittest discover -s gate -p 'test_fetch*.py' -v
+          python3 -m unittest discover -s release -v
 
       - uses: ./.github/actions/setup-gate # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
