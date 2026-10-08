@@ -268,7 +268,7 @@ review go into the review comment and do not fail the gate.
 
 - SEC-1: The gate MUST fail on any gitleaks finding in the generator tree.
   - Test: workflow job `gate-selftest`
-  - Since: this change
+  - Since: #4
 
 - SEC-2: The gate MUST fail on any GuardDog `threat-*` finding from a local
   scan of the generator tree, and MUST list `capability-*` findings for
@@ -279,7 +279,7 @@ review go into the review comment and do not fail the gate.
   template.
 
   - Test: workflow job `gate-selftest`
-  - Since: this change
+  - Since: #4
 
 - SEC-3: The gate MUST fail when a Python file in the generator tree does not
   parse, imports a module or name `policy/imports.txt` does not allow, or
@@ -311,7 +311,7 @@ review go into the review comment and do not fail the gate.
   `kapitan.utils.render_jinja2_file`, which renders without a sandbox.
 
   - Test: workflow job `gate-selftest`
-  - Since: this change
+  - Since: #4
 
 - SEC-4: Every scanner MUST run with its configuration from `main` and with
   in-tree suppressions disabled: gitleaks with `--config`,
@@ -325,7 +325,7 @@ review go into the review comment and do not fail the gate.
   unseen.
 
   - Test: workflow job `gate-selftest`
-  - Since: this change
+  - Since: #4
 
 - SEC-5: The generator tree MUST NOT contain symlinks, git submodules, LFS
   pointers, `.gitattributes`, compiled Python (`.pyc`, `.so`, `.pyd`),
@@ -334,7 +334,7 @@ review go into the review comment and do not fail the gate.
   non-ASCII paths, or paths that collide after case folding or Unicode
   normalization.
   - Test: workflow job `gate-selftest`
-  - Since: this change
+  - Since: #4
 
 - SEC-6: The gate MUST fail when ClamAV `clamscan` reports a detection in the
   generator tree. A signature database older than two days MUST produce a
@@ -346,7 +346,7 @@ review go into the review comment and do not fail the gate.
   scan uses the shipped database and the age check warns.
 
   - Test: workflow job `gate-selftest`
-  - Since: this change
+  - Since: #4
 
 ## Dependencies, binaries and charts
 
