@@ -222,8 +222,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-5: The required status check MUST be the `pull_request_target` gate job
   with GitHub Actions as expected source, and a fork workflow reporting a
   check of the same name MUST NOT satisfy it (AC-9).
-  - Test: none
-  - Since: not implemented
+  - Test: manual: AC-9 run on #9 (2026-10-08)
+  - Since: #8
 
 - GI-6: Every third-party action MUST be pinned by full commit SHA and every
   downloaded tool binary by sha256.
@@ -736,9 +736,15 @@ separate step before the sandboxed compile.
 - AC-9 (GI-1, GI-2, GI-5, GI-10): a fork pull request that edits the gate
   workflow, edits `policy/`, or adds a workflow reporting a check named like
   the gate cannot make the pull request mergeable, and no workflow uses a
-  cache. Check: manual: test fork against a test organization before launch;
-  `gate-selftest` greps `.github/` for `actions/cache` and `setup-*` steps
-  without `cache: false`.
+  cache. Check: manual: test fork; `gate-selftest` greps `.github/` for
+  `actions/cache` and `setup-*` steps without `cache: false`.
+
+  Run on 2026-10-08 with #9 from the fork `neat-bot/registry`: the fork's
+  own push workflow reported a successful `gate` check run from GitHub
+  Actions (app 15368) on the head commit, the gate in `kadet-hub/registry`
+  failed on GI-2 and REG-1, and with a maintainer approval the pull request
+  stayed `BLOCKED`; the status check rollup listed only the base
+  repository's `gate` as required.
 - AC-10 (CON-1): the consumer workflow compiles a sample consumer with its own
   helm input without network, and fails on a generator that reads a decoy
   credential, on a vendored `resolvers.py` that opens a socket during
