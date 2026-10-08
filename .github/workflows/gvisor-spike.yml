@@ -1,0 +1,54 @@
+name: gvisor-spike
+
+on:
+  pull_request:
+    paths:
+      - spike/**
+      - .github/workflows/gvisor-spike.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  spike:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GVISOR_RELEASE: "20260928"
+      GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install gVisor
+        run: |
+          curl -fsSLo gvisor.tar.zstd "https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64/gvisor.tar.zstd"
+          echo "${GVISOR_SHA512}  gvisor.tar.zstd" | sha512sum -c -
+          sudo tar --zstd -xf gvisor.tar.zstd -C /usr/local/bin
+          sudo /usr/local/bin/runsc install --runtime runsc-trace -- \
+            --debug --debug-log=/tmp/runsc/ \
+            --strace --strace-syscalls=execve,execveat,socket,openat
+          sudo systemctl restart docker
+          runsc --version
+
+      - name: Build sandbox image
+        run: docker build -t spike-gate spike
+
+      - name: Compile under gVisor
+        run: |
+          docker run --rm --runtime runsc-trace --network none --read-only \
+            -v "$PWD/spike/project:/src:ro" --tmpfs /work:uid=10001 --tmpfs /tmp \
+            spike-gate sh -c 'cp -r /src/. /work && kapitan compile --parallelism 2 && cat compiled/*/probe/*'
+
+      - name: Check trace
+        run: |
+          sudo chmod -R a+r /tmp/runsc
+          echo "== execve =="
+          sudo grep -h -E ' E execve(at)?\(' /tmp/runsc/* | sed -E 's/^.*\] //' | cut -c1-300 | sort -u | head -50
+          echo "== socket =="
+          sudo grep -h -E ' E socket\(' /tmp/runsc/* | sed -E 's/^.*\] //' | cut -c1-200 | sort -u | head -20
+          echo "== trace size =="
+          du -sh /tmp/runsc
+          sudo grep -q -E ' E execve(at)?\(.*helm' /tmp/runsc/* || { echo "::error::no execve of helm in trace"; exit 1; }
