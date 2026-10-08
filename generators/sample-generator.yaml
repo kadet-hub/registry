@@ -2,5 +2,5 @@ source:
   repo: https://github.com/neat-bot/sample-generator.git
   path: .
   tag: v0.1.0
-  sha: c9af067f5c433c05d0084e49d0228f6e61ac9c2c
+  sha: cdf23c864255687118ecb535e99eeb0fbf03fe37
 owners: [331675722]
