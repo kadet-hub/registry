@@ -351,7 +351,7 @@ fails the gate, apart from exceptions under SEC-14.
   fixture project. Declared charts are mounted read-only at their
   `output_path`.
   - Test: workflow job `gate-selftest` (partial: AC-4 samples only)
-  - Since: this change
+  - Since: #3
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows an `execve` or `execveat` attempt other than the Python
@@ -386,7 +386,7 @@ fails the gate, apart from exceptions under SEC-14.
   arguments.
 
   - Test: workflow job `gate-selftest` (partial: AC-4 samples only)
-  - Since: this change
+  - Since: #3
 
 - SEC-11: Fixture compiles MUST run with decoy credentials, and the gate MUST
   fail when a decoy value appears in the output, plain, base64- or
@@ -399,7 +399,7 @@ fails the gate, apart from exceptions under SEC-14.
   the gate.
 
   - Test: workflow job `gate-selftest` (partial: AC-4 samples only)
-  - Since: this change
+  - Since: #3
 
 - SEC-12: The gate MUST run conftest with `policy/output/` over the fixture
   output and fail on every match whose capability the manifest does not
