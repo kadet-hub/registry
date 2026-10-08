@@ -1,0 +1,66 @@
+# Imports a generator may use (SEC-3).
+# <module> [import] [name ...]
+# "import" allows "import <module>"; names allow "from <module> import name";
+# "*" allows any name; "!glob" forbids matching names.
+# subprocess is allowed only when the manifest declares a binary.
+
+__future__ *
+abc import *
+base64 import *
+binascii import *
+bisect import *
+collections import *
+collections.abc import *
+concurrent.futures import *
+contextlib import *
+copy import *
+csv import *
+dataclasses import *
+datetime import *
+decimal import *
+difflib import *
+enum import *
+fnmatch import *
+functools import *
+glob import *
+graphlib import *
+hashlib import *
+heapq import *
+hmac import *
+html import *
+io import *
+ipaddress import *
+itertools import *
+json import *
+logging import *
+math import *
+numbers import *
+operator import *
+os import * !system !popen !exec* !spawn* !posix_spawn* !fork* !kill* !plock
+os.path import *
+pathlib import *
+pprint import *
+random import *
+re import *
+secrets import *
+shlex import *
+shutil import *
+statistics import *
+string import *
+tempfile import *
+textwrap import *
+time import *
+typing import *
+urllib.parse import *
+uuid import *
+warnings import *
+zlib import *
+
+yaml import safe_load safe_load_all safe_dump safe_dump_all dump dump_all SafeLoader CSafeLoader SafeDumper CSafeDumper YAMLError
+jinja2.sandbox SandboxedEnvironment ImmutableSandboxedEnvironment
+omegaconf import *
+box import *
+jsonschema import *
+
+kapitan.inputs.kadet BaseObj BaseModel Dict CompileError inventory inventory_global current_target search_paths topics load_from_search_paths
+kapitan.utils render_jinja2_file

@@ -1,0 +1,3 @@
+name: fail-kadet-cached
+binaries: []
+fixtures: tests/consumer

@@ -1,0 +1,45 @@
+rules:
+  - id: dynamic-code
+    languages: [python]
+    severity: ERROR
+    message: dynamic code execution
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: compile(...)
+      - pattern: __import__(...)
+      - pattern: breakpoint(...)
+
+  - id: os-process
+    languages: [python]
+    severity: ERROR
+    message: process creation through os
+    patterns:
+      - pattern: os.$F
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(system|popen|exec\w*|spawn\w*|posix_spawn\w*|fork\w*|kill\w*|plock)$
+
+  - id: escape-attribute
+    languages: [python]
+    severity: ERROR
+    message: attribute used for sandbox escapes
+    patterns:
+      - pattern: $X.$A
+      - metavariable-regex:
+          metavariable: $A
+          regex: ^(__globals__|__builtins__|__subclasses__|__mro__|__bases__|__code__)$
+
+  - id: yaml-unsafe-name
+    languages: [python]
+    severity: ERROR
+    message: yaml load without a safe loader
+    patterns:
+      - pattern: yaml.$N
+      - metavariable-regex:
+          metavariable: $N
+          regex: ^(load|load_all|full_load|full_load_all|unsafe_load|unsafe_load_all|Loader|FullLoader|UnsafeLoader|CLoader|CFullLoader|CUnsafeLoader|UnsafeConstructor|FullConstructor|Constructor)$
+      - pattern-not-inside: yaml.load($X, Loader=yaml.SafeLoader)
+      - pattern-not-inside: yaml.load($X, Loader=yaml.CSafeLoader)
+      - pattern-not-inside: yaml.load_all($X, Loader=yaml.SafeLoader)
+      - pattern-not-inside: yaml.load_all($X, Loader=yaml.CSafeLoader)

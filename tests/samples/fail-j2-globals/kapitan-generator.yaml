@@ -1,0 +1,3 @@
+name: fail-j2-globals
+binaries: []
+fixtures: tests/consumer
