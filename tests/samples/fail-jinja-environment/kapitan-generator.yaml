@@ -1,0 +1,3 @@
+name: fail-jinja-environment
+binaries: []
+fixtures: tests/consumer

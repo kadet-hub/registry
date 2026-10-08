@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# gate-selftest: run the static checks and the sandbox compile over every
+# sample. pass-* must pass; fail-* must fail with the finding in its expect
+# file. Samples that cannot live in the repository are generated here.
+#
+# Usage: tests/selftest
+set -euo pipefail
+
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+cp -R -- "$root/tests/samples/." "$work/"
+
+# Copy pass-plain under a new name and record the expected finding.
+derive() {
+  cp -R -- "$work/pass-plain" "$work/$1"
+  sed -i "s|pass-plain|$1|g" "$work/$1/kapitan-generator.yaml" "$work/$1/tests/consumer/inventory/targets/minimal.yml"
+  printf '%s\n' "$2" >"$work/$1/expect"
+}
+key=AKIA$(python3 -c 'import secrets, string; print("".join(secrets.choice(string.ascii_uppercase + "234567") for _ in range(16)))')
+derive fail-token "gitleaks: aws-access-token: settings.yml"
+printf 'aws_access_key_id: %s\n' "$key" >"$work/fail-token/settings.yml"
+derive fail-token-allowed "gitleaks: aws-access-token: keys.py"
+printf 'KEY = "%s"  # gitleaks:allow\n' "$key" >"$work/fail-token-allowed/keys.py"
+derive fail-eicar "clamav: eicar.txt"
+printf '%s%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$' 'EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' >"$work/fail-eicar/eicar.txt"
+derive fail-case-collision "collides with"
+touch "$work/fail-case-collision/README.md" "$work/fail-case-collision/Readme.md"
+derive fail-symlink "tree: symlink passwd"
+ln -s /etc/passwd "$work/fail-symlink/passwd"
+derive fail-gitattributes "tree: banned file .gitattributes"
+printf '* export-subst\n' >"$work/fail-gitattributes/.gitattributes"
+derive fail-executable "tree: executable run.sh"
+printf '#!/bin/sh\n' >"$work/fail-executable/run.sh"
+chmod +x "$work/fail-executable/run.sh"
+derive fail-big-file-eval "semgrep: dynamic-code: big.py"
+python3 -c 'print("x = 1\n" * 166_700 + "eval(\"1\")")' >"$work/fail-big-file-eval/big.py"
+
+failed=0
+for dir in "$work"/*/; do
+  name=$(basename -- "$dir")
+  report=$work/$name.txt
+  got=pass
+  "$root/scan/static-scan" "$dir" >"$report" 2>&1 || got=fail
+  "$root/sandbox/gate-compile" "$dir" "$name" >>"$report" 2>&1 || got=fail
+  want=${name%%-*}
+  echo "::group::$name: want $want, got $got"
+  cat -- "$report"
+  echo "::endgroup::"
+  if [[ $got != "$want" ]]; then
+    echo "::error::$name: want $want, got $got"
+    failed=1
+  elif [[ $want == fail ]] && ! grep -qF -- "$(cat -- "$dir/expect")" "$report"; then
+    echo "::error::$name: failed without the expected finding: $(cat -- "$dir/expect")"
+    failed=1
+  fi
+done
+exit "$failed"

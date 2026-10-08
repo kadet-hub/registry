@@ -1,0 +1,55 @@
+rules:
+  - id: computed-attribute
+    languages: [python]
+    severity: INFO
+    message: getattr or setattr with a computed name
+    patterns:
+      - pattern-either:
+          - pattern: getattr($O, $N, ...)
+          - pattern: setattr($O, $N, ...)
+          - pattern: delattr($O, $N)
+      - pattern-not: getattr($O, "...", ...)
+      - pattern-not: setattr($O, "...", ...)
+      - pattern-not: delattr($O, "...")
+
+  - id: namespace-access
+    languages: [python]
+    severity: INFO
+    message: globals() or vars()
+    pattern-either:
+      - pattern: globals()
+      - pattern: vars(...)
+
+  - id: environment-read
+    languages: [python]
+    severity: INFO
+    message: environment read
+    pattern-either:
+      - pattern: os.environ
+      - pattern: os.getenv(...)
+      - pattern: os.environb
+
+  - id: outside-path
+    languages: [python]
+    severity: INFO
+    message: file access through an absolute or home path
+    pattern-either:
+      - pattern: os.path.expanduser(...)
+      - pattern: pathlib.Path.home()
+      - pattern: Path.home()
+      - patterns:
+          - pattern-either:
+              - pattern: open("$P", ...)
+              - pattern: Path("$P", ...)
+              - pattern: pathlib.Path("$P", ...)
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^[/~]
+
+  - id: unsandboxed-jinja
+    languages: [python]
+    severity: INFO
+    message: kapitan.utils.render_jinja2_file renders without a sandbox
+    pattern-either:
+      - pattern: render_jinja2_file(...)
+      - pattern: kapitan.utils.render_jinja2_file(...)

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - sandbox/**
+      - scan/**
       - policy/**
       - tests/**
       - .github/workflows/selftest.yml
@@ -15,17 +16,27 @@ permissions:
 jobs:
   gate-selftest:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       GVISOR_RELEASE: "20260928"
       GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Unit tests
+      - name: Sandbox unit tests
         run: python3 -m unittest discover -s sandbox -v
+
+      - name: Install scanners
+        run: |
+          curl -fsSLo gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          sudo tar -xzf gitleaks.tar.gz -C /usr/local/bin gitleaks
+          python3 -m venv scan/.venv
+          scan/.venv/bin/pip install --quiet --require-hashes --no-deps -r scan/requirements.txt
 
       - name: Install gVisor
         run: |
@@ -40,21 +51,8 @@ jobs:
       - name: Build sandbox image
         run: docker build -t kadet-hub/sandbox sandbox
 
-      - name: Compile samples
-        run: |
-          failed=0
-          for dir in tests/samples/*/; do
-            name=$(basename -- "$dir")
-            report=$RUNNER_TEMP/$name.txt
-            if sandbox/gate-compile "$dir" "$name" >"$report" 2>&1; then got=pass; else got=fail; fi
-            want=${name%%-*}
-            echo "::group::$name: want $want, got $got"
-            cat -- "$report"
-            echo "::endgroup::"
-            if [ "$got" != "$want" ]; then
-              echo "::error::$name: want $want, got $got"; failed=1
-            elif [ "$want" = fail ] && ! grep -qF -- "$(cat -- "$dir/expect")" "$report"; then
-              echo "::error::$name: failed without the expected finding: $(cat -- "$dir/expect")"; failed=1
-            fi
-          done
-          exit "$failed"
+      - name: Scan unit tests
+        run: docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/scan -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox python -m unittest -v test_tree_check
+
+      - name: Gate selftest
+        run: tests/selftest

@@ -1,0 +1,3 @@
+name: fail-unparseable
+binaries: []
+fixtures: tests/consumer

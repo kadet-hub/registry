@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Static checks on a generator tree without executing it (SEC-1 to SEC-6).
+#
+# Usage: static-scan <generator dir>
+# Needs: gitleaks on PATH, semgrep and guarddog in $SCAN_VENV, Docker with the
+# image $SANDBOX_IMAGE, yq, python3. Prints findings, then "review:" and
+# "warning:" lines that do not fail; exits 1 on any finding.
+set -euo pipefail
+
+gen=$(cd -- "$1" && pwd)
+here=$(cd -- "$(dirname -- "$0")" && pwd)
+policy=$(cd -- "$here/../policy" && pwd)
+venv=${SCAN_VENV:-$here/.venv}
+sandbox=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+clamav=clamav/clamav@sha256:ebec5bc138401b36ae987caa1a3fa3c3b2a21ed3d51f0bfa5852825e663e67b0 # 1.5.4
+
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+mkdir -- "$work/empty"
+status=0
+
+# SEC-5 tree and SEC-3 imports and templates, parsed by the sandbox's Python.
+declared=()
+if [[ $(yq -r '.binaries // [] | length' -- "$gen/kapitan-generator.yaml") -gt 0 ]]; then
+  declared=(--binaries-declared)
+fi
+docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+  --mount "type=bind,src=$gen,dst=/tree,readonly" \
+  --mount "type=bind,src=$here,dst=/scan,readonly" \
+  --mount "type=bind,src=$policy,dst=/policy,readonly" \
+  "$sandbox" python -I /scan/tree_check.py --tree /tree --imports /policy/imports.txt "${declared[@]}" || status=1
+
+# SEC-1 gitleaks, configuration and ignore file from outside the tree (SEC-4).
+rc=0
+gitleaks dir --no-banner --no-color --config "$policy/gitleaks.toml" \
+  --gitleaks-ignore-path "$work/empty" --ignore-gitleaks-allow --redact \
+  --report-format json --report-path "$work/gitleaks.json" --exit-code 3 "$gen" >"$work/gitleaks.log" 2>&1 || rc=$?
+case $rc in
+  0) ;;
+  3) python3 "$here/report.py" gitleaks "$work/gitleaks.json" "$gen/" || true
+     status=1 ;;
+  *) echo "gitleaks: error $rc"; tail -n 5 -- "$work/gitleaks.log"; status=1 ;;
+esac
+
+# SEC-3 semgrep, every Python file as an explicit target (SEC-4).
+mapfile -d '' pyfiles < <(find "$gen" -type f -name '*.py' -print0)
+if ((${#pyfiles[@]})); then
+  for kind in blocking review; do
+    (cd -- "$work/empty" && "$venv/bin/semgrep" scan --metrics=off --disable-nosem --no-git-ignore \
+      --max-target-bytes=0 --json --quiet --config "$policy/semgrep/$kind" -- "${pyfiles[@]}") \
+      >"$work/semgrep-$kind.json" 2>"$work/semgrep.log" || true
+    python3 "$here/report.py" "semgrep-$kind" "$work/semgrep-$kind.json" "$gen/" || status=1
+  done
+fi
+
+# SEC-2 GuardDog: threat rules fail, capability rules are for review.
+"$venv/bin/guarddog" pypi scan "$gen" --output-format json >"$work/guarddog.json" 2>"$work/guarddog.log" || true
+python3 "$here/report.py" guarddog "$work/guarddog.json" || status=1
+
+# SEC-6 ClamAV: update the shipped database if possible, warn when it is old.
+rc=0
+docker run --rm --mount "type=bind,src=$gen,dst=/scan,readonly" --entrypoint sh "$clamav" -c '
+  freshclam --quiet >/dev/null 2>&1 || echo "warning: freshclam failed, using the shipped database"
+  sigtool --info /var/lib/clamav/daily.c?d | sed -n "s/^Build time: /built: /p"
+  clamscan --recursive --infected --no-summary --stdout /scan' >"$work/clamav.log" 2>&1 || rc=$?
+grep '^warning: ' "$work/clamav.log" || true
+python3 "$here/report.py" clamav-age "$work/clamav.log"
+case $rc in
+  0) ;;
+  1) grep -E ' FOUND$' "$work/clamav.log" | sed "s|^/scan/|clamav: |"; status=1 ;;
+  *) echo "clamav: error $rc"; tail -n 5 -- "$work/clamav.log"; status=1 ;;
+esac
+
+exit "$status"

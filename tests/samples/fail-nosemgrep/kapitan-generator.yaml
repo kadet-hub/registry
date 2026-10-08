@@ -1,0 +1,3 @@
+name: fail-nosemgrep
+binaries: []
+fixtures: tests/consumer

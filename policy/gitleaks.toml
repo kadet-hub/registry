@@ -1,0 +1,4 @@
+# Gitleaks configuration for the gate (SEC-1, SEC-4). Passed with --config so
+# a .gitleaks.toml in the scanned tree is never read.
+[extend]
+useDefault = true

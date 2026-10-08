@@ -1,0 +1,3 @@
+name: fail-base64-exec
+binaries: []
+fixtures: tests/consumer

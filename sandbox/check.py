@@ -48,7 +48,9 @@ SOCKADDR = re.compile(r"\{Family: (\w+), (?:Addr: ([0-9a-f.:]+), Port: (\d+)|Add
 def parse_policy(path):
     """Lines: <name> <absolute path> <args...>; '*' ends with any args, '!flag' forbids a flag."""
     rules = []
-    for raw in open(path, encoding="utf-8"):
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    for raw in lines:
         fields = raw.split("#", 1)[0].split()
         if fields:
             name, exe, *rest = fields
@@ -217,9 +219,11 @@ def main():
     p.add_argument("--decoys", required=True, help="file with one decoy value per line")
     p.add_argument("--allow", action="append", default=[], help="declared binary, e.g. helm-template")
     a = p.parse_args()
-    values = open(a.decoys, encoding="utf-8").read().split()
+    with open(a.decoys, encoding="utf-8") as f:
+        values = f.read().split()
     findings = check_trace(a.log_dir, parse_policy(a.policy), set(a.allow)) + check_output(a.out, values)
-    print("\n".join(findings))
+    if findings:
+        print("\n".join(findings))
     return 1 if findings else 0
 
 
