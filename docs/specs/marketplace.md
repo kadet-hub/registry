@@ -554,13 +554,13 @@ code diff and the output diff, not only the verdict.
 
 - REV-1: A ruleset on `main` MUST require a pull request with one approval
   from someone other than the last pusher, dismiss approvals on new pushes,
-  require code owner review for `.github/` and `policy/`, require the gate
-  check (GI-5) on a branch up to date with `main` (DEC-14), and block force
-  pushes and deletion. The organization MUST require two-factor
-  authentication. The maintainer's own pull requests use the admin bypass
-  (RISK-1).
-  - Test: none
-  - Since: not implemented
+  require code owner review for `.github/`, `policy/`, `gate/`, `scan/` and
+  `sandbox/`, require the gate check (GI-5) on a branch up to date with
+  `main` (DEC-14), and block force pushes and deletion. The organization
+  MUST require two-factor authentication. The maintainer's own pull
+  requests use the admin bypass (RISK-1).
+  - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset.json`
+  - Since: this change
 
 - REV-2: The gate MUST post the comment described above on every pull request
   that adds or changes an entry.
@@ -813,7 +813,7 @@ None.
 | `.github/workflows/release.yml` | PUB-1 to PUB-5, index |
 | `.github/workflows/scheduled.yml` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `sandbox/gitlab-ci.yml`, `consumer-selftest` | CON-1 |
-| `.github/CODEOWNERS` | REV-1 |
+| `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
