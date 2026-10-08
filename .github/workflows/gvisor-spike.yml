@@ -53,6 +53,9 @@ jobs:
           sudo chmod -R a+r /tmp/runsc
           echo "== hostile probes =="
           sudo grep -h -E ' X (connect|sendto|sendmsg|execve)\(' /tmp/runsc/* | grep -E 'Port: (443|53)|203\.0\.113|/tmp/x|"id"' | sed -E 's/^.*\] //; s/, 0x[0-9a-f]+ \["HOSTNAME.*\]\)/, <env>)/' | cut -c1-220
+          echo "== raw sendmsg and /tmp/x exits =="
+          sudo grep -h -E ' (E|X) sendmsg\(' /tmp/runsc/* | sed -E 's/^.*\] //' | cut -c1-400 || true
+          sudo grep -h -E ' X execve\(.*/tmp/x' /tmp/runsc/* | grep -oE '\) = .*$' || true
           for pattern in 'X connect\(.*203\.0\.113\.1, Port: 443' 'X sendto\(.*203\.0\.113\.1, Port: 53' 'X sendmsg\(.*203\.0\.113\.1, Port: 53' 'E execve\(.*/tmp/x' 'E execve\(.*/usr/bin/id'; do
             if sudo grep -q -E "$pattern" /tmp/runsc/*; then echo "seen: $pattern"; else echo "::error::not in trace: $pattern"; missing=1; fi
           done
