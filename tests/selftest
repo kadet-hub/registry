@@ -17,7 +17,7 @@ derive() {
   sed -i "s|pass-plain|$1|g" "$work/$1/kapitan-generator.yaml" "$work/$1/tests/consumer/inventory/targets/minimal.yml"
   printf '%s\n' "$2" >"$work/$1/expect"
 }
-key=AKIA$(python3 -c 'import secrets, string; print("".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(16)))')
+key=AKIA$(python3 -c 'import secrets, string; print("".join(secrets.choice(string.ascii_uppercase + "234567") for _ in range(16)))')
 derive fail-token "gitleaks: aws-access-token: settings.yml"
 printf 'aws_access_key_id: %s\n' "$key" >"$work/fail-token/settings.yml"
 derive fail-token-allowed "gitleaks: aws-access-token: keys.py"
