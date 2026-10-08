@@ -163,8 +163,17 @@ fetched tree; this is the layout consumers use.
 
 - REG-7: Renovate MUST open a pull request updating `tag` and `sha` when the
   source repository publishes a newer matching tag.
-  - Test: none
-  - Since: not implemented
+
+  A regex manager in `renovate.json` reads `repo`, `path`, `tag` and `sha`
+  in this order, so the entry schema fixes the order. Tags are compared
+  within their prefix: `argocd-v1.4.0` only moves to a newer `argocd-v*`.
+  Renovate also bumps the tool pins; versions pinned together with a
+  checksum (helm, gitleaks, gVisor) fail CI until the maintainer updates
+  the checksum on the Renovate branch.
+
+  - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
+    entries (partial: no CI check)
+  - Since: this change
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
