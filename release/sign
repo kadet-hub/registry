@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Sign job, before the attestation (PUB-1, PUB-2): compare the built tar with
+# an own fetch of the source, check the existing tags, push by digest.
+#
+# Usage: sign <name> <built dir>
+# Needs: REGISTRY (ghcr.io/<owner>), IDENTITY (certificate identity),
+# GITHUB_REPOSITORY, GH_TOKEN, oras logged in, the main checkout as working
+# directory. Writes ref, digest, version and publish=true|false to
+# $GITHUB_OUTPUT.
+set -euo pipefail
+name=$1 built=$2
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+ref=$REGISTRY/$name
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+# shellcheck source=release/common.sh
+. "$root/release/common.sh"
+
+entry=$root/generators/$name.yaml
+repo=$(yq -r .source.repo "$entry") path=$(yq -r .source.path "$entry")
+tag=$(yq -r .source.tag "$entry") sha=$(yq -r .source.sha "$entry")
+[[ $tag =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]
+version=${BASH_REMATCH[1]}
+tar=$built/$name.tar meta=$built/meta.json
+jq -e --arg n "$name" --arg v "$version" --arg r "$repo" --arg p "$path" --arg s "$sha" \
+  '.name == $n and .version == $v and .source.repo == $r and .source.path == $p and .source.sha == $s' "$meta" >/dev/null \
+  || { echo "PUB-1: $name: metadata does not match the entry on main"; exit 1; }
+
+# PUB-1: the tree of the tar equals the tree of source.sha:source.path.
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$work/src.git")
+"${gitc[@]}" init -q --bare
+"${gitc[@]}" fetch -q --depth=1 --filter=blob:none --no-tags -- "$repo" "$sha"
+if [[ $path == . ]]; then rev="$sha^{tree}"; else rev=$sha:$path; fi
+expected=$("${gitc[@]}" rev-parse --verify --end-of-options "$rev")
+actual=$(python3 "$root/release/tree.py" "$tar")
+if [[ $actual != "$expected" || $(jq -r .tree "$meta") != "$expected" ]]; then
+  echo "PUB-1: $name $version: tar tree $actual, source tree $expected"
+  exit 1
+fi
+
+out() { echo "$1" >>"$GITHUB_OUTPUT"; }
+out "ref=$ref"
+out "version=$version"
+
+# PUB-2: never move a tag; an existing tag must be attested by this workflow.
+rc=0; current=$(lookup oras resolve -- "$ref:$version") || rc=$?
+((rc < 2)) || exit 1
+if ((rc == 0)); then
+  attested "$ref@$current" || { echo "PUB-2: $ref:$version points to $current without a marketplace attestation"; exit 1; }
+  echo "$name $version: published as $current"
+  out "publish=false"
+  exit 0
+fi
+rc=0; tags=$(lookup oras repo tags -- "$ref") || rc=$?
+((rc < 2)) || exit 1
+newest=$(printf '%s\n' "$tags" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -n 1)
+if [[ -n $newest && $(printf '%s\n%s\n' "$newest" "$version" | sort -V | tail -n 1) != "$version" ]]; then
+  echo "PUB-2: $name $version is not newer than the published $newest"
+  exit 1
+fi
+
+digest=$("$root/release/oci-push" "$ref" application/vnd.kadet-hub.generator.v1 \
+  application/vnd.kadet-hub.generator.config.v1+json "$meta" \
+  application/vnd.oci.image.layer.v1.tar "$tar" "$name.tar")
+echo "$name $version: pushed $digest"
+out "digest=$digest"
+out "publish=true"

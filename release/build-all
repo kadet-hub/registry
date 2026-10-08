@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Build job (PUB-1): fetch every entry's source without checkout, then
+# validate and build in the sandbox image without network.
+#
+# Usage: build-all <out dir>
+# Needs: the sandbox image $SANDBOX_IMAGE, yq, the main checkout. Writes the
+# artifacts and names.json to <out dir>.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+out=$1
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+mkdir -p -- "$work/src" "$out"
+
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+for f in "$root"/generators/*.yaml; do
+  [[ -e $f ]] || continue
+  name=$(basename -- "$f" .yaml)
+  repo=$(yq -r .source.repo "$f") path=$(yq -r .source.path "$f") sha=$(yq -r .source.sha "$f")
+  gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$work/$name.git")
+  "${gitc[@]}" init -q --bare
+  "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha"
+  python3 "$root/gate/fetch_tree.py" --git-dir "$work/$name.git" --rev "$sha" --path "$path" --out "$work/src/$name"
+done
+
+docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+  --mount "type=bind,src=$root,dst=/base,readonly" \
+  --mount "type=bind,src=$work/src,dst=/src,readonly" \
+  --mount "type=bind,src=$(cd -- "$out" && pwd),dst=/out" \
+  "$image" python -I /base/release/build.py --base /base --sources /src --out /out
