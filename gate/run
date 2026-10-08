@@ -4,7 +4,8 @@
 # never executes pull request content (GI-1).
 #
 # Needs: GH_TOKEN (contents and pull-requests read), REPO, PR, HEAD_SHA,
-# GITHUB_EVENT_PATH, and the tools of .github/actions/setup-gate.
+# GITHUB_EVENT_PATH, and the tools of .github/actions/setup-gate. Prints a
+# report in "## <section>" blocks; copies entry.json to $GATE_OUT if set.
 set -euo pipefail
 
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -22,6 +23,7 @@ check() {
     "$image" python -I /base/gate/check_entry.py "$@" --event /work/event.json --policy /base/policy
 }
 
+echo "## Registration"
 gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | {filename, status, previous_filename}' >"$work/files.jsonl"
 check files --files /work/files.jsonl --out /work/path
 path=$(cat -- "$work/path")
@@ -41,6 +43,7 @@ raw "$path" >"$work/head.yaml"
 unset GH_TOKEN
 
 check entry --path-file /work/path --head /work/head.yaml --base /base --out /work/entry.json
+if [[ -n ${GATE_OUT:-} ]]; then cp -- "$work/entry.json" "$GATE_OUT/entry.json"; fi
 field() { jq -r --arg k "$1" '.[$k]' -- "$work/entry.json"; }
 name=$(field name) src_repo=$(field repo) src_path=$(field path) tag=$(field tag) sha=$(field sha)
 
@@ -54,6 +57,7 @@ if [[ $resolved != "$sha" ]]; then
   status=1
 fi
 
+echo "## Source"
 # Fetch the pinned commit and write source.sha:source.path without checkout.
 "${gitc[@]}" init -q --bare -- "$work/src.git"
 "${gitc[@]}" --git-dir="$work/src.git" fetch -q --depth=1 --no-tags -- "$src_repo" "$sha"
@@ -62,6 +66,8 @@ python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --path
 
 check manifest --entry /work/entry.json --manifest "/work/generator/kapitan-generator.yaml" || exit 1
 
+echo "## Static checks"
 "$root/scan/static-scan" "$gen" || status=1
+echo "## Sandbox compile"
 "$root/sandbox/gate-compile" "$gen" "$name" || status=1
 exit "$status"
