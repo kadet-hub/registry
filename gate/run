@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# The gate for one pull request: Gate integrity, Registration, then the
+# static checks and the sandbox compile. Runs from the main checkout and
+# never executes pull request content (GI-1).
+#
+# Needs: GH_TOKEN (contents and pull-requests read), REPO, PR, HEAD_SHA,
+# GITHUB_EVENT_PATH, and the tools of .github/actions/setup-gate.
+set -euo pipefail
+
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+cp -- "$GITHUB_EVENT_PATH" "$work/event.json"
+
+# Parse and judge in the sandbox image without network; the checkout of main
+# is the only policy source.
+check() {
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" \
+    --mount "type=bind,src=$work,dst=/work" \
+    "$image" python -I /base/gate/check_entry.py "$@" --event /work/event.json --policy /base/policy
+}
+
+gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | {filename, status, previous_filename}' >"$work/files.jsonl"
+check files --files /work/files.jsonl --out /work/path
+path=$(cat -- "$work/path")
+if [[ -z $path ]]; then
+  echo "no entry changed"
+  exit 0
+fi
+
+raw() { gh api -H "Accept: application/vnd.github.raw" "repos/$REPO/contents/$1?ref=$HEAD_SHA"; }
+if [[ $path == removed:* ]]; then
+  raw policy/reserved-names.txt >"$work/reserved.txt" || : >"$work/reserved.txt"
+  check entry --path-file /work/path --reserved /work/reserved.txt --base /base --out /work/entry.json
+  exit 0
+fi
+# $path matched ^generators/[a-z][a-z0-9-]{1,38}\.yaml$ in the files step.
+raw "$path" >"$work/head.yaml"
+unset GH_TOKEN
+
+check entry --path-file /work/path --head /work/head.yaml --base /base --out /work/entry.json
+field() { jq -r --arg k "$1" '.[$k]' -- "$work/entry.json"; }
+name=$(field name) src_repo=$(field repo) src_path=$(field path) tag=$(field tag) sha=$(field sha)
+
+status=0
+# REG-1: the tag resolves to the pinned commit.
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+gitc=(git -c protocol.allow=never -c protocol.https.allow=always)
+resolved=$("${gitc[@]}" ls-remote -- "$src_repo" "refs/tags/$tag" "refs/tags/$tag^{}" | awk '{print $1}' | tail -n 1)
+if [[ $resolved != "$sha" ]]; then
+  echo "REG-1: tag $tag resolves to ${resolved:-nothing}, entry pins $sha"
+  status=1
+fi
+
+# Fetch the pinned commit and write source.sha:source.path without checkout.
+"${gitc[@]}" init -q --bare -- "$work/src.git"
+"${gitc[@]}" --git-dir="$work/src.git" fetch -q --depth=1 --no-tags -- "$src_repo" "$sha"
+gen=$work/generator
+python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --path "$src_path" --out "$gen" || status=1
+
+check manifest --entry /work/entry.json --manifest "/work/generator/kapitan-generator.yaml" || exit 1
+
+"$root/scan/static-scan" "$gen" || status=1
+"$root/sandbox/gate-compile" "$gen" "$name" || status=1
+exit "$status"

@@ -1,0 +1,10 @@
+# Names no new entry may take (REG-2, REG-3, REG-9): removed entries and
+# names that would read as official.
+kapitan
+kadet
+krab
+kapicorp
+kadet-hub
+marketplace
+registry
+official
