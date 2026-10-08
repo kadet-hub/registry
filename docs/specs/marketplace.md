@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `policy/`, `sandbox/`, `tests/`, `.github/`, `renovate.json`
+Code: `generators/`, `policy/`, `sandbox/`, `scan/`, `tests/`, `.github/`, `renovate.json`
 Verified against: none (new repository)
 
 ## Problem
@@ -263,45 +263,69 @@ maintainer approval to run, and a maintainer never approves them.
 ## Static checks
 
 The gate fetches the source at `source.sha` without executing it. A finding
-fails the gate, apart from exceptions under SEC-14.
+fails the gate, apart from exceptions under SEC-14. Findings marked for
+review go into the review comment and do not fail the gate.
 
 - SEC-1: The gate MUST fail on any gitleaks finding in the generator tree.
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `gate-selftest`
+  - Since: this change
 
-- SEC-2: The gate MUST fail on any GuardDog finding from a local scan of the
-  generator tree.
-  - Test: none
-  - Since: not implemented
+- SEC-2: The gate MUST fail on any GuardDog `threat-*` finding from a local
+  scan of the generator tree, and MUST list `capability-*` findings for
+  review.
 
-- SEC-3: The gate MUST fail when a semgrep rule in `policy/semgrep/blocking/`
-  matches, and MUST list matches of `policy/semgrep/review/` in the review
-  comment.
+  `capability-process-spawn` matches every generator that wraps a declared
+  binary, and `capability-filesystem-read` every generator that reads a
+  template.
 
-  Blocking rules cover what no generator needs: `subprocess` outside a
-  declared binary's module, `_posixsubprocess`, `os.system`, `os.exec*`,
-  `os.posix_spawn`, `socket`, `ctypes`, `eval`, `exec`, `compile`,
-  `__import__`, `importlib`, `kapitan.refs`, `kapitan.cached`, the `cached`,
-  `os`, `sys` and `module_from_spec` attributes of `kapitan.inputs.kadet`,
-  `jinja2.Environment` or `jinja2.Template` other than
-  `jinja2.sandbox.SandboxedEnvironment`, and `yaml.load` without
-  `SafeLoader`. Imports are limited to the stdlib subset and the
-  `kapitan.inputs.kadet` symbols in `policy/imports.txt`, plus `yaml`,
-  `jinja2.sandbox`, `omegaconf`, `box` and `jsonschema`. Jinja2 templates are
-  scanned for `__globals__`, `__class__`, `__subclasses__` and `__mro__`.
+  - Test: workflow job `gate-selftest`
+  - Since: this change
 
-  Review rules flag `getattr` and `setattr` with computed names,
-  `os.environ` reads, file reads outside the generator tree and
-  `kapitan.utils.render_jinja2_file`.
+- SEC-3: The gate MUST fail when a Python file in the generator tree does not
+  parse, imports a module or name `policy/imports.txt` does not allow, or
+  matches a rule in `policy/semgrep/blocking/`, and when a non-Python file
+  contains `__globals__`, `__builtins__`, `__subclasses__`, `__mro__`,
+  `__base__` or `__class__`. Matches of `policy/semgrep/review/` are listed
+  for review.
 
-  - Test: none
-  - Since: not implemented
+  The import allowlist is checked on the syntax tree, because a semgrep
+  pattern cannot express "nothing else". It holds a stdlib subset, `yaml`
+  with its safe functions, `jinja2.sandbox`'s sandboxed environments,
+  `omegaconf`, `box` and `jsonschema`, and from `kapitan.inputs.kadet` only
+  `BaseObj`, `BaseModel`, `Dict`, `CompileError`, `inventory`,
+  `inventory_global`, `current_target`, `search_paths`, `topics` and
+  `load_from_search_paths`. That module also exposes `cached` (the ref
+  revealer), `os`, `sys` and `module_from_spec`. `subprocess` is allowed
+  only when the manifest declares a binary. Relative imports and absolute
+  imports of a module in the importing file's directory or the tree root
+  are in-tree and allowed.
+
+  Blocking semgrep rules cover what the allowlist cannot see: calls of
+  `eval`, `exec`, `compile`, `__import__` and `breakpoint`, the process
+  functions of `os` (`system`, `popen`, `exec*`, `spawn*`, `posix_spawn*`,
+  `fork*`), the attributes `__globals__`, `__builtins__`, `__subclasses__`,
+  `__mro__`, `__bases__` and `__code__`, and `yaml` loading without a safe
+  loader. Review rules flag `getattr` and `setattr` with computed names,
+  `globals()` and `vars()`, `os.environ` and `os.getenv` reads, file
+  access through absolute or home paths, and
+  `kapitan.utils.render_jinja2_file`, which renders without a sandbox.
+
+  - Test: workflow job `gate-selftest`
+  - Since: this change
 
 - SEC-4: Every scanner MUST run with its configuration from `main` and with
-  in-tree suppressions disabled: gitleaks `--ignore-gitleaks-allow`, semgrep
-  `--disable-nosem` without ignore files, ruff `--isolated --ignore-noqa`.
-  - Test: none
-  - Since: not implemented
+  in-tree suppressions disabled: gitleaks with `--config`,
+  `--gitleaks-ignore-path` outside the tree and `--ignore-gitleaks-allow`;
+  semgrep with `--disable-nosem`, `--no-git-ignore`,
+  `--max-target-bytes=0` and every Python file passed as an explicit
+  target; ruff with `--isolated --ignore-noqa`.
+
+  Without explicit targets semgrep skips `tests/` and `vendor/` directories
+  and files above 1,000,000 bytes, so a payload in the fixture tree would go
+  unseen.
+
+  - Test: workflow job `gate-selftest`
+  - Since: this change
 
 - SEC-5: The generator tree MUST NOT contain symlinks, git submodules, LFS
   pointers, `.gitattributes`, compiled Python (`.pyc`, `.so`, `.pyd`),
@@ -309,18 +333,20 @@ fails the gate, apart from exceptions under SEC-14.
   `.gitleaks.toml`, `.gitleaksignore`, `.semgrepignore`, files above 1 MiB,
   non-ASCII paths, or paths that collide after case folding or Unicode
   normalization.
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `gate-selftest`
+  - Since: this change
 
 - SEC-6: The gate MUST fail when ClamAV `clamscan` reports a detection in the
   generator tree. A signature database older than two days MUST produce a
-  warning in the review comment, not a failure.
+  warning for review, not a failure.
 
-  A scheduled job mirrors the database daily with cvdupdate, because ClamAV
-  rate limits downloads from cloud IP ranges.
+  The gate runs `freshclam` in the digest-pinned `clamav/clamav` image,
+  which updates incrementally from the database the image ships. When the
+  update fails, for example because ClamAV rate limits cloud IP ranges, the
+  scan uses the shipped database and the age check warns.
 
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `gate-selftest`
+  - Since: this change
 
 ## Dependencies, binaries and charts
 
@@ -651,13 +677,17 @@ separate step before the sandboxed compile.
 ## Verification
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
-  hardcoded token, base64-decoded `exec`, `import _posixsubprocess`,
-  `from kapitan.inputs.kadet import cached`, `kapitan.inputs.kadet.os.system`,
-  `jinja2.Template` rendering `{{ cycler.__init__.__globals__ }}`,
-  `yaml.load` with `UnsafeLoader`, a `.j2` template using `__globals__`, a
-  detection suppressed with `# gitleaks:allow` or `# nosemgrep`, a `.so`
-  file, `.gitattributes` with `export-subst`, case-colliding paths, the EICAR
-  test file. Check: workflow job `gate-selftest` over `tests/samples/`.
+  hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
+  `exec` under `tests/` and in a file above 1,000,000 bytes, `# nosemgrep`,
+  `import _posixsubprocess`, `from kapitan.inputs.kadet import cached`,
+  `from jinja2.sandbox import Environment`, `jinja2.Template` rendering
+  `{{ cycler.__init__.__globals__ }}`, `yaml.load` with `UnsafeLoader`,
+  `os.system`, `subprocess` without a declared binary, a Python file that
+  does not parse, a `.j2` template using `__globals__`, a `.so` file,
+  `.gitattributes`, a symlink, an executable, case-colliding paths and the
+  EICAR test file. Samples that cannot live in this repository (token,
+  EICAR, collisions, symlink) are generated at test time. Check: workflow
+  job `gate-selftest` over `tests/samples/`.
 - AC-2 (CMP-1, CMP-2, QA-1 to QA-5, SEC-9, SEC-10): the benign samples pass,
   including one that wraps `helm template` with a declared chart and one
   using omegaconf and `getattr` (flagged for review, not failed). Check:
@@ -727,8 +757,7 @@ separate step before the sandboxed compile.
   pin digests and verify (CON-2) are protected.
 - RISK-6: a Sigstore outage delays releases (PUB-2).
 - RISK-7: GitHub disables scheduled workflows in public repositories after 60
-  days without activity, which silently stops SEC-6's mirror, SEC-15 and
-  SEC-16. The maintainer re-enables them from GitHub's notification.
+  days without activity, which silently stops SEC-15 and SEC-16. The maintainer re-enables them from GitHub's notification.
 
 ## Out of scope
 
@@ -754,6 +783,8 @@ None.
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9 |
 | `policy/semgrep/blocking/`, `policy/semgrep/review/`, `policy/imports.txt` | SEC-3 |
+| `policy/gitleaks.toml` | SEC-1, SEC-4 |
+| `scan/` | SEC-1 to SEC-6: `static-scan` runner, `tree_check.py`, scanner requirements |
 | `policy/binaries.txt` | SEC-7, SEC-10 |
 | `policy/output/` | SEC-12 rego rules |
 | `policy/licenses.txt` | QA-2 |
@@ -764,7 +795,7 @@ None.
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/release.yml` | PUB-1 to PUB-5, index |
-| `.github/workflows/scheduled.yml` | SEC-6 mirror, SEC-15, SEC-16 |
+| `.github/workflows/scheduled.yml` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `sandbox/gitlab-ci.yml`, `consumer-selftest` | CON-1 |
 | `.github/CODEOWNERS` | REV-1 |
 | `renovate.json` | REG-7, tool and action pins |
