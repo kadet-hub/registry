@@ -1,0 +1,89 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "dependencyDashboard": true,
+  "automerge": false,
+  "rebaseWhen": "behind-base-branch",
+  "pip-compile": {
+    "managerFilePatterns": [
+      "/(^|/)requirements\\.txt$/"
+    ]
+  },
+  "pip_requirements": {
+    "enabled": false
+  },
+  "customManagers": [
+    {
+      "description": "REG-7: bump tag and commit SHA of marketplace entries",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^generators/[^/]+\\.yaml$/"
+      ],
+      "matchStrings": [
+        "repo: (?<packageName>https://\\S+)\\n\\s+path: \\S+\\n\\s+tag: (?<currentValue>\\S+)\\n\\s+sha: (?<currentDigest>[0-9a-f]{40})"
+      ],
+      "datasourceTemplate": "git-tags",
+      "versioningTemplate": "regex:^(?<compatibility>.*?)v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    {
+      "description": "Tool versions marked with a renovate comment; checksums next to them are updated by hand",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^sandbox/Dockerfile$/",
+        "/^\\.github/workflows/[^/]+\\.yml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?"
+      ]
+    },
+    {
+      "description": "ClamAV image digest in the static scan",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^scan/static-scan$/"
+      ],
+      "matchStrings": [
+        "(?<depName>clamav/clamav)@(?<currentDigest>sha256:[0-9a-f]{64}) # (?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "check.py and the trace policy name the Python 3.13 interpreter",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchDepNames": [
+        "python"
+      ],
+      "allowedVersions": "/^3\\.13-slim$/"
+    },
+    {
+      "description": "gVisor tags are release-YYYYMMDD.N; the download path uses YYYYMMDD",
+      "matchDepNames": [
+        "google/gvisor"
+      ],
+      "extractVersion": "^release-(?<version>\\d+)\\.\\d+$",
+      "versioning": "loose"
+    },
+    {
+      "description": "gitleaks is pinned without the v prefix",
+      "matchDepNames": [
+        "gitleaks/gitleaks"
+      ],
+      "extractVersion": "^v(?<version>.+)$"
+    },
+    {
+      "description": "Every entry bump is its own pull request for review (DEC-3)",
+      "matchFileNames": [
+        "generators/*.yaml"
+      ],
+      "groupName": null,
+      "commitMessageTopic": "generator {{depName}}"
+    }
+  ]
+}
