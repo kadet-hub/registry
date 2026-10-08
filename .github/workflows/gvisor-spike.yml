@@ -1,0 +1,66 @@
+name: gvisor-spike
+
+on:
+  pull_request:
+    paths:
+      - spike/**
+      - .github/workflows/gvisor-spike.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  spike:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GVISOR_RELEASE: "20260928"
+      GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install gVisor
+        run: |
+          curl -fsSLo gvisor.tar.zstd "https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64/gvisor.tar.zstd"
+          echo "${GVISOR_SHA512}  gvisor.tar.zstd" | sha512sum -c -
+          sudo tar --zstd -xf gvisor.tar.zstd -C /usr/local/bin
+          sudo /usr/local/bin/runsc install --runtime runsc-trace -- \
+            --debug --debug-log=/tmp/runsc/ \
+            --strace --strace-syscalls=execve,execveat,socket,connect,bind,sendto,sendmsg,openat
+          sudo systemctl restart docker
+          runsc --version
+
+      - name: Build sandbox image
+        run: docker build -t spike-gate spike
+
+      - name: Compile under gVisor
+        run: |
+          docker run --rm --runtime runsc-trace --network none --read-only \
+            -v "$PWD/spike/project:/src:ro" --tmpfs /work:uid=10001 --tmpfs /tmp \
+            spike-gate sh -c 'cp -r /src/. /work && kapitan compile --parallelism 2 && cat compiled/*/probe/*'
+
+      - name: Run hostile probes under gVisor
+        run: |
+          docker run --rm --runtime runsc-trace --network none --read-only \
+            --tmpfs /work:uid=10001 --tmpfs /tmp \
+            -v "$PWD/spike/probes.py:/probes.py:ro" spike-gate python /probes.py
+
+      - name: Check trace
+        run: |
+          sudo chmod -R a+r /tmp/runsc
+          echo "== hostile probes =="
+          sudo grep -h -E ' X (connect|sendto|sendmsg|execve)\(' /tmp/runsc/* | grep -E '203\.0\.113|namelen=16,|/tmp/x|/usr/bin/id' | sed -E 's/^.*\] //; s/, 0x[0-9a-f]+ \["HOSTNAME.*\]\)/, <env>)/' | cut -c1-220
+          for pattern in 'X connect\(.*203\.0\.113\.1, Port: 443' 'X sendto\(.*203\.0\.113\.1, Port: 53' 'X sendmsg\(.*namelen=16,' 'E execve\(.*/tmp/x' 'E execve\(.*/usr/bin/id'; do
+            if sudo grep -q -E "$pattern" /tmp/runsc/*; then echo "seen: $pattern"; else echo "::error::not in trace: $pattern"; missing=1; fi
+          done
+          [ -z "${missing:-}" ]
+          echo "== execve exits =="
+          sudo grep -h -E ' X execve(at)?\(' /tmp/runsc/* | sed -E 's/^.*\] //; s/, 0x[0-9a-f]+ \["HOSTNAME.*\]\)/, <env>)/' | cut -c1-220 | sort | uniq -c | sort -rn | head -30
+          echo "== network syscalls =="
+          sudo grep -h -E ' X (socket|connect|bind|sendto|sendmsg)\(' /tmp/runsc/* | sed -E 's/^.*\] //' | cut -c1-220 | sort | uniq -c | head -30
+          echo "== trace size =="
+          du -sh /tmp/runsc
+          sudo grep -q -E ' E execve(at)?\(.*helm' /tmp/runsc/* || { echo "::error::no execve of helm in trace"; exit 1; }

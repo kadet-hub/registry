@@ -1,0 +1,10 @@
+parameters:
+  kapitan:
+    vars:
+      target: b
+    compile:
+      - output_path: probe
+        input_type: kadet
+        input_paths:
+          - components/probe
+        output_type: yaml

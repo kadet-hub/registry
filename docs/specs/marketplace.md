@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `policy/`, `sandbox/`, `.github/`, `renovate.json`
+Code: `generators/`, `policy/`, `sandbox/`, `spike/`, `.github/`, `renovate.json`
 Verified against: none (new repository)
 
 ## Problem
@@ -344,24 +344,33 @@ fails the gate, apart from exceptions under SEC-14.
 
 - SEC-9: Fixture compiles MUST run in a gVisor (`runsc`) container without
   network, as a non-root user, on a read-only root filesystem with only the
-  output, temp and `/dev/shm` directories writable, with
-  `PYTHONDONTWRITEBYTECODE=1`, `HELM_PLUGINS` empty and no environment from
-  the runner. The gate MUST call Kapitan with fixed flags and ignore a
+  output, temp and `/dev/shm` directories writable and mounted `noexec`, with
+  `PYTHONDONTWRITEBYTECODE=1`, `GIT_PYTHON_REFRESH=quiet`, `HELM_PLUGINS`
+  empty and no environment from the runner. The image contains no `git`. The gate MUST call Kapitan with fixed flags and ignore a
   `.kapitan` file in the fixture project. Declared charts are mounted
   read-only at their `output_path`.
   - Test: none
   - Since: not implemented
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
-  compile shows an `execve` or `execveat` of anything but the Python
-  interpreter and the declared binaries, a declared binary called with a
-  subcommand or flag `policy/binaries.txt` does not allow, a `socket` call
-  outside `AF_UNIX`, an `open` of a decoy file (SEC-11) or of
+  compile shows an `execve` or `execveat` attempt other than the Python
+  interpreter, Kapitan's own probes and the declared binaries, a declared
+  binary called with a subcommand or flag `policy/binaries.txt` does not
+  allow, a `connect` or `sendto` outside `AF_UNIX`, a `sendmsg` with an
+  `AF_INET` or `AF_INET6` destination (`namelen` 16 or 28), a `bind` other
+  than loopback port 0, an `open` of a decoy file (SEC-11) or of
   `/proc/*/environ`, or an `open` for writing outside the directories SEC-9
   makes writable. A trace log above its size cap MUST fail the gate.
 
   gVisor writes the trace outside the sandbox, so the generator can neither
-  disable nor forge it, and it follows child processes. A Python audit hook
+  disable nor forge it, and it follows child processes. Its exit line for
+  `execve` reports 0 even when the call failed, so the policy judges
+  attempts, and it does not decode a `sendmsg` destination, only its
+  length.
+  Kapitan 0.36.3 itself, in every worker process, tries `git version` along
+  `PATH`, runs `uname -p`, and creates an `AF_INET6` socket bound to `::1`
+  port 0; `policy/binaries.txt` lists these probes with their exact
+  arguments. A Python audit hook
   is no substitute: `_posixsubprocess.fork_exec` starts a process without
   raising the `subprocess.Popen` event.
 
@@ -642,8 +651,8 @@ separate step before the sandboxed compile.
   a non-owner, a bump changing `source.repo`, a non-maintainer deletion or
   rename, a tag `v1.0.0-$(id)`, a chart name `--untardir=/x` and a chart whose
   bytes differ from its `sha256` each fail. Check: `gate-selftest`.
-- AC-4 (SEC-9, SEC-10, SEC-11): samples that open a socket and swallow the
-  error, start a process through `_posixsubprocess`, run `helm template
+- AC-4 (SEC-9, SEC-10, SEC-11): samples that connect a TCP socket and swallow
+  the error, start a process through `_posixsubprocess`, run `helm template
   --post-renderer` through a variable, and read `~/.aws/credentials` each
   fail. Check: `gate-selftest`.
 - AC-5 (CMP-4): a sample importing a Kapitan internal missing from krab's shim
@@ -675,8 +684,12 @@ separate step before the sandboxed compile.
   `consumer-selftest` over `tests/consumers/`.
 - AC-11 (SEC-9, SEC-10): gVisor installs on a GitHub-hosted `ubuntu-24.04`
   runner, runs Kapitan's multiprocessing compile with `--network none`, and
-  its trace records `execve` of a helm child process. Check: manual: spike
-  before the gate is written.
+  its trace records `execve` of a helm child process. Hostile probes that
+  swallow their errors appear in the trace: `connect` and `sendto` to an
+  external address, `sendmsg` with an `AF_INET` destination, a process
+  started through `_posixsubprocess.fork_exec`, and an attempt to execute a
+  file written to `/tmp`, which `noexec` blocks. Check: workflow
+  `gvisor-spike` (passed with gVisor release-20260928.0).
 
 ## Residual risk
 
@@ -729,6 +742,7 @@ None.
 | `sandbox/` | SEC-9, SEC-10, SEC-11 image and trace policy, reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
 | `tests/consumers/` | AC-10 |
+| `spike/`, `.github/workflows/gvisor-spike.yml` | AC-11 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2, `gate-selftest` |
 | `.github/workflows/release.yml` | PUB-1 to PUB-5, index |
 | `.github/workflows/scheduled.yml` | SEC-6 mirror, SEC-15, SEC-16 |
