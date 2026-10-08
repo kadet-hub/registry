@@ -1,0 +1,6 @@
+# Code owner review for everything that defines the gate (REV-1).
+/.github/ @Moep90
+/policy/ @Moep90
+/gate/ @Moep90
+/scan/ @Moep90
+/sandbox/ @Moep90
