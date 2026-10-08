@@ -617,12 +617,12 @@ parameters:
         output_path: lib/<name>
 ```
 
-GitHub documents new packages as private. In the rehearsal, packages
-pushed by the workflow of a public repository were public, but this is so far
-only observed for a user account. A package that is not public fails
-consumer pulls; the index job prints a warning for it, and a maintainer
-changes the visibility in the web UI, since the documented package API has no
-visibility call.
+GitHub documents new packages as private. The first release in `kadet-hub`
+created `index` as private; in the rehearsal fork under a user account,
+packages pushed by the workflow were public. A package that is not public
+fails consumer pulls; the index job prints a warning for every such package,
+the index included, and a maintainer changes the visibility in the web UI,
+since the documented package API has no visibility call.
 
 - PUB-1: The build job MUST build the artifact from the git tree
   `source.sha:source.path` alone, reproducibly (normalized tar, no timestamp
