@@ -1,1 +1,1 @@
---post-renderer=/tmp/x
+exec /usr/local/bin/helm ['helm', 'template', 'demo', '/nonexistent', '--set', 'a=ppp
