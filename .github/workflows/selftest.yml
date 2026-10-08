@@ -5,8 +5,10 @@ on:
     paths:
       - sandbox/**
       - scan/**
+      - gate/**
       - policy/**
       - tests/**
+      - .github/actions/**
       - .github/workflows/selftest.yml
   workflow_dispatch:
 
@@ -17,44 +19,22 @@ jobs:
   gate-selftest:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    env:
-      # renovate: datasource=github-releases depName=google/gvisor
-      GVISOR_RELEASE: "20260928"
-      GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
-      # renovate: datasource=github-releases depName=gitleaks/gitleaks
-      GITLEAKS_VERSION: 8.30.1
-      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Sandbox unit tests
-        run: python3 -m unittest discover -s sandbox -v
-
-      - name: Install scanners
+      - name: Unit tests on the runner
         run: |
-          curl -fsSLo gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
-          sudo tar -xzf gitleaks.tar.gz -C /usr/local/bin gitleaks
-          python3 -m venv scan/.venv
-          scan/.venv/bin/pip install --quiet --require-hashes --no-deps -r scan/requirements.txt
+          python3 -m unittest discover -s sandbox -v
+          python3 -m unittest discover -s gate -p 'test_fetch*.py' -v
 
-      - name: Install gVisor
+      - uses: ./.github/actions/setup-gate # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - name: Unit tests in the sandbox image
         run: |
-          curl -fsSLo gvisor.tar.zstd "https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64/gvisor.tar.zstd"
-          echo "${GVISOR_SHA512}  gvisor.tar.zstd" | sha512sum -c -
-          sudo tar --zstd -xf gvisor.tar.zstd -C /usr/local/bin
-          sudo /usr/local/bin/runsc install --runtime runsc-trace -- \
-            --debug --debug-log=/tmp/runsc/ --strace \
-            --strace-syscalls=execve,execveat,open,openat,openat2,creat,connect,bind,sendto,sendmsg,sendmmsg,symlink,symlinkat,link,linkat,io_uring_setup
-          sudo systemctl restart docker
-
-      - name: Build sandbox image
-        run: docker build -t kadet-hub/sandbox sandbox
-
-      - name: Scan unit tests
-        run: docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/scan -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox python -m unittest -v test_tree_check
+          docker run --rm --network none -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox \
+            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v'
 
       - name: Gate selftest
         run: tests/selftest

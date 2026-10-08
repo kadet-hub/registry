@@ -33,7 +33,8 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/^sandbox/Dockerfile$/",
-        "/^\\.github/workflows/[^/]+\\.yml$/"
+        "/^\\.github/workflows/[^/]+\\.yml$/",
+        "/^\\.github/actions/[^/]+/action\\.yml$/"
       ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?"

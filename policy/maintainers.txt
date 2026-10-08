@@ -1,0 +1,3 @@
+# GitHub numeric user IDs of marketplace maintainers. Changed only by a
+# maintainer pull request (GI-2, REV-1).
+3042152

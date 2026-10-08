@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Generator manifest kapitan-generator.yaml (GI-9, QA-5)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "description", "license", "owners", "kapitan", "fixtures"],
+  "$defs": {
+    "relpath": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$", "not": {"pattern": "(^|/)\\.\\.(/|$)|^/"}, "maxLength": 200},
+    "glob": {"type": "string", "pattern": "^[A-Za-z0-9._*/-]+$", "maxLength": 200},
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+  },
+  "properties": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,38}$"},
+    "description": {"type": "string", "minLength": 1, "maxLength": 300},
+    "license": {"type": "string", "pattern": "^[A-Za-z0-9.+-]+$"},
+    "owners": {"type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": {"type": "integer", "minimum": 1}},
+    "kapitan": {"type": "string", "pattern": "^[0-9.,<>=! ]+$", "maxLength": 50},
+    "dependencies": {"type": "array", "maxItems": 0},
+    "binaries": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]* [a-z][a-z0-9-]*$"}},
+    "output_capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}},
+    "unparsed_outputs": {"type": "array", "items": {"$ref": "#/$defs/glob"}},
+    "charts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "name", "version", "sha256", "output_path"],
+        "properties": {
+          "repo": {"type": "string", "pattern": "^(https|oci)://[A-Za-z0-9._~:/@%-]+$", "maxLength": 300},
+          "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "version": {"$ref": "#/$defs/semver"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "output_path": {"$ref": "#/$defs/relpath"}
+        }
+      }
+    },
+    "inventory_backends": {"type": "array", "uniqueItems": true, "items": {"enum": ["reclass", "reclass-rs", "omegaconf"]}},
+    "fixtures": {"$ref": "#/$defs/relpath"}
+  }
+}
