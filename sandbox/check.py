@@ -26,9 +26,10 @@ DECOY_DIRS = ("/home/gate/.aws", "/home/gate/.kube", "/home/gate/.ssh", "/home/g
 PROC = re.compile(r"/proc/[^/]+/(environ|root|cwd)(/|$)")
 WRITABLE = ("/out/", "/tmp/", "/dev/shm/")
 WRITE_FLAGS = re.compile(r"\bO_(WRONLY|RDWR|CREAT|TRUNC)\b")
-NEVER = ("execveat", "sendmmsg", "symlink", "symlinkat", "link", "linkat", "io_uring_setup")
+NEVER = ("execveat", "sendmmsg", "symlink", "symlinkat", "io_uring_setup")
+LINKS = ("link", "linkat")
 OPENS = ("open", "openat", "openat2", "creat")
-TRACED = ("execve", "connect", "bind", "sendto", "sendmsg") + OPENS + NEVER
+TRACED = ("execve", "connect", "bind", "sendto", "sendmsg") + OPENS + LINKS + NEVER
 
 NAMES = "|".join(TRACED)
 LINE = re.compile(rf"strace\.go:\d+\] \[\s*\d+:\s*\d+\] (\S+) ([EX]) ({NAMES})\((.*)$")
@@ -122,6 +123,16 @@ def judge_open(call, args):
     return findings
 
 
+def judge_link(call, args):
+    """Hard links stay on one mount; allow them only inside the writable dirs."""
+    pattern = rf"{ADDR} (.*?), {ADDR} (.*?)\)?$" if call == "link" else rf"{ADDR} \S+, {ADDR} (.*?), {ADDR}, {ADDR} (.*?), {ADDR}\)?$"
+    m = re.match(pattern, args)
+    if not m or len(re.findall(rf", {ADDR} ", args)) != (1 if call == "link" else 2):
+        return "unparseable"
+    paths = [posixpath.normpath(p) for p in m.groups()]
+    return None if all(p.startswith(WRITABLE) for p in paths) else f"link {paths}"
+
+
 def judge_socket(call, args):
     if call == "sendmsg":
         m = re.search(r"\{name=(0x[0-9a-f]+), namelen=(\d+),", args)
@@ -149,9 +160,12 @@ def judge(call, args, rules, allow):
         why = [judge_exec(args, rules, allow)]
     elif call in OPENS:
         why = judge_open(call, args)
+    elif call in LINKS:
+        why = [judge_link(call, args)]
     else:
         why = [judge_socket(call, args)]
-    return [f"{call}: {w}: {args[:300]}" for w in why if w]
+    # Exec lines carry the environment, so only the judged part is printed.
+    return [f"{call}: {w[:300]}" + ("" if call == "execve" else f": {args[:200]}") for w in why if w]
 
 
 def check_trace(log_dir, rules, allow):

@@ -100,6 +100,11 @@ class Network(unittest.TestCase):
     def test_forged_unix_address_in_fd_name_fails(self):
         self.assertTrue(trace('python E connect(0x3 /tmp/{Family: AF_UNIX, Addr: "x"}, 0x7f01 {Family: AF_INET, Addr: 203.0.113.1, Port: 443}, 0x10)'))
 
+    def test_hard_links(self):
+        self.assertEqual(trace("python E link(0x7f01 /dev/shm/sem.4WBUdR, 0x7f02 /dev/shm/sem.mp-43_hqkjo)"), [])
+        self.assertTrue(trace("python E link(0x7f01 /home/gate/.aws/credentials, 0x7f02 /tmp/c)"))
+        self.assertTrue(trace("python E linkat(0x3 /home/gate/.aws, 0x7f01 credentials, 0x4, 0x7f02 /tmp/c, 0x0)"))
+
     def test_never_allowed(self):
         for line in ("python E symlink(0x7f01 /usr/local/bin/helm, 0x7f02 /tmp/h)",
                      "python E sendmmsg(0x3 socket:[1], 0x7f01, 0x1, 0x0)",

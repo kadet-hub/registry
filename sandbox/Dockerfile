@@ -7,7 +7,7 @@ RUN tar -xzf /tmp/helm.tgz -C /usr/local/bin --strip-components=1 linux-amd64/he
  && pip install --no-cache-dir --require-hashes --no-deps -r /tmp/requirements.txt \
  && rm /tmp/helm.tgz /tmp/requirements.txt \
  && useradd -m -u 10001 gate
-ENV GIT_PYTHON_REFRESH=quiet PYTHONDONTWRITEBYTECODE=1 HOME=/home/gate HELM_PLUGINS= \
+ENV GIT_PYTHON_REFRESH=quiet PYTHONDONTWRITEBYTECODE=1 HOME=/home/gate KUBECONFIG=/dev/null HELM_PLUGINS= \
     HELM_CACHE_HOME=/tmp/helm/cache HELM_CONFIG_HOME=/tmp/helm/config HELM_DATA_HOME=/tmp/helm/data
 USER gate
 WORKDIR /project
