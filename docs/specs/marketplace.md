@@ -776,10 +776,10 @@ separate step before the sandboxed compile.
   attested from another branch fails verification, and so does an index with
   a lower serial. A run that fails between push and attest is completed by
   the next run. A yanked and deleted version stays deleted after the next
-  push. Check: manual: release rehearsal in the fork `neat-bot/registry`,
+  push. Check: manual: release rehearsal in a fork of the registry,
   whose workflow identity differs from `kadet-hub`'s only by the owner.
 
-  Run on 2026-10-08 with `neat-bot/sample-generator`. The first push to the
+  Run on 2026-10-08 with a test generator. The first push to the
   fork's `main` published 0.1.0 and index serial 1; `gh attestation verify`
   passed for both with the `main` identity and failed with the identity of
   another branch. A dispatched second run pushed nothing. Yanking 0.1.0
@@ -802,7 +802,7 @@ separate step before the sandboxed compile.
   cache. Check: manual: test fork; `gate-selftest` greps `.github/` for
   `actions/cache` and `setup-*` steps without `cache: false`.
 
-  Run on 2026-10-08 with #9 from the fork `neat-bot/registry`: the fork's
+  Run on 2026-10-08 with #9 from a test fork: the fork's
   own push workflow reported a successful `gate` check run from GitHub
   Actions (app 15368) on the head commit, the gate in `kadet-hub/registry`
   failed on GI-2 and REG-1, and with a maintainer approval the pull request
