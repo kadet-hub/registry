@@ -29,7 +29,7 @@ jobs:
           sudo tar --zstd -xf gvisor.tar.zstd -C /usr/local/bin
           sudo /usr/local/bin/runsc install --runtime runsc-trace -- \
             --debug --debug-log=/tmp/runsc/ \
-            --strace --strace-syscalls=execve,execveat,socket,openat
+            --strace --strace-syscalls=execve,execveat,socket,connect,bind,sendto,sendmsg,openat
           sudo systemctl restart docker
           runsc --version
 
@@ -45,10 +45,10 @@ jobs:
       - name: Check trace
         run: |
           sudo chmod -R a+r /tmp/runsc
-          echo "== execve =="
-          sudo grep -h -E ' E execve(at)?\(' /tmp/runsc/* | sed -E 's/^.*\] //' | cut -c1-300 | sort -u | head -50
-          echo "== socket =="
-          sudo grep -h -E ' E socket\(' /tmp/runsc/* | sed -E 's/^.*\] //' | cut -c1-200 | sort -u | head -20
+          echo "== execve exits =="
+          sudo grep -h -E ' X execve(at)?\(' /tmp/runsc/* | sed -E 's/^.*\] //; s/, 0x[0-9a-f]+ \["HOSTNAME.*\]\)/, <env>)/' | cut -c1-220 | sort | uniq -c | sort -rn | head -30
+          echo "== network syscalls =="
+          sudo grep -h -E ' X (socket|connect|bind|sendto|sendmsg)\(' /tmp/runsc/* | sed -E 's/^.*\] //' | cut -c1-220 | sort | uniq -c | head -30
           echo "== trace size =="
           du -sh /tmp/runsc
           sudo grep -q -E ' E execve(at)?\(.*helm' /tmp/runsc/* || { echo "::error::no execve of helm in trace"; exit 1; }
