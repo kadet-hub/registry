@@ -18,8 +18,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
+      # renovate: datasource=github-releases depName=google/gvisor
       GVISOR_RELEASE: "20260928"
       GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
+      # renovate: datasource=github-releases depName=gitleaks/gitleaks
       GITLEAKS_VERSION: 8.30.1
       GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
     steps:
