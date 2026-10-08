@@ -778,6 +778,17 @@ separate step before the sandboxed compile.
   the next run. A yanked and deleted version stays deleted after the next
   push. Check: manual: release rehearsal in the fork `neat-bot/registry`,
   whose workflow identity differs from `kadet-hub`'s only by the owner.
+
+  Run on 2026-10-08 with `neat-bot/sample-generator`. The first push to the
+  fork's `main` published 0.1.0 and index serial 1; `gh attestation verify`
+  passed for both with the `main` identity and failed with the identity of
+  another branch. A dispatched second run pushed nothing. Yanking 0.1.0
+  skipped its build, kept the tag and published serial 2 with the reason. A
+  0.2.0 manifest pushed by digest without attestation or tag was attested and
+  tagged at the same digest by the next push, with serial 3. After 0.1.0 was
+  deleted from the package, the next push did not rebuild it and serial 4
+  lists only 0.2.0. The lower-serial check belongs to the consumer and is
+  open until CON-2.
 - AC-7 (SEC-15, SEC-16): moving a tag of a listed sample repository produces
   an issue on the next scheduled run. Check: manual: scheduled run in a test
   organization.
