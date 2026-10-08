@@ -1,9 +1,0 @@
-name: fake
-on: push
-permissions: {}
-jobs:
-  gate:
-    name: gate
-    runs-on: ubuntu-24.04
-    steps:
-      - run: echo spoofed
