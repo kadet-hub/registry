@@ -1,0 +1,3 @@
+name: fail-decoy-output
+binaries: []
+fixtures: tests/consumer

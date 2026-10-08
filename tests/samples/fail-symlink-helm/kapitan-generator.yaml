@@ -1,0 +1,3 @@
+name: fail-symlink-helm
+binaries: ["helm version"]
+fixtures: tests/consumer
