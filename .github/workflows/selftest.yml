@@ -1,0 +1,60 @@
+name: selftest
+
+on:
+  pull_request:
+    paths:
+      - sandbox/**
+      - policy/**
+      - tests/**
+      - .github/workflows/selftest.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate-selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GVISOR_RELEASE: "20260928"
+      GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s sandbox -v
+
+      - name: Install gVisor
+        run: |
+          curl -fsSLo gvisor.tar.zstd "https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64/gvisor.tar.zstd"
+          echo "${GVISOR_SHA512}  gvisor.tar.zstd" | sha512sum -c -
+          sudo tar --zstd -xf gvisor.tar.zstd -C /usr/local/bin
+          sudo /usr/local/bin/runsc install --runtime runsc-trace -- \
+            --debug --debug-log=/tmp/runsc/ --strace \
+            --strace-syscalls=execve,execveat,open,openat,openat2,creat,connect,bind,sendto,sendmsg,sendmmsg,symlink,symlinkat,link,linkat,io_uring_setup
+          sudo systemctl restart docker
+
+      - name: Build sandbox image
+        run: docker build -t kadet-hub/sandbox sandbox
+
+      - name: Compile samples
+        run: |
+          failed=0
+          for dir in tests/samples/*/; do
+            name=$(basename -- "$dir")
+            report=$RUNNER_TEMP/$name.txt
+            if sandbox/gate-compile "$dir" "$name" >"$report" 2>&1; then got=pass; else got=fail; fi
+            want=${name%%-*}
+            echo "::group::$name: want $want, got $got"
+            cat -- "$report"
+            echo "::endgroup::"
+            if [ "$got" != "$want" ]; then
+              echo "::error::$name: want $want, got $got"; failed=1
+            elif [ "$want" = fail ] && ! grep -qF -- "$(cat -- "$dir/expect")" "$report"; then
+              echo "::error::$name: failed without the expected finding: $(cat -- "$dir/expect")"; failed=1
+            fi
+          done
+          exit "$failed"

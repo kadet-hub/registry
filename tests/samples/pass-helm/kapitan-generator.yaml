@@ -1,0 +1,3 @@
+name: pass-helm
+binaries: ["helm template"]
+fixtures: tests/consumer

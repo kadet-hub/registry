@@ -1,0 +1,21 @@
+# Programs a fixture compile may start (SEC-7, SEC-10).
+# <name> <absolute path> <arguments...>
+# "*" as last argument allows any further arguments; "!flag" forbids an
+# argument equal to the flag or starting with "flag=". A manifest entry
+# "helm template" allows the rule named "helm-template".
+
+# Kapitan 0.36.3 probes, always allowed. git is absent from the image, so
+# every git attempt fails; uname -p is answered by /usr/bin/uname.
+kapitan-probe  /usr/local/sbin/git  version
+kapitan-probe  /usr/local/bin/git   version
+kapitan-probe  /usr/sbin/git        version
+kapitan-probe  /usr/bin/git         version
+kapitan-probe  /sbin/git            version
+kapitan-probe  /bin/git             version
+kapitan-probe  /usr/local/sbin/uname  -p
+kapitan-probe  /usr/local/bin/uname   -p
+kapitan-probe  /usr/sbin/uname        -p
+kapitan-probe  /usr/bin/uname         -p
+
+helm-template  /usr/local/bin/helm  template  *  !--post-renderer  !--post-renderer-args  !plugin
+helm-version   /usr/local/bin/helm  version   *

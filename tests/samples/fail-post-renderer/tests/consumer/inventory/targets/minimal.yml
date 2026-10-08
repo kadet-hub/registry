@@ -1,0 +1,10 @@
+parameters:
+  kapitan:
+    vars:
+      target: minimal
+    compile:
+      - output_path: out
+        input_type: kadet
+        input_paths:
+          - lib/fail-post-renderer
+        output_type: yaml
