@@ -238,8 +238,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-8: Only the release workflow, triggered by a push or `workflow_dispatch`
   on `main` and bound to a `release` environment that admits only `main`, MAY
   hold `packages: write`, `id-token: write` and `attestations: write`.
-  - Test: none
-  - Since: not implemented
+  - Test: none (partial: `release.yml` permissions; the environment's
+    branch policy is set with `gh api`)
+  - Since: this change
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
   `^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$`,
@@ -577,16 +578,34 @@ code diff and the output diff, not only the verdict.
 
 ## Publishing
 
-On a push to `main`, the release workflow reconciles every entry version that
-has no tag yet and is not yanked. A build job without signing rights
-validates entry and manifest (GI-9), repeats REG-2, REG-3, REG-6 and REG-9
-against the current `main`, fetches the source without checkout or
-submodules, and builds the artifact from the git tree `source.sha:source.path`.
-A separate sign job compares the tree ID of the built tar with the tree of
-`source.sha` read through the API, pushes the artifact to
-`ghcr.io/kadet-hub/<name>` by digest, attests it, and then sets the
-`<version>` tag. From the gate's run only the conclusion of its krab check is
-used, read through the API.
+On a push to `main`, and on `workflow_dispatch` from `main`, the release
+workflow reconciles every entry on `main`: the entry's current version gets
+an artifact, an attestation and a `<version>` tag unless it is yanked or
+already has them. The workflow takes the registry namespace and the
+certificate identity from its own repository, so the same file runs in the
+rehearsal fork (AC-6); the documented verification names `kadet-hub`.
+
+The build job has `contents: read` only. It fetches each source without
+checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
+(GI-9), repeats REG-2 and REG-3 across all entries on `main`, and writes a
+normalized tar of the tree `source.sha:source.path` with its metadata: the
+manifest fields the index lists, the source, and the tree ID computed from the
+files. It runs the checks in the sandbox image without network.
+
+The sign job runs once per entry in the `release` environment. It fetches
+`source.sha` itself, blobless, compares the git tree of `source.path` with
+the tree ID of the tar's contents and with the metadata, writes the OCI
+manifest itself, pushes config and layer to `ghcr.io/kadet-hub/<name>` by
+digest, attests the digest, and then sets the `<version>` tag. The krab
+result comes from the gate's krab check of the merged pull request once
+CMP-4 exists and is `null` until then.
+
+The artifact is an OCI image manifest with artifact type
+`application/vnd.kadet-hub.generator.v1`, the metadata as config blob
+(`application/vnd.kadet-hub.generator.config.v1+json`) and one layer
+`application/vnd.oci.image.layer.v1.tar` titled `<name>.tar`. The tar holds
+the tree at its root: sorted entries, mode 0644, mtime 0, owner 0. Kapitan
+0.36.3 pulls it with oras-py and extracts the tar into `output_path`.
 
 ```yaml
 # consumer inventory
@@ -598,30 +617,42 @@ parameters:
         output_path: lib/<name>
 ```
 
+GHCR creates a package private. A maintainer makes each new package public
+once in the web UI, since the documented package API has no visibility
+call; until then the index job prints a warning for it and consumer pulls
+fail.
+
 - PUB-1: The build job MUST build the artifact from the git tree
-  `source.sha:source.path` alone, reproducibly (normalized tar, fixed
-  timestamps, no `created` annotation), MUST NOT use files produced by the
-  gate, and MUST NOT hold `id-token` or `packages` permissions. The sign job
-  MUST fail when the tree ID of the tar differs from the tree of
-  `source.sha`.
-  - Test: none
-  - Since: not implemented
+  `source.sha:source.path` alone, reproducibly (normalized tar, no timestamp
+  in the manifest), MUST NOT use files produced by the gate, and MUST NOT
+  hold `id-token` or `packages` permissions. The sign job MUST fail when the
+  tree ID of the tar differs from the tree of `source.sha:source.path` read by
+  its own fetch.
+  - Test: `release/test_release.py` (partial: reproducibility and tree ID;
+    the sign job's comparison by AC-6)
+  - Since: this change
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
   existing `<version>` tag, MUST fail when an existing tag points to a digest
   without a marketplace attestation, MUST complete every version left
-  untagged by an earlier run, and MUST NOT build, attest or tag a yanked
-  version.
-  - Test: none
-  - Since: not implemented
+  untagged by an earlier run, MUST NOT tag a version that is not newer than
+  the newest tagged version of the package, and MUST NOT build, attest or
+  tag a yanked version.
+
+  The last ordering rule replaces REG-6 at release time: the gate compares
+  against the previous entry, the sign job against what consumers can
+  already pull.
+
+  - Test: manual: AC-6
+  - Since: this change
 
 - PUB-3: Every published artifact MUST carry a GitHub artifact attestation
   (SLSA provenance) from the release workflow. The documented verification
   MUST match the certificate identity
   `https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main`
   exactly.
-  - Test: none
-  - Since: not implemented
+  - Test: manual: AC-6
+  - Since: this change
 
 - PUB-4: The release workflow MUST publish an attested index as
   `ghcr.io/kadet-hub/index` with a `serial` that increases with every
@@ -629,13 +660,23 @@ parameters:
   Kapitan range, krab result, output capabilities, unparsed outputs,
   binaries, chart digests, owners, source repository and SHA, `yanked` with
   its reason, and advisories (INC-1).
-  - Test: none
-  - Since: not implemented
+
+  The index job reads the versions from the registry tags, each version's
+  metadata from its config blob, and accepts only digests with a marketplace
+  attestation. Versions of a removed entry stay listed as yanked with reason
+  `entry removed`. The index is tagged `<serial>` and `latest`; the serial
+  is the verified `latest` serial plus one, and an index whose content
+  equals `latest` apart from the serial is not published. Advisories stay
+  empty until INC-1 is implemented.
+
+  - Test: `release/test_release.py` (partial: content and serial; publishing
+    by AC-6)
+  - Since: this change
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
-  - Test: none
-  - Since: not implemented
+  - Test: `release/test_release.py::Index.test_yanked_and_removed`
+  - Since: this change
 
 ## Consumers
 
@@ -733,7 +774,8 @@ separate step before the sandboxed compile.
   attested from another branch fails verification, and so does an index with
   a lower serial. A run that fails between push and attest is completed by
   the next run. A yanked and deleted version stays deleted after the next
-  push. Check: manual: release rehearsal in a test organization.
+  push. Check: manual: release rehearsal in the fork `neat-bot/registry`,
+  whose workflow identity differs from `kadet-hub`'s only by the owner.
 - AC-7 (SEC-15, SEC-16): moving a tag of a listed sample repository produces
   an issue on the next scheduled run. Check: manual: scheduled run in a test
   organization.
@@ -824,7 +866,8 @@ None.
 | `tests/consumers/` | AC-10 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
-| `.github/workflows/release.yml` | PUB-1 to PUB-5, index |
+| `.github/workflows/release.yml` | PUB-1 to PUB-5, GI-8, index |
+| `release/` | PUB-1, PUB-4, PUB-5: `build.py`, `tree_id.py`, `index.py` |
 | `.github/workflows/scheduled.yml` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `sandbox/gitlab-ci.yml`, `consumer-selftest` | CON-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
