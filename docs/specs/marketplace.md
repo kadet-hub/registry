@@ -356,14 +356,17 @@ fails the gate, apart from exceptions under SEC-14.
   compile shows an `execve` or `execveat` attempt other than the Python
   interpreter, Kapitan's own probes and the declared binaries, a declared
   binary called with a subcommand or flag `policy/binaries.txt` does not
-  allow, a `connect`, `sendto` or `sendmsg` outside `AF_UNIX`, a `bind`
-  other than loopback port 0, an `open` of a decoy file (SEC-11) or of
+  allow, a `connect` or `sendto` outside `AF_UNIX`, a `sendmsg` with an
+  `AF_INET` or `AF_INET6` destination (`namelen` 16 or 28), a `bind` other
+  than loopback port 0, an `open` of a decoy file (SEC-11) or of
   `/proc/*/environ`, or an `open` for writing outside the directories SEC-9
   makes writable. A trace log above its size cap MUST fail the gate.
 
   gVisor writes the trace outside the sandbox, so the generator can neither
   disable nor forge it, and it follows child processes. Its exit line for
-  `execve` reports 0 for failed lookups too, so the policy judges attempts.
+  `execve` reports 0 even when the call failed, so the policy judges
+  attempts, and it does not decode a `sendmsg` destination, only its
+  length.
   Kapitan 0.36.3 itself, in every worker process, tries `git version` along
   `PATH`, runs `uname -p`, and creates an `AF_INET6` socket bound to `::1`
   port 0; `policy/binaries.txt` lists these probes with their exact
@@ -681,7 +684,11 @@ separate step before the sandboxed compile.
   `consumer-selftest` over `tests/consumers/`.
 - AC-11 (SEC-9, SEC-10): gVisor installs on a GitHub-hosted `ubuntu-24.04`
   runner, runs Kapitan's multiprocessing compile with `--network none`, and
-  its trace records `execve` of a helm child process. Check: workflow
+  its trace records `execve` of a helm child process. Hostile probes that
+  swallow their errors appear in the trace: `connect` and `sendto` to an
+  external address, `sendmsg` with an `AF_INET` destination, a process
+  started through `_posixsubprocess.fork_exec`, and an attempt to execute a
+  file written to `/tmp`, which `noexec` blocks. Check: workflow
   `gvisor-spike` (passed with gVisor release-20260928.0).
 
 ## Residual risk
