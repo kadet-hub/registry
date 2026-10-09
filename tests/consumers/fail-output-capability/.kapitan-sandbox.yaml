@@ -1,0 +1,4 @@
+index_serial: 0
+hosts: {}
+output_capabilities:
+  "compiled/logging/*": [host-path]

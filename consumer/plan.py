@@ -160,7 +160,8 @@ def main():
             print(f"::notice::{n}")
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump({"deps": deps, "binaries": binaries, "policy_binaries": policy.get("binaries", []),
-                   "inventory_backend": policy.get("inventory_backend")}, f)
+                   "inventory_backend": policy.get("inventory_backend"),
+                   "output_capabilities": policy.get("output_capabilities", {})}, f)
     if findings:
         print("\n".join(findings))
     return 1 if findings else 0

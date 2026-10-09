@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Consumer flow (CON-1, CON-2): inventory in the sandbox, check and fetch the
-# dependencies outside it, compile in the sandbox.
+# Consumer flow (CON-1, CON-1b, CON-2): inventory in the sandbox, check and
+# fetch the dependencies outside it, compile in the sandbox, judge the output.
 #
 # Usage: run <project> <result dir>
 # Needs: OWNER (registry owner), GH_TOKEN, gVisor with the runsc-trace
@@ -117,4 +117,15 @@ while IFS= read -r binary; do
   allow+=(--allow "${binary// /-}")
 done < <(jq -r '(.policy_binaries + .binaries) | unique | .[]' "$work/plan.json")
 mkdir -p -- "$result"
+result=$(cd -- "$result" && pwd)
 "$root/sandbox/run" "${allow[@]}" --result "$result" "$work/project" compile --output-path /out "${backend_args[@]}"
+
+# CON-1b: SEC-12 over the output, capabilities accepted per path glob; files
+# without a parser are listed only.
+output=(--unparsed '*')
+while IFS= read -r capability; do
+  output+=(--allow "$capability")
+done < <(jq -r '.output_capabilities | to_entries[] | .key as $g | .value[] | "\($g)=\(.)"' "$work/plan.json")
+docker run --rm --network none --read-only --user "$(id -u):$(id -g)" --cap-drop ALL \
+  -v "$root:/registry:ro" -v "$result:/out:ro" "$SANDBOX_IMAGE" \
+  python -I /registry/sandbox/output_check.py --out /out --policy /registry/policy/output "${output[@]}"
