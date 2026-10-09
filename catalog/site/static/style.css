@@ -9,6 +9,7 @@ header { display: flex; gap: 1rem; align-items: baseline; flex-wrap: wrap; }
 header span, footer, small, dt { color: var(--muted); }
 a { color: var(--accent); }
 .brand { font-weight: 700; font-size: 1.25rem; text-decoration: none; }
+.intro { max-width: 48rem; }
 .filters { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1rem; }
 #search { width: 100%; padding: .6rem .8rem; font: inherit; border: 1px solid var(--line); border-radius: .5rem; background: var(--card); color: var(--fg); }
 #tags { display: flex; flex-wrap: wrap; gap: .4rem; }
