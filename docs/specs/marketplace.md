@@ -955,9 +955,13 @@ failed lookup shows the user ID or no stars.
   symlink in `/tmp`, read `~/.aws/credentials` after `chdir`, and run an
   undeclared binary each fail. Check:
   `gate-selftest`.
-- AC-5 (CMP-4): a sample importing a Kapitan internal missing from krab's shim
-  is recorded `incompatible` and passes; a sample whose payload fires only
-  under krab fails. Check: `gate-selftest`.
+- AC-5 (CMP-4): a sample whose inventory uses reclass reference syntax, which
+  krab does not render, is recorded `incompatible` and passes; `pass-plain`
+  is recorded `compatible`; a sample whose payload fires only under krab
+  fails. Check: `gate-selftest`.
+
+  The SEC-3 import allowlist names only modules krab's shim provides, so no
+  sample can import a missing Kapitan internal and still pass.
 - AC-6 (PUB-1 to PUB-5, CON-2): after a merge, the documented verification
   passes for artifact and index, and a second run pushes nothing. An artifact
   attested from another branch fails verification, and so does an index with

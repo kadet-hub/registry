@@ -1,8 +1,7 @@
-from kapitan.inputs.kadet import BaseObj
-from kapitan.refs.base import RefController
+from kapitan.inputs.kadet import BaseObj, inventory
 
 
 def main(input_params=None):
     obj = BaseObj()
-    obj.root.config = {"kind": "ConfigMap", "data": {"refs": RefController.__name__}}
+    obj.root.config = {"kind": "ConfigMap", "data": {"name": inventory().parameters.name}}
     return obj

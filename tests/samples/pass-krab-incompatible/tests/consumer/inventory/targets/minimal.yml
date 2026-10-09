@@ -1,4 +1,5 @@
 parameters:
+  name: ${kapitan:vars:target}
   kapitan:
     vars:
       target: minimal
