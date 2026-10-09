@@ -481,7 +481,7 @@ review go into the review comment and do not fail the gate.
   the index.
 
   - Test: `sandbox/test_output_check.py`; workflow job `gate-selftest` (AC-8)
-  - Since: this change
+  - Since: #19
 
 - SEC-13: The review comment MUST state the size of the fixture output diff
   against the previously approved version in files and hunks, show hunks with
