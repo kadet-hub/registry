@@ -545,8 +545,21 @@ review go into the review comment and do not fail the gate.
   which fail the gate. Whether the output equals Kapitan's, apart from
   `.krab-manifest.json`, MUST be recorded in the index as `compatible` or
   `incompatible` and MUST NOT fail the gate while DEC-4 holds.
-  - Test: none
-  - Since: not implemented
+
+  krab evaluates kadet components in `/opt/krab-python`, a venv in the
+  sandbox image with only `kadet` and `jinja2`, so a component that imports
+  a Kapitan internal krab's `kapitan` shim lacks fails under krab instead of
+  finding the real Kapitan. It compiles with `--no-daemon` and one worker,
+  and is compared with the first backend's Kapitan output. A krab compile
+  that exits non-zero without a trace or output finding is `incompatible`.
+
+  The release build job repeats the gate compile, including krab, for every
+  version not yet published and writes the result into the metadata; a
+  finding fails the build. Published versions keep their metadata, since
+  the sign job skips them.
+
+  - Test: workflow job `gate-selftest` (AC-5)
+  - Since: this change
 
 ## Quality gate
 
@@ -600,9 +613,9 @@ code diff and the output diff, not only the verdict.
   backtick run in the report, so text from the entry or the generator tree
   cannot add markup, links or mentions.
 
-  - Test: none (partial: results, review and warning lines and the compare
-    link; krab result, exceptions, capability changes and the output diff
-    follow with CMP-4, SEC-14, SEC-12 and SEC-13)
+  - Test: none (partial: results, review and warning lines, the compare
+    link, the krab result and SEC-12 matches; exceptions, capability changes
+    and the output diff follow with SEC-14 and SEC-13)
   - Since: #12
 
 ## Publishing
@@ -614,20 +627,20 @@ already has them. The workflow takes the registry namespace and the
 certificate identity from its own repository, so the same file runs in the
 rehearsal fork (AC-6); the documented verification names `kadet-hub`.
 
-The build job has `contents: read` only. It fetches each source without
-checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
+The build job has `contents: read` and `packages: read` only. It fetches
+each source without checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
 (GI-9), repeats REG-2 and REG-3 across all entries on `main`, and writes a
 normalized tar of the tree `source.sha:source.path` with its metadata: the
 manifest fields the index lists, the source, and the tree ID computed from the
-files. It runs the checks in the sandbox image without network.
+files. It runs the checks in the sandbox image without network, and the
+compile gate under gVisor for versions without a published tag (CMP-4).
 
 The sign job runs once per entry in the `release` environment. It fetches
 `source.sha` itself, blobless, compares the git tree of `source.path` with
 the tree ID of the tar's contents and with the metadata, writes the OCI
 manifest itself, pushes config and layer to `ghcr.io/kadet-hub/<name>` by
 digest, attests the digest, and then sets the `<version>` tag. The krab
-result comes from the gate's krab check of the merged pull request once
-CMP-4 exists and is `null` until then.
+result is the build job's (CMP-4).
 
 The artifact is an OCI image manifest with artifact type
 `application/vnd.kadet-hub.generator.v1`, the metadata as config blob
