@@ -803,7 +803,7 @@ own.
   before applying it (CON-3).
 
   - Test: `sandbox/test_output_check.py`; `consumer-selftest` (AC-10)
-  - Since: this change
+  - Since: #22
 
 - CON-2: Verification MUST check the artifact attestation with
   `gh attestation verify oci://ghcr.io/kadet-hub/<name>@sha256:<digest>
