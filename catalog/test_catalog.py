@@ -28,16 +28,21 @@ INDEX = {"serial": 7, "generators": {
 }}
 
 
+def build(index, tmp):
+    path = os.path.join(tmp, "index.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(index, f)
+    out = os.path.join(tmp, "out")
+    env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1")
+    subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
+    return out
+
+
 class Site(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
-        index = os.path.join(cls.tmp.name, "index.json")
-        with open(index, "w", encoding="utf-8") as f:
-            json.dump(INDEX, f)
-        cls.out = os.path.join(cls.tmp.name, "out")
-        env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1")
-        subprocess.run([os.path.join(HERE, "build"), index, cls.out], env=env, check=True)
+        cls.out = build(INDEX, cls.tmp.name)
 
     @classmethod
     def tearDownClass(cls):
@@ -72,6 +77,18 @@ class Site(unittest.TestCase):
         for html in (self.page(), self.page("generators", "demo"), self.page("generators", "old")):
             for ref in re.findall(r'<(?:script|link|img)\b[^>]*\b(?:src|href)="([^"]*)"', html):
                 self.assertNotRegex(ref, r"^(https?:)?//", ref)
+
+    def test_home_links_both_guides(self):
+        html = self.page()
+        for doc in ("consumers.md", "authors.md"):
+            self.assertIn(f"https://github.com/{OWNER}/registry/blob/main/docs/{doc}", html)
+        self.assertNotIn("No generators listed yet", html)
+
+    def test_empty_index_says_so(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = build({"serial": 1, "generators": {}}, tmp)
+            with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
+                self.assertIn("No generators listed yet", f.read())
 
 
 class View(unittest.TestCase):

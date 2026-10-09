@@ -1,11 +1,15 @@
 {{ define "main" }}
-{{ $all := slice }}{{ range site.Data.catalog.generators }}{{ $all = $all | append .tags }}{{ end }}
+{{ $docs := printf "https://github.com/%s/registry/blob/main/docs/" site.Data.catalog.owner }}
+<p class="intro">Each listed version passed the marketplace gate: secret, malware and code scans, a fixture compile in a gVisor sandbox and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.
+<a href="{{ $docs }}consumers.md">Use a generator</a> · <a href="{{ $docs }}authors.md">Add a generator</a></p>
+{{ with site.Data.catalog.generators }}
+{{ $all := slice }}{{ range . }}{{ $all = $all | append .tags }}{{ end }}
 <div class="filters">
   <input id="search" type="search" placeholder="Search generators" aria-label="Search generators">
   <div id="tags">{{ range ($all | uniq | sort) }}<button type="button" data-tag="{{ . }}">{{ . }}</button>{{ end }}</div>
 </div>
 <ul class="cards">
-{{ range site.Data.catalog.generators }}
+{{ range . }}
   <li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}" data-tags="{{ delimit .tags " " }}">
     <a href="{{ printf "/generators/%s/" .name | relURL }}"><h2>{{ .name }}</h2></a>
     <p>{{ .description }}</p>
@@ -21,4 +25,7 @@
 </ul>
 <p id="empty" hidden>No generator matches.</p>
 <script src="{{ "search.js" | relURL }}"></script>
+{{ else }}
+<p>No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>
+{{ end }}
 {{ end }}
