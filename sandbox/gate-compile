@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile a generator's fixture project in the gVisor sandbox and judge the
-# trace and the output (SEC-9, SEC-10, SEC-11).
+# trace and the output (SEC-9 to SEC-12).
 #
 # Usage: gate-compile <generator dir> <name>
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
@@ -9,6 +9,7 @@ set -euo pipefail
 gen=$1
 name=$2
 here=$(cd -- "$(dirname -- "$0")" && pwd)
+root=$(cd -- "$here/.." && pwd)
 
 manifest=$gen/kapitan-generator.yaml
 fixtures=$(yq -r '.fixtures' -- "$manifest")
@@ -20,6 +21,13 @@ allow=()
 while IFS= read -r binary; do
   allow+=(--allow "${binary// /-}")
 done < <(yq -r '.binaries // [] | .[]' -- "$manifest")
+output=()
+while IFS= read -r capability; do
+  output+=(--allow "$capability")
+done < <(yq -r '.output_capabilities // [] | .[]' -- "$manifest")
+while IFS= read -r glob; do
+  output+=(--unparsed "$glob")
+done < <(yq -r '.unparsed_outputs // [] | .[]' -- "$manifest")
 
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
@@ -30,4 +38,14 @@ cp -RP -- "$gen/$fixtures/." "$work/project/"
 cp -RP -- "$gen" "$work/project/lib/$name"
 rm -f -- "$work/project/.kapitan"
 
-"$here/run" "${allow[@]}" "$work/project" compile --output-path /out
+mkdir -- "$work/out"
+status=0
+"$here/run" "${allow[@]}" --result "$work/out" "$work/project" compile --output-path /out || status=1
+
+# SEC-12 in the sandbox image without network; the output is data only.
+docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+  --mount "type=bind,src=$root,dst=/base,readonly" \
+  --mount "type=bind,src=$work/out,dst=/out,readonly" \
+  "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
+  python -I /base/sandbox/output_check.py --out /out --policy /base/policy/output "${output[@]}" || status=1
+exit "$status"

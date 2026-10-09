@@ -1,0 +1,3 @@
+name: fail-cluster-admin
+binaries: []
+fixtures: tests/consumer

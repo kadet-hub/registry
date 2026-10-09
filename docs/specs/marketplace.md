@@ -1036,7 +1036,7 @@ None.
 | `policy/output/` | SEC-12 rego rules |
 | `policy/licenses.txt` | QA-2 |
 | `policy/ruff.toml` | QA-3 |
-| `sandbox/` | SEC-9, SEC-10, SEC-11: image, `gate-compile` runner, `check.py`; reused by CON-1 |
+| `sandbox/` | SEC-9 to SEC-12: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
 | `tests/consumers/` | AC-10 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |

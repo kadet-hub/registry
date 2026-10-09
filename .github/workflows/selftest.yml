@@ -31,7 +31,7 @@ jobs:
 
       - name: Unit tests on the runner
         run: |
-          python3 -m unittest discover -s sandbox -v
+          python3 -m unittest discover -s sandbox -p 'test_check.py' -v
           python3 -m unittest discover -s gate -p 'test_fetch*.py' -v
           python3 -m unittest discover -s release -v
           python3 -m unittest discover -s catalog -v
@@ -41,7 +41,7 @@ jobs:
       - name: Unit tests in the sandbox image
         run: |
           docker run --rm --network none -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox \
-            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && cd ../consumer && python -m unittest discover -v'
+            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && cd ../consumer && python -m unittest discover -v && cd ../sandbox && python -m unittest discover -p "test_output*.py" -v'
 
       - name: Gate selftest
         run: tests/selftest
