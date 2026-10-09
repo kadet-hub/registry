@@ -165,6 +165,10 @@ class Manifest(unittest.TestCase):
         self.assertTrue(has(self.c.manifest(manifest() + "dependencies: [requests]\n"), "QA-5"))
         self.assertTrue(has(self.c.manifest(manifest().replace("tests/consumer", "../outside")), "QA-5"))
 
+    def test_tags_come_from_the_list(self):
+        self.assertEqual(self.c.manifest(manifest() + "tags: [helm, kubernetes]\n"), [])
+        self.assertTrue(has(self.c.manifest(manifest() + "tags: [crypto]\n"), "QA-5"))
+
 
 if __name__ == "__main__":
     unittest.main()

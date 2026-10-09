@@ -50,6 +50,9 @@ class Tree(unittest.TestCase):
             self.assertNotEqual(tree_id(read_tar(os.path.join(d, "a.tar"))), git_tree(src))
 
 
+NOW, LATER = "2026-10-09T00:00:00Z", "2026-10-10T00:00:00Z"
+
+
 def version(name, v, digest="sha256:" + "a" * 64):
     return {"digest": digest, "meta": {"name": name, "version": v, "tree": "t", "license": "MIT"}}
 
@@ -57,7 +60,7 @@ def version(name, v, digest="sha256:" + "a" * 64):
 class Index(unittest.TestCase):
     def test_yanked_and_removed(self):
         index = build([version("gen", "1.0.0"), version("gen", "1.1.0"), version("old", "0.1.0")],
-                      {"gen": {"yanked": {"1.0.0": "broken"}}}, None)
+                      {"gen": {"yanked": {"1.0.0": "broken"}}}, None, NOW)
         gens = index["generators"]
         self.assertEqual(index["serial"], 1)
         self.assertEqual(gens["gen"]["1.0.0"]["yanked"], "broken")
@@ -68,10 +71,16 @@ class Index(unittest.TestCase):
 
     def test_serial_increases_only_on_change(self):
         entries = {"gen": {}}
-        first = build([version("gen", "1.0.0")], entries, None)
-        self.assertIsNone(build([version("gen", "1.0.0")], entries, first))
-        second = build([version("gen", "1.0.0")], {"gen": {"yanked": {"1.0.0": "x"}}}, first)
+        first = build([version("gen", "1.0.0")], entries, None, NOW)
+        self.assertIsNone(build([version("gen", "1.0.0")], entries, first, LATER))
+        second = build([version("gen", "1.0.0")], {"gen": {"yanked": {"1.0.0": "x"}}}, first, LATER)
         self.assertEqual(second["serial"], 2)
+
+    def test_published_is_kept_from_the_previous_index(self):
+        first = build([version("gen", "1.0.0")], {"gen": {}}, None, NOW)
+        second = build([version("gen", "1.0.0"), version("gen", "1.1.0")], {"gen": {}}, first, LATER)
+        self.assertEqual(second["generators"]["gen"]["1.0.0"]["published"], NOW)
+        self.assertEqual(second["generators"]["gen"]["1.1.0"]["published"], LATER)
 
 
 if __name__ == "__main__":

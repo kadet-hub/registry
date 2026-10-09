@@ -11,9 +11,10 @@ Exits 0 after writing --out, 3 when the content equals --previous.
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 
 
-def build(versions, entries, previous):
+def build(versions, entries, previous, now):
     generators = {}
     for v in versions:
         meta = v["meta"]
@@ -24,7 +25,8 @@ def build(versions, entries, previous):
         else:
             yanked = (entry.get("yanked") or {}).get(version)
         record = {k: meta[k] for k in meta if k not in ("name", "version")}
-        record.update(digest=v["digest"], yanked=yanked, advisories=[])
+        before = ((previous or {}).get("generators", {}).get(name) or {}).get(version) or {}
+        record.update(digest=v["digest"], yanked=yanked, advisories=[], published=before.get("published", now))
         generators.setdefault(name, {})[version] = record
     if previous is not None and previous["generators"] == generators:
         return None
@@ -46,7 +48,8 @@ def main():
     if a.previous:
         with open(a.previous, encoding="utf-8") as f:
             previous = json.load(f)
-    index = build(versions, entries, previous)
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    index = build(versions, entries, previous, now)
     if index is None:
         print("index unchanged")
         return 3

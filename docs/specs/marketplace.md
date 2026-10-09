@@ -845,7 +845,7 @@ failed lookup shows the user ID or no stars.
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
   `terraform`, `cloud`, `observability`, `security`, `networking`,
-  `database`, `ci`.
+  `database`, `ci`, at most five per manifest.
   - Test: `gate/test_check_entry.py` (`Manifest`)
   - Since: this change
 
