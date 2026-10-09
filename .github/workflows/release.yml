@@ -189,6 +189,8 @@ jobs:
 
   catalog:
     needs: index
+    # always(): index runs after a skipped sign job, which would skip this one too
+    if: always() && needs.index.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -217,6 +219,7 @@ jobs:
 
   pages:
     needs: catalog
+    if: always() && needs.catalog.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
