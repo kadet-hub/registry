@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Compile a generator's fixture project in the gVisor sandbox and judge the
-# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2).
+# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4).
 #
 # Usage: gate-compile <generator dir> <name>
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
+# Writes compatible or incompatible (CMP-4) to $KRAB_RESULT if set.
 set -euo pipefail
 
 gen=$1
@@ -48,6 +49,14 @@ while IFS= read -r target; do
 done < <(find "$work/project/inventory/targets" -type f \( -name '*.yml' -o -name '*.yaml' \) -printf '%f\n' 2>/dev/null | sed -E 's/\.ya?ml$//' | sort -u)
 
 status=0
+# SEC-12 in the sandbox image without network; the output is data only.
+sec12() {
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" \
+    --mount "type=bind,src=$1,dst=/out,readonly" \
+    "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
+    python -I /base/sandbox/output_check.py --out /out --policy /base/policy/output "${output[@]}" || status=1
+}
 # compile <out dir> [run options]: compile into <out dir> on $backend.
 compile() {
   local out=$1
@@ -66,12 +75,7 @@ for backend in "${backends[@]}"; do
       status=1
     fi
   done
-  # SEC-12 in the sandbox image without network; the output is data only.
-  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
-    --mount "type=bind,src=$root,dst=/base,readonly" \
-    --mount "type=bind,src=$work/out-$backend,dst=/out,readonly" \
-    "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
-    python -I /base/sandbox/output_check.py --out /out --policy /base/policy/output "${output[@]}" || status=1
+  sec12 "$work/out-$backend"
 done
 
 # CMP-2: the same output with CI set, on the first backend.
@@ -83,4 +87,19 @@ if ! (cd -- "$work" && diff -r -- "out-$backend" out-ci) >"$work/ci.diff"; then
   head -n 20 -- "$work/ci.diff"
   status=1
 fi
+
+# CMP-4: krab under the same checks; only a finding fails the gate.
+echo "### krab"
+mkdir -- "$work/out-krab"
+rc=0
+"$here/run" "${allow[@]}" --allow krab-kadet --program krab --result "$work/out-krab" "$work/project" \
+  compile --output-path /out --parallelism 1 || rc=$?
+((rc != 1)) || status=1
+sec12 "$work/out-krab"
+krab=incompatible
+if ((rc == 0)) && diff -r -x .krab-manifest.json -- "$work/out-${backends[0]}" "$work/out-krab" >/dev/null; then
+  krab=compatible
+fi
+echo "CMP-4: krab $krab"
+if [[ -n ${KRAB_RESULT:-} ]]; then echo "$krab" >"$KRAB_RESULT"; fi
 exit "$status"
