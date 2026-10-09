@@ -27,7 +27,7 @@
       "additionalProperties": {
         "type": "array",
         "uniqueItems": true,
-        "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
+        "items": {"enum": ["privileged", "added-capabilities", "host-path", "host-namespaces", "rbac-admin", "admission-webhook", "tf-provisioner", "tf-external", "dockerfile-remote"]}
       }
     }
   },

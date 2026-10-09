@@ -38,7 +38,7 @@ class OutputCheck(unittest.TestCase):
             f.write(text)
 
     def run_check(self, allow=(), unparsed=()):
-        return check(self.out, POLICY, set(allow), list(unparsed))
+        return check(self.out, POLICY, list(allow), list(unparsed))
 
     def test_plain_output_passes(self):
         self.write("compiled/t/cm.yml", "kind: ConfigMap\ndata: {a: b}\n")
@@ -52,6 +52,15 @@ class OutputCheck(unittest.TestCase):
         findings, notes = self.run_check(allow=["privileged", "host-path", "host-namespaces"])
         self.assertEqual(findings, [])
         self.assertIn("compiled/t/ds.yml", notes[0])
+
+    def test_capability_allowed_only_below_its_glob(self):
+        self.write("compiled/logging/ds.yml", DAEMONSET)
+        self.write("compiled/app/ds.yml", DAEMONSET)
+        findings, notes = self.run_check(allow=["compiled/logging/*=privileged", "compiled/logging/*=host-path",
+                                                "compiled/*=host-namespaces"])
+        self.assertEqual(sorted(f.split(": ")[1:3] for f in findings),
+                         [["host-path", "compiled/app/ds.yml"], ["privileged", "compiled/app/ds.yml"]])
+        self.assertEqual(len(notes), 4)
 
     def test_kubernetes_rules_reach_list_items_in_json(self):
         doc = {"kind": "List", "items": [

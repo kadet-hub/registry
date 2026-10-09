@@ -57,6 +57,8 @@ hosts:                        # dependency hosts you allow, per type
   git: [github.com]
   https: []
 binaries: ["helm template"]   # programs your own inputs run
+output_capabilities:          # output you accept, per path below the output dir
+  "compiled/logging/*": [host-path]
 ```
 
 It then:
@@ -71,7 +73,14 @@ It then:
    digest the index records;
 4. compiles in the sandbox without network, with decoy credentials and a
    syscall trace that fails on any program not declared by the generators or
-   your policy.
+   your policy;
+5. checks the output against the marketplace's output rules (privileged
+   containers, `hostPath`, `cluster-admin` bindings, admission webhooks,
+   Terraform provisioners and others; the list is under SEC-12 in the
+   [spec](specs/marketplace.md#sandbox-and-runtime-detection)) and fails on
+   a match that `output_capabilities` does not accept for its path. `*`
+   in a glob also matches `/`. Files the rules cannot parse are listed, not
+   judged.
 
 `.git` and `.kapitan` are not passed to Kapitan. Missing refs must exist
 before the workflow runs; it compiles without `--reveal` and without ref

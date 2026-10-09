@@ -1,10 +1,12 @@
 """Judge compile output against the SEC-12 rules in policy/output/.
 
-Usage: output_check.py --out DIR --policy DIR [--allow CAPABILITY]... [--unparsed GLOB]...
+Usage: output_check.py --out DIR --policy DIR [--allow [GLOB=]CAPABILITY]... [--unparsed GLOB]...
 
 Runs conftest per parser over the regular files below --out. A match of a
-capability not passed with --allow, a file without a parser that matches no
---unparsed glob, a non-regular file and a conftest error are findings.
+capability not passed with --allow for a glob matching the file (no glob:
+every file), a file without a parser that matches no --unparsed glob, a
+non-regular file and a conftest error are findings. Globs match the path
+relative to --out; "*" also matches "/".
 Prints every finding and every allowed match; exits 1 on any finding.
 """
 
@@ -51,6 +53,7 @@ def conftest(parser, namespace, policy, paths):
 
 
 def check(out, policy, allow, unparsed):
+    allow = [(g or "*", c) for g, _, c in (a.rpartition("=") for a in allow)]
     findings, notes, files = [], [], {}
     for dirpath, dirnames, filenames in os.walk(out):
         for name in sorted(dirnames + filenames):
@@ -78,7 +81,7 @@ def check(out, policy, allow, unparsed):
             for failure in result.get("failures") or []:
                 capability, _, detail = failure["msg"].partition(": ")
                 line = f"{capability}: {rel}: {detail}"
-                if capability in allow:
+                if any(c == capability and fnmatch.fnmatchcase(rel, g) for g, c in allow):
                     notes.append(f"SEC-12: declared {line}")
                 else:
                     findings.append(f"SEC-12: {line}")
@@ -93,7 +96,7 @@ def main():
     p.add_argument("--unparsed", action="append", default=[])
     a = p.parse_args()
     try:
-        findings, notes = check(a.out, a.policy, set(a.allow), a.unparsed)
+        findings, notes = check(a.out, a.policy, a.allow, a.unparsed)
     except (RuntimeError, OSError, ValueError, KeyError) as e:
         print(f"SEC-12: {e}")
         return 1
