@@ -515,17 +515,25 @@ review go into the review comment and do not fail the gate.
 - CMP-1: Every target of the fixture project MUST compile with the pinned
   Kapitan version on every backend in `inventory_backends`, exit 0 and produce
   at least one file per target.
-  - Test: none
-  - Since: not implemented
+
+  A manifest without `inventory_backends` is compiled with `reclass`,
+  Kapitan's default. Targets are the file names below `inventory/targets/`
+  without extension, as Kapitan names them without `--compose-target-name`.
+  Each backend's output goes through SEC-11 and SEC-12.
+
+  - Test: workflow job `gate-selftest` (AC-2, AC-8)
+  - Since: this change
 
 - CMP-2: The fixture project MUST compile to identical output in a second run
   with `CI`, `GITHUB_ACTIONS` and `GITLAB_CI` set.
 
   This detects payloads keyed on running in CI. Fixtures set values that
-  charts would otherwise randomize (`randAlphaNum`, `genCA`).
+  charts would otherwise randomize (`randAlphaNum`, `genCA`). The second run
+  uses the first backend in `inventory_backends`, with all three set to
+  `true`.
 
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `gate-selftest` (AC-8)
+  - Since: this change
 
 - CMP-3: The manifest's `kapitan` range MUST include the pinned Kapitan
   version.
@@ -916,8 +924,9 @@ failed lookup shows the user ID or no stars.
   job `gate-selftest` over `tests/samples/`.
 - AC-2 (CMP-1, CMP-2, QA-1 to QA-5, SEC-9, SEC-10): the benign samples pass,
   including one that wraps `helm template` with a declared chart and one
-  using omegaconf and `getattr` (flagged for review, not failed). Check:
-  `gate-selftest`.
+  compiled on `reclass-rs` and `omegaconf` that calls `getattr` with a
+  computed name (flagged for review, not failed). Check: `gate-selftest` (partial: QA-1 to QA-4 not
+  implemented).
 - AC-3 (REG-3, REG-4, REG-5, REG-8, GI-2, GI-9, SEC-8): an entry named
   `kubernet-es` next to a reserved `kubernetes`, an entry or bump authored by
   a non-owner, a bump changing `source.repo`, a non-maintainer deletion or
@@ -964,8 +973,8 @@ failed lookup shows the user ID or no stars.
 - AC-8 (SEC-11, SEC-12, CMP-2): samples that copy a decoy value into a
   ConfigMap, emit an undeclared `cluster-admin` binding, emit a `.tf.json`
   with a `local-exec` provisioner, and change output when `CI` is set each
-  fail; a sample that emits a `hostPath` and declares `host-path` passes.
-  Check: `gate-selftest` (partial: the `CI` sample follows with CMP-2).
+  fail, and so does a target that produces no file; a sample that emits a
+  `hostPath` and declares `host-path` passes. Check: `gate-selftest`.
 - AC-9 (GI-1, GI-2, GI-5, GI-10): a fork pull request that edits the gate
   workflow, edits `policy/`, or adds a workflow reporting a check named like
   the gate cannot make the pull request mergeable, and no workflow uses a
