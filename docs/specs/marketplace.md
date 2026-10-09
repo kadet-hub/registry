@@ -522,7 +522,7 @@ review go into the review comment and do not fail the gate.
   Each backend's output goes through SEC-11 and SEC-12.
 
   - Test: workflow job `gate-selftest` (AC-2, AC-8)
-  - Since: this change
+  - Since: #23
 
 - CMP-2: The fixture project MUST compile to identical output in a second run
   with `CI`, `GITHUB_ACTIONS` and `GITLAB_CI` set.
@@ -533,7 +533,7 @@ review go into the review comment and do not fail the gate.
   `true`.
 
   - Test: workflow job `gate-selftest` (AC-8)
-  - Since: this change
+  - Since: #23
 
 - CMP-3: The manifest's `kapitan` range MUST include the pinned Kapitan
   version.
