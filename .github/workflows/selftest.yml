@@ -7,6 +7,7 @@ on:
       - scan/**
       - gate/**
       - release/**
+      - consumer/**
       - policy/**
       - tests/**
       - .github/actions/**
@@ -36,7 +37,23 @@ jobs:
       - name: Unit tests in the sandbox image
         run: |
           docker run --rm --network none -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox \
-            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v'
+            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && cd ../consumer && python -m unittest discover -v'
 
       - name: Gate selftest
         run: tests/selftest
+
+  consumer-selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-gvisor # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - name: Build sandbox image
+        run: docker build -t kadet-hub/sandbox sandbox
+
+      - name: Consumer selftest
+        run: tests/consumer-selftest

@@ -1,0 +1,26 @@
+name: consumer
+description: Check, fetch and compile a consumer project in the sandbox (CON-1, CON-2).
+inputs:
+  owner:
+    description: Registry owner; namespace and certificate identity
+    required: true
+  project:
+    description: Path of the consumer checkout
+    required: true
+  result:
+    description: Directory that receives the compiled output
+    required: true
+  token:
+    description: Token for gh attestation verify
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check, fetch and compile
+      shell: bash
+      env:
+        OWNER: ${{ inputs.owner }}
+        PROJECT: ${{ inputs.project }}
+        RESULT: ${{ inputs.result }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: '"$GITHUB_ACTION_PATH/../../../consumer/run" "$PROJECT" "$RESULT"'
