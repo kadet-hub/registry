@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # gate-selftest: run the static checks and the sandbox compile over every
-# sample. pass-* must pass; fail-* must fail with the finding in its expect
-# file. Samples that cannot live in the repository are generated here.
+# sample. pass-* must pass; fail-* must fail; both must report the line in
+# their expect file, which fail-* need. Samples that cannot live in the
+# repository are generated here.
 #
 # Usage: tests/selftest
 set -euo pipefail
@@ -50,8 +51,8 @@ for dir in "$work"/*/; do
   if [[ $got != "$want" ]]; then
     echo "::error::$name: want $want, got $got"
     failed=1
-  elif [[ $want == fail ]] && ! grep -qF -- "$(cat -- "$dir/expect")" "$report"; then
-    echo "::error::$name: failed without the expected finding: $(cat -- "$dir/expect")"
+  elif [[ $want == fail || -f $dir/expect ]] && ! grep -qF -- "$(cat -- "$dir/expect")" "$report"; then
+    echo "::error::$name: ${got}ed without the expected line: $(cat -- "$dir/expect")"
     failed=1
   fi
 done

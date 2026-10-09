@@ -1,0 +1,3 @@
+name: fail-krab-only
+binaries: []
+fixtures: tests/consumer

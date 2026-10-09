@@ -18,7 +18,7 @@ def trace(*lines, allow=()):
 
 
 def execve(path, argv, comm="python3.13"):
-    quoted = ", ".join('"' + a.replace("\\", "\\\\").replace('"', '\\"') + '"' for a in argv)
+    quoted = ", ".join('"' + a.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"' for a in argv)
     return f"{comm} E execve(0x7f01 {path}, 0x7f02 [{quoted}], {ENV})"
 
 
@@ -33,6 +33,14 @@ class Exec(unittest.TestCase):
             execve("/usr/local/bin/python3.13", ["/usr/local/bin/python3.13", "-B", "-c",
                    "from multiprocessing.resource_tracker import main;main(5)"], comm="kapitan"),
         ), [])
+
+    def test_krab_python_only_for_krab_and_its_runner(self):
+        lines = [execve(check.KRAB_PYTHON, [check.KRAB_PYTHON, *argv], comm="krab") for argv in check.KRAB_PROBES]
+        lines.append(execve(check.KRAB_PYTHON, [check.KRAB_PYTHON, "/tmp/xdg/cache/krab/kadet-runner/cf897a5b4b08724c/kadet_runner.py"], comm="krab"))
+        self.assertEqual(trace(*lines, allow=["krab-kadet"]), [])
+        self.assertEqual(len(trace(*lines)), 3)
+        for argv in (["-c", "import os"], ["/tmp/x.py"], ["/tmp/xdg/cache/krab/kadet-runner/cf897a5b4b08724c/kadet_runner.py", "-x"]):
+            self.assertTrue(trace(execve(check.KRAB_PYTHON, [check.KRAB_PYTHON, *argv]), allow=["krab-kadet"]), argv)
 
     def test_python_with_other_code_fails(self):
         self.assertTrue(trace(execve("/usr/local/bin/python3.13", ["python3", "-c", "import os"])))

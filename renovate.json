@@ -72,10 +72,11 @@
       "versioning": "loose"
     },
     {
-      "description": "gitleaks and conftest are pinned without the v prefix",
+      "description": "gitleaks, conftest and krab are pinned without the v prefix",
       "matchDepNames": [
         "gitleaks/gitleaks",
-        "open-policy-agent/conftest"
+        "open-policy-agent/conftest",
+        "kapicorp/krab"
       ],
       "extractVersion": "^v(?<version>.+)$"
     },

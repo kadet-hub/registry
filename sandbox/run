@@ -2,27 +2,30 @@
 # Run Kapitan over a project in the gVisor sandbox with decoy credentials and
 # judge the trace, the output and stdout (SEC-9, SEC-10, SEC-11).
 #
-# Usage: run [--allow NAME]... [--env NAME=VALUE]... [--result DIR] [--stdout FILE] <project> <kapitan args>...
+# Usage: run [--allow NAME]... [--env NAME=VALUE]... [--program kapitan|krab] [--result DIR] [--stdout FILE]
+#            <project> <args>...
 # The project is mounted read-only at /project, a 50 MiB noexec tmpfs at
 # /out. --result receives /out and --stdout the command's stdout, both after
 # the checks. Needs: Docker with the runsc-trace runtime logging to
 # $RUNSC_LOG, the image $SANDBOX_IMAGE, sudo, python3. Prints findings; exits
-# 1 on any.
+# 1 on any, 2 when the program failed without a finding.
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 log=${RUNSC_LOG:-/tmp/runsc}
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
-allow=() env=() result='' stdout=''
+allow=() env=() program=kapitan result='' stdout=''
 while (($#)); do
   case $1 in
     --allow) allow+=("--allow=$2"); shift 2 ;;
     --env) env+=("$2"); shift 2 ;;
+    --program) program=$2; shift 2 ;;
     --result) result=$2; shift 2 ;;
     --stdout) stdout=$2; shift 2 ;;
     *) break ;;
   esac
 done
+[[ $program =~ ^(kapitan|krab)$ ]] || { echo "run: unknown program $program"; exit 1; }
 project=$1
 shift
 
@@ -62,9 +65,10 @@ docker run --rm --runtime runsc-trace --network none --read-only \
   --mount "type=bind,src=$home,dst=/home/gate,readonly" \
   --mount "type=bind,src=$work/judge/out,dst=/out" \
   --env-file "$work/env" --workdir /project \
-  "$image" kapitan "$@" >"$work/judge/stdout" 2>"$work/stderr" || status=$?
+  "$image" "$program" "$@" >"$work/judge/stdout" 2>"$work/stderr" || status=$?
 if [[ $status -ne 0 ]]; then
-  echo "kapitan $1: exit $status"
+  echo "$program $1: exit $status"
+  status=2
   tail -n 20 -- "$work/stderr" "$work/judge/stdout"
 fi
 
