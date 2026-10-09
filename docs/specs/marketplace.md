@@ -708,6 +708,7 @@ commits a policy file `.kapitan-sandbox.yaml`, defined by
 
 ```yaml
 index_serial: 12              # lowest accepted index serial (CON-2)
+inventory_backend: omegaconf   # passed to inventory and compile; default reclass
 hosts:                        # allowed dependency hosts per type
   oci: [ghcr.io]
   helm: [charts.example.org]
@@ -729,8 +730,11 @@ own.
      empty environment, because the inventory backend imports
      `resolvers.py`;
   2. fail on a dependency in the inventory whose type or host the policy does
-     not allow, an OCI dependency without a digest, or a git dependency whose
-     `ref` is not a full commit SHA;
+     not allow, an `http` dependency, an OCI dependency without a digest or
+     with `insecure`, `tls_verify: false`, `subpath` or `media_type`, a helm
+     dependency without an exact `version` or with `helm_path`, a git
+     dependency whose `ref` is not a full commit SHA or with `submodules`, and
+     two dependencies sharing an `output_path`;
   3. fetch the dependencies outside the sandbox (`oras pull` by digest,
      `helm pull`, `git` at the commit) and verify marketplace artifacts and
      their charts (CON-2);
@@ -740,8 +744,12 @@ own.
   5. upload the compiled output as the workflow artifact `compiled`.
 
   The project is the checkout (`persist-credentials: false`) without `.git`
-  and `.kapitan`, mounted read-only together with the fetched dependencies.
-  Kapitan runs with fixed flags and without `--fetch`. A dependency URL built
+  and `.kapitan`, mounted read-only together with the fetched dependencies,
+  which replace whatever the checkout holds at their `output_path`. Kapitan
+  runs with fixed flags and without `--fetch`; the policy's
+  `inventory_backend` is the only flag the consumer chooses. git
+  dependencies are written with `gate/fetch_tree.py`, so its symlink and
+  size limits apply. A dependency URL built
   from `oc.env` resolves against the empty environment, so it either fails
   the inventory or names a host the policy has to allow.
 
