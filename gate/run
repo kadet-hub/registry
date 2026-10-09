@@ -64,7 +64,13 @@ echo "## Source"
 gen=$work/generator
 python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --path "$src_path" --out "$gen" || status=1
 
-check manifest --entry /work/entry.json --manifest "/work/generator/kapitan-generator.yaml" || exit 1
+# QA-1: LICENSE at the repository root, read from the fetched commit.
+if [[ $src_path != . ]]; then
+  "${gitc[@]}" --git-dir="$work/src.git" cat-file blob "$sha:LICENSE" >"$work/root-license" 2>/dev/null \
+    || rm -f -- "$work/root-license"
+fi
+check manifest --entry /work/entry.json --manifest "/work/generator/kapitan-generator.yaml" \
+  --root-license /work/root-license || exit 1
 
 echo "## Static checks"
 "$root/scan/static-scan" "$gen" || status=1

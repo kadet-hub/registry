@@ -1,4 +1,4 @@
-"""Checks on a pull request's entry and the generator manifest (GI-2, REG-*, QA-5).
+"""Checks on a pull request's entry and the generator manifest (GI-2, REG-*, QA-1, QA-2, QA-5).
 
 Runs in the sandbox image (yaml, jsonschema, packaging). Three steps, each
 reading only files the gate wrote and printing findings, exit 1 on any:
@@ -7,8 +7,8 @@ reading only files the gate wrote and printing findings, exit 1 on any:
            GI-2 on the changed files; writes the validated entry path or "".
   entry    --event E --head H --base B --reserved R --policy P --out O
            GI-1/QA-5 schema, layout, REG-2/3/5/6/8/9; writes entry.json.
-  manifest --event E --entry J --manifest M --policy P
-           QA-5 schema, REG-4, CMP-3, SEC-7, name match.
+  manifest --event E --entry J --manifest M --policy P [--root-license L]
+           QA-5 schema, REG-4, CMP-3, SEC-7, name match, QA-1, QA-2.
 """
 
 import argparse
@@ -158,6 +158,46 @@ def step_entry(a):
     return findings
 
 
+FENCE = re.compile(r"^(```|~~~)[^\n]*\n(.*?)^\1", re.MULTILINE | re.DOTALL)
+HEADING = re.compile(r"^#{1,6}\s.*$", re.MULTILINE)
+LICENSE_HEAD = 4096
+
+
+def read_text(path, limit=None):
+    if not os.path.isfile(path) or os.path.islink(path):
+        return None
+    with open(path, "rb") as f:
+        return f.read(limit).decode("utf-8", errors="replace")
+
+
+def quality(tree, manifest, entry, root_license, policy):
+    """QA-1 and QA-2 on the fetched tree."""
+    findings = []
+    readme = read_text(os.path.join(tree, "README.md"))
+    if readme is None:
+        findings.append("QA-1: README.md missing")
+    elif not any("parameters:" in m.group(2) for m in FENCE.finditer(readme)):
+        findings.append("QA-1: README.md has no inventory example (a fenced block with parameters:)")
+    version = re.search(r"(\d+\.\d+\.\d+)$", entry["tag"]).group(1)
+    changelog = read_text(os.path.join(tree, "CHANGELOG.md"))
+    entry_line = re.compile(rf"(?<![\w.])v?{re.escape(version)}(?![\w.-])")
+    if changelog is None:
+        findings.append("QA-1: CHANGELOG.md missing")
+    elif not any(entry_line.search(h) for h in HEADING.findall(changelog)):
+        findings.append(f"QA-1: CHANGELOG.md has no heading for {version}")
+    text = read_text(os.path.join(tree, "LICENSE"), LICENSE_HEAD)
+    if text is None and root_license:
+        text = read_text(root_license, LICENSE_HEAD)
+    if text is None:
+        findings.append("QA-1: LICENSE missing in the generator directory and the repository root")
+    allowed = dict(ln.split(None, 1) for ln in lines(os.path.join(policy, "licenses.txt")))
+    if manifest["license"] not in allowed:
+        findings.append(f"QA-2: license {manifest['license']} is not on policy/licenses.txt")
+    elif text is not None and not re.search(allowed[manifest["license"]], " ".join(text.split())):
+        findings.append(f"QA-2: LICENSE does not read as {manifest['license']}")
+    return findings
+
+
 def step_manifest(a):
     event = load_json(a.event)
     author, _, _ = actor(event, a.policy)
@@ -188,7 +228,7 @@ def step_manifest(a):
     for b in manifest.get("binaries", []):
         if b.replace(" ", "-") not in allowed:
             findings.append(f"SEC-7: binary {b!r} is not on policy/binaries.txt")
-    return findings
+    return findings + quality(os.path.dirname(a.manifest), manifest, entry, a.root_license, a.policy)
 
 
 def main():
@@ -203,6 +243,7 @@ def main():
     p.add_argument("--reserved")
     p.add_argument("--entry")
     p.add_argument("--manifest")
+    p.add_argument("--root-license")
     p.add_argument("--out")
     a = p.parse_args()
     findings = {"files": step_files, "entry": step_entry, "manifest": step_manifest}[a.step](a)
