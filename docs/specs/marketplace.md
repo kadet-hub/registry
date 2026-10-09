@@ -742,7 +742,8 @@ hosts:                        # allowed dependency hosts per type
   git: [github.com]
   https: []
 binaries: ["helm template"]   # run by the consumer's own inputs
-output_capabilities: {}       # accepted capabilities per output path glob (CON-1b)
+output_capabilities:          # accepted SEC-12 capabilities per output path glob (CON-1b)
+  "compiled/logging/*": [host-path]
 ```
 
 The workflow runs its scripts from its own commit through the
@@ -794,8 +795,15 @@ own.
 
 - CON-1b: The compile step MUST run SEC-12 over the output and fail on every
   match the policy's `output_capabilities` does not accept for that path.
-  - Test: none
-  - Since: not implemented (needs SEC-12)
+
+  Globs match the path below the output directory, such as
+  `compiled/<target>/...`, and `*` also matches `/`. Capabilities come from
+  the SEC-12 enum. Files without a parser are listed in the report and do
+  not fail: the consumer has no `unparsed_outputs`, and reviews the output
+  before applying it (CON-3).
+
+  - Test: `sandbox/test_output_check.py`; `consumer-selftest` (AC-10)
+  - Since: this change
 
 - CON-2: Verification MUST check the artifact attestation with
   `gh attestation verify oci://ghcr.io/kadet-hub/<name>@sha256:<digest>
@@ -970,11 +978,13 @@ failed lookup shows the user ID or no stars.
   failed on GI-2 and REG-1, and with a maintainer approval the pull request
   stayed `BLOCKED`; the status check rollup listed only the base
   repository's `gate` as required.
-- AC-10 (CON-1): the consumer workflow compiles a sample consumer with its own
+- AC-10 (CON-1, CON-1b): the consumer workflow compiles a sample consumer with its own
   helm input without network, and fails on a generator that reads a decoy
   credential, on a vendored `resolvers.py` that opens a socket during
-  `kapitan inventory`, and on a dependency URL built from `oc.env`. Check:
-  `consumer-selftest` over `tests/consumers/`.
+  `kapitan inventory`, on a dependency URL built from `oc.env`, and on a
+  `hostPath` in a target the policy's `output_capabilities` does not cover
+  while accepting it in the target it covers. Check: `consumer-selftest`
+  over `tests/consumers/`.
 - AC-11 (SEC-9, SEC-10): gVisor installs on a GitHub-hosted `ubuntu-24.04`
   runner, runs Kapitan's multiprocessing compile with `--network none`, and
   its trace records `execve` of a helm child process. Hostile probes that
