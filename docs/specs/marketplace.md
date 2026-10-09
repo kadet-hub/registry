@@ -823,7 +823,12 @@ failed lookup shows the user ID or no stars.
 - CAT-1: The release workflow MUST build the catalog from the index it
   published or verified in the same run, and deploy it from a job bound to
   the `github-pages` environment, which admits only `main`.
-  - Test: none (partial: `release.yml` job permissions)
+
+  Run on 2026-10-09 in the rehearsal fork: one release run published the
+  artifact and the index and deployed the catalog under a project path;
+  the version page showed the attested digest and the owner's login.
+
+  - Test: manual: fork rehearsal (2026-10-09)
   - Since: this change
 
 - CAT-2: A version page MUST show the inventory entry with the digest and the
