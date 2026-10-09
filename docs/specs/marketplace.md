@@ -561,7 +561,12 @@ review go into the review comment and do not fail the gate.
   finding fails the build. Published versions keep their metadata, since
   the sign job skips them.
 
-  - Test: workflow job `gate-selftest` (AC-5)
+  Run on 2026-10-09 in the rehearsal fork: the build job compiled a new
+  entry under gVisor with Kapitan and krab, the artifact config and the
+  index recorded `compatible`, and a second run reported the version as
+  published without compiling it.
+
+  - Test: workflow job `gate-selftest` (AC-5); manual: fork rehearsal (2026-10-09)
   - Since: #24
 
 ## Quality gate
