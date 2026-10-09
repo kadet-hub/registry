@@ -392,7 +392,7 @@ review go into the review comment and do not fail the gate.
   pins the bytes the gate scanned.
 
   - Test: workflow job `gate-selftest` (`pass-declared-chart`, `fail-chart-sha`)
-  - Since: this change
+  - Since: #26
 
 ## Sandbox and runtime detection
 
