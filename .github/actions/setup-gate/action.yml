@@ -16,20 +16,7 @@ runs:
         python3 -m venv scan/.venv
         scan/.venv/bin/pip install --quiet --require-hashes --no-deps -r scan/requirements.txt
 
-    - name: Install gVisor
-      shell: bash
-      env:
-        # renovate: datasource=github-releases depName=google/gvisor
-        GVISOR_RELEASE: "20260928"
-        GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
-      run: |
-        curl -fsSLo "$RUNNER_TEMP/gvisor.tar.zstd" "https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64/gvisor.tar.zstd"
-        echo "${GVISOR_SHA512}  $RUNNER_TEMP/gvisor.tar.zstd" | sha512sum -c -
-        sudo tar --zstd -xf "$RUNNER_TEMP/gvisor.tar.zstd" -C /usr/local/bin
-        sudo /usr/local/bin/runsc install --runtime runsc-trace -- \
-          --debug --debug-log=/tmp/runsc/ --strace \
-          --strace-syscalls=execve,execveat,open,openat,openat2,creat,connect,bind,sendto,sendmsg,sendmmsg,symlink,symlinkat,link,linkat,io_uring_setup
-        sudo systemctl restart docker
+    - uses: ./.github/actions/setup-gvisor # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
     - name: Build sandbox image
       shell: bash

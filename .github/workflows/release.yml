@@ -1,7 +1,7 @@
 name: release
 
-# PUB-1 to PUB-5. Only this workflow holds publishing permissions, and only
-# its sign and index jobs, bound to the release environment (GI-8).
+# PUB-1 to PUB-6. Only this workflow holds publishing permissions, and only
+# its sign, sandbox and index jobs, bound to the release environment (GI-8).
 on:
   push:
     branches: [main]
@@ -96,6 +96,46 @@ jobs:
           DIGEST: ${{ steps.push.outputs.digest }}
           VERSION: ${{ steps.push.outputs.version }}
         run: oras tag -- "$REF@$DIGEST" "$VERSION"
+
+  sandbox:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: release
+    permissions:
+      contents: read
+      packages: write # push and tag on ghcr.io
+      id-token: write # Sigstore certificate for the attestation
+      attestations: write # store the attestation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+        with:
+          token: ${{ github.token }}
+
+      - name: Build and push the sandbox image
+        id: push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: release/publish-sandbox
+
+      - name: Attest
+        if: steps.push.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.push.outputs.ref }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+
+      - name: Tag
+        if: steps.push.outputs.publish == 'true'
+        env:
+          REF: ${{ steps.push.outputs.ref }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          TREE: ${{ steps.push.outputs.tree }}
+        run: oras tag -- "$REF@$DIGEST" "$TREE"
 
   index:
     needs: [build, sign]

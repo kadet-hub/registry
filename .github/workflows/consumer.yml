@@ -1,0 +1,47 @@
+name: consumer
+
+# CON-1, CON-2. Reusable workflow for consumers, called pinned by commit SHA:
+#   uses: kadet-hub/registry/.github/workflows/consumer.yml@<sha>
+# The caller grants contents: read, packages: read and attestations: read.
+# Scripts and sandbox image come from this workflow's own commit ($/, PUB-6).
+on:
+  workflow_call:
+    inputs:
+      owner:
+        description: Registry owner; namespace and certificate identity
+        type: string
+        default: kadet-hub
+
+permissions: {}
+
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read # pull the sandbox image, artifacts and index
+      attestations: read # gh attestation verify
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: project
+
+      - uses: $/.github/actions/setup-gvisor
+
+      - uses: $/.github/actions/setup-oras
+        with:
+          token: ${{ github.token }}
+
+      - uses: $/.github/actions/consumer
+        with:
+          owner: ${{ inputs.owner }}
+          project: project
+          result: ${{ runner.temp }}/compiled
+          token: ${{ github.token }}
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: compiled
+          path: ${{ runner.temp }}/compiled

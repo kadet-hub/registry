@@ -1,0 +1,11 @@
+parameters:
+  kapitan:
+    vars:
+      target: minimal
+    compile:
+      - output_path: demo
+        input_type: helm
+        input_paths:
+          - charts/demo
+        helm_params:
+          name: demo

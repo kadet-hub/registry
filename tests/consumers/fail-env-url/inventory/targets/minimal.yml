@@ -1,0 +1,9 @@
+parameters:
+  kapitan:
+    vars:
+      target: minimal
+    dependencies:
+      - type: https
+        source: ${oc.env:DOWNLOAD_URL,'https://downloads.example.org/tool.tar.gz'}
+        output_path: vendor/tool
+        unpack: true

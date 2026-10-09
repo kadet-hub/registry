@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Sandbox job, before the attestation (PUB-6): build the image of the
+# sandbox/ tree on main and push it by digest unless that tree is published.
+#
+# Usage: publish-sandbox
+# Needs: REGISTRY (ghcr.io/<owner>), IDENTITY, GITHUB_REPOSITORY, GH_TOKEN,
+# oras logged in, docker, skopeo, the main checkout as working directory.
+# Writes ref, tree, digest and publish=true|false to $GITHUB_OUTPUT.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+# shellcheck source=release/common.sh
+. "$root/release/common.sh"
+ref=$REGISTRY/sandbox
+out() { echo "$1" >>"$GITHUB_OUTPUT"; }
+
+tree=$(git -C "$root" rev-parse --verify HEAD:sandbox)
+out "ref=$ref"
+out "tree=$tree"
+
+rc=0; current=$(lookup oras resolve -- "$ref:$tree") || rc=$?
+((rc < 2)) || exit 1
+if ((rc == 0)); then
+  attested "$ref@$current" || { echo "PUB-6: $ref:$tree points to $current without a marketplace attestation"; exit 1; }
+  echo "sandbox $tree: published as $current"
+  out "publish=false"
+  exit 0
+fi
+
+docker build -q -t kadet-hub/sandbox "$root/sandbox" >/dev/null
+skopeo copy -q docker-daemon:kadet-hub/sandbox:latest "oci:$work/layout:image"
+digest=$(jq -er '.manifests[0].digest' "$work/layout/index.json")
+oras cp --from-oci-layout -- "$work/layout@$digest" "$ref@$digest" >/dev/null
+echo "sandbox $tree: pushed $digest"
+out "digest=$digest"
+out "publish=true"
