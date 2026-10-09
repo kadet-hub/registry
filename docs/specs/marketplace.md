@@ -680,6 +680,18 @@ since the documented package API has no visibility call.
   - Test: `release/test_release.py::Index.test_yanked_and_removed`
   - Since: this change
 
+- PUB-6: The release workflow MUST publish the sandbox image as
+  `ghcr.io/kadet-hub/sandbox:<tree>`, where `<tree>` is the git tree ID of
+  `sandbox/` on `main`, attest its digest before tagging, and never move the
+  tag.
+
+  The consumer workflow derives `<tree>` from its own commit (CON-1), so the
+  scripts and the image it runs always come from the same tree. A tree that
+  is already tagged with an attested digest is not rebuilt.
+
+  - Test: manual: first release after the merge
+  - Since: this change
+
 ## Consumers
 
 Kapitan 0.36.3 verifies neither attestations nor digests on OCI fetch, and
@@ -689,46 +701,88 @@ ref backend credentials, except when a `||func` ref is created or gpg
 recipients lack a fingerprint; the consumer creates missing refs in a
 separate step before the sandboxed compile.
 
-- CON-1: The marketplace MUST publish a reusable GitHub Actions workflow and a
-  GitLab CI template that use the gate's sandbox image and a consumer policy
-  file `.kapitan-sandbox.yaml`. The policy lists allowed dependency types and
-  hosts, the binaries the consumer's own inputs run, and the accepted output
-  capabilities per output path. The workflow:
+A consumer repository calls the reusable workflow
+`kadet-hub/registry/.github/workflows/consumer.yml` pinned by commit SHA and
+commits a policy file `.kapitan-sandbox.yaml`, defined by
+`policy/consumer.schema.json`:
 
-  1. runs `kapitan inventory` inside the sandbox without network and with an
-     empty environment, because the inventory backend imports `resolvers.py`;
-  2. fetches only allowed dependencies outside the sandbox (`oras pull` by
-     digest, `helm pull`, `git` at the pinned ref) and verifies marketplace
-     artifacts and charts (CON-2);
-  3. compiles in the SEC-9 sandbox with decoys (SEC-11), the SEC-10 trace
-     policy extended by the consumer's binaries, and SEC-12 against the
-     accepted capabilities, mounting only inventory, fetched dependencies and
-     refs read-only, never `.git`, after a checkout with
-     `persist-credentials: false`.
+```yaml
+index_serial: 12              # lowest accepted index serial (CON-2)
+hosts:                        # allowed dependency hosts per type
+  oci: [ghcr.io]
+  helm: [charts.example.org]
+  git: [github.com]
+  https: []
+binaries: ["helm template"]   # run by the consumer's own inputs
+output_capabilities: {}       # accepted capabilities per output path glob (CON-1b)
+```
 
-  GitLab-hosted runners cannot run gVisor; the GitLab template uses
-  `--network none` with the default runtime and documents that SEC-10 is not
-  enforced there.
+The workflow runs its scripts from its own commit through the
+self-repository syntax (`$/`) and the sandbox image of that commit's
+`sandbox/` tree (PUB-6). Its `owner` input, default `kadet-hub`, names the
+registry namespace and the certificate identity; a rehearsal fork sets its
+own.
+
+- CON-1: The reusable workflow MUST, in this order:
+
+  1. run `kapitan inventory` in the SEC-9 sandbox with the SEC-10 trace and an
+     empty environment, because the inventory backend imports
+     `resolvers.py`;
+  2. fail on a dependency in the inventory whose type or host the policy does
+     not allow, an OCI dependency without a digest, or a git dependency whose
+     `ref` is not a full commit SHA;
+  3. fetch the dependencies outside the sandbox (`oras pull` by digest,
+     `helm pull`, `git` at the commit) and verify marketplace artifacts and
+     their charts (CON-2);
+  4. compile in the SEC-9 sandbox with decoys (SEC-11) and the SEC-10 trace
+     policy, extended by the policy's `binaries` and the binaries the index
+     lists for the fetched generators;
+  5. upload the compiled output as the workflow artifact `compiled`.
+
+  The project is the checkout (`persist-credentials: false`) without `.git`
+  and `.kapitan`, mounted read-only together with the fetched dependencies.
+  Kapitan runs with fixed flags and without `--fetch`. A dependency URL built
+  from `oc.env` resolves against the empty environment, so it either fails
+  the inventory or names a host the policy has to allow.
+
+  - Test: `consumer-selftest` (AC-10)
+  - Since: this change
+
+- CON-1a: The marketplace MUST publish a GitLab CI template that runs the
+  same steps with the published sandbox image.
+
+  GitLab-hosted runners cannot run gVisor; the template uses `--network none`
+  with the default runtime and documents that SEC-10 is not enforced there.
 
   - Test: none
   - Since: not implemented
+
+- CON-1b: The compile step MUST run SEC-12 over the output and fail on every
+  match the policy's `output_capabilities` does not accept for that path.
+  - Test: none
+  - Since: not implemented (needs SEC-12)
 
 - CON-2: Verification MUST check the artifact attestation with
   `gh attestation verify oci://ghcr.io/kadet-hub/<name>@sha256:<digest>
   --owner kadet-hub --cert-identity
   https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main`,
   verify the index the same way, reject an index whose `serial` is lower than
-  the last one recorded, and reject a digest the index does not list under
-  the same name or lists as yanked, and a chart whose digest differs from the
-  index. The documentation MUST state that Kapitan's `--fetch` provides no
-  integrity check.
-  - Test: none
-  - Since: not implemented
+  the policy's `index_serial`, and reject a digest the index does not list
+  under the same name or lists as yanked, and a chart whose digest differs
+  from the index. The documentation MUST state that Kapitan's `--fetch`
+  provides no integrity check.
+
+  A higher serial is accepted and reported, so the consumer raises
+  `index_serial` in a reviewed commit. Every OCI dependency under
+  `ghcr.io/<owner>/` counts as a marketplace artifact.
+
+  - Test: `consumer/test_consumer.py`; manual: AC-6 for the attestation
+  - Since: this change
 
 - CON-3: The consumer documentation MUST state what listing covers and what it
   does not, referring to the threat model.
   - Test: none
-  - Since: not implemented
+  - Since: this change
 
 ## Incident response
 
@@ -879,10 +933,13 @@ None.
 | `tests/consumers/` | AC-10 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
-| `.github/workflows/release.yml` | PUB-1 to PUB-5, GI-8, index |
-| `release/` | PUB-1, PUB-4, PUB-5: `build.py`, `tree_id.py`, `index.py` |
+| `.github/workflows/release.yml` | PUB-1 to PUB-6, GI-8, index |
+| `release/` | PUB-1, PUB-4, PUB-5: `build.py`, `tree.py`, `index.py` |
 | `.github/workflows/scheduled.yml` | SEC-15, SEC-16 |
-| `.github/workflows/consumer.yml`, `sandbox/gitlab-ci.yml`, `consumer-selftest` | CON-1 |
+| `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
+| `sandbox/gitlab-ci.yml` | CON-1a |
+| `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
+| `docs/consumers.md` | CON-2, CON-3 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `renovate.json` | REG-7, tool and action pins |
 
