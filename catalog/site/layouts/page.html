@@ -1,0 +1,43 @@
+{{ define "main" }}
+{{ $owner := site.Data.catalog.owner }}
+{{ $identity := printf "https://github.com/%s/registry/.github/workflows/release.yml@refs/heads/main" $owner }}
+{{ range where site.Data.catalog.generators "name" .Params.generator }}
+{{ $name := .name }}
+<h1>{{ .name }}</h1>
+<p>{{ .description }}</p>
+<p class="tags">{{ range .tags }}<span>{{ . }}</span>{{ end }}</p>
+<dl>
+  <dt>Source</dt><dd><a href="{{ .source_url }}">{{ .source_url }}</a>{{ with .stars }} · {{ . }} stars{{ end }}</dd>
+  <dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd>
+  <dt>License</dt><dd>{{ .license }}</dd>
+</dl>
+{{ range .versions }}
+<section class="version{{ if .yanked }} yanked{{ end }}" id="v{{ .version }}">
+  <h2>{{ .version }}{{ with .published }} <small>{{ substr . 0 10 }}</small>{{ end }}</h2>
+  {{ if .yanked }}
+  <p class="warning">Yanked: {{ .yanked }}</p>
+  {{ else }}
+  <h3>Inventory</h3>
+  <pre><code>parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/{{ $owner }}/{{ $name }}@{{ .digest }}
+        output_path: lib/{{ $name }}</code></pre>
+  <h3>Verify</h3>
+  <pre><code>gh attestation verify oci://ghcr.io/{{ $owner }}/{{ $name }}@{{ .digest }} \
+  --owner {{ $owner }} --cert-identity {{ $identity }}</code></pre>
+  {{ end }}
+  <dl>
+    <dt>Kapitan</dt><dd>{{ .kapitan }}</dd>
+    <dt>Source</dt><dd>{{ .source.tag }} · {{ .source.sha }}{{ if ne .source.path "." }} · {{ .source.path }}{{ end }}</dd>
+    <dt>Binaries</dt><dd>{{ with .binaries }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
+    <dt>Output capabilities</dt><dd>{{ with .output_capabilities }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
+    {{ with .unparsed_outputs }}<dt>Unparsed outputs</dt><dd>{{ delimit . ", " }}</dd>{{ end }}
+    {{ with .charts }}<dt>Charts</dt><dd>{{ range . }}{{ .name }} {{ .version }} ({{ .repo }}) {{ end }}</dd>{{ end }}
+    <dt>Digest</dt><dd><code>{{ .digest }}</code></dd>
+  </dl>
+</section>
+{{ end }}
+{{ end }}
+{{ end }}

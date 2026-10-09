@@ -1,0 +1,27 @@
+:root { --fg: #1d2330; --muted: #5b6475; --line: #dde1e8; --bg: #f7f8fa; --card: #fff; --accent: #2457c5; --warn: #9a3412; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e6e9ef; --muted: #9aa3b2; --line: #2c3340; --bg: #12161d; --card: #1a1f28; --accent: #7aa2f7; --warn: #fdba74; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); }
+header, main, footer { max-width: 72rem; margin: 0 auto; padding: 1rem; }
+header { display: flex; gap: 1rem; align-items: baseline; flex-wrap: wrap; }
+header span, footer, small, dt { color: var(--muted); }
+a { color: var(--accent); }
+.brand { font-weight: 700; font-size: 1.25rem; text-decoration: none; }
+.filters { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1rem; }
+#search { width: 100%; padding: .6rem .8rem; font: inherit; border: 1px solid var(--line); border-radius: .5rem; background: var(--card); color: var(--fg); }
+#tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+#tags button { font: inherit; font-size: .85rem; padding: .2rem .7rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--card); color: var(--fg); cursor: pointer; }
+#tags button.active { background: var(--accent); border-color: var(--accent); color: var(--card); }
+.cards { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); }
+.card, .version { background: var(--card); border: 1px solid var(--line); border-radius: .75rem; padding: 1rem; }
+.card h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
+.card[hidden] { display: none; }
+.tags span { display: inline-block; font-size: .8rem; padding: 0 .5rem; margin-right: .3rem; border: 1px solid var(--line); border-radius: 1rem; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: .2rem .8rem; margin: .5rem 0 0; }
+dd { margin: 0; overflow-wrap: anywhere; }
+.version { margin: 1rem 0; }
+.version.yanked { opacity: .75; }
+.warning { color: var(--warn); font-weight: 600; }
+pre { overflow-x: auto; padding: .75rem; border-radius: .5rem; background: var(--bg); border: 1px solid var(--line); }

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<title>{{ if .IsHome }}{{ site.Title }} generators{{ else }}{{ .Title }} · {{ site.Title }}{{ end }}</title>
+<link rel="stylesheet" href="{{ "style.css" | relURL }}">
+<link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
+</head>
+<body>
+<header><a class="brand" href="{{ "/" | relURL }}">{{ site.Title }}</a><span>Kapitan generators, scanned and attested</span></header>
+<main>{{ block "main" . }}{{ end }}</main>
+<footer>Generated from index serial {{ site.Data.catalog.serial }}. <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/docs/consumers.md">How to use and verify</a></footer>
+</body>
+</html>

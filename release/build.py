@@ -68,6 +68,7 @@ def main():
         content = read_dir(tree)
         meta = {
             "name": name, "version": version, "tree": tree_id(content), "krab": None,
+            "description": manifest["description"], "tags": manifest.get("tags", []),
             "source": {k: src[k] for k in ("repo", "path", "tag", "sha")},
             "owners": entry["owners"],
             "license": manifest["license"], "kapitan": manifest["kapitan"],

@@ -1,0 +1,15 @@
+name: setup-hugo
+description: Install Hugo pinned by sha256 (CAT-1).
+runs:
+  using: composite
+  steps:
+    - name: Install Hugo
+      shell: bash
+      env:
+        # renovate: datasource=github-releases depName=gohugoio/hugo
+        HUGO_VERSION: 0.167.0
+        HUGO_SHA256: 4d84519b9f619e6d4c3fb45a50157abeabeb724f859c60605f44c23def6e1169
+      run: |
+        curl -fsSLo "$RUNNER_TEMP/hugo.tar.gz" "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz"
+        echo "${HUGO_SHA256}  $RUNNER_TEMP/hugo.tar.gz" | sha256sum -c -
+        sudo tar -xzf "$RUNNER_TEMP/hugo.tar.gz" -C /usr/local/bin hugo

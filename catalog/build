@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Build the catalog site from an index (CAT-1 to CAT-5).
+#
+# Usage: build <index.json> <out dir>
+# Needs: OWNER (registry owner), hugo, python3. GH_TOKEN raises the API rate
+# limit; CATALOG_OFFLINE=1 skips the API.
+set -euo pipefail
+here=$(cd -- "$(dirname -- "$0")" && pwd)
+index=$(realpath -- "$1")
+mkdir -p -- "$2"
+out=$(realpath -- "$2")
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+
+cp -R -- "$here/site/." "$work/"
+mkdir -- "$work/data"
+offline=()
+[[ ${CATALOG_OFFLINE:-} != 1 ]] || offline=(--offline)
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --out "$work/data/catalog.json"
+hugo --quiet --source "$work" --destination "$out"

@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `tests/`, `.github/`, `renovate.json`
+Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `.github/`, `renovate.json`
 Verified against: none (new repository)
 
 ## Problem
@@ -56,10 +56,12 @@ Trust boundaries, from outside in:
 - DEC-4: Kapitan compile is a release gate. The krab result is recorded only,
   until krab has a non-prerelease 2.x version. Security findings under krab
   fail the gate regardless (CMP-4).
-- DEC-5: No marketplace CLI, web UI or runtime library. Registration is an
-  entry file plus a manifest, consumption a standard `kapitan.dependencies`
-  OCI entry, the index a generated JSON file. The consumer sandbox (DEC-11) is
-  the one exception and reuses the gate's sandbox image.
+- DEC-5: No marketplace CLI or runtime library. Registration is an entry
+  file plus a manifest, consumption a standard `kapitan.dependencies` OCI
+  entry, the index a generated JSON file. The consumer sandbox (DEC-11)
+  reuses the gate's sandbox image. The only web UI is the static catalog at
+  `https://kadet-hub.org`, generated from the index (Catalog); ratings,
+  accounts and a backend stay out of scope.
 - DEC-6: The author's own test suite is not run; fixture compiles in the
   sandbox exercise the generator instead.
 - DEC-7: The marketplace lives in the GitHub organization `kadet-hub`. Gate
@@ -108,6 +110,7 @@ yanked: {}                       # <version>: <reason>
 # <path>/kapitan-generator.yaml (source repository)
 name: <name>
 description: <one sentence>
+tags: []                         # optional, from the list in the schema (CAT-4)
 license: <SPDX identifier>
 owners: [<GitHub user ID>, ...]
 kapitan: ">=0.36.3,<0.37"
@@ -237,7 +240,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
 - GI-8: Only the release workflow, triggered by a push or `workflow_dispatch`
   on `main` and bound to a `release` environment that admits only `main`, MAY
-  hold `packages: write`, `id-token: write` and `attestations: write`.
+  hold `packages: write`, `id-token: write` and `attestations: write`; its
+  Pages deploy job, bound to the `github-pages` environment, MAY hold
+  `pages: write` and `id-token: write` (CAT-1).
   - Test: none (partial: `release.yml` permissions; the environment's
     branch policy is set with `gh api`)
   - Since: this change
@@ -658,10 +663,11 @@ since the documented package API has no visibility call.
 
 - PUB-4: The release workflow MUST publish an attested index as
   `ghcr.io/kadet-hub/index` with a `serial` that increases with every
-  publication, listing per version: name, version, digest, tree ID, license,
-  Kapitan range, krab result, output capabilities, unparsed outputs,
-  binaries, chart digests, owners, source repository and SHA, `yanked` with
-  its reason, and advisories (INC-1).
+  publication, listing per version: name, version, digest, tree ID,
+  description, tags, license, Kapitan range, krab result, output
+  capabilities, unparsed outputs, binaries, chart digests, owners, source
+  repository and SHA, the time it was first published, `yanked` with its
+  reason, and advisories (INC-1).
 
   The index job reads the versions from the registry tags, each version's
   metadata from its config blob, and accepts only digests with a marketplace
@@ -670,6 +676,11 @@ since the documented package API has no visibility call.
   is the verified `latest` serial plus one, and an index whose content
   equals `latest` apart from the serial is not published. Advisories stay
   empty until INC-1 is implemented.
+
+  `published` is the index job's time when a version first appears and is
+  carried over from the previous index afterwards; the artifact itself holds
+  no timestamp, so its digest stays reproducible. Versions built before
+  description and tags entered the metadata list neither.
 
   - Test: `release/test_release.py` (partial: content and serial; publishing
     by AC-6)
@@ -789,6 +800,61 @@ own.
 
 - CON-3: The consumer documentation MUST state what listing covers and what it
   does not, referring to the threat model.
+  - Test: none
+  - Since: this change
+
+## Catalog
+
+The catalog at `https://kadet-hub.org` lets people find a generator and
+copy a pinned inventory entry. It is a view on the index: the release
+workflow generates it with Hugo from the `index.json` the index job just
+published or verified unchanged, and deploys it with GitHub Pages from
+`kadet-hub/registry`. The site has no backend, no accounts and no data of
+its own, so a later platform with ratings can read the same index instead
+of migrating site data.
+
+Each generator has a card with name, description, tags, license, latest
+version, owners, source stars and the time of the latest version, and a
+page at `/generators/<name>/` with every version. Search and tag filter run
+in the browser over the rendered cards. Owner logins and stars
+come from the GitHub API at build time; they are display data only, and a
+failed lookup shows the user ID or no stars.
+
+- CAT-1: The release workflow MUST build the catalog from the index it
+  published or verified in the same run, and deploy it from a job bound to
+  the `github-pages` environment, which admits only `main`.
+
+  Run on 2026-10-09 in the rehearsal fork: one release run published the
+  artifact and the index and deployed the catalog under a project path;
+  the version page showed the attested digest and the owner's login.
+
+  - Test: manual: fork rehearsal (2026-10-09)
+  - Since: this change
+
+- CAT-2: A version page MUST show the inventory entry with the digest and the
+  CON-2 verification commands; a yanked version MUST show its reason and no
+  inventory entry.
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
+- CAT-3: The site MUST render every value from the index and the GitHub API
+  through Hugo's contextual escaping and MUST NOT load scripts, styles or
+  fonts from another origin.
+
+  Description, tags and owners come from submitters; a description with
+  markup is shown as text.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
+- CAT-4: `tags` in the manifest MUST come from the enum in
+  `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
+  `terraform`, `cloud`, `observability`, `security`, `networking`,
+  `database`, `ci`, at most five per manifest.
+  - Test: `gate/test_check_entry.py` (`Manifest`)
+  - Since: this change
+
+- CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none
   - Since: this change
 
@@ -948,13 +1014,14 @@ None.
 | `tests/consumers/` | AC-10 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
-| `.github/workflows/release.yml` | PUB-1 to PUB-6, GI-8, index |
+| `.github/workflows/release.yml` | PUB-1 to PUB-6, GI-8, CAT-1, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5: `build.py`, `tree.py`, `index.py` |
 | `.github/workflows/scheduled.yml` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3 |
+| `catalog/` | CAT-1 to CAT-5: Hugo site, `build` script, `test_catalog.py` |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `renovate.json` | REG-7, tool and action pins |
 

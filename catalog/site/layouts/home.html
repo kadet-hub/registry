@@ -1,0 +1,24 @@
+{{ define "main" }}
+{{ $all := slice }}{{ range site.Data.catalog.generators }}{{ $all = $all | append .tags }}{{ end }}
+<div class="filters">
+  <input id="search" type="search" placeholder="Search generators" aria-label="Search generators">
+  <div id="tags">{{ range ($all | uniq | sort) }}<button type="button" data-tag="{{ . }}">{{ . }}</button>{{ end }}</div>
+</div>
+<ul class="cards">
+{{ range site.Data.catalog.generators }}
+  <li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}" data-tags="{{ delimit .tags " " }}">
+    <a href="{{ printf "/generators/%s/" .name | relURL }}"><h2>{{ .name }}</h2></a>
+    <p>{{ .description }}</p>
+    <p class="tags">{{ range .tags }}<span>{{ . }}</span>{{ end }}</p>
+    <dl>
+      <dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · {{ substr . 0 10 }}{{ end }}{{ else }}none, all versions yanked{{ end }}</dd>
+      <dt>License</dt><dd>{{ .license }}</dd>
+      <dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd>
+      {{ with .stars }}<dt>Stars</dt><dd>{{ . }}</dd>{{ end }}
+    </dl>
+  </li>
+{{ end }}
+</ul>
+<p id="empty" hidden>No generator matches.</p>
+<script src="{{ "search.js" | relURL }}"></script>
+{{ end }}
