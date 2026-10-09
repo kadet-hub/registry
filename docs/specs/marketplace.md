@@ -433,7 +433,10 @@ review go into the review comment and do not fail the gate.
   Kapitan 0.36.3 itself, in every worker process, tries `git version` along
   `PATH`, runs `uname -p`, and creates an `AF_INET6` socket bound to `::1`
   port 0. `policy/binaries.txt` lists these probes with their exact
-  arguments.
+  arguments. krab 2.0.0-alpha.5 starts `/opt/krab-python/bin/python` for
+  two version probes and then for its kadet runner in its cache under
+  `/tmp`; `sandbox/check.py` allows exactly these three calls, and only in
+  the krab compile (CMP-4).
 
   - Test: workflow job `gate-selftest` (partial: AC-4 samples only)
   - Since: #3
