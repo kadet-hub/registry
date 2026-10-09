@@ -7,7 +7,8 @@
 # Needs: REGISTRY (ghcr.io/<owner>), IDENTITY, GITHUB_REPOSITORY, GH_TOKEN,
 # PACKAGES_API (orgs/<owner> or users/<owner>), oras logged in, the main
 # checkout as working directory. Writes ref, digest, serial and
-# publish=true|false to $GITHUB_OUTPUT.
+# publish=true|false to $GITHUB_OUTPUT, and the published or unchanged index
+# to $INDEX_OUT for the catalog (CAT-1).
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 work=$(mktemp -d)
@@ -64,7 +65,7 @@ fi
 rc=0
 python3 "$root/release/index.py" --versions "$work/versions.jsonl" --entries "$work/entries.json" \
   "${previous[@]}" --out "$work/index.json" || rc=$?
-if ((rc == 3)); then public index; out "publish=false"; exit 0; fi
+if ((rc == 3)); then cp -- "$work/previous.json" "$INDEX_OUT"; public index; out "publish=false"; exit 0; fi
 ((rc == 0)) || exit 1
 
 printf '{}' >"$work/empty.json"
@@ -73,4 +74,5 @@ digest=$("$root/release/oci-push" "$ref" application/vnd.kadet-hub.index.v1 \
 out "digest=$digest"
 out "serial=$(jq .serial "$work/index.json")"
 out "publish=true"
+cp -- "$work/index.json" "$INDEX_OUT"
 public index

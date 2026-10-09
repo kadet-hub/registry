@@ -816,7 +816,7 @@ of migrating site data.
 Each generator has a card with name, description, tags, license, latest
 version, owners, source stars and the time of the latest version, and a
 page at `/generators/<name>/` with every version. Search and tag filter run
-in the browser over a JSON list the build writes. Owner logins and stars
+in the browser over the rendered cards. Owner logins and stars
 come from the GitHub API at build time; they are display data only, and a
 failed lookup shows the user ID or no stars.
 

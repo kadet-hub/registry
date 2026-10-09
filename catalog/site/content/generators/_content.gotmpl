@@ -1,0 +1,4 @@
+{{/* One page per generator at /generators/<name>/ (CAT-5). */}}
+{{ range site.Data.catalog.generators }}
+  {{ $.AddPage (dict "kind" "page" "path" .name "title" .name "params" (dict "generator" .name)) }}
+{{ end }}
