@@ -1,0 +1,4 @@
+name: pass-backends
+binaries: []
+inventory_backends: [reclass-rs, omegaconf]
+fixtures: tests/consumer

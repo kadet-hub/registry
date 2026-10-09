@@ -2,7 +2,7 @@
 # Run Kapitan over a project in the gVisor sandbox with decoy credentials and
 # judge the trace, the output and stdout (SEC-9, SEC-10, SEC-11).
 #
-# Usage: run [--allow NAME]... [--result DIR] [--stdout FILE] <project> <kapitan args>...
+# Usage: run [--allow NAME]... [--env NAME=VALUE]... [--result DIR] [--stdout FILE] <project> <kapitan args>...
 # The project is mounted read-only at /project, a 50 MiB noexec tmpfs at
 # /out. --result receives /out and --stdout the command's stdout, both after
 # the checks. Needs: Docker with the runsc-trace runtime logging to
@@ -13,10 +13,11 @@ set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 log=${RUNSC_LOG:-/tmp/runsc}
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
-allow=() result='' stdout=''
+allow=() env=() result='' stdout=''
 while (($#)); do
   case $1 in
     --allow) allow+=("--allow=$2"); shift 2 ;;
+    --env) env+=("$2"); shift 2 ;;
     --result) result=$2; shift 2 ;;
     --stdout) stdout=$2; shift 2 ;;
     *) break ;;
@@ -42,6 +43,7 @@ printf 'apiVersion: v1\nkind: Config\nusers:\n- name: admin\n  user:\n    token:
 printf -- '-----BEGIN OPENSSH PRIVATE KEY-----\n%s\n-----END OPENSSH PRIVATE KEY-----\n' "$ssh_key" >"$home/.ssh/id_ed25519"
 printf '%s\n' "$gpg_key" >"$home/.gnupg/private-keys-v1.d/decoy.key"
 printf 'AWS_SECRET_ACCESS_KEY=%s\nGITHUB_TOKEN=%s\nVAULT_TOKEN=%s\n' "$env_aws" "$env_github" "$env_vault" >"$work/env"
+if ((${#env[@]})); then printf '%s\n' "${env[@]}" >>"$work/env"; fi
 chmod -R a+rX -- "$project" "$home"
 
 # Output: 50 MiB tmpfs, noexec (SEC-9, GI-7). stdout stays outside it, so
