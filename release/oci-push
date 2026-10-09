@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Push config and one layer by digest with a manifest written here, so the
+# digest depends on the two files alone (PUB-1). Sets no tag. Prints the
+# manifest digest.
+#
+# Usage: oci-push <ref> <artifact type> <config media type> <config file>
+#                 <layer media type> <layer file> <layer title>
+set -euo pipefail
+ref=$1 type=$2 cfg_type=$3 cfg=$4 layer_type=$5 layer=$6 title=$7
+
+desc() { printf 'sha256:%s %s' "$(sha256sum -- "$1" | cut -d' ' -f1)" "$(stat -c %s -- "$1")"; }
+read -r cfg_digest cfg_size <<<"$(desc "$cfg")"
+read -r layer_digest layer_size <<<"$(desc "$layer")"
+
+manifest=$(mktemp)
+trap 'rm -f -- "$manifest"' EXIT
+jq -cnj --arg type "$type" --arg ct "$cfg_type" --arg cd "$cfg_digest" --argjson cs "$cfg_size" \
+  --arg lt "$layer_type" --arg ld "$layer_digest" --argjson ls "$layer_size" --arg title "$title" \
+  '{schemaVersion: 2, mediaType: "application/vnd.oci.image.manifest.v1+json", artifactType: $type,
+    config: {mediaType: $ct, digest: $cd, size: $cs},
+    layers: [{mediaType: $lt, digest: $ld, size: $ls, annotations: {"org.opencontainers.image.title": $title}}]}' >"$manifest"
+digest=sha256:$(sha256sum -- "$manifest" | cut -d' ' -f1)
+
+oras blob push -- "$ref@$cfg_digest" "$cfg" >/dev/null
+oras blob push -- "$ref@$layer_digest" "$layer" >/dev/null
+oras manifest push --media-type application/vnd.oci.image.manifest.v1+json -- "$ref@$digest" "$manifest" >/dev/null
+echo "$digest"

@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Index job, before the attestation (PUB-4, PUB-5): collect every attested
+# version from the registry, build the index, push it by digest when it
+# changed.
+#
+# Usage: publish-index
+# Needs: REGISTRY (ghcr.io/<owner>), IDENTITY, GITHUB_REPOSITORY, GH_TOKEN,
+# PACKAGES_API (orgs/<owner> or users/<owner>), oras logged in, the main
+# checkout as working directory. Writes ref, digest, serial and
+# publish=true|false to $GITHUB_OUTPUT, and the published or unchanged index
+# to $INDEX_OUT for the catalog (CAT-1).
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+# shellcheck source=release/common.sh
+. "$root/release/common.sh"
+ref=$REGISTRY/index
+out() { echo "$1" >>"$GITHUB_OUTPUT"; }
+public() {
+  local visibility
+  visibility=$(gh api "$PACKAGES_API/packages/container/$1" --jq .visibility 2>/dev/null) || visibility=unknown
+  [[ $visibility == public ]] || echo "::warning::package $1 is $visibility; make it public in the web UI"
+}
+out "ref=$ref"
+
+# Entries on main, and every name that may still have a package.
+echo '{}' >"$work/entries.json"
+names=()
+for f in "$root"/generators/*.yaml; do
+  [[ -e $f ]] || continue
+  name=$(basename -- "$f" .yaml)
+  names+=("$name")
+  yq -o json "$f" | jq --arg n "$name" --slurpfile all "$work/entries.json" '$all[0] + {($n): .}' >"$work/e.json"
+  mv -- "$work/e.json" "$work/entries.json"
+done
+mapfile -t -O "${#names[@]}" names < <(sed 's/#.*//; /^[[:space:]]*$/d; s/[[:space:]]//g' "$root/policy/reserved-names.txt")
+
+: >"$work/versions.jsonl"
+for name in "${names[@]}"; do
+  pkg=$REGISTRY/$name
+  rc=0; tags=$(lookup oras repo tags -- "$pkg") || rc=$?
+  ((rc < 2)) || exit 1
+  ((rc == 0)) || continue
+  while read -r version; do
+    digest=$(oras resolve -- "$pkg:$version")
+    attested "$pkg@$digest" || { echo "PUB-4: $pkg:$version ($digest) has no marketplace attestation"; exit 1; }
+    cfg=$(oras manifest fetch -- "$pkg@$digest" | jq -er 'select(.artifactType == "application/vnd.kadet-hub.generator.v1") | .config.digest') \
+      || { echo "PUB-4: $pkg:$version is not a marketplace artifact"; exit 1; }
+    oras blob fetch --output - -- "$pkg@$cfg" | jq -c --arg d "$digest" '{digest: $d, meta: .}' >>"$work/versions.jsonl"
+  done < <(printf '%s\n' "$tags" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; })
+  public "$name"
+done
+
+previous=()
+rc=0; latest=$(lookup oras resolve -- "$ref:latest") || rc=$?
+((rc < 2)) || exit 1
+if ((rc == 0)); then
+  attested "$ref@$latest" || { echo "PUB-4: $ref:latest ($latest) has no marketplace attestation"; exit 1; }
+  layer=$(oras manifest fetch -- "$ref@$latest" | jq -er '.layers[0].digest')
+  oras blob fetch --output "$work/previous.json" -- "$ref@$layer"
+  previous=(--previous "$work/previous.json")
+fi
+
+rc=0
+python3 "$root/release/index.py" --versions "$work/versions.jsonl" --entries "$work/entries.json" \
+  "${previous[@]}" --out "$work/index.json" || rc=$?
+if ((rc == 3)); then cp -- "$work/previous.json" "$INDEX_OUT"; public index; out "publish=false"; exit 0; fi
+((rc == 0)) || exit 1
+
+printf '{}' >"$work/empty.json"
+digest=$("$root/release/oci-push" "$ref" application/vnd.kadet-hub.index.v1 \
+  application/vnd.oci.empty.v1+json "$work/empty.json" application/json "$work/index.json" index.json)
+out "digest=$digest"
+out "serial=$(jq .serial "$work/index.json")"
+out "publish=true"
+cp -- "$work/index.json" "$INDEX_OUT"
+public index

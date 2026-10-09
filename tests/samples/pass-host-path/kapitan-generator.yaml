@@ -1,0 +1,4 @@
+name: pass-host-path
+binaries: []
+output_capabilities: [host-path]
+fixtures: tests/consumer

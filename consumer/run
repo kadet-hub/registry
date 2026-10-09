@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Consumer flow (CON-1, CON-1b, CON-2): inventory in the sandbox, check and
+# fetch the dependencies outside it, compile in the sandbox, judge the output.
+#
+# Usage: run <project> <result dir>
+# Needs: OWNER (registry owner), GH_TOKEN, gVisor with the runsc-trace
+# runtime, docker, sudo, oras, gh, helm, git, yq, python3. SANDBOX_IMAGE
+# skips resolving the published image; only consumer-selftest sets it.
+# The policy is <project>/.kapitan-sandbox.yaml. Prints findings; exits 1 on any.
+set -euo pipefail
+src=$(cd -- "$1" && pwd)
+result=$2
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+registry=ghcr.io/$OWNER
+identity=https://github.com/$OWNER/registry/.github/workflows/release.yml@refs/heads/main
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+export HELM_CACHE_HOME=$work/helm/cache HELM_CONFIG_HOME=$work/helm/config HELM_DATA_HOME=$work/helm/data HELM_PLUGINS=
+
+attested() {
+  gh attestation verify "oci://$1" --owner "$OWNER" --cert-identity "$identity" >/dev/null 2>&1 \
+    || { echo "CON-2: $1 has no marketplace attestation"; exit 1; }
+}
+
+# The sandbox image of this commit's sandbox/ tree (PUB-6).
+if [[ -z ${SANDBOX_IMAGE:-} ]]; then
+  tree=$(python3 -I -c 'import sys; sys.path.insert(0, sys.argv[1]); from tree import read_dir, tree_id; print(tree_id(read_dir(sys.argv[2])))' \
+    "$root/release" "$root/sandbox")
+  digest=$(oras resolve -- "$registry/sandbox:$tree")
+  attested "$registry/sandbox@$digest"
+  SANDBOX_IMAGE=$registry/sandbox@$digest
+  docker pull -q -- "$SANDBOX_IMAGE" >/dev/null
+fi
+export SANDBOX_IMAGE
+
+policy=$src/.kapitan-sandbox.yaml
+[[ -f $policy ]] || { echo "CON-1: .kapitan-sandbox.yaml is missing"; exit 1; }
+backend=$(yq -r '.inventory_backend // ""' -- "$policy")
+[[ $backend =~ ^(|reclass|reclass-rs|omegaconf)$ ]] || { echo "policy: inventory_backend $backend is not allowed"; exit 1; }
+backend_args=()
+[[ -z $backend ]] || backend_args=(--inventory-backend "$backend")
+
+# The project without .git and .kapitan; Kapitan runs with fixed flags.
+mkdir -- "$work/project"
+cp -RP -- "$src/." "$work/project/"
+rm -rf -- "$work/project/.git" "$work/project/.kapitan"
+cp -- "$policy" "$work/policy.yaml"
+
+# 1. Inventory in the sandbox, with the trace and decoys.
+"$root/sandbox/run" --stdout "$work/inventory.yml" "$work/project" inventory "${backend_args[@]}"
+
+# 2. Dependencies against the policy, and against the index when the
+# marketplace is involved (CON-2).
+plan() {
+  docker run --rm --network none --read-only --user 10001:10001 --cap-drop ALL \
+    -v "$root:/registry:ro" -v "$work:/work" -e PYTHONDONTWRITEBYTECODE=1 "$SANDBOX_IMAGE" \
+    python -I /registry/consumer/plan.py --inventory /work/inventory.yml --policy /work/policy.yaml \
+    --owner "$OWNER" --out /work/plan.json "$@"
+}
+chmod 0777 -- "$work"
+plan
+if jq -e '[.deps[] | select(.marketplace)] | length > 0' "$work/plan.json" >/dev/null; then
+  index=$(oras resolve -- "$registry/index:latest")
+  attested "$registry/index@$index"
+  oras pull -o "$work/index" -- "$registry/index@$index" >/dev/null
+  cp -- "$work/index/index.json" "$work/index.json"
+  plan --index /work/index.json
+fi
+
+# 3. Fetch outside the sandbox into the project copy.
+while IFS= read -r dep; do
+  get() { jq -r --arg k "$1" '.[$k] // ""' <<<"$dep"; }
+  kind=$(get type) source=$(get source) out=$work/project/$(get output_path) tmp=$(mktemp -d -p "$work")
+  rm -rf -- "$out"
+  mkdir -p -- "$(dirname -- "$out")"
+  case $kind in
+    oci)
+      [[ -z $(get marketplace) ]] || attested "$source"
+      oras pull -o "$tmp" -- "$source" >/dev/null
+      python3 -I "$root/consumer/unpack.py" "$tmp" "$out"
+      ;;
+    helm)
+      helm pull "$(get chart_name)" --repo "$source" --version "$(get version)" -d "$tmp" >/dev/null
+      chart=$(find "$tmp" -maxdepth 1 -name '*.tgz' -print -quit)
+      want=$(get sha256)
+      if [[ -n $want && $(sha256sum -- "$chart" | cut -d' ' -f1) != "$want" ]]; then
+        echo "CON-2: chart $(get chart_name) $(get version) differs from the index"
+        exit 1
+      fi
+      mkdir -- "$tmp/x"
+      tar -xzf "$chart" -C "$tmp/x" --no-same-owner --no-same-permissions
+      mv -- "$tmp/x/$(get chart_name)" "$out"
+      ;;
+    git)
+      gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$tmp/repo.git")
+      "${gitc[@]}" init -q --bare
+      "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$source" "$(get ref)"
+      python3 -I "$root/gate/fetch_tree.py" --git-dir "$tmp/repo.git" --rev "$(get ref)" --path "$(get subdir | sed 's/^$/./')" --out "$out"
+      ;;
+    https)
+      curl -fsSL --proto =https --max-filesize 104857600 -o "$tmp/download" -- "$source"
+      if [[ $(get unpack) == true ]]; then
+        python3 -I "$root/consumer/unpack.py" "$tmp" "$out"
+      else
+        mv -- "$tmp/download" "$out"
+      fi
+      ;;
+  esac
+  rm -rf -- "$tmp"
+done < <(jq -c '.deps[]' "$work/plan.json")
+
+# 4. Compile in the sandbox; the trace allows the consumer's and the
+# fetched generators' binaries.
+allow=()
+while IFS= read -r binary; do
+  allow+=(--allow "${binary// /-}")
+done < <(jq -r '(.policy_binaries + .binaries) | unique | .[]' "$work/plan.json")
+mkdir -p -- "$result"
+result=$(cd -- "$result" && pwd)
+"$root/sandbox/run" "${allow[@]}" --result "$result" "$work/project" compile --output-path /out "${backend_args[@]}"
+
+# CON-1b: SEC-12 over the output, capabilities accepted per path glob; files
+# without a parser are listed only.
+output=(--unparsed '*')
+while IFS= read -r capability; do
+  output+=(--allow "$capability")
+done < <(jq -r '.output_capabilities | to_entries[] | .key as $g | .value[] | "\($g)=\(.)"' "$work/plan.json")
+docker run --rm --network none --read-only --user "$(id -u):$(id -g)" --cap-drop ALL \
+  -v "$root:/registry:ro" -v "$result:/out:ro" "$SANDBOX_IMAGE" \
+  python -I /registry/sandbox/output_check.py --out /out --policy /registry/policy/output "${output[@]}"

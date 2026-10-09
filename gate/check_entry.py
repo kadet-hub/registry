@@ -154,7 +154,7 @@ def step_entry(a):
             findings.append(f"REG-6: {tag.group('version')} is not newer than {old_tag.group('version')}")
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump({"name": name, "new": old is None, "version": tag.group("version"), **entry["source"],
-                   "owners": entry["owners"]}, f)
+                   "owners": entry["owners"], "previous_sha": old["source"]["sha"] if old else None}, f)
     return findings
 
 

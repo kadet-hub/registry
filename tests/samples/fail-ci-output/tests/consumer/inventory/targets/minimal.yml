@@ -1,0 +1,10 @@
+parameters:
+  kapitan:
+    vars:
+      target: minimal
+    compile:
+      - output_path: out
+        input_type: kadet
+        input_paths:
+          - lib/fail-ci-output
+        output_type: yaml

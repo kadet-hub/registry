@@ -1,1 +1,3 @@
 kapitan[omegaconf,reclass-rs]==0.36.3
+# Kapitan 0.36.3 locks 2.4.0.dev4; later pre-releases drop ListMergeMode.
+omegaconf==2.4.0.dev4

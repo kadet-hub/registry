@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 # Compile a generator's fixture project in the gVisor sandbox and judge the
-# trace and the output (SEC-9, SEC-10, SEC-11).
+# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2).
 #
 # Usage: gate-compile <generator dir> <name>
-# Needs: Docker with the runsc-trace runtime logging to $RUNSC_LOG, the image
-# $SANDBOX_IMAGE, sudo, yq, python3. Prints findings; exits 1 on any.
+# Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
 set -euo pipefail
 
 gen=$1
 name=$2
 here=$(cd -- "$(dirname -- "$0")" && pwd)
-log=${RUNSC_LOG:-/tmp/runsc}
-image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+root=$(cd -- "$here/.." && pwd)
 
 manifest=$gen/kapitan-generator.yaml
 fixtures=$(yq -r '.fixtures' -- "$manifest")
@@ -21,15 +19,18 @@ if [[ ! $fixtures =~ ^[A-Za-z0-9._/-]+$ || $fixtures == *..* || $fixtures == /* 
 fi
 allow=()
 while IFS= read -r binary; do
-  allow+=("--allow=${binary// /-}")
+  allow+=(--allow "${binary// /-}")
 done < <(yq -r '.binaries // [] | .[]' -- "$manifest")
+output=()
+while IFS= read -r capability; do
+  output+=(--allow "$capability")
+done < <(yq -r '.output_capabilities // [] | .[]' -- "$manifest")
+while IFS= read -r glob; do
+  output+=(--unparsed "$glob")
+done < <(yq -r '.unparsed_outputs // [] | .[]' -- "$manifest")
 
 work=$(mktemp -d)
-cleanup() {
-  sudo umount -- "$work/out" 2>/dev/null || true
-  rm -rf -- "$work"
-}
-trap cleanup EXIT
+trap 'rm -rf -- "$work"' EXIT
 
 # Project: the fixture tree with the generator at lib/<name>, no .kapitan.
 mkdir -p -- "$work/project/lib"
@@ -37,44 +38,49 @@ cp -RP -- "$gen/$fixtures/." "$work/project/"
 cp -RP -- "$gen" "$work/project/lib/$name"
 rm -f -- "$work/project/.kapitan"
 
-# Decoy credentials, random per run (SEC-11).
-token() { python3 -c 'import secrets; print(secrets.token_hex(20))'; }
-aws_id=AKIA$(token | tr a-f A-F | cut -c1-16)
-aws_secret=$(token) kube_token=$(token) ssh_key=$(token) gpg_key=$(token)
-env_aws=$(token) env_github=ghp_$(token) env_vault=hvs.$(token)
-printf '%s\n' "$aws_id" "$aws_secret" "$kube_token" "$ssh_key" "$gpg_key" \
-  "$env_aws" "$env_github" "$env_vault" >"$work/decoys"
-home=$work/home
-mkdir -p -- "$home/.aws" "$home/.kube" "$home/.ssh" "$home/.gnupg/private-keys-v1.d"
-printf '[default]\naws_access_key_id = %s\naws_secret_access_key = %s\n' "$aws_id" "$aws_secret" >"$home/.aws/credentials"
-printf 'apiVersion: v1\nkind: Config\nusers:\n- name: admin\n  user:\n    token: %s\n' "$kube_token" >"$home/.kube/config"
-printf -- '-----BEGIN OPENSSH PRIVATE KEY-----\n%s\n-----END OPENSSH PRIVATE KEY-----\n' "$ssh_key" >"$home/.ssh/id_ed25519"
-printf '%s\n' "$gpg_key" >"$home/.gnupg/private-keys-v1.d/decoy.key"
-printf 'AWS_SECRET_ACCESS_KEY=%s\nGITHUB_TOKEN=%s\nVAULT_TOKEN=%s\n' "$env_aws" "$env_github" "$env_vault" >"$work/env"
-chmod -R a+rX -- "$work/project" "$home"
-
-# Output: 50 MiB tmpfs, noexec (SEC-9, GI-7).
-mkdir -- "$work/out"
-sudo mount -t tmpfs -o size=50m,noexec,nosuid,nodev,mode=0777 tmpfs "$work/out"
-
-sudo rm -rf -- "$log"
-sudo mkdir -p -- "$log"
+backends=()
+while IFS= read -r backend; do
+  backends+=("$backend")
+done < <(yq -r '.inventory_backends // ["reclass"] | .[]' -- "$manifest")
+targets=()
+while IFS= read -r target; do
+  targets+=("$target")
+done < <(find "$work/project/inventory/targets" -type f \( -name '*.yml' -o -name '*.yaml' \) -printf '%f\n' 2>/dev/null | sed -E 's/\.ya?ml$//' | sort -u)
 
 status=0
-docker run --rm --runtime runsc-trace --network none --read-only \
-  --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges \
-  --tmpfs /tmp:size=64m --shm-size 64m \
-  --mount "type=bind,src=$work/project,dst=/project,readonly" \
-  --mount "type=bind,src=$home,dst=/home/gate,readonly" \
-  --mount "type=bind,src=$work/out,dst=/out" \
-  --env-file "$work/env" --workdir /project \
-  "$image" kapitan compile --output-path /out >"$work/compile.log" 2>&1 || status=$?
-if [[ $status -ne 0 ]]; then
-  echo "compile: exit $status"
-  tail -n 20 -- "$work/compile.log"
-fi
+# compile <out dir> [run options]: compile into <out dir> on $backend.
+compile() {
+  local out=$1
+  shift
+  mkdir -- "$out"
+  "$here/run" "${allow[@]}" "$@" --result "$out" "$work/project" compile --output-path /out --inventory-backend "$backend" || status=1
+}
 
-sudo chmod -R a+rX -- "$log"
-python3 "$here/check.py" --log-dir "$log" --out "$work/out" \
-  --policy "$here/../policy/binaries.txt" --decoys "$work/decoys" "${allow[@]}" || status=1
+# CMP-1, with SEC-11 in run and SEC-12 below, on every backend.
+for backend in "${backends[@]}"; do
+  echo "### backend $backend"
+  compile "$work/out-$backend"
+  for target in "${targets[@]}"; do
+    if ! find "$work/out-$backend/compiled/$target" -type f -print -quit 2>/dev/null | grep -q .; then
+      echo "CMP-1: target $target produced no file on $backend"
+      status=1
+    fi
+  done
+  # SEC-12 in the sandbox image without network; the output is data only.
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" \
+    --mount "type=bind,src=$work/out-$backend,dst=/out,readonly" \
+    "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
+    python -I /base/sandbox/output_check.py --out /out --policy /base/policy/output "${output[@]}" || status=1
+done
+
+# CMP-2: the same output with CI set, on the first backend.
+backend=${backends[0]}
+echo "### backend $backend with CI set"
+compile "$work/out-ci" --env CI=true --env GITHUB_ACTIONS=true --env GITLAB_CI=true
+if ! (cd -- "$work" && diff -r -- "out-$backend" out-ci) >"$work/ci.diff"; then
+  echo "CMP-2: output differs with CI set:"
+  head -n 20 -- "$work/ci.diff"
+  status=1
+fi
 exit "$status"

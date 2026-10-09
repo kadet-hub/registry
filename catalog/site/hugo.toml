@@ -1,0 +1,5 @@
+# Catalog site (CAT-1 to CAT-5). data/catalog.json is written by view.py.
+baseURL = "/"
+relativeURLs = true
+title = "kadet-hub"
+disableKinds = ["section", "taxonomy", "term", "rss", "sitemap"]

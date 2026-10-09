@@ -12,12 +12,13 @@
   "properties": {
     "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,38}$"},
     "description": {"type": "string", "minLength": 1, "maxLength": 300},
+    "tags": {"type": "array", "uniqueItems": true, "maxItems": 5, "items": {"enum": ["kubernetes", "helm", "operators", "terraform", "cloud", "observability", "security", "networking", "database", "ci"]}},
     "license": {"type": "string", "pattern": "^[A-Za-z0-9.+-]+$"},
     "owners": {"type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": {"type": "integer", "minimum": 1}},
     "kapitan": {"type": "string", "pattern": "^[0-9.,<>=! ]+$", "maxLength": 50},
     "dependencies": {"type": "array", "maxItems": 0},
     "binaries": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]* [a-z][a-z0-9-]*$"}},
-    "output_capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}},
+    "output_capabilities": {"type": "array", "uniqueItems": true, "items": {"enum": ["privileged", "added-capabilities", "host-path", "host-namespaces", "rbac-admin", "admission-webhook", "tf-provisioner", "tf-external", "dockerfile-remote"]}},
     "unparsed_outputs": {"type": "array", "items": {"$ref": "#/$defs/glob"}},
     "charts": {
       "type": "array",

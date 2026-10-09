@@ -1,0 +1,10 @@
+parameters:
+  kapitan:
+    vars:
+      target: app
+    compile:
+      - output_path: .
+        input_type: kadet
+        input_paths:
+          - components/agent
+        output_type: yaml
