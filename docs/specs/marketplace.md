@@ -689,7 +689,7 @@ since the documented package API has no visibility call.
   scripts and the image it runs always come from the same tree. A tree that
   is already tagged with an attested digest is not rebuilt.
 
-  - Test: manual: first release after the merge
+  - Test: manual: AC-6 consumer run (2026-10-09)
   - Since: this change
 
 ## Consumers
@@ -784,7 +784,7 @@ own.
   `index_serial` in a reviewed commit. Every OCI dependency under
   `ghcr.io/<owner>/` counts as a marketplace artifact.
 
-  - Test: `consumer/test_consumer.py`; manual: AC-6 for the attestation
+  - Test: `consumer/test_consumer.py`; manual: AC-6 consumer run (2026-10-09)
   - Since: this change
 
 - CON-3: The consumer documentation MUST state what listing covers and what it
@@ -849,8 +849,15 @@ own.
   0.2.0 manifest pushed by digest without attestation or tag was attested and
   tagged at the same digest by the next push, with serial 3. After 0.1.0 was
   deleted from the package, the next push did not rebuild it and serial 4
-  lists only 0.2.0. The lower-serial check belongs to the consumer and is
-  open until CON-2.
+  lists only 0.2.0.
+
+  Run on 2026-10-09 for the consumer, in the same fork with a consumer
+  repository calling the reusable workflow pinned by commit: the release
+  published the sandbox image once and skipped it on the next run, the
+  consumer verified image, index and artifact and compiled the expected
+  ConfigMap in the sandbox. `index_serial` above the index serial failed,
+  a digest the index does not list failed, and an index newer than
+  `index_serial` passed with a notice.
 - AC-7 (SEC-15, SEC-16): moving a tag of a listed sample repository produces
   an issue on the next scheduled run. Check: manual: scheduled run in a test
   organization.
