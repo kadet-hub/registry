@@ -574,22 +574,43 @@ review go into the review comment and do not fail the gate.
 - QA-1: The generator tree MUST contain `README.md` with at least one
   inventory example and `CHANGELOG.md` with an entry for the tagged version,
   and the tree or the repository root MUST contain `LICENSE`.
-  - Test: none
-  - Since: not implemented
+
+  An inventory example is a fenced code block containing `parameters:`. An
+  entry is a Markdown heading that contains the version from `source.tag`
+  as a whole word, such as `## 1.4.0` or `## [1.4.0] - 2026-10-09`. The
+  repository root is read from the fetched commit, without checkout.
+
+  - Test: `gate/test_check_entry.py` (`Quality`)
+  - Since: #25
 
 - QA-2: `license` MUST be the SPDX identifier of an OSI-approved license
   (`policy/licenses.txt`), and `LICENSE` MUST match it.
-  - Test: none
-  - Since: not implemented
+
+  `policy/licenses.txt` lists Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause,
+  ISC, MPL-2.0 and the `-only` and `-or-later` forms of LGPL-3.0, GPL-3.0
+  and AGPL-3.0; a maintainer pull request adds more. Each line carries a
+  pattern for the license's own wording, matched against the first 4 KiB
+  of `LICENSE` with whitespace collapsed. This catches a mismatched or
+  missing license, not an edited text. The `-only` and `-or-later` forms
+  share a text and are not told apart.
+
+  - Test: `gate/test_check_entry.py` (`Quality`)
+  - Since: #25
 
 - QA-3: `ruff check` with the pinned version and `policy/ruff.toml` MUST pass
   on the generator tree.
-  - Test: none
-  - Since: not implemented
+
+  `policy/ruff.toml` selects `E9` and `F`: syntax errors and pyflakes
+  findings such as undefined names and unused imports, no style rules. It
+  excludes nothing; the tree's own ruff configuration and `noqa` comments
+  are ignored.
+
+  - Test: workflow job `gate-selftest` (`fail-ruff-undefined-name`)
+  - Since: #25
 
 - QA-4: The fixture project MUST contain a `minimal` target.
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `gate-selftest` (`fail-no-minimal`)
+  - Since: #25
 
 - QA-5: The manifest MUST validate against `policy/manifest.schema.json` and
   the entry against `policy/entry.schema.json`.
@@ -946,8 +967,8 @@ failed lookup shows the user ID or no stars.
 - AC-2 (CMP-1, CMP-2, QA-1 to QA-5, SEC-9, SEC-10): the benign samples pass,
   including one that wraps `helm template` with a declared chart and one
   compiled on `reclass-rs` and `omegaconf` that calls `getattr` with a
-  computed name (flagged for review, not failed). Check: `gate-selftest` (partial: QA-1 to QA-4 not
-  implemented).
+  computed name (flagged for review, not failed). Check: `gate-selftest`
+  and `gate/test_check_entry.py` (QA-1, QA-2, QA-5).
 - AC-3 (REG-3, REG-4, REG-5, REG-8, GI-2, GI-9, SEC-8): an entry named
   `kubernet-es` next to a reserved `kubernetes`, an entry or bump authored by
   a non-owner, a bump changing `source.repo`, a non-maintainer deletion or

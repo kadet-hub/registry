@@ -17,10 +17,17 @@ its own directory or at the root. That directory carries:
   is declared in `binaries`, every chart it renders in `charts` with the
   sha256 of the `.tgz`; `dependencies` stays empty.
 - a fixture project, the directory named in `fixtures`: an ordinary Kapitan
-  project whose compile entries load the generator from `lib/<name>`, where
-  the gate places it.
-- `README.md` with an inventory example, `CHANGELOG.md` with an entry for
-  the version, and `LICENSE` here or at the repository root.
+  project with a `minimal` target, whose compile entries load the generator
+  from `lib/<name>`, where the gate places it.
+- `README.md` with an inventory example in a fenced code block,
+  `CHANGELOG.md` with a heading for the version (`## 1.4.0`), and `LICENSE`
+  here or at the repository root. `license` in the manifest is one of
+  [`policy/licenses.txt`](../policy/licenses.txt), and `LICENSE` has to
+  read as that license.
+
+The Python code has to pass `ruff check` with
+[`policy/ruff.toml`](../policy/ruff.toml): syntax errors and pyflakes
+findings, no style rules; `noqa` comments do not count.
 
 Tag the commit with a semver, optionally prefixed for repositories with
 several generators (`v1.4.0`, `argocd-v1.4.0`).

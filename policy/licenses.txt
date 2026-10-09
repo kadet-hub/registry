@@ -1,0 +1,16 @@
+# QA-2: allowed SPDX identifiers, each with a pattern for the license's own
+# wording. The pattern is matched case-sensitively against the first 4 KiB
+# of LICENSE with whitespace collapsed to single spaces. Patterns cannot
+# contain the comment character.
+Apache-2.0         Apache License,? Version 2\.0
+MIT                Permission is hereby granted, free of charge, to any person obtaining a copy
+BSD-2-Clause       \A(?!.*Neither the name).*Redistribution and use in source and binary forms
+BSD-3-Clause       Redistribution and use in source and binary forms.*Neither the name
+ISC                Permission to use, copy, modify, and(/or)? distribute this software for any purpose
+MPL-2.0            Mozilla Public License,? [Vv]ersion 2\.0
+LGPL-3.0-only      GNU LESSER GENERAL PUBLIC LICENSE Version 3
+LGPL-3.0-or-later  GNU LESSER GENERAL PUBLIC LICENSE Version 3
+GPL-3.0-only       GNU GENERAL PUBLIC LICENSE Version 3
+GPL-3.0-or-later   GNU GENERAL PUBLIC LICENSE Version 3
+AGPL-3.0-only      GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+AGPL-3.0-or-later  GNU AFFERO GENERAL PUBLIC LICENSE Version 3

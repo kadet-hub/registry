@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile a generator's fixture project in the gVisor sandbox and judge the
-# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4).
+# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, QA-4).
 #
 # Usage: gate-compile <generator dir> <name>
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
@@ -49,6 +49,10 @@ while IFS= read -r target; do
 done < <(find "$work/project/inventory/targets" -type f \( -name '*.yml' -o -name '*.yaml' \) -printf '%f\n' 2>/dev/null | sed -E 's/\.ya?ml$//' | sort -u)
 
 status=0
+if [[ " ${targets[*]} " != *" minimal "* ]]; then
+  echo "QA-4: the fixture project has no minimal target"
+  status=1
+fi
 # SEC-12 in the sandbox image without network; the output is data only.
 sec12() {
   docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Static checks on a generator tree without executing it (SEC-1 to SEC-6).
+# Static checks on a generator tree without executing it (SEC-1 to SEC-6, QA-3).
 #
 # Usage: static-scan <generator dir>
-# Needs: gitleaks on PATH, semgrep and guarddog in $SCAN_VENV, Docker with the
+# Needs: gitleaks on PATH, semgrep, guarddog and ruff in $SCAN_VENV, Docker with the
 # image $SANDBOX_IMAGE, yq, python3. Prints findings, then "review:" and
 # "warning:" lines that do not fail; exits 1 on any finding.
 set -euo pipefail
@@ -51,6 +51,15 @@ if ((${#pyfiles[@]})); then
       >"$work/semgrep-$kind.json" 2>"$work/semgrep.log" || true
     python3 "$here/report.py" "semgrep-$kind" "$work/semgrep-$kind.json" "$gen/" || status=1
   done
+fi
+
+# QA-3 ruff with the marketplace's configuration only, noqa ignored.
+if ((${#pyfiles[@]})); then
+  (cd -- "$work/empty" && "$venv/bin/ruff" check --config "$policy/ruff.toml" --no-cache --ignore-noqa \
+    --output-format concise --quiet -- "${pyfiles[@]}") >"$work/ruff.log" 2>&1 || {
+    sed "s|^$gen/|ruff: |" -- "$work/ruff.log" | head -n 50
+    status=1
+  }
 fi
 
 # SEC-2 GuardDog: threat rules fail, capability rules are for review.
