@@ -43,7 +43,7 @@ def view(index, owner, lookup):
         stars = None
         if m:
             data = lookup(f"/repos/{m.group(1)}/{m.group(2)}")
-            stars = data.get("stargazers_count") if data else None
+            stars = str(data["stargazers_count"]) if data and "stargazers_count" in data else None  # 0 must show
         owners = []
         for uid in shown.get("owners", []):
             data = lookup(f"/user/{uid}")

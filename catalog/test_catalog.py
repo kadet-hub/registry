@@ -2,10 +2,14 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from view import view
+
 OWNER = "kadet-hub"
 
 
@@ -68,6 +72,14 @@ class Site(unittest.TestCase):
         for html in (self.page(), self.page("generators", "demo"), self.page("generators", "old")):
             for ref in re.findall(r'<(?:script|link|img)\b[^>]*\b(?:src|href)="([^"]*)"', html):
                 self.assertNotRegex(ref, r"^(https?:)?//", ref)
+
+
+class View(unittest.TestCase):
+    def test_display_data_from_the_api(self):
+        answers = {"/repos/example/demo": {"stargazers_count": 0}, "/user/331675722": {"login": "someone"}}
+        g = view(INDEX, OWNER, answers.get)["generators"][0]
+        self.assertEqual((g["stars"], g["owners"]), ("0", [{"id": "331675722", "login": "someone"}]))
+        self.assertEqual(g["latest"]["version"], "1.10.0")
 
 
 if __name__ == "__main__":
