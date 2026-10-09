@@ -562,7 +562,7 @@ review go into the review comment and do not fail the gate.
   the sign job skips them.
 
   - Test: workflow job `gate-selftest` (AC-5)
-  - Since: this change
+  - Since: #24
 
 ## Quality gate
 
