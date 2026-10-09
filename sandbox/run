@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Run Kapitan over a project in the gVisor sandbox with decoy credentials and
+# judge the trace, the output and stdout (SEC-9, SEC-10, SEC-11).
+#
+# Usage: run [--allow NAME]... [--result DIR] [--stdout FILE] <project> <kapitan args>...
+# The project is mounted read-only at /project, a 50 MiB noexec tmpfs at
+# /out. --result receives /out and --stdout the command's stdout, both after
+# the checks. Needs: Docker with the runsc-trace runtime logging to
+# $RUNSC_LOG, the image $SANDBOX_IMAGE, sudo, python3. Prints findings; exits
+# 1 on any.
+set -euo pipefail
+
+here=$(cd -- "$(dirname -- "$0")" && pwd)
+log=${RUNSC_LOG:-/tmp/runsc}
+image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+allow=() result='' stdout=''
+while (($#)); do
+  case $1 in
+    --allow) allow+=("--allow=$2"); shift 2 ;;
+    --result) result=$2; shift 2 ;;
+    --stdout) stdout=$2; shift 2 ;;
+    *) break ;;
+  esac
+done
+project=$1
+shift
+
+work=$(mktemp -d)
+trap 'sudo umount -- "$work/judge/out" 2>/dev/null || true; rm -rf -- "$work"' EXIT
+
+# Decoy credentials, random per run (SEC-11).
+token() { python3 -c 'import secrets; print(secrets.token_hex(20))'; }
+aws_id=AKIA$(token | tr a-f A-F | cut -c1-16)
+aws_secret=$(token) kube_token=$(token) ssh_key=$(token) gpg_key=$(token)
+env_aws=$(token) env_github=ghp_$(token) env_vault=hvs.$(token)
+printf '%s\n' "$aws_id" "$aws_secret" "$kube_token" "$ssh_key" "$gpg_key" \
+  "$env_aws" "$env_github" "$env_vault" >"$work/decoys"
+home=$work/home
+mkdir -p -- "$home/.aws" "$home/.kube" "$home/.ssh" "$home/.gnupg/private-keys-v1.d"
+printf '[default]\naws_access_key_id = %s\naws_secret_access_key = %s\n' "$aws_id" "$aws_secret" >"$home/.aws/credentials"
+printf 'apiVersion: v1\nkind: Config\nusers:\n- name: admin\n  user:\n    token: %s\n' "$kube_token" >"$home/.kube/config"
+printf -- '-----BEGIN OPENSSH PRIVATE KEY-----\n%s\n-----END OPENSSH PRIVATE KEY-----\n' "$ssh_key" >"$home/.ssh/id_ed25519"
+printf '%s\n' "$gpg_key" >"$home/.gnupg/private-keys-v1.d/decoy.key"
+printf 'AWS_SECRET_ACCESS_KEY=%s\nGITHUB_TOKEN=%s\nVAULT_TOKEN=%s\n' "$env_aws" "$env_github" "$env_vault" >"$work/env"
+chmod -R a+rX -- "$project" "$home"
+
+# Output: 50 MiB tmpfs, noexec (SEC-9, GI-7). stdout stays outside it, so
+# the code in the sandbox cannot write it.
+mkdir -p -- "$work/judge/out"
+sudo mount -t tmpfs -o size=50m,noexec,nosuid,nodev,mode=0777 tmpfs "$work/judge/out"
+
+sudo rm -rf -- "$log"
+sudo mkdir -p -- "$log"
+
+status=0
+docker run --rm --runtime runsc-trace --network none --read-only \
+  --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges \
+  --tmpfs /tmp:size=64m --shm-size 64m \
+  --mount "type=bind,src=$project,dst=/project,readonly" \
+  --mount "type=bind,src=$home,dst=/home/gate,readonly" \
+  --mount "type=bind,src=$work/judge/out,dst=/out" \
+  --env-file "$work/env" --workdir /project \
+  "$image" kapitan "$@" >"$work/judge/stdout" 2>"$work/stderr" || status=$?
+if [[ $status -ne 0 ]]; then
+  echo "kapitan $1: exit $status"
+  tail -n 20 -- "$work/stderr" "$work/judge/stdout"
+fi
+
+sudo chmod -R a+rX -- "$log"
+python3 "$here/check.py" --log-dir "$log" --out "$work/judge" \
+  --policy "$here/../policy/binaries.txt" --decoys "$work/decoys" "${allow[@]}" || status=1
+if [[ -n $result ]]; then cp -R -- "$work/judge/out/." "$result/"; fi
+if [[ -n $stdout ]]; then cp -- "$work/judge/stdout" "$stdout"; fi
+exit "$status"
