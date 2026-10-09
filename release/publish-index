@@ -16,6 +16,11 @@ trap 'rm -rf -- "$work"' EXIT
 . "$root/release/common.sh"
 ref=$REGISTRY/index
 out() { echo "$1" >>"$GITHUB_OUTPUT"; }
+public() {
+  local visibility
+  visibility=$(gh api "$PACKAGES_API/packages/container/$1" --jq .visibility 2>/dev/null) || visibility=unknown
+  [[ $visibility == public ]] || echo "::warning::package $1 is $visibility; make it public in the web UI"
+}
 out "ref=$ref"
 
 # Entries on main, and every name that may still have a package.
@@ -43,8 +48,7 @@ for name in "${names[@]}"; do
       || { echo "PUB-4: $pkg:$version is not a marketplace artifact"; exit 1; }
     oras blob fetch --output - -- "$pkg@$cfg" | jq -c --arg d "$digest" '{digest: $d, meta: .}' >>"$work/versions.jsonl"
   done < <(printf '%s\n' "$tags" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; })
-  visibility=$(gh api "$PACKAGES_API/packages/container/$name" --jq .visibility 2>/dev/null || echo unknown)
-  [[ $visibility == public ]] || echo "::warning::package $name is $visibility; make it public in the web UI"
+  public "$name"
 done
 
 previous=()
@@ -60,7 +64,7 @@ fi
 rc=0
 python3 "$root/release/index.py" --versions "$work/versions.jsonl" --entries "$work/entries.json" \
   "${previous[@]}" --out "$work/index.json" || rc=$?
-if ((rc == 3)); then out "publish=false"; exit 0; fi
+if ((rc == 3)); then public index; out "publish=false"; exit 0; fi
 ((rc == 0)) || exit 1
 
 printf '{}' >"$work/empty.json"
@@ -69,3 +73,4 @@ digest=$("$root/release/oci-push" "$ref" application/vnd.kadet-hub.index.v1 \
 out "digest=$digest"
 out "serial=$(jq .serial "$work/index.json")"
 out "publish=true"
+public index
