@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `.github/`, `renovate.json`
+Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `README.md`, `.github/`, `renovate.json`
 Verified against: none (new repository)
 
 ## Problem
@@ -858,6 +858,16 @@ failed lookup shows the user ID or no stars.
   - Test: none
   - Since: this change
 
+- CAT-6: The home page MUST link to `docs/consumers.md` and
+  `docs/authors.md`, and MUST say so when no generator is listed.
+
+  `docs/authors.md` describes registration for authors: manifest, fixture
+  project, entry and what the gate and the review check. The root
+  `README.md` points to the catalog and both documents.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 ## Incident response
 
 - INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,
@@ -1021,7 +1031,8 @@ None.
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3 |
-| `catalog/` | CAT-1 to CAT-5: Hugo site, `build` script, `test_catalog.py` |
+| `catalog/` | CAT-1 to CAT-6: Hugo site, `build` script, `test_catalog.py` |
+| `docs/authors.md`, `README.md` | CAT-6 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `renovate.json` | REG-7, tool and action pins |
 
