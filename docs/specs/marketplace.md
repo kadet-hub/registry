@@ -131,18 +131,18 @@ fetched tree; this is the layout consumers use.
 - REG-1: An entry MUST pin `source.sha` to a full commit SHA, and the gate MUST
   fail when `source.tag` does not resolve to that SHA.
   - Test: none (partial: `gate/run` checks it; no sample yet)
-  - Since: this change
+  - Since: #8
 
 - REG-2: `name` MUST match `^[a-z][a-z0-9-]{1,38}$`, MUST equal the entry's
   file name and MUST NOT be on `policy/reserved-names.txt`.
   - Test: `gate/test_check_entry.py` (`test_reserved_and_similar_names`, `test_bad_path_fails`)
-  - Since: this change
+  - Since: #8
 
 - REG-3: The gate MUST fail a new entry whose name equals an existing or
   reserved name after removing `-` and `_`, and MUST flag it for the reviewer
   when it is within edit distance 1 of one.
   - Test: `gate/test_check_entry.py::Entry.test_reserved_and_similar_names`
-  - Since: this change
+  - Since: #8
 
 - REG-4: A pull request adding an entry MUST be authored by one of the
   manifest's `owners` at `source.sha`, and the entry's `owners` MUST equal
@@ -152,17 +152,17 @@ fetched tree; this is the layout consumers use.
   review, not by this check.
 
   - Test: `gate/test_check_entry.py::Manifest.test_failures`
-  - Since: this change
+  - Since: #8
 
 - REG-5: A pull request changing an existing entry MUST be authored by one of
   its owners, by a maintainer, or by Renovate identified by the user ID of
   `renovate[bot]` with the head branch in the marketplace repository.
   - Test: `gate/test_check_entry.py` (`test_bump_by_stranger_and_repo_change`, `test_renovate_bump_needs_same_repo_branch`)
-  - Since: this change
+  - Since: #8
 
 - REG-6: A version bump MUST increase the semver parsed from `source.tag`.
   - Test: `gate/test_check_entry.py::Entry.test_bump`
-  - Since: this change
+  - Since: #8
 
 - REG-7: Renovate MUST open a pull request updating `tag` and `sha` when the
   source repository publishes a newer matching tag.
@@ -181,11 +181,11 @@ fetched tree; this is the layout consumers use.
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
   - Test: `gate/test_check_entry.py::Entry.test_bump_by_stranger_and_repo_change`
-  - Since: this change
+  - Since: #8
 
 - REG-9: A removed entry's name MUST be added to `policy/reserved-names.txt`.
   - Test: `gate/test_check_entry.py::Entry.test_removal_reserves_name`
-  - Since: this change
+  - Since: #8
 
 ## Gate integrity
 
@@ -202,25 +202,25 @@ which only a maintainer pull request changes (GI-2, REV-1).
   It reads the changed entry file through the API, parses it with a safe YAML
   loader and validates it against `policy/entry.schema.json`.
   - Test: none (partial: `gate.yml` checks out `main` only; AC-9 pending)
-  - Since: this change
+  - Since: #8
 
 - GI-2: A pull request from a non-maintainer MUST add or modify exactly one
   file, `generators/<name>.yaml` with `<name>` equal to the entry's `name`.
   Deletions and renames are maintainer pull requests.
   - Test: `gate/test_check_entry.py::Files`
-  - Since: this change
+  - Since: #8
 
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
   sandbox.
   - Test: none (partial: `gate.yml` permissions; AC-9 pending)
-  - Since: this change
+  - Since: #8
 
 - GI-4: The job that posts the review comment (REV-2) MUST run separately with
   `pull-requests: write` only and consume nothing but the gate's result file,
   rendered as escaped text.
   - Test: none (partial: `gate.yml` job permissions)
-  - Since: this change
+  - Since: #12
 
 - GI-5: The required status check MUST be the `pull_request_target` gate job
   with GitHub Actions as expected source, and a fork workflow reporting a
@@ -236,7 +236,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-7: Any gate tool error, timeout or missing result MUST fail the gate. The
   gate job has a 30-minute timeout and the compile output a 50 MiB limit.
   - Test: none (partial: `gate/run` runs with `set -e`; job timeout in `gate.yml`)
-  - Since: this change
+  - Since: #8
 
 - GI-8: Only the release workflow, triggered by a push or `workflow_dispatch`
   on `main` and bound to a `release` environment that admits only `main`, MAY
@@ -245,7 +245,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   `pages: write` and `id-token: write` (CAT-1).
   - Test: none (partial: `release.yml` permissions; the environment's
     branch policy is set with `gh api`)
-  - Since: this change
+  - Since: #13
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
   `^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$`,
@@ -263,7 +263,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   such as `v1.0.0-$(id)`.
 
   - Test: `gate/test_check_entry.py::Entry.test_schema_rejects_injection_and_bad_sha` (partial: workflow review by hand)
-  - Since: this change
+  - Since: #8
 
 - GI-10: No workflow MAY use `actions/cache` or the cache options of `setup-*`
   actions; gate tools come from images pinned by digest.
@@ -377,7 +377,7 @@ review go into the review comment and do not fail the gate.
   `helm version`, and `cue export`, `cue eval`, `cue vet`.
 
   - Test: `gate/test_check_entry.py::Manifest.test_failures`
-  - Since: this change
+  - Since: #8
 
 - SEC-8: Every declared chart MUST be fetched by the gate with `helm pull`,
   match its `sha256`, and pass SEC-1, SEC-2, SEC-5 and SEC-6; the index lists
@@ -514,7 +514,7 @@ review go into the review comment and do not fail the gate.
 - CMP-3: The manifest's `kapitan` range MUST include the pinned Kapitan
   version.
   - Test: `gate/test_check_entry.py::Manifest.test_failures`
-  - Since: this change
+  - Since: #8
 
 - CMP-4: The fixture project MUST also be compiled with the pinned krab
   version under the same sandbox and the SEC-10, SEC-11 and SEC-12 checks,
@@ -549,7 +549,7 @@ review go into the review comment and do not fail the gate.
 - QA-5: The manifest MUST validate against `policy/manifest.schema.json` and
   the entry against `policy/entry.schema.json`.
   - Test: `gate/test_check_entry.py` (`Entry`, `Manifest`)
-  - Since: this change
+  - Since: #8
 
 ## Review
 
@@ -566,7 +566,7 @@ code diff and the output diff, not only the verdict.
   MUST require two-factor authentication. The maintainer's own pull
   requests use the admin bypass (RISK-1).
   - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset.json`
-  - Since: this change
+  - Since: #10
 
 - REV-2: The gate MUST post the comment described above on every pull request
   that adds or changes an entry.
@@ -579,7 +579,7 @@ code diff and the output diff, not only the verdict.
   - Test: none (partial: results, review and warning lines and the compare
     link; krab result, exceptions, capability changes and the output diff
     follow with CMP-4, SEC-14, SEC-12 and SEC-13)
-  - Since: this change
+  - Since: #12
 
 ## Publishing
 
@@ -637,7 +637,7 @@ since the documented package API has no visibility call.
   its own fetch.
   - Test: `release/test_release.py` (partial: reproducibility and tree ID;
     the sign job's comparison by AC-6)
-  - Since: this change
+  - Since: #13
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
   existing `<version>` tag, MUST fail when an existing tag points to a digest
@@ -651,7 +651,7 @@ since the documented package API has no visibility call.
   already pull.
 
   - Test: manual: AC-6
-  - Since: this change
+  - Since: #13
 
 - PUB-3: Every published artifact MUST carry a GitHub artifact attestation
   (SLSA provenance) from the release workflow. The documented verification
@@ -659,7 +659,7 @@ since the documented package API has no visibility call.
   `https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main`
   exactly.
   - Test: manual: AC-6
-  - Since: this change
+  - Since: #13
 
 - PUB-4: The release workflow MUST publish an attested index as
   `ghcr.io/kadet-hub/index` with a `serial` that increases with every
@@ -684,12 +684,12 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: content and serial; publishing
     by AC-6)
-  - Since: this change
+  - Since: #13
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
   - Test: `release/test_release.py::Index.test_yanked_and_removed`
-  - Since: this change
+  - Since: #13
 
 - PUB-6: The release workflow MUST publish the sandbox image as
   `ghcr.io/kadet-hub/sandbox:<tree>`, where `<tree>` is the git tree ID of
@@ -701,7 +701,7 @@ since the documented package API has no visibility call.
   is already tagged with an attested digest is not rebuilt.
 
   - Test: manual: AC-6 consumer run (2026-10-09)
-  - Since: this change
+  - Since: #15
 
 ## Consumers
 
@@ -765,7 +765,7 @@ own.
   the inventory or names a host the policy has to allow.
 
   - Test: `consumer-selftest` (AC-10)
-  - Since: this change
+  - Since: #15
 
 - CON-1a: The marketplace MUST publish a GitLab CI template that runs the
   same steps with the published sandbox image.
@@ -796,12 +796,12 @@ own.
   `ghcr.io/<owner>/` counts as a marketplace artifact.
 
   - Test: `consumer/test_consumer.py`; manual: AC-6 consumer run (2026-10-09)
-  - Since: this change
+  - Since: #15
 
 - CON-3: The consumer documentation MUST state what listing covers and what it
   does not, referring to the threat model.
   - Test: none
-  - Since: this change
+  - Since: #15
 
 ## Catalog
 
@@ -829,13 +829,13 @@ failed lookup shows the user ID or no stars.
   the version page showed the attested digest and the owner's login.
 
   - Test: manual: fork rehearsal (2026-10-09)
-  - Since: this change
+  - Since: #16
 
 - CAT-2: A version page MUST show the inventory entry with the digest and the
   CON-2 verification commands; a yanked version MUST show its reason and no
   inventory entry.
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #16
 
 - CAT-3: The site MUST render every value from the index and the GitHub API
   through Hugo's contextual escaping and MUST NOT load scripts, styles or
@@ -845,18 +845,18 @@ failed lookup shows the user ID or no stars.
   markup is shown as text.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #16
 
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
   `terraform`, `cloud`, `observability`, `security`, `networking`,
   `database`, `ci`, at most five per manifest.
   - Test: `gate/test_check_entry.py` (`Manifest`)
-  - Since: this change
+  - Since: #16
 
 - CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none
-  - Since: this change
+  - Since: #16
 
 - CAT-6: The home page MUST link to `docs/consumers.md` and
   `docs/authors.md`, and MUST say so when no generator is listed.
@@ -866,7 +866,7 @@ failed lookup shows the user ID or no stars.
   `README.md` points to the catalog and both documents.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #18
 
 ## Incident response
 
