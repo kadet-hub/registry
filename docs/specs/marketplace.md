@@ -457,15 +457,31 @@ review go into the review comment and do not fail the gate.
   (`.yml`, `.yaml`, `.json`, `.tf`, `.tf.json`, `Dockerfile`); a file without
   a parser MUST match `unparsed_outputs`.
 
-  The rules cover privileged containers, added capabilities, `hostPath`,
-  host network, PID or IPC, RBAC bindings to `cluster-admin` or wildcard
-  rules, admission webhooks, Terraform `local-exec` and `remote-exec`
-  provisioners and the `external` data source, and Dockerfile `ADD` from URLs
-  or downloads piped into a shell. Declared capabilities and unparsed globs
-  appear in the index and the review comment.
+  Capabilities come from the enum in `policy/manifest.schema.json`:
 
-  - Test: none
-  - Since: not implemented
+  | Capability | Matches |
+  |---|---|
+  | `privileged` | `securityContext.privileged: true` |
+  | `added-capabilities` | a non-empty `securityContext.capabilities.add` |
+  | `host-path` | any `hostPath` |
+  | `host-namespaces` | `hostNetwork`, `hostPID` or `hostIPC` set to true |
+  | `rbac-admin` | a `roleRef` to `cluster-admin`, or a Role or ClusterRole rule with `*` in verbs, resources or API groups |
+  | `admission-webhook` | a Validating- or MutatingWebhookConfiguration |
+  | `tf-provisioner` | a `local-exec` or `remote-exec` provisioner |
+  | `tf-external` | the `external` data source |
+  | `dockerfile-remote` | `ADD` from a URL, or a `RUN` that pipes `curl` or `wget` into a shell |
+
+  The Kubernetes rules apply to YAML and JSON files and match at any depth,
+  so pod specs inside `List` items or custom resources count. Terraform
+  rules apply to `.tf` and `.tf.json`, the Dockerfile rule to `Dockerfile`.
+  A file that does not parse, or is not a regular file, fails the gate
+  (GI-7). Values inside strings, such as a manifest in a ConfigMap, are not
+  parsed (RISK-3). Matches of declared capabilities and files under
+  `unparsed_outputs` go into the gate report, and the manifest fields into
+  the index.
+
+  - Test: `sandbox/test_output_check.py`; workflow job `gate-selftest` (AC-8)
+  - Since: this change
 
 - SEC-13: The review comment MUST state the size of the fixture output diff
   against the previously approved version in files and hunks, show hunks with
@@ -940,7 +956,8 @@ failed lookup shows the user ID or no stars.
 - AC-8 (SEC-11, SEC-12, CMP-2): samples that copy a decoy value into a
   ConfigMap, emit an undeclared `cluster-admin` binding, emit a `.tf.json`
   with a `local-exec` provisioner, and change output when `CI` is set each
-  fail. Check: `gate-selftest`.
+  fail; a sample that emits a `hostPath` and declares `host-path` passes.
+  Check: `gate-selftest` (partial: the `CI` sample follows with CMP-2).
 - AC-9 (GI-1, GI-2, GI-5, GI-10): a fork pull request that edits the gate
   workflow, edits `policy/`, or adds a workflow reporting a check named like
   the gate cannot make the pull request mergeable, and no workflow uses a
