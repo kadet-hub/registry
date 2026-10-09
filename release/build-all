@@ -44,7 +44,9 @@ while IFS= read -r name; do
     continue
   fi
   echo "## $name $version: compile gate"
-  KRAB_RESULT=$work/krab "$root/sandbox/gate-compile" "$work/src/$name" "$name" \
+  "$root/gate/fetch-charts" "$work/src/$name" "$work/charts-$name" \
+    || { echo "SEC-8: $name $version: the charts do not match"; exit 1; }
+  KRAB_RESULT=$work/krab "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" \
     || { echo "CMP-4: $name $version: the compile gate failed"; exit 1; }
   jq -c -S --arg krab "$(cat -- "$work/krab")" '.krab = $krab' -- "$meta" >"$work/meta.json"
   cp -- "$work/meta.json" "$meta"

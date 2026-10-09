@@ -2,13 +2,14 @@
 # Compile a generator's fixture project in the gVisor sandbox and judge the
 # trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, QA-4).
 #
-# Usage: gate-compile <generator dir> <name>
+# Usage: gate-compile <generator dir> <name> [<charts dir>]
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
 # Writes compatible or incompatible (CMP-4) to $KRAB_RESULT if set.
 set -euo pipefail
 
 gen=$1
 name=$2
+charts=${3:-}
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 root=$(cd -- "$here/.." && pwd)
 
@@ -38,6 +39,8 @@ mkdir -p -- "$work/project/lib"
 cp -RP -- "$gen/$fixtures/." "$work/project/"
 cp -RP -- "$gen" "$work/project/lib/$name"
 rm -f -- "$work/project/.kapitan"
+# SEC-8: the fetched charts at their output_path (gate/fetch-charts).
+if [[ -n $charts ]]; then cp -R -- "$charts/." "$work/project/"; fi
 
 backends=()
 while IFS= read -r backend; do

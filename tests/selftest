@@ -38,6 +38,9 @@ derive fail-ruff-undefined-name "ruff: helper.py:1:5: F821"
 printf 'x = undefined_name  # noqa: F821\n' >"$work/fail-ruff-undefined-name/helper.py"
 derive fail-no-minimal "QA-4: the fixture project has no minimal target"
 mv -- "$work/fail-no-minimal/tests/consumer/inventory/targets/minimal.yml" "$work/fail-no-minimal/tests/consumer/inventory/targets/main.yml"
+derive fail-chart-sha "SEC-8: chart podinfo 6.9.2 has sha256"
+cp -R -- "$work/pass-declared-chart/." "$work/fail-chart-sha/"
+sed -i 's/pass-declared-chart/fail-chart-sha/; s/sha256: a/sha256: b/' "$work/fail-chart-sha/kapitan-generator.yaml" "$work/fail-chart-sha/tests/consumer/inventory/targets/minimal.yml"
 derive fail-big-file-eval "semgrep: dynamic-code: big.py"
 python3 -c 'print("x = 1\n" * 166_700 + "eval(\"1\")")' >"$work/fail-big-file-eval/big.py"
 
@@ -46,8 +49,13 @@ for dir in "$work"/*/; do
   name=$(basename -- "$dir")
   report=$work/$name.txt
   got=pass
-  "$root/scan/static-scan" "$dir" >"$report" 2>&1 || got=fail
-  "$root/sandbox/gate-compile" "$dir" "$name" >>"$report" 2>&1 || got=fail
+  if "$root/gate/fetch-charts" "$dir" "$work/$name.charts" >"$report" 2>&1; then
+    "$root/scan/static-scan" "$dir" >>"$report" 2>&1 || got=fail
+    if [[ -n $(ls -A -- "$work/$name.charts") ]]; then "$root/scan/static-scan" "$work/$name.charts" >>"$report" 2>&1 || got=fail; fi
+    "$root/sandbox/gate-compile" "$dir" "$name" "$work/$name.charts" >>"$report" 2>&1 || got=fail
+  else
+    got=fail
+  fi
   want=${name%%-*}
   echo "::group::$name: want $want, got $got"
   cat -- "$report"

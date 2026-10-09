@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Static checks on a generator tree without executing it (SEC-1 to SEC-6, QA-3).
 #
-# Usage: static-scan <generator dir>
+# Usage: static-scan <generator dir or fetched charts dir>
 # Needs: gitleaks on PATH, semgrep, guarddog and ruff in $SCAN_VENV, Docker with the
 # image $SANDBOX_IMAGE, yq, python3. Prints findings, then "review:" and
 # "warning:" lines that do not fail; exits 1 on any finding.
@@ -21,7 +21,7 @@ status=0
 
 # SEC-5 tree and SEC-3 imports and templates, parsed by the sandbox's Python.
 declared=()
-if [[ $(yq -r '.binaries // [] | length' -- "$gen/kapitan-generator.yaml") -gt 0 ]]; then
+if [[ -f $gen/kapitan-generator.yaml && $(yq -r '.binaries // [] | length' -- "$gen/kapitan-generator.yaml") -gt 0 ]]; then
   declared=(--binaries-declared)
 fi
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
