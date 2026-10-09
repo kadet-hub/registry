@@ -581,7 +581,7 @@ review go into the review comment and do not fail the gate.
   repository root is read from the fetched commit, without checkout.
 
   - Test: `gate/test_check_entry.py` (`Quality`)
-  - Since: this change
+  - Since: #25
 
 - QA-2: `license` MUST be the SPDX identifier of an OSI-approved license
   (`policy/licenses.txt`), and `LICENSE` MUST match it.
@@ -595,7 +595,7 @@ review go into the review comment and do not fail the gate.
   share a text and are not told apart.
 
   - Test: `gate/test_check_entry.py` (`Quality`)
-  - Since: this change
+  - Since: #25
 
 - QA-3: `ruff check` with the pinned version and `policy/ruff.toml` MUST pass
   on the generator tree.
@@ -606,11 +606,11 @@ review go into the review comment and do not fail the gate.
   are ignored.
 
   - Test: workflow job `gate-selftest` (`fail-ruff-undefined-name`)
-  - Since: this change
+  - Since: #25
 
 - QA-4: The fixture project MUST contain a `minimal` target.
   - Test: workflow job `gate-selftest` (`fail-no-minimal`)
-  - Since: this change
+  - Since: #25
 
 - QA-5: The manifest MUST validate against `policy/manifest.schema.json` and
   the entry against `policy/entry.schema.json`.
