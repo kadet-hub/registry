@@ -31,7 +31,7 @@ class FetchTree(unittest.TestCase):
             sha = run("git", "rev-parse", "HEAD", cwd=repo)
             out = os.path.join(d, "out")
             r = subprocess.run([sys.executable, os.path.join(HERE, "fetch_tree.py"), "--git-dir", os.path.join(repo, ".git"),
-                                "--rev", sha, "--path", "gen", "--out", out], capture_output=True, text=True)
+                                "--rev", sha, "--path", "gen", "--out", out], capture_output=True, text=True, check=False)
             self.assertEqual(r.returncode, 1)
             self.assertIn("tree: symlink link", r.stdout)
             self.assertFalse(os.path.lexists(os.path.join(out, "link")))
@@ -44,7 +44,7 @@ class FetchTree(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             subprocess.run(["git", "init", "-q", d], check=True)
             r = subprocess.run([sys.executable, os.path.join(HERE, "fetch_tree.py"), "--git-dir", os.path.join(d, ".git"),
-                                "--rev", "0" * 40, "--path", "x", "--out", os.path.join(d, "o")], capture_output=True, text=True)
+                                "--rev", "0" * 40, "--path", "x", "--out", os.path.join(d, "o")], capture_output=True, text=True, check=False)
             self.assertEqual(r.returncode, 1)
 
 
