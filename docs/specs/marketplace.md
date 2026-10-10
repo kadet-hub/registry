@@ -530,13 +530,31 @@ review go into the review comment and do not fail the gate.
   SEC-3, SEC-5 and SEC-6 against the latest version of every listed generator
   daily and open or update one issue per finding rule. A finding does not
   yank automatically (INC-1).
-  - Test: none
-  - Since: not implemented
+
+  `scheduled.yml` runs `scan/rescan` for every entry on `main` whose
+  version is not yanked: it fetches `source.sha:source.path` without
+  checkout and runs `scan/static-scan`, which adds QA-3; review and warning
+  lines are not findings. A rule is the tool and, for gitleaks, semgrep and
+  GuardDog, the rule ID; `tree`, `imports`, `template`, `ruff` and `clamav`
+  findings group by tool. The issue title is `rescan: <name> <version>:
+  <rule>`; an open issue with that title gets the current finding lines,
+  otherwise a new one is opened.
+
+  The scan job has `contents: read` only and writes its findings to a file.
+  A second job with `issues: write` reads nothing else and renders finding
+  lines in a code fence, as the gate comment does (GI-4).
+
+  - Test: `scan/test_rescan_issues.py`; manual: rehearsal fork run
+  - Since: this change
 
 - SEC-16: The scheduled workflow MUST open an issue when an entry's
   `source.tag` no longer resolves to `source.sha`.
-  - Test: none
-  - Since: not implemented
+
+  The scan job compares with `git ls-remote`, as REG-1 does, and the issue
+  title is `tag drift: <name> <tag>`.
+
+  - Test: `scan/test_rescan_issues.py`; manual: rehearsal fork run
+  - Since: this change
 
 ## Compile gate
 
@@ -1134,7 +1152,7 @@ None.
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/release.yml` | PUB-1 to PUB-6, GI-8, CAT-1, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5: `build.py`, `tree.py`, `index.py` |
-| `.github/workflows/scheduled.yml` | SEC-15, SEC-16 |
+| `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
