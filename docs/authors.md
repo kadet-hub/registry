@@ -55,6 +55,20 @@ fails the gate. The gate posts its result as a comment; a maintainer reviews
 the code and merges. Which checks are implemented is recorded per
 requirement in the [spec](specs/marketplace.md).
 
+A static finding that is a false positive can be excepted in the entry,
+bound to the file's content:
+
+```yaml
+exceptions:
+  - rule: gitleaks:generic-api-key   # rule IDs: spec SEC-14
+    path: tests/consumer/inventory/classes/demo.yml
+    sha256: <sha256sum of that file>
+```
+
+The exception lapses when the file changes. Malware, GuardDog, sandbox
+and output findings cannot be excepted; the maintainer decides on every
+exception in review.
+
 ## New versions and yanking
 
 Renovate opens a pull request when you push a newer tag with the same

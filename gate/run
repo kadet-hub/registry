@@ -75,7 +75,11 @@ check manifest --entry /work/entry.json --manifest "/work/generator/kapitan-gene
 echo "## Charts"
 "$root/gate/fetch-charts" "$gen" "$work/charts" || exit 1
 echo "## Static checks"
-"$root/scan/static-scan" "$gen" || status=1
+rc=0
+"$root/scan/static-scan" "$gen" >"$work/static.txt" 2>&1 || rc=$?
+jq '.exceptions' -- "$work/entry.json" >"$work/exceptions.json"
+python3 -I "$root/scan/exceptions.py" --tree "$gen" --exceptions "$work/exceptions.json" \
+  --report "$work/static.txt" --rc "$rc" || status=1
 if [[ -n $(ls -A -- "$work/charts") ]]; then "$root/scan/static-scan" "$work/charts" || status=1; fi
 echo "## Sandbox compile"
 "$root/sandbox/gate-compile" "$gen" "$name" "$work/charts" || status=1
