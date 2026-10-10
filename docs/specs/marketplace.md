@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `README.md`, `.github/`, `renovate.json`
+Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `docs/incident.md`, `README.md`, `.github/`, `renovate.json`
 Verified against: none (new repository)
 
 ## Problem
@@ -104,6 +104,7 @@ source:
 owners: [<GitHub user ID>, ...]
 exceptions: []                   # SEC-14
 yanked: {}                       # <version>: <reason>
+advisories: {}                   # <version>: [GHSA-…], maintainer only (INC-1)
 ```
 
 ```yaml
@@ -1049,8 +1050,20 @@ failed lookup shows the user ID or no stars.
 - INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,
   and a GitHub security advisory published and listed in the index. The
   target is 24 hours from confirmation, best effort with one maintainer.
-  - Test: manual: incident runbook rehearsal
-  - Since: not implemented
+
+  `docs/incident.md` is the runbook. The entry records advisories as
+  `advisories: {<version>: [GHSA-…]}`; only a maintainer pull request may
+  add or change them (the gate fails otherwise), and the release copies
+  them into the version's index record. The maintainer deletes the
+  artifact by hand after the yank is merged, since the deletion cannot be
+  undone. The index then keeps the version: a yanked version whose
+  artifact is gone is carried over from the previous attested index with
+  its digest, reason and advisories, so consumers still find why their
+  pinned digest is rejected (CON-2) and the catalog shows the advisory.
+
+  - Test: `release/test_release.py`, `gate/test_check_entry.py`,
+    `catalog/test_catalog.py`; manual: fork rehearsal
+  - Since: this change
 
 ## Verification
 
@@ -1218,6 +1231,7 @@ None.
 | `docs/consumers.md` | CON-2, CON-3 |
 | `catalog/` | CAT-1 to CAT-6: Hugo site, `build` script, `test_catalog.py` |
 | `docs/authors.md`, `README.md` | CAT-6 |
+| `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
 | `renovate.json` | REG-7, tool and action pins |
