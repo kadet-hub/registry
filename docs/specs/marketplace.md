@@ -179,7 +179,9 @@ fetched tree; this is the layout consumers use.
   checksum (helm, gitleaks, gVisor) fail CI until the maintainer updates
   the checksum on the Renovate branch. `omegaconf` stays at `2.4.0.dev4`:
   Kapitan 0.36.3's omegaconf backend needs `ListMergeMode`, which later
-  pre-releases removed.
+  pre-releases removed. Runners stay on `ubuntu-24.04`: the scanner
+  locks are for its Python, and actionlint 1.7.12 does not know newer
+  labels.
 
   - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
     entries (partial: no CI check)
