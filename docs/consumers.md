@@ -90,6 +90,25 @@ When the index serial is higher than `index_serial`, the workflow passes and
 reports it; raise `index_serial` in a reviewed commit. A lower serial fails,
 so an old index cannot be replayed to you.
 
+## GitLab CI
+
+```yaml
+# .gitlab-ci.yml
+include:
+  - remote: https://raw.githubusercontent.com/kadet-hub/registry/<commit sha>/sandbox/gitlab-ci.yml
+    inputs:
+      ref: <commit sha>
+```
+
+The job `kadet-hub-compile` runs the same steps against a `docker:dind`
+service and uploads the artifact `compiled`. Set a CI variable `GH_TOKEN`,
+masked, holding a GitHub token without permissions; `gh attestation
+verify` needs it. GitLab-hosted runners cannot run gVisor, so the syscall
+trace is missing there: undeclared programs and reads of the decoy
+credentials are not detected, and `/out` is not `noexec`. Network
+isolation, the read-only root, decoy values in the output and the output
+rules still apply.
+
 ## Verifying by hand
 
 ```sh

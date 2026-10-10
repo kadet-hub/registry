@@ -1,0 +1,66 @@
+# CON-1a: the consumer flow on GitLab CI, without gVisor (SEC-10 is not
+# enforced here). Include it at a commit SHA and pass the same SHA:
+#
+#   include:
+#     - remote: https://raw.githubusercontent.com/kadet-hub/registry/<sha>/sandbox/gitlab-ci.yml
+#       inputs:
+#         ref: <sha>
+#
+# Needs a CI variable GH_TOKEN: a GitHub token without permissions, for
+# gh attestation verify. The compiled output is the artifact "compiled".
+spec:
+  inputs:
+    ref:
+      description: Commit SHA of kadet-hub/registry, the same as in the include URL
+      regex: ^[0-9a-f]{40}$
+    owner:
+      description: Registry owner on GitHub and ghcr.io
+      default: kadet-hub
+    stage:
+      default: test
+---
+kadet-hub-compile:
+  stage: $[[ inputs.stage ]]
+  image: docker:29.9.0-cli@sha256:1a4c7cb63513f349bdad01fcc6e0f3f2f67d37b9da86f14dc0d4a0942eecda00
+  services:
+    - name: docker:29.9.0-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: /certs
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: /certs/client
+    REGISTRY_REF: $[[ inputs.ref ]]
+    OWNER: $[[ inputs.owner ]]
+    SANDBOX_TRACE: "0"
+    # renovate: datasource=github-releases depName=oras-project/oras
+    ORAS_VERSION: 1.3.4
+    ORAS_SHA256: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
+    # renovate: datasource=github-releases depName=helm/helm
+    HELM_VERSION: v4.3.0
+    HELM_SHA256: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+    # renovate: datasource=github-releases depName=cli/cli
+    GH_VERSION: 2.102.0
+    GH_SHA256: bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386
+  script:
+    - '[ -n "$GH_TOKEN" ] || { echo "CON-1a: set the CI variable GH_TOKEN"; exit 1; }'
+    - apk add --no-cache bash coreutils curl findutils git jq python3 yq-go
+    # Work directories next to the project, inside the /builds volume the dind service shares.
+    - export KADET_HUB="$CI_BUILDS_DIR/kadet-hub-$CI_JOB_ID" && mkdir -p "$KADET_HUB/bin" "$KADET_HUB/tmp" && export TMPDIR="$KADET_HUB/tmp" PATH="$KADET_HUB/bin:$PATH"
+    - |
+      set -eu
+      fetch() { curl -fsSLo "$KADET_HUB/$1" "$2"; echo "$3  $KADET_HUB/$1" | sha256sum -c -; }
+      fetch oras.tgz "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" "$ORAS_SHA256"
+      fetch helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" "$HELM_SHA256"
+      fetch gh.tgz "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" "$GH_SHA256"
+      tar -xzf "$KADET_HUB/oras.tgz" -C "$KADET_HUB/bin" oras
+      tar -xzf "$KADET_HUB/helm.tgz" -C "$KADET_HUB/bin" --strip-components=1 linux-amd64/helm
+      tar -xzf "$KADET_HUB/gh.tgz" -C "$KADET_HUB/bin" --strip-components=2 "gh_${GH_VERSION}_linux_amd64/bin/gh"
+      git init -q "$KADET_HUB/registry"
+      git -C "$KADET_HUB/registry" fetch -q --depth=1 https://github.com/$OWNER/registry.git "$REGISTRY_REF"
+      git -C "$KADET_HUB/registry" -c advice.detachedHead=false checkout -q FETCH_HEAD
+      [ "$(git -C "$KADET_HUB/registry" rev-parse HEAD)" = "$REGISTRY_REF" ]
+    - bash "$KADET_HUB/registry/consumer/run" "$CI_PROJECT_DIR" "$CI_PROJECT_DIR/compiled"
+  artifacts:
+    paths:
+      - compiled

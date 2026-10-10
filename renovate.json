@@ -34,7 +34,8 @@
       "managerFilePatterns": [
         "/^sandbox/Dockerfile$/",
         "/^\\.github/workflows/[^/]+\\.yml$/",
-        "/^\\.github/actions/[^/]+/action\\.yml$/"
+        "/^\\.github/actions/[^/]+/action\\.yml$/",
+        "/^sandbox/gitlab-ci\\.yml$/"
       ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?"
@@ -78,7 +79,8 @@
         "open-policy-agent/conftest",
         "kapicorp/krab",
         "rhysd/actionlint",
-        "zizmorcore/zizmor"
+        "zizmorcore/zizmor",
+        "cli/cli"
       ],
       "extractVersion": "^v(?<version>.+)$"
     },
@@ -90,5 +92,10 @@
       "groupName": null,
       "commitMessageTopic": "generator {{depName}}"
     }
-  ]
+  ],
+  "gitlabci": {
+    "managerFilePatterns": [
+      "/^sandbox/gitlab-ci\\.yml$/"
+    ]
+  }
 }

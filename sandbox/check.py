@@ -1,6 +1,8 @@
 """Judge a gVisor strace log and the compile output (SEC-10, SEC-11).
 
-Usage: check.py --log-dir DIR --out DIR --policy FILE --decoys FILE [--allow NAME ...]
+Usage: check.py [--log-dir DIR] --out DIR --policy FILE --decoys FILE [--allow NAME ...]
+
+Without --log-dir (CON-1a, no gVisor) only the output is judged.
 
 Prints every finding; exits 1 if there is any. Only syscall entry lines are
 judged, so failed attempts count. Format (gVisor pkg/sentry/strace): paths
@@ -224,7 +226,7 @@ def check_output(out_dir, values):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--log-dir", required=True)
+    p.add_argument("--log-dir")
     p.add_argument("--out", required=True)
     p.add_argument("--policy", required=True)
     p.add_argument("--decoys", required=True, help="file with one decoy value per line")
@@ -232,7 +234,8 @@ def main():
     a = p.parse_args()
     with open(a.decoys, encoding="utf-8") as f:
         values = f.read().split()
-    findings = check_trace(a.log_dir, parse_policy(a.policy), set(a.allow)) + check_output(a.out, values)
+    trace = check_trace(a.log_dir, parse_policy(a.policy), set(a.allow)) if a.log_dir else []
+    findings = trace + check_output(a.out, values)
     if findings:
         print("\n".join(findings))
     return 1 if findings else 0
