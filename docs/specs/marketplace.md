@@ -177,7 +177,9 @@ fetched tree; this is the layout consumers use.
   within their prefix: `argocd-v1.4.0` only moves to a newer `argocd-v*`.
   Renovate also bumps the tool pins; versions pinned together with a
   checksum (helm, gitleaks, gVisor) fail CI until the maintainer updates
-  the checksum on the Renovate branch.
+  the checksum on the Renovate branch. `omegaconf` stays at `2.4.0.dev4`:
+  Kapitan 0.36.3's omegaconf backend needs `ListMergeMode`, which later
+  pre-releases removed.
 
   - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
     entries (partial: no CI check)
