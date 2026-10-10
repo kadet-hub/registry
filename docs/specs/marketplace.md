@@ -237,7 +237,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   a URL in `sandbox/Dockerfile` carries `--checksum`.
 
   - Test: workflow job `workflow-lint`
-  - Since: this change
+  - Since: #27
 
 - GI-7: Any gate tool error, timeout or missing result MUST fail the gate. The
   gate job has a 30-minute timeout and the compile output a 50 MiB limit.
@@ -279,7 +279,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   `cache` or `cache-dependency-path` input anywhere in `.github/`.
 
   - Test: workflow job `workflow-lint`
-  - Since: this change
+  - Since: #27
 
 - GI-11: zizmor and actionlint MUST pass on `.github/` for every pull request
   that changes it.
@@ -293,7 +293,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   covers `.github/`.
 
   - Test: workflow job `workflow-lint`
-  - Since: this change
+  - Since: #27
 
 ## Static checks
 
