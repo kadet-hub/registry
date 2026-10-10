@@ -1,0 +1,11 @@
+parameters:
+  name: ${kapitan:vars:target}
+  kapitan:
+    vars:
+      target: minimal
+    compile:
+      - output_path: out
+        input_type: kadet
+        input_paths:
+          - lib/pass-krab-incompatible
+        output_type: yaml

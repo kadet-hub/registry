@@ -13,8 +13,8 @@ from view import view
 OWNER = "kadet-hub"
 
 
-def record(d, yanked=None, description="Renders a ConfigMap", tags=("helm",)):
-    return {"digest": "sha256:" + d * 64, "yanked": yanked, "advisories": [], "published": "2026-10-09T05:34:57Z",
+def record(d, yanked=None, description="Renders a ConfigMap", tags=("helm",), advisories=()):
+    return {"digest": "sha256:" + d * 64, "yanked": yanked, "advisories": list(advisories), "published": "2026-10-09T05:34:57Z",
             "description": description, "tags": list(tags), "license": "Apache-2.0", "kapitan": ">=0.36.3,<0.37",
             "krab": None, "tree": "0" * 40, "owners": [331675722], "binaries": [], "output_capabilities": [],
             "unparsed_outputs": [], "charts": [],
@@ -22,7 +22,7 @@ def record(d, yanked=None, description="Renders a ConfigMap", tags=("helm",)):
 
 
 INDEX = {"serial": 7, "generators": {
-    "demo": {"1.0.0": record("a", yanked="broken"), "1.10.0": record("b", description="<script>alert(1)</script>"),
+    "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]), "1.10.0": record("b", description="<script>alert(1)</script>"),
              "1.2.0": record("c")},
     "old": {"0.1.0": record("d", yanked="entry removed", tags=())},
 }}
@@ -62,6 +62,8 @@ class Site(unittest.TestCase):
     def test_yanked_version_shows_reason_and_no_entry(self):
         html = self.page("generators", "demo")
         self.assertIn("Yanked: broken", html)
+        self.assertIn(f"https://github.com/{OWNER}/registry/security/advisories/GHSA-2345-6789-cfgh", html)
+        self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
         self.assertNotIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'a' * 64}", html)
         self.assertIn("none, all versions yanked", self.page())
 

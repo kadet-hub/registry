@@ -2,32 +2,42 @@
 # Run Kapitan over a project in the gVisor sandbox with decoy credentials and
 # judge the trace, the output and stdout (SEC-9, SEC-10, SEC-11).
 #
-# Usage: run [--allow NAME]... [--env NAME=VALUE]... [--result DIR] [--stdout FILE] <project> <kapitan args>...
+# Usage: run [--allow NAME]... [--env NAME=VALUE]... [--program kapitan|krab] [--result DIR] [--stdout FILE]
+#            <project> <args>...
 # The project is mounted read-only at /project, a 50 MiB noexec tmpfs at
 # /out. --result receives /out and --stdout the command's stdout, both after
 # the checks. Needs: Docker with the runsc-trace runtime logging to
 # $RUNSC_LOG, the image $SANDBOX_IMAGE, sudo, python3. Prints findings; exits
-# 1 on any.
+# 1 on any, 2 when the program failed without a finding. SANDBOX_TRACE=0
+# (CON-1a, no gVisor) uses the default runtime and a plain /out directory
+# checked for 50 MiB afterwards, needs no sudo, and judges no trace.
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 log=${RUNSC_LOG:-/tmp/runsc}
+trace=${SANDBOX_TRACE:-1}
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
-allow=() env=() result='' stdout=''
+allow=() env=() program=kapitan result='' stdout=''
 while (($#)); do
   case $1 in
     --allow) allow+=("--allow=$2"); shift 2 ;;
     --env) env+=("$2"); shift 2 ;;
+    --program) program=$2; shift 2 ;;
     --result) result=$2; shift 2 ;;
     --stdout) stdout=$2; shift 2 ;;
     *) break ;;
   esac
 done
+[[ $program =~ ^(kapitan|krab)$ ]] || { echo "run: unknown program $program"; exit 1; }
 project=$1
 shift
 
 work=$(mktemp -d)
-trap 'sudo umount -- "$work/judge/out" 2>/dev/null || true; rm -rf -- "$work"' EXIT
+if ((trace)); then
+  trap 'sudo umount -- "$work/judge/out" 2>/dev/null || true; rm -rf -- "$work"' EXIT
+else
+  trap 'rm -rf -- "$work"' EXIT
+fi
 
 # Decoy credentials, random per run (SEC-11).
 token() { python3 -c 'import secrets; print(secrets.token_hex(20))'; }
@@ -49,27 +59,39 @@ chmod -R a+rX -- "$project" "$home"
 # Output: 50 MiB tmpfs, noexec (SEC-9, GI-7). stdout stays outside it, so
 # the code in the sandbox cannot write it.
 mkdir -p -- "$work/judge/out"
-sudo mount -t tmpfs -o size=50m,noexec,nosuid,nodev,mode=0777 tmpfs "$work/judge/out"
-
-sudo rm -rf -- "$log"
-sudo mkdir -p -- "$log"
+runtime=() trace_args=()
+if ((trace)); then
+  sudo mount -t tmpfs -o size=50m,noexec,nosuid,nodev,mode=0777 tmpfs "$work/judge/out"
+  sudo rm -rf -- "$log"
+  sudo mkdir -p -- "$log"
+  runtime=(--runtime runsc-trace)
+  trace_args=(--log-dir "$log")
+else
+  chmod 0777 -- "$work/judge/out"
+fi
 
 status=0
-docker run --rm --runtime runsc-trace --network none --read-only \
+docker run --rm "${runtime[@]}" --network none --read-only \
   --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges \
   --tmpfs /tmp:size=64m --shm-size 64m \
   --mount "type=bind,src=$project,dst=/project,readonly" \
   --mount "type=bind,src=$home,dst=/home/gate,readonly" \
   --mount "type=bind,src=$work/judge/out,dst=/out" \
   --env-file "$work/env" --workdir /project \
-  "$image" kapitan "$@" >"$work/judge/stdout" 2>"$work/stderr" || status=$?
+  "$image" "$program" "$@" >"$work/judge/stdout" 2>"$work/stderr" || status=$?
 if [[ $status -ne 0 ]]; then
-  echo "kapitan $1: exit $status"
+  echo "$program $1: exit $status"
+  status=2
   tail -n 20 -- "$work/stderr" "$work/judge/stdout"
 fi
 
-sudo chmod -R a+rX -- "$log"
-python3 "$here/check.py" --log-dir "$log" --out "$work/judge" \
+if ((trace)); then
+  sudo chmod -R a+rX -- "$log"
+elif (($(du -sb -- "$work/judge/out" | cut -f1) > 50 * 1024 * 1024)); then
+  echo "output: above 50 MiB"
+  status=1
+fi
+python3 "$here/check.py" "${trace_args[@]}" --out "$work/judge" \
   --policy "$here/../policy/binaries.txt" --decoys "$work/decoys" "${allow[@]}" || status=1
 if [[ -n $result ]]; then cp -R -- "$work/judge/out/." "$result/"; fi
 if [[ -n $stdout ]]; then cp -- "$work/judge/stdout" "$stdout"; fi

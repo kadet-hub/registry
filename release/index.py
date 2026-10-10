@@ -16,18 +16,27 @@ from datetime import datetime, timezone
 
 def build(versions, entries, previous, now):
     generators = {}
+
+    def state(name, version):
+        entry = entries.get(name)
+        if entry is None:
+            return "entry removed", []
+        return (entry.get("yanked") or {}).get(version), (entry.get("advisories") or {}).get(version, [])
+
     for v in versions:
         meta = v["meta"]
         name, version = meta["name"], meta["version"]
-        entry = entries.get(name)
-        if entry is None:
-            yanked = "entry removed"
-        else:
-            yanked = (entry.get("yanked") or {}).get(version)
+        yanked, advisories = state(name, version)
         record = {k: meta[k] for k in meta if k not in ("name", "version")}
         before = ((previous or {}).get("generators", {}).get(name) or {}).get(version) or {}
-        record.update(digest=v["digest"], yanked=yanked, advisories=[], published=before.get("published", now))
+        record.update(digest=v["digest"], yanked=yanked, advisories=advisories, published=before.get("published", now))
         generators.setdefault(name, {})[version] = record
+    # INC-1: a yanked version whose artifact was deleted stays listed.
+    for name, old in ((previous or {}).get("generators") or {}).items():
+        for version, record in old.items():
+            yanked, advisories = state(name, version)
+            if version not in generators.get(name, {}) and yanked:
+                generators.setdefault(name, {})[version] = dict(record, yanked=yanked, advisories=advisories)
     if previous is not None and previous["generators"] == generators:
         return None
     return {"serial": (previous["serial"] + 1) if previous else 1, "generators": generators}

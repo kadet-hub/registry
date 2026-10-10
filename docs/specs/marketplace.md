@@ -1,8 +1,8 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `README.md`, `.github/`, `renovate.json`
-Verified against: none (new repository)
+Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `docs/incident.md`, `README.md`, `.github/`, `renovate.json`
+Verified against: main @ 970a5d4
 
 ## Problem
 
@@ -104,6 +104,7 @@ source:
 owners: [<GitHub user ID>, ...]
 exceptions: []                   # SEC-14
 yanked: {}                       # <version>: <reason>
+advisories: {}                   # <version>: [GHSA-…], maintainer only (INC-1)
 ```
 
 ```yaml
@@ -161,6 +162,10 @@ fetched tree; this is the layout consumers use.
   - Since: #8
 
 - REG-6: A version bump MUST increase the semver parsed from `source.tag`.
+
+  A change that keeps `tag` and `sha`, such as a yank, is not a bump; a new
+  `sha` under the same tag is.
+
   - Test: `gate/test_check_entry.py::Entry.test_bump`
   - Since: #8
 
@@ -172,7 +177,9 @@ fetched tree; this is the layout consumers use.
   within their prefix: `argocd-v1.4.0` only moves to a newer `argocd-v*`.
   Renovate also bumps the tool pins; versions pinned together with a
   checksum (helm, gitleaks, gVisor) fail CI until the maintainer updates
-  the checksum on the Renovate branch.
+  the checksum on the Renovate branch. `omegaconf` stays at `2.4.0.dev4`:
+  Kapitan 0.36.3's omegaconf backend needs `ListMergeMode`, which later
+  pre-releases removed.
 
   - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
     entries (partial: no CI check)
@@ -201,7 +208,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-1: The gate workflow MUST NOT check out or execute pull request content.
   It reads the changed entry file through the API, parses it with a safe YAML
   loader and validates it against `policy/entry.schema.json`.
-  - Test: none (partial: `gate.yml` checks out `main` only; AC-9 pending)
+  - Test: manual: AC-9 run on #9 (2026-10-08)
   - Since: #8
 
 - GI-2: A pull request from a non-maintainer MUST add or modify exactly one
@@ -213,7 +220,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
   sandbox.
-  - Test: none (partial: `gate.yml` permissions; AC-9 pending)
+  - Test: none (partial: `gate.yml` permissions, which zizmor audits in `workflow-lint`)
   - Since: #8
 
 - GI-4: The job that posts the review comment (REV-2) MUST run separately with
@@ -230,8 +237,14 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
 - GI-6: Every third-party action MUST be pinned by full commit SHA and every
   downloaded tool binary by sha256.
-  - Test: none
-  - Since: not implemented
+
+  `tests/workflow-policy` checks that every `uses:` other than `./` and
+  `$/` ends in a 40-character SHA, that every `curl` in `.github/` is
+  followed by a `sha256sum -c` or `sha512sum -c`, and that every `ADD` from
+  a URL in `sandbox/Dockerfile` carries `--checksum`.
+
+  - Test: workflow job `workflow-lint`
+  - Since: #27
 
 - GI-7: Any gate tool error, timeout or missing result MUST fail the gate. The
   gate job has a 30-minute timeout and the compile output a 50 MiB limit.
@@ -269,15 +282,25 @@ which only a maintainer pull request changes (GI-2, REV-1).
   actions; gate tools come from images pinned by digest.
 
   Cache entries written by a `pull_request_target` run are read by `push`
-  runs on `main`.
+  runs on `main`. `tests/workflow-policy` fails on `actions/cache` and on a
+  `cache` or `cache-dependency-path` input anywhere in `.github/`.
 
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `workflow-lint`
+  - Since: #27
 
 - GI-11: zizmor and actionlint MUST pass on `.github/` for every pull request
   that changes it.
-  - Test: none
-  - Since: not implemented
+
+  The `workflows` workflow runs both, pinned by sha256, with GI-6 and GI-10
+  on pull requests that change `.github/`, `sandbox/Dockerfile` or the
+  policy script. actionlint 1.7.12 rejects the self-repository syntax `$/`,
+  so that one message is ignored; zizmor's `self-repository` finding is
+  suppressed where the workspace is the main checkout. The job is not a
+  required check: REV-1 requires the gate only, and code owner review
+  covers `.github/`.
+
+  - Test: workflow job `workflow-lint`
+  - Since: #27
 
 ## Static checks
 
@@ -382,8 +405,17 @@ review go into the review comment and do not fail the gate.
 - SEC-8: Every declared chart MUST be fetched by the gate with `helm pull`,
   match its `sha256`, and pass SEC-1, SEC-2, SEC-5 and SEC-6; the index lists
   the digests.
-  - Test: none
-  - Since: not implemented
+
+  `gate/fetch-charts` pulls with the sandbox image's pinned helm, the only
+  step besides the source fetch that has network, compares the `.tgz` with
+  `sha256` and unpacks it at `output_path` below the fixture project, which
+  replaces whatever the fixture holds there. The static scan runs over the
+  unpacked charts as over the tree. The release build job fetches and
+  compares again before its compile (CMP-4), without scanning: the digest
+  pins the bytes the gate scanned.
+
+  - Test: workflow job `gate-selftest` (`pass-declared-chart`, `fail-chart-sha`)
+  - Since: #26
 
 ## Sandbox and runtime detection
 
@@ -433,7 +465,10 @@ review go into the review comment and do not fail the gate.
   Kapitan 0.36.3 itself, in every worker process, tries `git version` along
   `PATH`, runs `uname -p`, and creates an `AF_INET6` socket bound to `::1`
   port 0. `policy/binaries.txt` lists these probes with their exact
-  arguments.
+  arguments. krab 2.0.0-alpha.5 starts `/opt/krab-python/bin/python` for
+  two version probes and then for its kadet runner in its cache under
+  `/tmp`; `sandbox/check.py` allows exactly these three calls, and only in
+  the krab compile (CMP-4).
 
   - Test: workflow job `gate-selftest` (partial: AC-4 samples only)
   - Since: #3
@@ -486,15 +521,51 @@ review go into the review comment and do not fail the gate.
 - SEC-13: The review comment MUST state the size of the fixture output diff
   against the previously approved version in files and hunks, show hunks with
   SEC-12 matches first, and link the full diff as a workflow artifact.
-  - Test: none
-  - Since: not implemented
+
+  On a version bump the gate fetches `previous_sha` from the same `repo`
+  and `path`, with its charts, and compiles its fixture once in the same
+  sandbox on the first backend; findings of that compile are shown, not
+  judged, since the version was approved. `gate/output_diff.py` compares
+  the two outputs file by file, puts files with a SEC-12 match of the new
+  version first, and writes the first 150 lines of at most 200 characters
+  into the report and the full diff as `output.diff` into the
+  `gate-report` artifact the comment's run link leads to. A new entry or a
+  previous version that cannot be fetched or compiled is stated as such.
+
+  Run on 2026-10-10 in the rehearsal fork: a bump pull request from 0.1.0
+  to 0.2.0 passed the gate, and the comment showed one file and one hunk,
+  the added label; `output.diff` was in the artifact.
+
+  - Test: `gate/test_output_diff.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #30
 
 - SEC-14: An exception MUST name the rule ID, the file path and the sha256 of
   that file's content, and lapses when the content changes. SEC-9, SEC-10,
   SEC-11 and GI-* findings MUST NOT be excepted; SEC-12 findings are handled
   through `output_capabilities` only.
-  - Test: none
-  - Since: not implemented
+
+  Exceptions cover the static findings that name one file of the generator
+  tree. Rule IDs:
+
+  | Rule | Finding |
+  |---|---|
+  | `gitleaks:<rule>` | a gitleaks finding (SEC-1) |
+  | `semgrep:<rule>` | a blocking semgrep finding (SEC-3) |
+  | `imports`, `template` | the import and template checks (SEC-3) |
+  | `ruff:<code>` | a ruff finding (QA-3) |
+  | `tree:executable`, `tree:banned`, `tree:large` | executable, banned or oversized files (SEC-5) |
+
+  ClamAV and GuardDog findings, symlinks and the other tree findings, and
+  every finding in a fetched chart have no exception. `scan/exceptions.py`
+  applies the entry's exceptions to the static scan report in the gate and
+  in the rescan (SEC-15): a matching finding is printed as `excepted:` and
+  does not fail; an exception whose file changed is reported as lapsed and
+  the finding stands. The entry's owners write exceptions in their pull
+  request; the maintainer decides in review, and the gate comment shows
+  every exception that was used.
+
+  - Test: `scan/test_exceptions.py`
+  - Since: #29
 
 ## Rescans
 
@@ -502,13 +573,36 @@ review go into the review comment and do not fail the gate.
   SEC-3, SEC-5 and SEC-6 against the latest version of every listed generator
   daily and open or update one issue per finding rule. A finding does not
   yank automatically (INC-1).
-  - Test: none
-  - Since: not implemented
+
+  `scheduled.yml` runs `scan/rescan` for every entry on `main` whose
+  version is not yanked: it fetches `source.sha:source.path` without
+  checkout and runs `scan/static-scan`, which adds QA-3; review and warning
+  lines are not findings. A rule is the tool and, for gitleaks, semgrep and
+  GuardDog, the rule ID; `tree`, `imports`, `template`, `ruff` and `clamav`
+  findings group by tool. The issue title is `rescan: <name> <version>:
+  <rule>`; an open issue with that title gets the current finding lines,
+  otherwise a new one is opened.
+
+  The scan job has `contents: read` only and writes its findings to a file.
+  A second job with `issues: write` reads nothing else and renders finding
+  lines in a code fence, as the gate comment does (GI-4).
+
+  Run on 2026-10-10 in the rehearsal fork with a clean entry and one whose
+  `sha` the tag does not point to: the first run opened `tag drift:` and
+  `rescan: ... fetch` issues and none for the clean entry, the second run
+  updated both instead of opening new ones.
+
+  - Test: `scan/test_rescan_issues.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #28
 
 - SEC-16: The scheduled workflow MUST open an issue when an entry's
   `source.tag` no longer resolves to `source.sha`.
-  - Test: none
-  - Since: not implemented
+
+  The scan job compares with `git ls-remote`, as REG-1 does, and the issue
+  title is `tag drift: <name> <tag>`.
+
+  - Test: `scan/test_rescan_issues.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #28
 
 ## Compile gate
 
@@ -545,30 +639,69 @@ review go into the review comment and do not fail the gate.
   which fail the gate. Whether the output equals Kapitan's, apart from
   `.krab-manifest.json`, MUST be recorded in the index as `compatible` or
   `incompatible` and MUST NOT fail the gate while DEC-4 holds.
-  - Test: none
-  - Since: not implemented
+
+  krab evaluates kadet components in `/opt/krab-python`, a venv in the
+  sandbox image with only `kadet` and `jinja2`, so a component that imports
+  a Kapitan internal krab's `kapitan` shim lacks fails under krab instead of
+  finding the real Kapitan. It compiles with `--no-daemon` and one worker,
+  and is compared with the first backend's Kapitan output. A krab compile
+  that exits non-zero without a trace or output finding is `incompatible`.
+
+  The release build job repeats the gate compile, including krab, for every
+  version not yet published and writes the result into the metadata; a
+  finding fails the build. Published versions keep their metadata, since
+  the sign job skips them.
+
+  Run on 2026-10-09 in the rehearsal fork: the build job compiled a new
+  entry under gVisor with Kapitan and krab, the artifact config and the
+  index recorded `compatible`, and a second run reported the version as
+  published without compiling it.
+
+  - Test: workflow job `gate-selftest` (AC-5); manual: fork rehearsal (2026-10-09)
+  - Since: #24
 
 ## Quality gate
 
 - QA-1: The generator tree MUST contain `README.md` with at least one
   inventory example and `CHANGELOG.md` with an entry for the tagged version,
   and the tree or the repository root MUST contain `LICENSE`.
-  - Test: none
-  - Since: not implemented
+
+  An inventory example is a fenced code block containing `parameters:`. An
+  entry is a Markdown heading that contains the version from `source.tag`
+  as a whole word, such as `## 1.4.0` or `## [1.4.0] - 2026-10-09`. The
+  repository root is read from the fetched commit, without checkout.
+
+  - Test: `gate/test_check_entry.py` (`Quality`)
+  - Since: #25
 
 - QA-2: `license` MUST be the SPDX identifier of an OSI-approved license
   (`policy/licenses.txt`), and `LICENSE` MUST match it.
-  - Test: none
-  - Since: not implemented
+
+  `policy/licenses.txt` lists Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause,
+  ISC, MPL-2.0 and the `-only` and `-or-later` forms of LGPL-3.0, GPL-3.0
+  and AGPL-3.0; a maintainer pull request adds more. Each line carries a
+  pattern for the license's own wording, matched against the first 4 KiB
+  of `LICENSE` with whitespace collapsed. This catches a mismatched or
+  missing license, not an edited text. The `-only` and `-or-later` forms
+  share a text and are not told apart.
+
+  - Test: `gate/test_check_entry.py` (`Quality`)
+  - Since: #25
 
 - QA-3: `ruff check` with the pinned version and `policy/ruff.toml` MUST pass
   on the generator tree.
-  - Test: none
-  - Since: not implemented
+
+  `policy/ruff.toml` selects `E9` and `F`: syntax errors and pyflakes
+  findings such as undefined names and unused imports, no style rules. It
+  excludes nothing; the tree's own ruff configuration and `noqa` comments
+  are ignored.
+
+  - Test: workflow job `gate-selftest` (`fail-ruff-undefined-name`)
+  - Since: #25
 
 - QA-4: The fixture project MUST contain a `minimal` target.
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `gate-selftest` (`fail-no-minimal`)
+  - Since: #25
 
 - QA-5: The manifest MUST validate against `policy/manifest.schema.json` and
   the entry against `policy/entry.schema.json`.
@@ -600,9 +733,9 @@ code diff and the output diff, not only the verdict.
   backtick run in the report, so text from the entry or the generator tree
   cannot add markup, links or mentions.
 
-  - Test: none (partial: results, review and warning lines and the compare
-    link; krab result, exceptions, capability changes and the output diff
-    follow with CMP-4, SEC-14, SEC-12 and SEC-13)
+  - Test: none (partial: results, review and warning lines, the compare
+    link, the krab result, SEC-12 matches, used exceptions and the output
+    diff; capability changes are visible only through the SEC-12 lines)
   - Since: #12
 
 ## Publishing
@@ -614,20 +747,20 @@ already has them. The workflow takes the registry namespace and the
 certificate identity from its own repository, so the same file runs in the
 rehearsal fork (AC-6); the documented verification names `kadet-hub`.
 
-The build job has `contents: read` only. It fetches each source without
-checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
+The build job has `contents: read` and `packages: read` only. It fetches
+each source without checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
 (GI-9), repeats REG-2 and REG-3 across all entries on `main`, and writes a
 normalized tar of the tree `source.sha:source.path` with its metadata: the
 manifest fields the index lists, the source, and the tree ID computed from the
-files. It runs the checks in the sandbox image without network.
+files. It runs the checks in the sandbox image without network, and the
+compile gate under gVisor for versions without a published tag (CMP-4).
 
 The sign job runs once per entry in the `release` environment. It fetches
 `source.sha` itself, blobless, compares the git tree of `source.path` with
 the tree ID of the tar's contents and with the metadata, writes the OCI
 manifest itself, pushes config and layer to `ghcr.io/kadet-hub/<name>` by
 digest, attests the digest, and then sets the `<version>` tag. The krab
-result comes from the gate's krab check of the merged pull request once
-CMP-4 exists and is `null` until then.
+result is the build job's (CMP-4).
 
 The artifact is an OCI image manifest with artifact type
 `application/vnd.kadet-hub.generator.v1`, the metadata as config blob
@@ -798,8 +931,26 @@ own.
   GitLab-hosted runners cannot run gVisor; the template uses `--network none`
   with the default runtime and documents that SEC-10 is not enforced there.
 
-  - Test: none
-  - Since: not implemented
+  `sandbox/gitlab-ci.yml` is included by URL at a commit SHA and takes the
+  same SHA as input; the job downloads that commit's scripts and runs
+  `consumer/run` against a `docker:dind` service with `SANDBOX_TRACE=0`.
+  In that mode `sandbox/run` uses the default runtime, needs no sudo, and
+  writes `/out` to a plain directory that is checked for the 50 MiB limit
+  after the compile; `noexec` on `/out` and the SEC-10 trace are not
+  enforced. Network isolation, the read-only root, decoys, SEC-11 and
+  SEC-12 apply as on GitHub. Work directories live under
+  `$CI_PROJECT_DIR`, which the job and the dind service share. The job
+  needs a `GH_TOKEN` CI variable, a GitHub token without permissions, for
+  `gh attestation verify`; without it the job fails before fetching.
+
+  Run on 2026-10-10 in a private gitlab.com project against the rehearsal
+  fork's published sandbox image: the `pass-helm-input` sample compiled
+  and uploaded `compiled`, the `fail-output-capability` sample failed on
+  the undeclared `hostPath` in `compiled/app` and accepted the one in
+  `compiled/logging`.
+
+  - Test: manual: gitlab.com rehearsal (2026-10-10)
+  - Since: #31
 
 - CON-1b: The compile step MUST run SEC-12 over the output and fail on every
   match the policy's `output_capabilities` does not accept for that path.
@@ -905,8 +1056,27 @@ failed lookup shows the user ID or no stars.
 - INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,
   and a GitHub security advisory published and listed in the index. The
   target is 24 hours from confirmation, best effort with one maintainer.
-  - Test: manual: incident runbook rehearsal
-  - Since: not implemented
+
+  `docs/incident.md` is the runbook. The entry records advisories as
+  `advisories: {<version>: [GHSA-…]}`; only a maintainer pull request may
+  add or change them (the gate fails otherwise), and the release copies
+  them into the version's index record. The maintainer deletes the
+  artifact by hand after the yank is merged, since the deletion cannot be
+  undone. The index then keeps the version: a yanked version whose
+  artifact is gone is carried over from the previous attested index with
+  its digest, reason and advisories, so consumers still find why their
+  pinned digest is rejected (CON-2) and the catalog shows the advisory.
+  GitHub refuses to delete the last tagged version of a package; the
+  runbook deletes the package then.
+
+  Run on 2026-10-10 in the rehearsal fork with a draft advisory: the yank
+  with the advisory raised the index serial and the catalog showed both;
+  after the package was deleted, a release run reported the index
+  unchanged, still listing the version with digest, reason and advisory.
+
+  - Test: `release/test_release.py`, `gate/test_check_entry.py`,
+    `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #32
 
 ## Verification
 
@@ -925,13 +1095,14 @@ failed lookup shows the user ID or no stars.
 - AC-2 (CMP-1, CMP-2, QA-1 to QA-5, SEC-9, SEC-10): the benign samples pass,
   including one that wraps `helm template` with a declared chart and one
   compiled on `reclass-rs` and `omegaconf` that calls `getattr` with a
-  computed name (flagged for review, not failed). Check: `gate-selftest` (partial: QA-1 to QA-4 not
-  implemented).
+  computed name (flagged for review, not failed). Check: `gate-selftest`
+  and `gate/test_check_entry.py` (QA-1, QA-2, QA-5).
 - AC-3 (REG-3, REG-4, REG-5, REG-8, GI-2, GI-9, SEC-8): an entry named
   `kubernet-es` next to a reserved `kubernetes`, an entry or bump authored by
   a non-owner, a bump changing `source.repo`, a non-maintainer deletion or
   rename, a tag `v1.0.0-$(id)`, a chart name `--untardir=/x` and a chart whose
-  bytes differ from its `sha256` each fail. Check: `gate-selftest`.
+  bytes differ from its `sha256` each fail. Check: `gate/test_check_entry.py`
+  and `gate-selftest` (the chart digest).
 - AC-4 (SEC-9, SEC-10, SEC-11): samples that connect a TCP socket and swallow
   the error, start a process through `_posixsubprocess`, run `helm template
   --post-renderer` through a variable, hide `--post-renderer` behind a
@@ -939,9 +1110,13 @@ failed lookup shows the user ID or no stars.
   symlink in `/tmp`, read `~/.aws/credentials` after `chdir`, and run an
   undeclared binary each fail. Check:
   `gate-selftest`.
-- AC-5 (CMP-4): a sample importing a Kapitan internal missing from krab's shim
-  is recorded `incompatible` and passes; a sample whose payload fires only
-  under krab fails. Check: `gate-selftest`.
+- AC-5 (CMP-4): a sample whose inventory uses reclass reference syntax, which
+  krab does not render, is recorded `incompatible` and passes; `pass-plain`
+  is recorded `compatible`; a sample whose payload fires only under krab
+  fails. Check: `gate-selftest`.
+
+  The SEC-3 import allowlist names only modules krab's shim provides, so no
+  sample can import a missing Kapitan internal and still pass.
 - AC-6 (PUB-1 to PUB-5, CON-2): after a merge, the documented verification
   passes for artifact and index, and a second run pushes nothing. An artifact
   attested from another branch fails verification, and so does an index with
@@ -978,8 +1153,8 @@ failed lookup shows the user ID or no stars.
 - AC-9 (GI-1, GI-2, GI-5, GI-10): a fork pull request that edits the gate
   workflow, edits `policy/`, or adds a workflow reporting a check named like
   the gate cannot make the pull request mergeable, and no workflow uses a
-  cache. Check: manual: test fork; `gate-selftest` greps `.github/` for
-  `actions/cache` and `setup-*` steps without `cache: false`.
+  cache. Check: manual: test fork; `workflow-lint` (`tests/workflow-policy`)
+  for the cache.
 
   Run on 2026-10-08 with #9 from a test fork: the fork's
   own push workflow reported a successful `gate` check run from GitHub
@@ -1034,6 +1209,18 @@ failed lookup shows the user ID or no stars.
 - Restricted runtimes (Starlark, Wasm, CUE-only generators).
 - A Kapitan version matrix.
 
+## Test gaps
+
+These requirements have no check that fails on a violation; the partial
+coverage is named at each:
+
+- REG-1: no sample whose tag points elsewhere; the fork rehearsals passed it.
+- GI-3, GI-4, GI-8: job permissions are reviewed, not tested.
+- GI-7: no sample that makes a gate tool error or time out.
+- REV-2: the comment is rendered, not asserted.
+- CON-3: documentation content.
+- CAT-5: URL stability.
+
 ## Open questions
 
 None.
@@ -1046,7 +1233,7 @@ None.
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
-| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, QA-5: `collect`, `check_entry.py`, `fetch_tree.py` |
+| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13) |
 | `.github/actions/setup-gate/` | gVisor, scanners and sandbox image for `gate.yml` and `selftest.yml` |
 | `policy/semgrep/blocking/`, `policy/semgrep/review/`, `policy/imports.txt` | SEC-3 |
 | `policy/gitleaks.toml` | SEC-1, SEC-4 |
@@ -1062,16 +1249,19 @@ None.
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/release.yml` | PUB-1 to PUB-6, GI-8, CAT-1, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5: `build.py`, `tree.py`, `index.py` |
-| `.github/workflows/scheduled.yml` | SEC-15, SEC-16 |
+| `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3 |
 | `catalog/` | CAT-1 to CAT-6: Hugo site, `build` script, `test_catalog.py` |
 | `docs/authors.md`, `README.md` | CAT-6 |
+| `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
+| `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
-ClamAV, conftest, oras, helm, zizmor, actionlint) are pinned when the jobs
-are written.
+ClamAV, conftest, oras, helm, gh, zizmor, actionlint, Hugo) are pinned in
+`sandbox/Dockerfile`, the requirements files, `.github/actions/` and
+`sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).

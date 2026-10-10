@@ -1,0 +1,9 @@
+name: pass-declared-chart
+binaries: ["helm template"]
+charts:
+  - repo: https://stefanprodan.github.io/podinfo
+    name: podinfo
+    version: 6.9.2
+    sha256: a25decb773b5c2854113cc69111d3afa3850319c4c67b9728e7b767aca0a0d51
+    output_path: charts/podinfo
+fixtures: tests/consumer

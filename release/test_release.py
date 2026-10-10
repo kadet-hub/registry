@@ -82,6 +82,22 @@ class Index(unittest.TestCase):
         self.assertEqual(second["generators"]["gen"]["1.0.0"]["published"], NOW)
         self.assertEqual(second["generators"]["gen"]["1.1.0"]["published"], LATER)
 
+    def test_deleted_yanked_version_stays_with_its_advisory(self):
+        entries = {"gen": {"yanked": {"1.0.0": "malicious"}, "advisories": {"1.0.0": ["GHSA-2345-6789-cfgh"]}}}
+        first = build([version("gen", "1.0.0"), version("gen", "1.1.0")], entries, None, NOW)
+        self.assertEqual(first["generators"]["gen"]["1.0.0"]["advisories"], ["GHSA-2345-6789-cfgh"])
+        second = build([version("gen", "1.1.0")], entries, first, LATER)
+        self.assertIsNone(second)
+        kept = build([version("gen", "1.1.0")], {"gen": {"yanked": {"1.0.0": "malicious, see advisory"},
+                                                         "advisories": entries["gen"]["advisories"]}}, first, LATER)
+        record = kept["generators"]["gen"]["1.0.0"]
+        self.assertEqual((record["digest"], record["yanked"], record["advisories"], record["published"]),
+                         ("sha256:" + "a" * 64, "malicious, see advisory", ["GHSA-2345-6789-cfgh"], NOW))
+
+    def test_deleted_version_that_is_not_yanked_is_dropped(self):
+        first = build([version("gen", "1.0.0")], {"gen": {}}, None, NOW)
+        self.assertEqual(build([], {"gen": {}}, first, LATER)["generators"], {})
+
 
 if __name__ == "__main__":
     unittest.main()

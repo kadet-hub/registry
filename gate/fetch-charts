@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# SEC-8: pull every chart the manifest declares with the sandbox image's
+# helm, compare its digest, and unpack it at its output_path.
+#
+# Usage: fetch-charts <generator dir> <out dir>
+# Needs: Docker with the image $SANDBOX_IMAGE, yq, python3, network. The
+# manifest is validated (GI-9). Prints findings; exits 1 on any.
+set -euo pipefail
+gen=$1
+out=$2
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+manifest=$gen/kapitan-generator.yaml
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+mkdir -p -- "$out"
+
+count=$(yq -r '.charts // [] | length' -- "$manifest")
+for ((i = 0; i < count; i++)); do
+  field() { yq -r ".charts[$i].$1" -- "$manifest"; }
+  repo=$(field repo) name=$(field name) version=$(field version) want=$(field sha256) path=$(field output_path)
+  if [[ -e $out/$path ]]; then
+    echo "SEC-8: two charts share output_path $path"
+    exit 1
+  fi
+  if [[ $repo == oci://* ]]; then ref=(-- "${repo%/}/$name"); else ref=(--repo "$repo" -- "$name"); fi
+  mkdir -p -- "$work/$i/pull" "$work/$i/x"
+  docker run --rm --read-only --tmpfs /tmp --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$work/$i/pull,dst=/charts" \
+    "$image" helm pull --version "$version" -d /charts "${ref[@]}" >"$work/$i.log" 2>&1 \
+    || { echo "SEC-8: helm pull $name $version from $repo failed:"; tail -n 5 -- "$work/$i.log"; exit 1; }
+  tgz=$(find "$work/$i/pull" -maxdepth 1 -type f -name '*.tgz' -print -quit)
+  got=$(sha256sum -- "$tgz" | cut -d' ' -f1)
+  if [[ $got != "$want" ]]; then
+    echo "SEC-8: chart $name $version has sha256 $got, the manifest declares $want"
+    exit 1
+  fi
+  python3 -I "$root/consumer/unpack.py" "$work/$i/pull" "$work/$i/x" >/dev/null || { echo "SEC-8: chart $name $version does not unpack"; exit 1; }
+  [[ -d $work/$i/x/$name ]] || { echo "SEC-8: chart $name $version has no directory $name"; exit 1; }
+  mkdir -p -- "$(dirname -- "$out/$path")"
+  mv -- "$work/$i/x/$name" "$out/$path"
+done

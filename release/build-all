@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Build job (PUB-1): fetch every entry's source without checkout, then
-# validate and build in the sandbox image without network.
+# Build job (PUB-1, CMP-4): fetch every entry's source without checkout,
+# validate and build in the sandbox image without network, then run the
+# compile gate for versions not yet published and record the krab result.
 #
 # Usage: build-all <out dir>
-# Needs: the sandbox image $SANDBOX_IMAGE, yq, the main checkout. Writes the
-# artifacts and names.json to <out dir>.
+# Needs: the sandbox image $SANDBOX_IMAGE, yq, jq, oras, REGISTRY, what
+# sandbox/gate-compile needs, the main checkout. Writes the artifacts and
+# names.json to <out dir>.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
@@ -29,3 +31,23 @@ docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
   --mount "type=bind,src=$work/src,dst=/src,readonly" \
   --mount "type=bind,src=$(cd -- "$out" && pwd),dst=/out" \
   "$image" python -I /base/release/build.py --base /base --sources /src --out /out
+
+# shellcheck source=release/common.sh
+. "$root/release/common.sh"
+while IFS= read -r name; do
+  meta=$out/$name/meta.json
+  version=$(jq -r .version -- "$meta")
+  rc=0; lookup oras resolve -- "$REGISTRY/$name:$version" >/dev/null || rc=$?
+  ((rc < 2)) || exit 1
+  if ((rc == 0)); then
+    echo "$name $version: published, not compiled"
+    continue
+  fi
+  echo "## $name $version: compile gate"
+  "$root/gate/fetch-charts" "$work/src/$name" "$work/charts-$name" \
+    || { echo "SEC-8: $name $version: the charts do not match"; exit 1; }
+  KRAB_RESULT=$work/krab "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" \
+    || { echo "CMP-4: $name $version: the compile gate failed"; exit 1; }
+  jq -c -S --arg krab "$(cat -- "$work/krab")" '.krab = $krab' -- "$meta" >"$work/meta.json"
+  cp -- "$work/meta.json" "$meta"
+done < <(jq -r '.[]' -- "$out/names.json")

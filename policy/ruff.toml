@@ -1,0 +1,7 @@
+# QA-3: errors that break a generator, no style rules. static-scan passes
+# this file with --config, so the tree's own configuration is not read.
+exclude = []
+respect-gitignore = false
+
+[lint]
+select = ["E9", "F"]

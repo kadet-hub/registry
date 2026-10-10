@@ -27,6 +27,16 @@ kapitan: "{kapitan}"
 binaries: [{binaries}]
 fixtures: tests/consumer
 """
+APACHE = """
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+"""
+TREE = {
+    "README.md": "# demo\n\n```yaml\nparameters:\n  kapitan:\n    dependencies: []\n```\n",
+    "CHANGELOG.md": "# Changelog\n\n## [1.0.0] - 2026-10-09\n\n- First release.\n",
+    "LICENSE": APACHE,
+}
 
 
 class Case:
@@ -66,10 +76,16 @@ class Case:
                             base=self.base, reserved=self.p("reserved.txt"), policy=POLICY, out=self.p("entry.json"))
         return check_entry.step_entry(a)
 
-    def manifest(self, text):
-        self.write("manifest.yaml", text)
-        a = SimpleNamespace(event=self.p("event.json"), entry=self.p("entry.json"), manifest=self.p("manifest.yaml"),
-                            policy=POLICY)
+    def manifest(self, text, files=None, root_license=None):
+        for rel, content in {**TREE, **(files or {})}.items():
+            if content is not None:
+                self.write(f"gen/{rel}", content)
+        self.write("gen/kapitan-generator.yaml", text)
+        if root_license is not None:
+            self.write("root-license", root_license)
+        a = SimpleNamespace(event=self.p("event.json"), entry=self.p("entry.json"),
+                            manifest=self.p("gen/kapitan-generator.yaml"), policy=POLICY,
+                            root_license=self.p("root-license"))
         return check_entry.step_manifest(a)
 
 
@@ -129,7 +145,9 @@ class Entry(unittest.TestCase):
     def test_bump(self):
         c = Case(base_entries={"demo": entry()})
         self.assertEqual(c.entry("generators/demo.yaml", entry(tag="v1.1.0")), [])
-        self.assertTrue(has(c.entry("generators/demo.yaml", entry(tag="v1.0.0")), "REG-6"))
+        self.assertTrue(has(c.entry("generators/demo.yaml", entry(tag="v1.0.0", sha="b" * 40)), "REG-6"))
+        yank = entry() + 'yanked:\n  "1.0.0": malicious\n'
+        self.assertEqual(c.entry("generators/demo.yaml", yank), [])
         self.assertTrue(has(c.entry("generators/demo.yaml", entry(tag="other-v2.0.0")), "REG-6"))
 
     def test_bump_by_stranger_and_repo_change(self):
@@ -137,6 +155,13 @@ class Entry(unittest.TestCase):
         moved = entry(tag="v1.1.0").replace("example/demo.git", "attacker/demo.git")
         self.assertTrue(has(Case(base_entries={"demo": entry()}).entry("generators/demo.yaml", moved), "REG-8"))
         self.assertEqual(Case(author=MAINTAINER, base_entries={"demo": entry()}).entry("generators/demo.yaml", moved), [])
+
+    def test_advisories_only_from_a_maintainer(self):
+        adv = entry() + 'yanked:\n  "1.0.0": malicious\nadvisories:\n  "1.0.0": [GHSA-2345-6789-cfgh]\n'
+        self.assertTrue(has(Case(base_entries={"demo": entry()}).entry("generators/demo.yaml", adv), "INC-1"))
+        self.assertEqual(Case(author=MAINTAINER, base_entries={"demo": entry()}).entry("generators/demo.yaml", adv), [])
+        self.assertTrue(has(Case(author=MAINTAINER, base_entries={"demo": entry()}).entry(
+            "generators/demo.yaml", adv.replace("GHSA-2345-6789-cfgh", "CVE-2026-1")), "QA-5"))
 
     def test_renovate_bump_needs_same_repo_branch(self):
         bump = entry(tag="v1.1.0")
@@ -164,10 +189,50 @@ class Manifest(unittest.TestCase):
         self.assertTrue(has(self.c.manifest(manifest(binaries='"curl get"')), "SEC-7"))
         self.assertTrue(has(self.c.manifest(manifest() + "dependencies: [requests]\n"), "QA-5"))
         self.assertTrue(has(self.c.manifest(manifest().replace("tests/consumer", "../outside")), "QA-5"))
+        chart = "charts:\n  - {{repo: https://charts.example.org, name: '{}', version: 1.0.0, sha256: {}, output_path: c}}\n"
+        self.assertEqual(self.c.manifest(manifest() + chart.format("demo", "a" * 64)), [])
+        self.assertTrue(has(self.c.manifest(manifest() + chart.format("--untardir=/x", "a" * 64)), "QA-5"))
 
     def test_tags_come_from_the_list(self):
         self.assertEqual(self.c.manifest(manifest() + "tags: [helm, kubernetes]\n"), [])
         self.assertTrue(has(self.c.manifest(manifest() + "tags: [crypto]\n"), "QA-5"))
+
+
+class Quality(unittest.TestCase):
+    def setUp(self):
+        self.c = Case()
+        self.assertEqual(self.c.entry("generators/demo.yaml", entry()), [])
+
+    def test_readme_needs_an_inventory_example(self):
+        self.assertTrue(has(self.c.manifest(manifest(), {"README.md": "# demo\n\nparameters: outside a fence\n"}), "QA-1"))
+        self.assertTrue(has(self.c.manifest(manifest(), {"README.md": None}), "QA-1"))
+
+    def test_changelog_needs_a_heading_for_the_version(self):
+        for text in ("## 1.0.0\n", "### v1.0.0 (2026-10-09)\n"):
+            self.assertEqual(self.c.manifest(manifest(), {"CHANGELOG.md": text}), [], text)
+        for text in ("- fixed 1.0.0 bug\n", "## 1.0.0-rc1\n", "## 11.0.0\n", "## 1.0.01\n"):
+            self.assertTrue(has(self.c.manifest(manifest(), {"CHANGELOG.md": text}), "QA-1"), text)
+
+    def test_license_from_the_repository_root(self):
+        self.assertTrue(has(self.c.manifest(manifest(), {"LICENSE": None}), "QA-1"))
+        c = Case()
+        c.entry("generators/demo.yaml", entry())
+        self.assertEqual(c.manifest(manifest(), {"LICENSE": None}, root_license=APACHE), [])
+
+    def test_license_must_be_listed_and_match(self):
+        mit = "MIT License\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software"
+        self.assertTrue(has(self.c.manifest(manifest(), {"LICENSE": mit}), "QA-2"))
+        self.assertEqual(self.c.manifest(manifest().replace("Apache-2.0", "MIT"), {"LICENSE": mit}), [])
+        self.assertTrue(has(self.c.manifest(manifest().replace("Apache-2.0", "WTFPL")), "QA-2"))
+
+    def test_bsd_clauses_are_told_apart(self):
+        two = "Redistribution and use in source and binary forms, with or without\nmodification, are permitted"
+        three = two + " ... 3. Neither the name of the copyright holder nor"
+        bsd = manifest().replace("Apache-2.0", "{}")
+        self.assertEqual(self.c.manifest(bsd.format("BSD-2-Clause"), {"LICENSE": two}), [])
+        self.assertEqual(self.c.manifest(bsd.format("BSD-3-Clause"), {"LICENSE": three}), [])
+        self.assertTrue(has(self.c.manifest(bsd.format("BSD-2-Clause"), {"LICENSE": three}), "QA-2"))
+        self.assertTrue(has(self.c.manifest(bsd.format("BSD-3-Clause"), {"LICENSE": two}), "QA-2"))
 
 
 if __name__ == "__main__":

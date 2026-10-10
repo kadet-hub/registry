@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# SEC-15, SEC-16: rescan the current version of every entry on main and
+# check that its tag still resolves to the pinned commit.
+#
+# Usage: rescan <findings file>
+# Needs: what static-scan needs, yq, git, python3. Writes one line per
+# finding, "<kind>\t<name>\t<version or tag>\t<text>", for rescan_issues.py.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+out=$1
+: >"$out"
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+gitc=(git -c protocol.allow=never -c protocol.https.allow=always)
+emit() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" >>"$out"; }
+
+for f in "$root"/generators/*.yaml; do
+  [[ -e $f ]] || continue
+  name=$(basename -- "$f" .yaml)
+  repo=$(yq -r .source.repo "$f") path=$(yq -r .source.path "$f") tag=$(yq -r .source.tag "$f") sha=$(yq -r .source.sha "$f")
+  [[ $tag =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]
+  version=${BASH_REMATCH[1]}
+  if [[ $(V=$version yq -r '.yanked // {} | has(strenv(V))' "$f") == true ]]; then
+    echo "$name $version: yanked, not scanned"
+    continue
+  fi
+  echo "## $name $version"
+
+  # SEC-16
+  resolved=$("${gitc[@]}" ls-remote -- "$repo" "refs/tags/$tag" "refs/tags/$tag^{}" 2>/dev/null | awk '{print $1}' | tail -n 1) || true
+  if [[ $resolved != "$sha" ]]; then
+    emit drift "$name" "$tag" "tag $tag resolves to ${resolved:-nothing}, the entry pins $sha"
+  fi
+
+  # SEC-15: the pinned tree, without checkout, through the static scan.
+  tree=$work/$name
+  if ! "${gitc[@]}" init -q --bare -- "$work/$name.git" \
+    || ! "${gitc[@]}" --git-dir="$work/$name.git" fetch -q --depth=1 --no-tags -- "$repo" "$sha" 2>"$work/fetch.log"; then
+    emit rescan "$name" "$version" "fetch: $(tail -n 1 -- "$work/fetch.log")"
+    continue
+  fi
+  python3 "$root/gate/fetch_tree.py" --git-dir "$work/$name.git" --rev "$sha" --path "$path" --out "$tree" >"$work/tree.log" 2>&1 || true
+  rc=0
+  "$root/scan/static-scan" "$tree" >>"$work/tree.log" 2>&1 || rc=$?
+  yq -o json '.exceptions // []' "$f" >"$work/exceptions.json"
+  failed=0
+  python3 -I "$root/scan/exceptions.py" --tree "$tree" --exceptions "$work/exceptions.json" \
+    --report "$work/tree.log" --rc "$rc" >"$work/report.txt" || failed=1
+  cat -- "$work/report.txt"
+  found=0
+  while IFS= read -r line; do
+    emit rescan "$name" "$version" "$line"
+    found=1
+  done < <(grep -vE '^(review|warning|excepted): |^$' -- "$work/report.txt" || true)
+  if ((failed && !found)); then emit rescan "$name" "$version" "static-scan: exit $rc without a finding"; fi
+done

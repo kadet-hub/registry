@@ -4,7 +4,8 @@
 #
 # Usage: run <project> <result dir>
 # Needs: OWNER (registry owner), GH_TOKEN, gVisor with the runsc-trace
-# runtime, docker, sudo, oras, gh, helm, git, yq, python3. SANDBOX_IMAGE
+# runtime and sudo (or SANDBOX_TRACE=0, see sandbox/run), docker, oras, gh,
+# helm, git, yq, python3. SANDBOX_IMAGE
 # skips resolving the published image; only consumer-selftest sets it.
 # The policy is <project>/.kapitan-sandbox.yaml. Prints findings; exits 1 on any.
 set -euo pipefail

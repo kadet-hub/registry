@@ -1,6 +1,6 @@
 name: release
 
-# PUB-1 to PUB-6, CAT-1. Only this workflow holds publishing permissions:
+# PUB-1 to PUB-6, CMP-4, CAT-1. Only this workflow holds publishing permissions:
 # its sign, sandbox and index jobs in the release environment, and its pages
 # job in the github-pages environment (GI-8).
 on:
@@ -25,12 +25,19 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      packages: read # which versions are published (CMP-4)
     outputs:
       names: ${{ steps.build.outputs.names }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - uses: ./.github/actions/setup-gvisor # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+        with:
+          token: ${{ github.token }}
 
       - name: Build sandbox image
         run: docker build -t kadet-hub/sandbox sandbox

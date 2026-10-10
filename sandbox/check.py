@@ -1,6 +1,8 @@
 """Judge a gVisor strace log and the compile output (SEC-10, SEC-11).
 
-Usage: check.py --log-dir DIR --out DIR --policy FILE --decoys FILE [--allow NAME ...]
+Usage: check.py [--log-dir DIR] --out DIR --policy FILE --decoys FILE [--allow NAME ...]
+
+Without --log-dir (CON-1a, no gVisor) only the output is judged.
 
 Prints every finding; exits 1 if there is any. Only syscall entry lines are
 judged, so failed attempts count. Format (gVisor pkg/sentry/strace): paths
@@ -22,6 +24,14 @@ PYTHON_CODE = re.compile(
     r"from multiprocessing\.spawn import spawn_main; spawn_main\(tracker_fd=\d+, pipe_handle=\d+\)"
     r"|from multiprocessing\.resource_tracker import main;main\(\d+\)"
 )
+# krab's Python for kadet (CMP-4): two probes, then its runner from the cache.
+KRAB_PYTHON = "/opt/krab-python/bin/python"
+KRAB_PROBES = (
+    ["-c", ("import sys\ntry:\n from importlib.metadata import version\n v=version('kadet')\nexcept Exception:\n"
+            " v='unknown'\nprint(f'kadet {v} python {sys.version.split()[0]}')")],
+    ["-c", "import kadet, yaml"],
+)
+KRAB_RUNNER = re.compile(r"/tmp/xdg/cache/krab/kadet-runner/[0-9a-f]{16}/kadet_runner\.py")
 DECOY_DIRS = ("/home/gate/.aws", "/home/gate/.kube", "/home/gate/.ssh", "/home/gate/.gnupg")
 PROC = re.compile(r"/proc/[^/]+/(environ|root|cwd)(/|$)")
 WRITABLE = ("/out/", "/tmp/", "/dev/shm/")
@@ -81,6 +91,9 @@ def parse_argv(text):
 
 
 def exec_allowed(exe, argv, rules, allow):
+    if exe == KRAB_PYTHON:
+        return "krab-kadet" in allow and argv[:1] == [KRAB_PYTHON] and (
+            argv[1:] in KRAB_PROBES or (len(argv) == 2 and bool(KRAB_RUNNER.fullmatch(argv[1]))))
     if exe == PYTHON:
         return (len(argv) in (4, 5) and argv[1:3] == ["-B", "-c"] and bool(PYTHON_CODE.fullmatch(argv[3]))
                 and argv[4:] in ([], ["--multiprocessing-fork"]))
@@ -213,7 +226,7 @@ def check_output(out_dir, values):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--log-dir", required=True)
+    p.add_argument("--log-dir")
     p.add_argument("--out", required=True)
     p.add_argument("--policy", required=True)
     p.add_argument("--decoys", required=True, help="file with one decoy value per line")
@@ -221,7 +234,8 @@ def main():
     a = p.parse_args()
     with open(a.decoys, encoding="utf-8") as f:
         values = f.read().split()
-    findings = check_trace(a.log_dir, parse_policy(a.policy), set(a.allow)) + check_output(a.out, values)
+    trace = check_trace(a.log_dir, parse_policy(a.policy), set(a.allow)) if a.log_dir else []
+    findings = trace + check_output(a.out, values)
     if findings:
         print("\n".join(findings))
     return 1 if findings else 0

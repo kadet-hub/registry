@@ -34,7 +34,8 @@
       "managerFilePatterns": [
         "/^sandbox/Dockerfile$/",
         "/^\\.github/workflows/[^/]+\\.yml$/",
-        "/^\\.github/actions/[^/]+/action\\.yml$/"
+        "/^\\.github/actions/[^/]+/action\\.yml$/",
+        "/^sandbox/gitlab-ci\\.yml$/"
       ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?"
@@ -64,6 +65,13 @@
       "allowedVersions": "/^3\\.13-slim$/"
     },
     {
+      "description": "Kapitan 0.36.3's omegaconf backend needs ListMergeMode, which later pre-releases removed",
+      "matchPackageNames": [
+        "omegaconf"
+      ],
+      "allowedVersions": "/^2\\.4\\.0\\.dev4$/"
+    },
+    {
       "description": "gVisor tags are release-YYYYMMDD.N; the download path uses YYYYMMDD",
       "matchDepNames": [
         "google/gvisor"
@@ -72,10 +80,14 @@
       "versioning": "loose"
     },
     {
-      "description": "gitleaks and conftest are pinned without the v prefix",
+      "description": "these tools are pinned without the v prefix",
       "matchDepNames": [
         "gitleaks/gitleaks",
-        "open-policy-agent/conftest"
+        "open-policy-agent/conftest",
+        "kapicorp/krab",
+        "rhysd/actionlint",
+        "zizmorcore/zizmor",
+        "cli/cli"
       ],
       "extractVersion": "^v(?<version>.+)$"
     },
@@ -87,5 +99,10 @@
       "groupName": null,
       "commitMessageTopic": "generator {{depName}}"
     }
-  ]
+  ],
+  "gitlabci": {
+    "managerFilePatterns": [
+      "/^sandbox/gitlab-ci\\.yml$/"
+    ]
+  }
 }
