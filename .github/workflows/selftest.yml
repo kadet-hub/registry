@@ -33,6 +33,7 @@ jobs:
         run: |
           python3 -m unittest discover -s sandbox -p 'test_check.py' -v
           python3 -m unittest discover -s gate -p 'test_fetch*.py' -v
+          python3 -m unittest discover -s gate -p 'test_output*.py' -v
           python3 -m unittest discover -s release -v
           python3 -m unittest discover -s catalog -v
 

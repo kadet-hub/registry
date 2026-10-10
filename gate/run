@@ -82,5 +82,26 @@ python3 -I "$root/scan/exceptions.py" --tree "$gen" --exceptions "$work/exceptio
   --report "$work/static.txt" --rc "$rc" || status=1
 if [[ -n $(ls -A -- "$work/charts") ]]; then "$root/scan/static-scan" "$work/charts" || status=1; fi
 echo "## Sandbox compile"
-"$root/sandbox/gate-compile" "$gen" "$name" "$work/charts" || status=1
+mkdir -- "$work/out-new"
+OUTPUT_DIR=$work/out-new "$root/sandbox/gate-compile" "$gen" "$name" "$work/charts" | tee "$work/compile.txt" || status=1
+
+# SEC-13: the approved version's output, compiled the same way, as the base.
+echo "## Output diff"
+previous=$(field previous_sha)
+if [[ $previous == null ]]; then
+  echo "SEC-13: new entry, no approved version to compare with"
+elif ! "${gitc[@]}" --git-dir="$work/src.git" fetch -q --depth=1 --no-tags -- "$src_repo" "$previous" \
+  || ! python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$previous" --path "$src_path" --out "$work/previous" >/dev/null \
+  || ! "$root/gate/fetch-charts" "$work/previous" "$work/previous-charts" >/dev/null; then
+  echo "SEC-13: the approved version $previous could not be fetched"
+else
+  mkdir -- "$work/out-previous"
+  if ! COMPILE_ONLY=1 OUTPUT_DIR=$work/out-previous "$root/sandbox/gate-compile" "$work/previous" "$name" \
+    "$work/previous-charts" >"$work/previous.txt" 2>&1; then
+    echo "SEC-13: the approved version's compile reported, not judged:"
+    head -n 20 -- "$work/previous.txt"
+  fi
+  python3 -I "$root/gate/output_diff.py" --old "$work/out-previous" --new "$work/out-new" \
+    --compile-log "$work/compile.txt" --full "${GATE_OUT:-$work}/output.diff"
+fi
 exit "$status"
