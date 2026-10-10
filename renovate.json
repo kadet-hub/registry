@@ -65,6 +65,13 @@
       "allowedVersions": "/^3\\.13-slim$/"
     },
     {
+      "description": "Kapitan 0.36.3's omegaconf backend needs ListMergeMode, which later pre-releases removed",
+      "matchPackageNames": [
+        "omegaconf"
+      ],
+      "allowedVersions": "/^2\\.4\\.0\\.dev4$/"
+    },
+    {
       "description": "gVisor tags are release-YYYYMMDD.N; the download path uses YYYYMMDD",
       "matchDepNames": [
         "google/gvisor"
