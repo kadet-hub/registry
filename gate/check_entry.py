@@ -68,17 +68,24 @@ def distance(a, b):
     return prev[-1]
 
 
+# GI-2a: files a Renovate pull request may change instead of an entry.
+RENOVATE_PINS = re.compile(r"sandbox/Dockerfile|(sandbox|sandbox/krab|scan)/requirements\.(in|txt)|scan/static-scan"
+                           r"|sandbox/gitlab-ci\.yml|\.github/workflows/[^/]+\.yml|\.github/actions/[^/]+/action\.yml")
+
+
 def step_files(a):
     """GI-2: which entry this pull request is about, if any."""
     event = load_json(a.event)
-    _, maintainer, _ = actor(event, a.policy)
+    _, maintainer, renovate = actor(event, a.policy)
     with open(a.files, encoding="utf-8") as f:
         files = [json.loads(line) for line in f if line.strip()]
     findings = []
     entries = [f for f in files if f["filename"].startswith("generators/") or (f.get("previous_filename") or "").startswith("generators/")]
-    if not maintainer:
+    pins = renovate and files and all(f["status"] == "modified" and RENOVATE_PINS.fullmatch(f["filename"]) for f in files)
+    if not maintainer and not pins:
         if len(files) != 1 or len(entries) != 1:
-            findings.append(f"GI-2: a pull request from a non-maintainer changes exactly one entry file, found {len(files)} files")
+            other = ", ".join(f["filename"][:100] for f in files if f not in entries)
+            findings.append(f"GI-2: a pull request from a non-maintainer changes exactly one entry file; it also changes {other or 'nothing else'}")
         elif entries[0]["status"] not in ("added", "modified"):
             findings.append(f"GI-2: {entries[0]['status']} entries are maintainer pull requests")
     if len(entries) > 1:
