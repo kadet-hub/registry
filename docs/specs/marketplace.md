@@ -543,7 +543,7 @@ review go into the review comment and do not fail the gate.
   every exception that was used.
 
   - Test: `scan/test_exceptions.py`
-  - Since: this change
+  - Since: #29
 
 ## Rescans
 
@@ -712,8 +712,8 @@ code diff and the output diff, not only the verdict.
   cannot add markup, links or mentions.
 
   - Test: none (partial: results, review and warning lines, the compare
-    link, the krab result and SEC-12 matches; exceptions, capability changes
-    and the output diff follow with SEC-14 and SEC-13)
+    link, the krab result, SEC-12 matches and used exceptions; capability
+    changes and the output diff follow with SEC-13)
   - Since: #12
 
 ## Publishing
