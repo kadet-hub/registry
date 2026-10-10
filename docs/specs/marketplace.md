@@ -525,8 +525,12 @@ review go into the review comment and do not fail the gate.
   `gate-report` artifact the comment's run link leads to. A new entry or a
   previous version that cannot be fetched or compiled is stated as such.
 
-  - Test: `gate/test_output_diff.py`
-  - Since: this change
+  Run on 2026-10-10 in the rehearsal fork: a bump pull request from 0.1.0
+  to 0.2.0 passed the gate, and the comment showed one file and one hunk,
+  the added label; `output.diff` was in the artifact.
+
+  - Test: `gate/test_output_diff.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #30
 
 - SEC-14: An exception MUST name the rule ID, the file path and the sha256 of
   that file's content, and lapses when the content changes. SEC-9, SEC-10,
