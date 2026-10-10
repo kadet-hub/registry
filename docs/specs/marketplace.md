@@ -544,8 +544,13 @@ review go into the review comment and do not fail the gate.
   A second job with `issues: write` reads nothing else and renders finding
   lines in a code fence, as the gate comment does (GI-4).
 
-  - Test: `scan/test_rescan_issues.py`; manual: rehearsal fork run
-  - Since: this change
+  Run on 2026-10-10 in the rehearsal fork with a clean entry and one whose
+  `sha` the tag does not point to: the first run opened `tag drift:` and
+  `rescan: ... fetch` issues and none for the clean entry, the second run
+  updated both instead of opening new ones.
+
+  - Test: `scan/test_rescan_issues.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #28
 
 - SEC-16: The scheduled workflow MUST open an issue when an entry's
   `source.tag` no longer resolves to `source.sha`.
@@ -553,8 +558,8 @@ review go into the review comment and do not fail the gate.
   The scan job compares with `git ls-remote`, as REG-1 does, and the issue
   title is `tag drift: <name> <tag>`.
 
-  - Test: `scan/test_rescan_issues.py`; manual: rehearsal fork run
-  - Since: this change
+  - Test: `scan/test_rescan_issues.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #28
 
 ## Compile gate
 
