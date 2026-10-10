@@ -113,6 +113,19 @@ class Files(unittest.TestCase):
         f, _ = Case().files({"filename": ".github/workflows/gate.yml", "status": "modified"})
         self.assertTrue(has(f, "GI-2"))
 
+    def test_renovate_pin_update_passes(self):
+        pins = [{"filename": f, "status": "modified"} for f in
+                ("sandbox/Dockerfile", "scan/requirements.in", "scan/requirements.txt", ".github/workflows/gate.yml",
+                 ".github/actions/setup-oras/action.yml", "sandbox/krab/requirements.txt", "sandbox/gitlab-ci.yml")]
+        bot = Case(author=check_entry.RENOVATE_BOT, same_repo=True)
+        self.assertEqual(bot.files(*pins), ([], ""))
+        for extra in ({"filename": "policy/imports.txt", "status": "modified"}, {"filename": "renovate.json", "status": "modified"},
+                      {"filename": "gate/run", "status": "modified"}, {"filename": ".github/workflows/x.yml", "status": "added"},
+                      {"filename": "sandbox/Dockerfile", "status": "removed"}):
+            self.assertTrue(has(bot.files(*pins, extra)[0], "GI-2"), extra)
+        self.assertTrue(has(Case(author=check_entry.RENOVATE_BOT).files(*pins)[0], "GI-2"))
+        self.assertTrue(has(Case(same_repo=True).files(*pins)[0], "GI-2"))
+
     def test_non_maintainer_removal_fails(self):
         f, _ = Case().files({"filename": "generators/demo.yaml", "status": "removed"})
         self.assertTrue(has(f, "GI-2"))
