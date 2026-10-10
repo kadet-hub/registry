@@ -229,7 +229,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   stay maintainer pull requests.
 
   - Test: `gate/test_check_entry.py::Files`
-  - Since: this change
+  - Since: #38
 
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
