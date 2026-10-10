@@ -72,6 +72,16 @@
       "allowedVersions": "/^2\\.4\\.0\\.dev4$/"
     },
     {
+      "description": "Runners stay on ubuntu-24.04: the scanner locks are for its Python and actionlint 1.7.12 does not know newer labels",
+      "matchDatasources": [
+        "github-runners"
+      ],
+      "matchPackageNames": [
+        "ubuntu"
+      ],
+      "allowedVersions": "24.04"
+    },
+    {
       "description": "gVisor tags are release-YYYYMMDD.N; the download path uses YYYYMMDD",
       "matchDepNames": [
         "google/gvisor"
