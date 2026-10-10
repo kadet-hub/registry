@@ -217,6 +217,20 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Test: `gate/test_check_entry.py::Files`
   - Since: #8
 
+- GI-2a: A pull request from Renovate, identified as in REG-5, MAY instead
+  modify only pin files: `sandbox/Dockerfile`, the `requirements.in` and
+  `requirements.txt` under `sandbox/`, `sandbox/krab/` and `scan/`,
+  `scan/static-scan`, `sandbox/gitlab-ci.yml`, `.github/workflows/*.yml`
+  and `.github/actions/*/action.yml`.
+
+  The gate then passes without an entry; the merge still needs a
+  maintainer's approval and code owner review (REV-1), and the selftests
+  run the bumped tools. `renovate.json`, `policy/` and the gate's scripts
+  stay maintainer pull requests.
+
+  - Test: `gate/test_check_entry.py::Files`
+  - Since: this change
+
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
   sandbox.
