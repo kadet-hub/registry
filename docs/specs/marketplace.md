@@ -2,7 +2,7 @@
 
 Status: Approved
 Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `docs/incident.md`, `README.md`, `.github/`, `renovate.json`
-Verified against: none (new repository)
+Verified against: main @ 970a5d4
 
 ## Problem
 
@@ -206,7 +206,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-1: The gate workflow MUST NOT check out or execute pull request content.
   It reads the changed entry file through the API, parses it with a safe YAML
   loader and validates it against `policy/entry.schema.json`.
-  - Test: none (partial: `gate.yml` checks out `main` only; AC-9 pending)
+  - Test: manual: AC-9 run on #9 (2026-10-08)
   - Since: #8
 
 - GI-2: A pull request from a non-maintainer MUST add or modify exactly one
@@ -218,7 +218,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
   sandbox.
-  - Test: none (partial: `gate.yml` permissions; AC-9 pending)
+  - Test: none (partial: `gate.yml` permissions, which zizmor audits in `workflow-lint`)
   - Since: #8
 
 - GI-4: The job that posts the review comment (REV-2) MUST run separately with
@@ -1151,8 +1151,8 @@ failed lookup shows the user ID or no stars.
 - AC-9 (GI-1, GI-2, GI-5, GI-10): a fork pull request that edits the gate
   workflow, edits `policy/`, or adds a workflow reporting a check named like
   the gate cannot make the pull request mergeable, and no workflow uses a
-  cache. Check: manual: test fork; `gate-selftest` greps `.github/` for
-  `actions/cache` and `setup-*` steps without `cache: false`.
+  cache. Check: manual: test fork; `workflow-lint` (`tests/workflow-policy`)
+  for the cache.
 
   Run on 2026-10-08 with #9 from a test fork: the fork's
   own push workflow reported a successful `gate` check run from GitHub
@@ -1207,6 +1207,18 @@ failed lookup shows the user ID or no stars.
 - Restricted runtimes (Starlark, Wasm, CUE-only generators).
 - A Kapitan version matrix.
 
+## Test gaps
+
+These requirements have no check that fails on a violation; the partial
+coverage is named at each:
+
+- REG-1: no sample whose tag points elsewhere; the fork rehearsals passed it.
+- GI-3, GI-4, GI-8: job permissions are reviewed, not tested.
+- GI-7: no sample that makes a gate tool error or time out.
+- REV-2: the comment is rendered, not asserted.
+- CON-3: documentation content.
+- CAT-5: URL stability.
+
 ## Open questions
 
 None.
@@ -1248,5 +1260,6 @@ None.
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
-ClamAV, conftest, oras, helm, zizmor, actionlint) are pinned when the jobs
-are written.
+ClamAV, conftest, oras, helm, gh, zizmor, actionlint, Hugo) are pinned in
+`sandbox/Dockerfile`, the requirements files, `.github/actions/` and
+`sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).
