@@ -21,7 +21,7 @@ env:
 jobs:
   build:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -57,7 +57,7 @@ jobs:
   sign:
     needs: build
     if: needs.build.outputs.names != '[]'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     environment: release
     permissions:
@@ -107,7 +107,7 @@ jobs:
 
   sandbox:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     environment: release
     permissions:
@@ -148,7 +148,7 @@ jobs:
   index:
     needs: [build, sign]
     if: always() && needs.build.result == 'success' && (needs.sign.result == 'success' || needs.sign.result == 'skipped')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     environment: release
     permissions:
@@ -198,7 +198,7 @@ jobs:
     needs: index
     # always(): index runs after a skipped sign job, which would skip this one too
     if: always() && needs.index.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -227,7 +227,7 @@ jobs:
   pages:
     needs: catalog
     if: always() && needs.catalog.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     environment:
       name: github-pages

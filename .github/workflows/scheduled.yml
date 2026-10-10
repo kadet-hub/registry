@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   rescan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -36,7 +36,7 @@ jobs:
 
   issues:
     needs: rescan
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
