@@ -1,0 +1,72 @@
+name: scheduled
+
+# SEC-15, SEC-16: daily rescan of every listed version and its tag.
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: scheduled
+  cancel-in-progress: false
+
+jobs:
+  rescan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-gate # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - name: Rescan
+        run: scan/rescan "$RUNNER_TEMP/findings.tsv"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: findings
+          path: ${{ runner.temp }}/findings.tsv
+          retention-days: 7
+
+  issues:
+    needs: rescan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: findings
+          path: findings
+
+      - name: Open or update one issue per rule
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 scan/rescan_issues.py findings/findings.tsv "$RUN_URL" >issues.json
+          jq -c '.[]' issues.json | while IFS= read -r issue; do
+            title=$(jq -r .title <<<"$issue")
+            jq -r .body <<<"$issue" >body.md
+            number=$(gh issue list -R "$REPO" --state open --search "in:title \"$title\"" --json number,title \
+              | jq -r --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
+            if [[ -n $number ]]; then
+              gh issue edit "$number" -R "$REPO" --body-file body.md >/dev/null
+              echo "updated #$number: $title"
+            else
+              gh issue create -R "$REPO" --title "$title" --body-file body.md
+            fi
+          done
