@@ -936,8 +936,14 @@ own.
   needs a `GH_TOKEN` CI variable, a GitHub token without permissions, for
   `gh attestation verify`; without it the job fails before fetching.
 
-  - Test: manual: gitlab.com rehearsal project
-  - Since: this change
+  Run on 2026-10-10 in a private gitlab.com project against the rehearsal
+  fork's published sandbox image: the `pass-helm-input` sample compiled
+  and uploaded `compiled`, the `fail-output-capability` sample failed on
+  the undeclared `hostPath` in `compiled/app` and accepted the one in
+  `compiled/logging`.
+
+  - Test: manual: gitlab.com rehearsal (2026-10-10)
+  - Since: #31
 
 - CON-1b: The compile step MUST run SEC-12 over the output and fail on every
   match the policy's `output_capabilities` does not accept for that path.
