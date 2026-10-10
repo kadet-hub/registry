@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# GI-6 and GI-10 on the workflows, actions and sandbox image.
+#
+# Usage: tests/workflow-policy [<repository root>]
+# Prints violations; exits 1 on any.
+set -euo pipefail
+root=${1:-$(cd -- "$(dirname -- "$0")/.." && pwd)}
+cd -- "$root"
+status=0
+fail() { echo "$1"; status=1; }
+
+# GI-6: actions by commit SHA.
+while IFS= read -r line; do
+  fail "GI-6: not pinned by commit SHA: $line"
+done < <(grep -rnE '^[[:space:]]*(-[[:space:]]*)?uses:' .github | grep -vE 'uses:[[:space:]]*(\./|\$/)|@[0-9a-f]{40}([[:space:]]|$)' || true)
+
+# GI-6: every download in an action or workflow is checked on the next line.
+while IFS= read -r file; do
+  while IFS=: read -r n _; do
+    sed -n "$((n + 1))p" -- "$file" | grep -qE 'sha(256|512)sum -c' || fail "GI-6: download without checksum: $file:$n"
+  done < <(grep -nE '(^|[^[:alnum:]_-])curl[[:space:]]' -- "$file" || true)
+done < <(find .github -type f \( -name '*.yml' -o -name '*.yaml' \))
+
+# GI-6: image downloads carry a checksum.
+while IFS= read -r line; do
+  fail "GI-6: ADD without --checksum: sandbox/Dockerfile:$line"
+done < <(grep -nE '^ADD[[:space:]]+[^-]*https?://' sandbox/Dockerfile || true)
+
+# GI-10: no caches.
+while IFS= read -r line; do
+  fail "GI-10: cache: $line"
+done < <(grep -rnE 'actions/cache|^[[:space:]]+cache(-dependency-path)?:' .github || true)
+
+exit "$status"

@@ -1142,6 +1142,7 @@ None.
 | `catalog/` | CAT-1 to CAT-6: Hugo site, `build` script, `test_catalog.py` |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
+| `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
