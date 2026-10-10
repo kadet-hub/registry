@@ -514,8 +514,23 @@ review go into the review comment and do not fail the gate.
 - SEC-13: The review comment MUST state the size of the fixture output diff
   against the previously approved version in files and hunks, show hunks with
   SEC-12 matches first, and link the full diff as a workflow artifact.
-  - Test: none
-  - Since: not implemented
+
+  On a version bump the gate fetches `previous_sha` from the same `repo`
+  and `path`, with its charts, and compiles its fixture once in the same
+  sandbox on the first backend; findings of that compile are shown, not
+  judged, since the version was approved. `gate/output_diff.py` compares
+  the two outputs file by file, puts files with a SEC-12 match of the new
+  version first, and writes the first 150 lines of at most 200 characters
+  into the report and the full diff as `output.diff` into the
+  `gate-report` artifact the comment's run link leads to. A new entry or a
+  previous version that cannot be fetched or compiled is stated as such.
+
+  Run on 2026-10-10 in the rehearsal fork: a bump pull request from 0.1.0
+  to 0.2.0 passed the gate, and the comment showed one file and one hunk,
+  the added label; `output.diff` was in the artifact.
+
+  - Test: `gate/test_output_diff.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #30
 
 - SEC-14: An exception MUST name the rule ID, the file path and the sha256 of
   that file's content, and lapses when the content changes. SEC-9, SEC-10,
@@ -712,8 +727,8 @@ code diff and the output diff, not only the verdict.
   cannot add markup, links or mentions.
 
   - Test: none (partial: results, review and warning lines, the compare
-    link, the krab result, SEC-12 matches and used exceptions; capability
-    changes and the output diff follow with SEC-13)
+    link, the krab result, SEC-12 matches, used exceptions and the output
+    diff; capability changes are visible only through the SEC-12 lines)
   - Since: #12
 
 ## Publishing
@@ -1162,7 +1177,7 @@ None.
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
-| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts` |
+| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13) |
 | `.github/actions/setup-gate/` | gVisor, scanners and sandbox image for `gate.yml` and `selftest.yml` |
 | `policy/semgrep/blocking/`, `policy/semgrep/review/`, `policy/imports.txt` | SEC-3 |
 | `policy/gitleaks.toml` | SEC-1, SEC-4 |

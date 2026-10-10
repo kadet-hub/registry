@@ -4,7 +4,9 @@
 #
 # Usage: gate-compile <generator dir> <name> [<charts dir>]
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
-# Writes compatible or incompatible (CMP-4) to $KRAB_RESULT if set.
+# Writes compatible or incompatible (CMP-4) to $KRAB_RESULT if set, and the
+# first backend's output to $OUTPUT_DIR if set (SEC-13). COMPILE_ONLY=1 stops
+# after that compile.
 set -euo pipefail
 
 gen=$1
@@ -76,6 +78,8 @@ compile() {
 for backend in "${backends[@]}"; do
   echo "### backend $backend"
   compile "$work/out-$backend"
+  if [[ $backend == "${backends[0]}" && -n ${OUTPUT_DIR:-} ]]; then cp -R -- "$work/out-$backend/." "$OUTPUT_DIR/"; fi
+  if [[ ${COMPILE_ONLY:-} == 1 ]]; then exit "$status"; fi
   for target in "${targets[@]}"; do
     if ! find "$work/out-$backend/compiled/$target" -type f -print -quit 2>/dev/null | grep -q .; then
       echo "CMP-1: target $target produced no file on $backend"
