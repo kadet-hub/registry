@@ -521,8 +521,29 @@ review go into the review comment and do not fail the gate.
   that file's content, and lapses when the content changes. SEC-9, SEC-10,
   SEC-11 and GI-* findings MUST NOT be excepted; SEC-12 findings are handled
   through `output_capabilities` only.
-  - Test: none
-  - Since: not implemented
+
+  Exceptions cover the static findings that name one file of the generator
+  tree. Rule IDs:
+
+  | Rule | Finding |
+  |---|---|
+  | `gitleaks:<rule>` | a gitleaks finding (SEC-1) |
+  | `semgrep:<rule>` | a blocking semgrep finding (SEC-3) |
+  | `imports`, `template` | the import and template checks (SEC-3) |
+  | `ruff:<code>` | a ruff finding (QA-3) |
+  | `tree:executable`, `tree:banned`, `tree:large` | executable, banned or oversized files (SEC-5) |
+
+  ClamAV and GuardDog findings, symlinks and the other tree findings, and
+  every finding in a fetched chart have no exception. `scan/exceptions.py`
+  applies the entry's exceptions to the static scan report in the gate and
+  in the rescan (SEC-15): a matching finding is printed as `excepted:` and
+  does not fail; an exception whose file changed is reported as lapsed and
+  the finding stands. The entry's owners write exceptions in their pull
+  request; the maintainer decides in review, and the gate comment shows
+  every exception that was used.
+
+  - Test: `scan/test_exceptions.py`
+  - Since: this change
 
 ## Rescans
 
