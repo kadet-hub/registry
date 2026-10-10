@@ -180,6 +180,9 @@ class Manifest(unittest.TestCase):
         self.assertTrue(has(self.c.manifest(manifest(binaries='"curl get"')), "SEC-7"))
         self.assertTrue(has(self.c.manifest(manifest() + "dependencies: [requests]\n"), "QA-5"))
         self.assertTrue(has(self.c.manifest(manifest().replace("tests/consumer", "../outside")), "QA-5"))
+        chart = "charts:\n  - {{repo: https://charts.example.org, name: '{}', version: 1.0.0, sha256: {}, output_path: c}}\n"
+        self.assertEqual(self.c.manifest(manifest() + chart.format("demo", "a" * 64)), [])
+        self.assertTrue(has(self.c.manifest(manifest() + chart.format("--untardir=/x", "a" * 64)), "QA-5"))
 
     def test_tags_come_from_the_list(self):
         self.assertEqual(self.c.manifest(manifest() + "tags: [helm, kubernetes]\n"), [])

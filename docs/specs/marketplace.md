@@ -382,8 +382,17 @@ review go into the review comment and do not fail the gate.
 - SEC-8: Every declared chart MUST be fetched by the gate with `helm pull`,
   match its `sha256`, and pass SEC-1, SEC-2, SEC-5 and SEC-6; the index lists
   the digests.
-  - Test: none
-  - Since: not implemented
+
+  `gate/fetch-charts` pulls with the sandbox image's pinned helm, the only
+  step besides the source fetch that has network, compares the `.tgz` with
+  `sha256` and unpacks it at `output_path` below the fixture project, which
+  replaces whatever the fixture holds there. The static scan runs over the
+  unpacked charts as over the tree. The release build job fetches and
+  compares again before its compile (CMP-4), without scanning: the digest
+  pins the bytes the gate scanned.
+
+  - Test: workflow job `gate-selftest` (`pass-declared-chart`, `fail-chart-sha`)
+  - Since: #26
 
 ## Sandbox and runtime detection
 
@@ -973,7 +982,8 @@ failed lookup shows the user ID or no stars.
   `kubernet-es` next to a reserved `kubernetes`, an entry or bump authored by
   a non-owner, a bump changing `source.repo`, a non-maintainer deletion or
   rename, a tag `v1.0.0-$(id)`, a chart name `--untardir=/x` and a chart whose
-  bytes differ from its `sha256` each fail. Check: `gate-selftest`.
+  bytes differ from its `sha256` each fail. Check: `gate/test_check_entry.py`
+  and `gate-selftest` (the chart digest).
 - AC-4 (SEC-9, SEC-10, SEC-11): samples that connect a TCP socket and swallow
   the error, start a process through `_posixsubprocess`, run `helm template
   --post-renderer` through a variable, hide `--post-renderer` behind a
@@ -1092,7 +1102,7 @@ None.
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
-| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, QA-5: `collect`, `check_entry.py`, `fetch_tree.py` |
+| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts` |
 | `.github/actions/setup-gate/` | gVisor, scanners and sandbox image for `gate.yml` and `selftest.yml` |
 | `policy/semgrep/blocking/`, `policy/semgrep/review/`, `policy/imports.txt` | SEC-3 |
 | `policy/gitleaks.toml` | SEC-1, SEC-4 |

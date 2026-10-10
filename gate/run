@@ -72,8 +72,11 @@ fi
 check manifest --entry /work/entry.json --manifest "/work/generator/kapitan-generator.yaml" \
   --root-license /work/root-license || exit 1
 
+echo "## Charts"
+"$root/gate/fetch-charts" "$gen" "$work/charts" || exit 1
 echo "## Static checks"
 "$root/scan/static-scan" "$gen" || status=1
+if [[ -n $(ls -A -- "$work/charts") ]]; then "$root/scan/static-scan" "$work/charts" || status=1; fi
 echo "## Sandbox compile"
-"$root/sandbox/gate-compile" "$gen" "$name" || status=1
+"$root/sandbox/gate-compile" "$gen" "$name" "$work/charts" || status=1
 exit "$status"
