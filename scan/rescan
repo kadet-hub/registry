@@ -43,11 +43,15 @@ for f in "$root"/generators/*.yaml; do
   python3 "$root/gate/fetch_tree.py" --git-dir "$work/$name.git" --rev "$sha" --path "$path" --out "$tree" >"$work/tree.log" 2>&1 || true
   rc=0
   "$root/scan/static-scan" "$tree" >>"$work/tree.log" 2>&1 || rc=$?
-  cat -- "$work/tree.log"
+  yq -o json '.exceptions // []' "$f" >"$work/exceptions.json"
+  failed=0
+  python3 -I "$root/scan/exceptions.py" --tree "$tree" --exceptions "$work/exceptions.json" \
+    --report "$work/tree.log" --rc "$rc" >"$work/report.txt" || failed=1
+  cat -- "$work/report.txt"
   found=0
   while IFS= read -r line; do
     emit rescan "$name" "$version" "$line"
     found=1
-  done < <(grep -vE '^(review|warning): |^$' -- "$work/tree.log" || true)
-  if ((rc != 0 && found == 0)); then emit rescan "$name" "$version" "static-scan: exit $rc"; fi
+  done < <(grep -vE '^(review|warning|excepted): |^$' -- "$work/report.txt" || true)
+  if ((failed && !found)); then emit rescan "$name" "$version" "static-scan: exit $rc without a finding"; fi
 done
