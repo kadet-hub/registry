@@ -230,8 +230,14 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
 - GI-6: Every third-party action MUST be pinned by full commit SHA and every
   downloaded tool binary by sha256.
-  - Test: none
-  - Since: not implemented
+
+  `tests/workflow-policy` checks that every `uses:` other than `./` and
+  `$/` ends in a 40-character SHA, that every `curl` in `.github/` is
+  followed by a `sha256sum -c` or `sha512sum -c`, and that every `ADD` from
+  a URL in `sandbox/Dockerfile` carries `--checksum`.
+
+  - Test: workflow job `workflow-lint`
+  - Since: this change
 
 - GI-7: Any gate tool error, timeout or missing result MUST fail the gate. The
   gate job has a 30-minute timeout and the compile output a 50 MiB limit.
@@ -269,15 +275,25 @@ which only a maintainer pull request changes (GI-2, REV-1).
   actions; gate tools come from images pinned by digest.
 
   Cache entries written by a `pull_request_target` run are read by `push`
-  runs on `main`.
+  runs on `main`. `tests/workflow-policy` fails on `actions/cache` and on a
+  `cache` or `cache-dependency-path` input anywhere in `.github/`.
 
-  - Test: none
-  - Since: not implemented
+  - Test: workflow job `workflow-lint`
+  - Since: this change
 
 - GI-11: zizmor and actionlint MUST pass on `.github/` for every pull request
   that changes it.
-  - Test: none
-  - Since: not implemented
+
+  The `workflows` workflow runs both, pinned by sha256, with GI-6 and GI-10
+  on pull requests that change `.github/`, `sandbox/Dockerfile` or the
+  policy script. actionlint 1.7.12 rejects the self-repository syntax `$/`,
+  so that one message is ignored; zizmor's `self-repository` finding is
+  suppressed where the workspace is the main checkout. The job is not a
+  required check: REV-1 requires the gate only, and code owner review
+  covers `.github/`.
+
+  - Test: workflow job `workflow-lint`
+  - Since: this change
 
 ## Static checks
 
