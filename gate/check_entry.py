@@ -145,10 +145,15 @@ def step_entry(a):
     else:
         if not (maintainer or renovate or author in old["owners"]):
             findings.append("REG-5: a change to an entry is authored by an owner, a maintainer or Renovate")
+    if not maintainer and (entry.get("advisories") or {}) != ((old or {}).get("advisories") or {}):
+        findings.append("INC-1: advisories change only in a maintainer pull request")
+    if old is not None:
         if not maintainer and (old["source"]["repo"], old["source"]["path"]) != (entry["source"]["repo"], entry["source"]["path"]):
             findings.append("REG-8: only a maintainer changes source.repo or source.path")
         old_tag = TAG.match(old["source"]["tag"])
-        if old_tag.group("prefix") != tag.group("prefix"):
+        if (old["source"]["tag"], old["source"]["sha"]) == (entry["source"]["tag"], entry["source"]["sha"]):
+            pass  # not a bump: yanked, advisories, exceptions or owners changed
+        elif old_tag.group("prefix") != tag.group("prefix"):
             findings.append("REG-6: the tag prefix must not change")
         elif tuple(map(int, tag.group("version").split("."))) <= tuple(map(int, old_tag.group("version").split("."))):
             findings.append(f"REG-6: {tag.group('version')} is not newer than {old_tag.group('version')}")
