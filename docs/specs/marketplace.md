@@ -1064,10 +1064,17 @@ failed lookup shows the user ID or no stars.
   artifact is gone is carried over from the previous attested index with
   its digest, reason and advisories, so consumers still find why their
   pinned digest is rejected (CON-2) and the catalog shows the advisory.
+  GitHub refuses to delete the last tagged version of a package; the
+  runbook deletes the package then.
+
+  Run on 2026-10-10 in the rehearsal fork with a draft advisory: the yank
+  with the advisory raised the index serial and the catalog showed both;
+  after the package was deleted, a release run reported the index
+  unchanged, still listing the version with digest, reason and advisory.
 
   - Test: `release/test_release.py`, `gate/test_check_entry.py`,
-    `catalog/test_catalog.py`; manual: fork rehearsal
-  - Since: this change
+    `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #32
 
 ## Verification
 

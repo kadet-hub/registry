@@ -43,7 +43,12 @@ id=$(gh api "/orgs/kadet-hub/packages/container/<name>/versions" \
 gh api -X DELETE "/orgs/kadet-hub/packages/container/<name>/versions/$id"
 ```
 
-This needs a token with `delete:packages` and organization owner rights.
+GitHub refuses to delete the last tagged version of a package; if no
+other version is published, delete the package instead with
+`gh api -X DELETE "/orgs/kadet-hub/packages/container/<name>"`. The next
+release that publishes a version recreates it. Both need a token with
+`delete:packages` and organization owner rights.
+
 Then run the release once more (`gh workflow run release.yml -R
 kadet-hub/registry`): it does not rebuild a yanked version, and the index
 keeps the version's record with its digest, reason and advisory.
