@@ -924,8 +924,20 @@ own.
   GitLab-hosted runners cannot run gVisor; the template uses `--network none`
   with the default runtime and documents that SEC-10 is not enforced there.
 
-  - Test: none
-  - Since: not implemented
+  `sandbox/gitlab-ci.yml` is included by URL at a commit SHA and takes the
+  same SHA as input; the job downloads that commit's scripts and runs
+  `consumer/run` against a `docker:dind` service with `SANDBOX_TRACE=0`.
+  In that mode `sandbox/run` uses the default runtime, needs no sudo, and
+  writes `/out` to a plain directory that is checked for the 50 MiB limit
+  after the compile; `noexec` on `/out` and the SEC-10 trace are not
+  enforced. Network isolation, the read-only root, decoys, SEC-11 and
+  SEC-12 apply as on GitHub. Work directories live under
+  `$CI_PROJECT_DIR`, which the job and the dind service share. The job
+  needs a `GH_TOKEN` CI variable, a GitHub token without permissions, for
+  `gh attestation verify`; without it the job fails before fetching.
+
+  - Test: manual: gitlab.com rehearsal project
+  - Since: this change
 
 - CON-1b: The compile step MUST run SEC-12 over the output and fail on every
   match the policy's `output_capabilities` does not accept for that path.
