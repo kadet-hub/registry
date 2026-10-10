@@ -162,6 +162,10 @@ fetched tree; this is the layout consumers use.
   - Since: #8
 
 - REG-6: A version bump MUST increase the semver parsed from `source.tag`.
+
+  A change that keeps `tag` and `sha`, such as a yank, is not a bump; a new
+  `sha` under the same tag is.
+
   - Test: `gate/test_check_entry.py::Entry.test_bump`
   - Since: #8
 

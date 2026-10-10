@@ -145,7 +145,9 @@ class Entry(unittest.TestCase):
     def test_bump(self):
         c = Case(base_entries={"demo": entry()})
         self.assertEqual(c.entry("generators/demo.yaml", entry(tag="v1.1.0")), [])
-        self.assertTrue(has(c.entry("generators/demo.yaml", entry(tag="v1.0.0")), "REG-6"))
+        self.assertTrue(has(c.entry("generators/demo.yaml", entry(tag="v1.0.0", sha="b" * 40)), "REG-6"))
+        yank = entry() + 'yanked:\n  "1.0.0": malicious\n'
+        self.assertEqual(c.entry("generators/demo.yaml", yank), [])
         self.assertTrue(has(c.entry("generators/demo.yaml", entry(tag="other-v2.0.0")), "REG-6"))
 
     def test_bump_by_stranger_and_repo_change(self):
@@ -153,6 +155,13 @@ class Entry(unittest.TestCase):
         moved = entry(tag="v1.1.0").replace("example/demo.git", "attacker/demo.git")
         self.assertTrue(has(Case(base_entries={"demo": entry()}).entry("generators/demo.yaml", moved), "REG-8"))
         self.assertEqual(Case(author=MAINTAINER, base_entries={"demo": entry()}).entry("generators/demo.yaml", moved), [])
+
+    def test_advisories_only_from_a_maintainer(self):
+        adv = entry() + 'yanked:\n  "1.0.0": malicious\nadvisories:\n  "1.0.0": [GHSA-2345-6789-cfgh]\n'
+        self.assertTrue(has(Case(base_entries={"demo": entry()}).entry("generators/demo.yaml", adv), "INC-1"))
+        self.assertEqual(Case(author=MAINTAINER, base_entries={"demo": entry()}).entry("generators/demo.yaml", adv), [])
+        self.assertTrue(has(Case(author=MAINTAINER, base_entries={"demo": entry()}).entry(
+            "generators/demo.yaml", adv.replace("GHSA-2345-6789-cfgh", "CVE-2026-1")), "QA-5"))
 
     def test_renovate_bump_needs_same_repo_branch(self):
         bump = entry(tag="v1.1.0")

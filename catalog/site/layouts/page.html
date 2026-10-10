@@ -16,6 +16,8 @@
   <h2>{{ .version }}{{ with .published }} <small>{{ substr . 0 10 }}</small>{{ end }}</h2>
   {{ if .yanked }}
   <p class="warning">Yanked: {{ .yanked }}</p>
+  <p>Digest: <code>{{ .digest }}</code></p>
+  {{ with .advisories }}<p>Advisories: {{ range $i, $a := . }}{{ if $i }}, {{ end }}<a href="https://github.com/{{ $owner }}/registry/security/advisories/{{ $a }}">{{ $a }}</a>{{ end }}</p>{{ end }}
   {{ else }}
   <h3>Inventory</h3>
   <pre><code>parameters:
