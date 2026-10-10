@@ -7,8 +7,8 @@ runs:
       shell: bash
       env:
         # renovate: datasource=github-releases depName=google/gvisor
-        GVISOR_RELEASE: "20260928"
-        GVISOR_SHA512: 4ce35ca83aef7f96b06cde668e0b23aa98b05aa1829508e974196c2a1e02786c95f5bf79315fd7ddcfd88fe7a00f083ed8053e25eff7673d28d5256440caae8b
+        GVISOR_RELEASE: "20261005"
+        GVISOR_SHA512: 27fed731b432d6a39d908956623fd273979fda66b3ccf4b9c12413ea417c516e18a9dc3cced403fb28efe495d64dce4251f51cf8c4d9f4a72f9833bd96b6bb35
       run: |
         curl -fsSLo "$RUNNER_TEMP/gvisor.tar.zstd" "https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64/gvisor.tar.zstd"
         echo "${GVISOR_SHA512}  $RUNNER_TEMP/gvisor.tar.zstd" | sha512sum -c -
