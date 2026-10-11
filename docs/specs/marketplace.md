@@ -889,7 +889,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: the record's shape; the run
     itself is the release workflow)
-  - Since: this change
+  - Since: #47
 
 - PUB-8: The sign job MUST attest an SPDX 2.3 SBOM for every artifact it
   pushes, for the same digest.
@@ -903,7 +903,7 @@ since the documented package API has no visibility call.
   `https://spdx.dev/Document/v2.3`.
 
   - Test: `release/test_release.py` (the document); manual: release run
-  - Since: this change
+  - Since: #47
 
 ## Consumers
 
@@ -1148,7 +1148,7 @@ remembered in the browser's `localStorage`.
   score or "secure" badge.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #47
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
