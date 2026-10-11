@@ -28,15 +28,18 @@
   </div>
 </header>
 
-<div class="generator-body">
-<nav class="panel toc" aria-labelledby="toc">
-  <h2 id="toc">On this page</h2>
+<nav class="toc" aria-labelledby="toc">
+<details open>
+  <summary><h2 id="toc">On this page</h2></summary>
   <ol>
     {{ with .latest }}<li><a href="#install">Install</a></li><li><a href="#verify">Verify</a></li><li><a href="#checks">Checks</a></li><li><a href="#details">Details</a></li>{{ end }}
     {{ with .readme }}<li><a href="#readme">README</a></li>{{ end }}
     <li><a href="#versions">Versions</a></li>
   </ol>
+</details>
 </nav>
+
+<div class="generator-body">
 {{ with .latest }}
 <section class="panel" aria-labelledby="install">
   <h2 id="install">Install {{ .version }}</h2>
