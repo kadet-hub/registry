@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: terraform-google
+  tag: terraform-google-v0.1.0
+  sha: 3ec7a80b223e8561ba752c469c23efd664e767fc
+owners: [3042152]
