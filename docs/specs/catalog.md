@@ -192,7 +192,7 @@ remembered in the browser's `localStorage`.
   but is forbidden by GI-10.
 
   - Test: `catalog/test_catalog.py`
-  - Since: tbd
+  - Since: #83
 
 - CAT-15: The card and the version page MUST show what a version is built
   for, from the software and versions of the schemas QA-7 and QA-8
