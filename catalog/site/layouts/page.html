@@ -2,7 +2,7 @@
 {{ $owner := site.Data.catalog.owner }}
 {{ $page := . }}
 {{ range where site.Data.catalog.generators "name" .Params.generator }}
-{{ $name := .name }}
+{{ $name := .name }}{{ $shared := .stars_shared }}
 <article class="generator">
 <header class="generator-head">
   <span class="monogram large hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
@@ -14,7 +14,8 @@
       <div><dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</dd></div>
       <div><dt>License</dt><dd>{{ .license }}</dd></div>
       <div><dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
-      <div><dt>Source</dt><dd><a href="{{ .source_url }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} stars{{ end }}</dd></div>
+      <div><dt>Source</dt><dd><a href="{{ .source_url }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} {{ with $shared }}repo stars, shared by {{ . }} generators{{ else }}stars{{ end }}{{ end }}</dd></div>
+      {{ with .discussion }}<div><dt>Thumbs up</dt><dd><a href="{{ .url }}">👍 {{ .up }}</a> on GitHub Discussions</dd></div>{{ end }}
     </dl>
     {{ $q := dict "template" "generator-report.yml" "generator" .name "title" (printf "[report] %s: " .name) }}{{ with .latest }}{{ $q = merge $q (dict "version" .version) }}{{ end }}
     <p class="actions small"><a class="button" href="{{ printf "https://github.com/%s/registry/issues/new?%s" $owner (querify $q) | safeURL }}">Report a problem</a></p>

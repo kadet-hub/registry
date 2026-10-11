@@ -65,13 +65,14 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
     out = os.path.join(tmp, "out")
     env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"),
-               CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"))
+               CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"),
+               CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -91,7 +92,11 @@ class Site(unittest.TestCase):
         rekor = os.path.join(cls.tmp.name, "rekor.json")
         with open(rekor, "w", encoding="utf-8") as f:
             json.dump({"demo": {"1.10.0": "3202022821", "1.0.0": "17", "1.2.0": "not-a-number"}}, f)
-        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor)
+        discussions = os.path.join(cls.tmp.name, "discussions.json")
+        with open(discussions, "w", encoding="utf-8") as f:
+            json.dump({"demo": {"url": f"https://github.com/{OWNER}/registry/discussions/5", "up": 3},
+                       "old": {"url": "https://evil.example/x", "up": 1}}, f)
+        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions)
 
     @classmethod
     def tearDownClass(cls):
@@ -295,7 +300,13 @@ class Site(unittest.TestCase):
     def test_sort_keys(self):
         home = self.page()
         self.assertIn('<select id="sort">', home)
-        self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-stars="0"', home)
+        self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-stars="0" data-up="3"', home)
+        self.assertIn('<option value="up">Thumbs up</option>', home)
+
+    def test_thumbs_up_from_discussions(self):
+        self.assertIn(f'<a href="https://github.com/{OWNER}/registry/discussions/5">👍 3</a> on GitHub Discussions', self.page("generators", "demo"))
+        self.assertNotIn("evil.example", self.page("generators", "old"))  # CAT-20: only this registry's discussions
+        self.assertNotIn("Thumbs up</dt>", self.page("generators", "old"))
 
     def test_seo(self):
         for parts in ((), ("generators", "demo"), ("generators", "old"), ("tags",), ("glossary",), ("tags", "helm"), ("tags", "observability"),
@@ -347,6 +358,70 @@ class View(unittest.TestCase):
         g = view(INDEX, OWNER, answers.get)["generators"][0]
         self.assertEqual((g["stars"], g["owners"]), ("0", [{"id": "331675722", "login": "someone"}]))
         self.assertEqual(g["latest"]["version"], "1.10.0")
+        self.assertIsNone(g["stars_shared"])
+
+    def test_shared_stars_are_labelled(self):
+        index = {"generators": dict(INDEX["generators"], two={"1.0.0": record("e")})}
+        gens = {g["name"]: g for g in view(index, OWNER, {"/repos/example/demo": {"stargazers_count": 9}}.get)["generators"]}
+        self.assertEqual((gens["demo"]["stars_shared"], gens["two"]["stars_shared"]), (2, 2))
+        self.assertEqual(gens["old"]["stars_shared"], 2)  # all yanked: not counted, but its repo's stars are shared
+        g = view(index, OWNER, lambda _: None)["generators"][0]
+        self.assertIsNone(g["stars_shared"])  # no stars, no label
+
+
+class Discussions(unittest.TestCase):
+    """catalog/discussions against a fake gh (CAT-20)."""
+
+    def run_with(self, categories, nodes):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        log = os.path.join(tmp.name, "log")
+        state = os.path.join(tmp.name, "nodes.json")
+        with open(state, "w", encoding="utf-8") as f:
+            json.dump(nodes, f)
+        gh = os.path.join(tmp.name, "gh")
+        with open(gh, "w", encoding="utf-8") as f:
+            f.write(f"""#!/usr/bin/env python3
+import json, sys
+args = sys.argv[1:]
+query = next(a.split("=", 1)[1] for a in args if a.startswith("query="))
+fields = dict(a.split("=", 1) for a in args if "=" in a and not a.startswith("query="))
+nodes = json.load(open({state!r}))
+if "createDiscussion" in query:
+    open({log!r}, "a").write(fields["t"] + "\\n")
+    nodes.append({{"title": fields["t"], "url": "https://github.com/kadet-hub/registry/discussions/" + str(len(nodes) + 1),
+                  "author": {{"login": "github-actions"}}, "reactions": {{"totalCount": 0}}}})
+    json.dump(nodes, open({state!r}, "w"))
+    print("{{}}")
+elif "discussionCategories" in query:
+    print(json.dumps({{"id": "R_1", "discussionCategories": {{"nodes": {categories!r}}}}}))
+else:
+    print(json.dumps({{"pageInfo": {{"hasNextPage": False}}, "nodes": nodes}}))
+""")
+        os.chmod(gh, 0o755)
+        index = os.path.join(tmp.name, "index.json")
+        with open(index, "w", encoding="utf-8") as f:
+            json.dump({"generators": dict(INDEX["generators"], keda={"1.0.0": record("e")}, squatted={"1.0.0": record("f")})}, f)
+        env = dict(os.environ, OWNER=OWNER, PATH=tmp.name + os.pathsep + os.environ["PATH"])
+        p = subprocess.run([os.path.join(HERE, "discussions"), index], env=env, capture_output=True, text=True, check=True)
+        created = []
+        if os.path.exists(log):
+            with open(log, encoding="utf-8") as f:
+                created = f.read().split()
+        return json.loads(p.stdout), created, p.stderr
+
+    def test_opens_missing_counts_only_its_own(self):
+        url = "https://github.com/kadet-hub/registry/discussions/"
+        nodes = [{"title": "keda", "url": url + "1", "author": {"login": "github-actions"}, "reactions": {"totalCount": 4}},
+                 {"title": "squatted", "url": url + "2", "author": {"login": "someone"}, "reactions": {"totalCount": 99}}]
+        result, created, _ = self.run_with([{"id": "C_1", "name": "Generators"}], nodes)
+        self.assertEqual(created, ["demo"])  # not old (all yanked), not keda or squatted (title exists)
+        self.assertEqual(result, {"keda": {"url": url + "1", "up": 4}, "demo": {"url": url + "3", "up": 0}})
+
+    def test_without_the_category_nothing_is_opened(self):
+        result, created, err = self.run_with([{"id": "C_0", "name": "General"}], [])
+        self.assertEqual((result, created), ({}, []))
+        self.assertIn('no "Generators" discussion category', err)
 
 
 if __name__ == "__main__":

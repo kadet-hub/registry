@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the catalog site from an index (CAT-1 to CAT-14).
+# Build the catalog site from an index (CAT-1 to CAT-20).
 #
 # Usage: build <index.json> <out dir>
 # Needs: OWNER (registry owner), hugo, python3, jq, oras, gh. GH_TOKEN raises
@@ -21,6 +21,7 @@ offline=()
 artifacts=${CATALOG_ARTIFACTS:-$work/artifacts}
 sboms=${CATALOG_SBOMS:-$work/sboms}
 rekor=${CATALOG_REKOR:-$work/rekor.json}
+discussions=${CATALOG_DISCUSSIONS:-$work/discussions.json}
 if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
   offline=(--offline)
 else
@@ -53,11 +54,13 @@ else
       >"$sboms/$name/$version.spdx.json" 2>/dev/null || rm -f -- "$sboms/$name/$version.spdx.json"
   done < <(jq -r '.generators | to_entries[] | .key as $n | .value | to_entries[]
     | "\($n) \(.key) \(.value.digest) \(if .value.yanked == null then "listed" else "yanked" end)"' -- "$index")
+  # CAT-20: one discussion per listed generator and its 👍 count.
+  "$here/discussions" "$index" >"$discussions" || echo "::warning::discussions not read; the catalog shows no 👍 counts"
 fi
 if [[ -d $sboms ]]; then
   mkdir -p -- "$work/static/generators"
   cp -R -- "$sboms/." "$work/static/generators/"
 fi
 cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --out "$work/data/catalog.json"
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --out "$work/data/catalog.json"
 hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"

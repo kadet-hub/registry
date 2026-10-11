@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# CAT-20: open a discussion in the "Generators" category for each listed
+# generator that has none, then print {name: {url, up}} with the 👍 count of
+# the discussions this workflow opened.
+#
+# Usage: discussions <index.json>
+# Needs: OWNER, gh with discussions: write on $OWNER/registry, jq.
+# shellcheck disable=SC2016 # $o, $c, ... are GraphQL variables
+set -euo pipefail
+index=$1
+bot=github-actions
+
+repo=$(gh api graphql -f o="$OWNER" -f query='query($o: String!) { repository(owner: $o, name: "registry") {
+  id discussionCategories(first: 50) { nodes { id name } } } }' --jq .data.repository)
+category=$(jq -r '.discussionCategories.nodes[] | select(.name == "Generators") | .id' <<<"$repo")
+if [[ -z $category ]]; then
+  echo '::warning::no "Generators" discussion category; the catalog shows no 👍 counts' >&2
+  echo '{}'
+  exit 0
+fi
+
+list() {
+  gh api graphql -f o="$OWNER" -f c="$category" -f query='query($o: String!, $c: ID!) { repository(owner: $o, name: "registry") {
+    discussions(first: 100, categoryId: $c) { pageInfo { hasNextPage }
+      nodes { title url author { login } reactions(content: THUMBS_UP) { totalCount } } } } }' --jq .data.repository.discussions
+}
+found=$(list)
+if [[ $(jq .pageInfo.hasNextPage <<<"$found") == true ]]; then
+  echo '::warning::more than 100 generator discussions; none opened, counts may be missing' >&2
+else
+  created=0
+  while read -r name; do
+    gh api graphql -f r="$(jq -r .id <<<"$repo")" -f c="$category" -f t="$name" \
+      -f b="👍 this post if you use $name. Generator page: https://kadet-hub.org/generators/$name/" \
+      -f query='mutation($r: ID!, $c: ID!, $t: String!, $b: String!) {
+        createDiscussion(input: {repositoryId: $r, categoryId: $c, title: $t, body: $b}) { discussion { url } } }' >/dev/null
+    created=1
+  done < <(jq -r --argjson have "$(jq '[.nodes[].title]' <<<"$found")" '.generators | to_entries[]
+    | select(any(.value[]; .yanked == null)) | .key | select(IN($have[]) | not)' -- "$index")
+  [[ $created == 0 ]] || found=$(list)
+fi
+jq --arg bot "$bot" '[.nodes[] | select(.author.login == $bot)] | map({key: .title, value: {url, up: .reactions.totalCount}}) | from_entries' <<<"$found"
