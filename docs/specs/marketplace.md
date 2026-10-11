@@ -1183,6 +1183,64 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py`
   - Since: #18
 
+## Legal
+
+The marketplace is run by a private person in Germany, without payment
+and without a company. It republishes reviewed third-party code under its
+own registry namespace, which is the main legal exposure: under German case
+law a provider who checks content and presents it as part of its own
+offering can be held to have adopted it (BGH I ZR 166/07). The texts below
+describe the generators as third-party work, offer a takedown route and
+state what the review does not promise. They are drafts for a lawyer's
+review (OQ-1); values only the operator can supply are `tbd` (OQ-2).
+
+- LEG-1: The site MUST have a privacy notice at `/privacy/` and an imprint at
+  `/imprint/`, both linked from every page's footer.
+
+  The privacy notice names GitHub Pages as host, its access logs with IP
+  addresses, the US transfer under the EU-US Data Privacy Framework, that
+  the site loads nothing from other origins, sets no cookies and writes
+  `localStorage` only when the visitor uses the theme toggle, and the
+  rights under GDPR Articles 15 to 21. Whether §5 DDG requires an imprint
+  for an unpaid project is unsettled; §18 MStV likely requires name and
+  address, so the page exists with `tbd` values.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
+- LEG-2: `TERMS.md` MUST state the terms under which a generator is listed
+  and republished, and the entry pull request MUST link to it.
+
+  The author grants the right to redistribute the tree under its license,
+  warrants holding the rights to it, and accepts removal at the
+  maintainers' discretion. Listing is provided free of charge and as is;
+  liability is excluded only as far as German law allows (§§ 309 Nr. 7,
+  521 BGB: not for intent, gross negligence or injury to life, body or
+  health).
+
+  - Test: none
+  - Since: this change
+
+- LEG-3: `SECURITY.md` MUST describe how to request removal of content
+  that infringes rights or is unlawful, and the site and the report form
+  MUST link to it.
+
+  Rights holders and others report through the `generator-report` form
+  ("License, copyright or trademark concern") or, for anything that must
+  not be public, privately to the contact in OQ-2. The maintainers answer
+  with the decision and its reason, as DSA Articles 16 and 17 ask of
+  hosting services; whether the DSA applies to an unpaid service is part
+  of OQ-1.
+
+  - Test: `catalog/test_catalog.py` (the links)
+  - Since: this change
+
+- LEG-4: The site footer and `README.md` MUST say that kadet-hub is not
+  affiliated with or endorsed by the Kapitan project or kapicorp, and that
+  listed generators are third-party work.
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 ## Incident response
 
 - INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,
@@ -1355,7 +1413,13 @@ coverage is named at each:
 
 ## Open questions
 
-None.
+- OQ-1: A lawyer reviews LEG-1 to LEG-4: whether republishing reviewed code
+  under the marketplace's namespace counts as adopting it, whether the DSA
+  applies to an unpaid service, whether the operator is a controller of
+  GitHub Pages' access logs, and whether an imprint is required.
+- OQ-2: The operator supplies name, a serviceable postal address (or a c/o
+  service) and a contact e-mail for the imprint, the privacy notice and
+  private takedown requests; until then they read `tbd`.
 
 ## Implementation inventory
 
@@ -1388,6 +1452,7 @@ None.
 | `docs/consumers.md` | CON-2, CON-3 |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
+| `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-4 |
 | `catalog/` | CAT-1 to CAT-12: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
