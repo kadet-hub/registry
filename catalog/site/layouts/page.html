@@ -46,6 +46,11 @@
   {{ partial "snippet.html" (dict "id" "verify-latest" "label" "verify command" "text" (printf "gh attestation verify oci://ghcr.io/%s/%s@%s \\\n  --owner %s --cert-identity %s" $owner $name .digest $owner $identity)) }}
   <p class="note">This catalog was built from index serial {{ site.Data.catalog.serial }}. Set <code>index_serial: {{ site.Data.catalog.serial }}</code> in <code>.kapitan-sandbox.yaml</code> and the consumer workflow refuses any older index, so a rolled-back index cannot bring back a yanked version.</p>
 </section>
+<section class="panel" aria-labelledby="checks">
+  <h2 id="checks">Checks</h2>
+  {{ partial "scan.html" (dict "v" . "name" $name) }}
+  <p class="note">Checks find known patterns; they do not prove a generator safe. <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#what-a-listing-covers">What a listing covers</a></p>
+</section>
 <section class="panel" aria-labelledby="details">
   <h2 id="details">Details</h2>
   {{ partial "details.html" (dict "v" .) }}
@@ -69,6 +74,8 @@
   <h3>Verify</h3>
   {{ partial "snippet.html" (dict "id" (printf "verify-%d" $i) "label" (printf "verify command for %s" .version) "text" (printf "gh attestation verify oci://ghcr.io/%s/%s@%s \\\n  --owner %s --cert-identity %s" $owner $name .digest $owner $identity)) }}
   {{ partial "details.html" (dict "v" .) }}
+  <h3>Checks</h3>
+  {{ partial "scan.html" (dict "v" . "name" $name) }}
   {{ end }}
 </details>
 {{ end }}

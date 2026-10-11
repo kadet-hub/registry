@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# The scan record of one published version (PUB-7): which checks the build
+# job ran, with which tool versions, in which run.
+#
+# Usage: scan-record <number of exceptions applied>
+# Needs: gitleaks on PATH, the main checkout, GITHUB_SHA, GITHUB_SERVER_URL,
+# GITHUB_REPOSITORY, GITHUB_RUN_ID. Prints the record as JSON.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+pin() { sed -n "s/^$1==\([^ ]*\).*/\1/p" -- "$2"; }
+arg() { sed -n "s/^ARG $1=//p" -- "$root/sandbox/Dockerfile"; }
+jq -n -S \
+  --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg gate "$GITHUB_SHA" \
+  --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+  --argjson exceptions "$1" \
+  --arg gitleaks "$(gitleaks version)" \
+  --arg clamav "$(sed -n 's/^clamav=.* # \([0-9.]*\)$/\1/p' -- "$root/scan/static-scan")" \
+  --arg guarddog "$(pin guarddog "$root/scan/requirements.txt")" \
+  --arg semgrep "$(pin semgrep "$root/scan/requirements.txt")" \
+  --arg ruff "$(pin ruff "$root/scan/requirements.txt")" \
+  --arg gvisor "$(sed -n 's/^ *GVISOR_RELEASE: "\([0-9]*\)"$/\1/p' -- "$root/.github/actions/setup-gvisor/action.yml")" \
+  --arg kapitan "$(pin kapitan "$root/sandbox/requirements.txt")" \
+  --arg conftest "$(arg CONFTEST_VERSION)" \
+  '{at: $at, gate: $gate, run: $run, exceptions: $exceptions, checks: [
+    {id: "secrets", tool: "gitleaks \($gitleaks)"},
+    {id: "malware", tool: "ClamAV \($clamav)"},
+    {id: "package", tool: "GuardDog \($guarddog)"},
+    {id: "code", tool: "Semgrep \($semgrep)"},
+    {id: "python", tool: "Ruff \($ruff)"},
+    {id: "tree", tool: "tree_check.py"},
+    {id: "sandbox", tool: "gVisor \($gvisor), Kapitan \($kapitan)"},
+    {id: "output", tool: "Conftest \($conftest)"},
+    {id: "ci-env", tool: "Kapitan \($kapitan)"}]}'

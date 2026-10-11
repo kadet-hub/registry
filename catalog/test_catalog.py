@@ -22,8 +22,11 @@ def record(d, yanked=None, description="Renders a ConfigMap", tags=("helm",), ad
             "source": {"repo": "https://github.com/example/demo.git", "path": ".", "tag": "v1.0.0", "sha": "c" * 40}}
 
 
+SCAN = {"at": "2026-10-10T08:00:00Z", "gate": "d" * 40, "run": "https://github.com/kadet-hub/registry/actions/runs/42",
+        "exceptions": 1, "checks": [{"id": "secrets", "tool": "gitleaks 8.30.1"}, {"id": "sandbox", "tool": "gVisor 20261005, Kapitan 0.36.3"}]}
+
 INDEX = {"serial": 7, "generators": {
-    "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]), "1.10.0": record("b", description="<script>alert(1)</script>"),
+    "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]), "1.10.0": dict(record("b", description="<script>alert(1)</script>"), scan=SCAN),
              "1.2.0": record("c")},
     "old": {"0.1.0": record("d", yanked="entry removed", tags=())},
 }}
@@ -60,12 +63,13 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None):
+def build(index, tmp, artifacts=None, sboms=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
     out = os.path.join(tmp, "out")
-    env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"))
+    env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"),
+               CATALOG_SBOMS=sboms or os.path.join(tmp, "none"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -78,7 +82,11 @@ class Site(unittest.TestCase):
         os.mkdir(arts)
         artifact(os.path.join(arts, "demo.tar"), {"README.md": README, "kapitan-generator.yaml": "name: demo\n"})
         artifact(os.path.join(arts, "old.tar"), {"README.md": "# Old readme\n"})
-        cls.out = build(INDEX, cls.tmp.name, arts)
+        sboms = os.path.join(cls.tmp.name, "sboms", "demo")
+        os.makedirs(sboms)
+        with open(os.path.join(sboms, "1.10.0.spdx.json"), "w", encoding="utf-8") as f:
+            f.write('{"spdxVersion": "SPDX-2.3"}')
+        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms))
 
     @classmethod
     def tearDownClass(cls):
@@ -189,6 +197,21 @@ class Site(unittest.TestCase):
         glossary = self.page("glossary")
         self.assertIn('href="https://kapitan.dev/"', glossary)
         self.assertIn('id="index"', glossary)
+
+    def test_scan_record_and_sbom(self):
+        html = self.page("generators", "demo")
+        latest = html[html.index('id="checks"'):html.index('id="details"')]
+        self.assertIn('href="https://github.com/kadet-hub/registry/actions/runs/42">release run</a>', latest)
+        self.assertIn("<code>dddddddddddd</code>, with 1 reviewed exception.", latest)
+        self.assertIn("<strong>Secrets</strong> <span class=\"tool\">gitleaks 8.30.1</span>", latest)
+        self.assertIn('href="../../generators/demo/1.10.0.spdx.json" download', latest)
+        self.assertNotRegex(latest, r"(?i)\bsecure\b|score")
+        with open(os.path.join(self.out, "generators", "demo", "1.10.0.spdx.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["spdxVersion"], "SPDX-2.3")
+        older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
+        self.assertIn("No scan record", older)
+        self.assertIn("No SBOM attestation for this version.", older)
+        self.assertIn("checked 2026-10-10", self.page())
 
     def test_sort_keys(self):
         home = self.page()

@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -6,6 +8,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from index import build
+from sbom import sbom
 from tree import read_dir, read_tar, tree_id, write_tar
 
 GIT_ENV = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1", "PATH": os.environ["PATH"]}
@@ -101,3 +104,29 @@ class Index(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Sbom(unittest.TestCase):
+    def test_document_lists_every_file_with_checksums(self):
+        meta = {"name": "demo", "version": "1.2.0", "license": "Apache-2.0", "description": "Demo",
+                "source": {"repo": "https://github.com/example/demo.git", "path": "gen", "sha": "c" * 40}}
+        with tempfile.TemporaryDirectory() as tmp:
+            make_tree(os.path.join(tmp, "src"))
+            tar = os.path.join(tmp, "demo.tar")
+            write_tar(read_dir(os.path.join(tmp, "src")), tar)
+            doc = sbom(tar, meta, "ghcr.io/kadet-hub/demo", "sha256:" + "a" * 64, "2026-10-11T00:00:00Z")
+        self.assertEqual((doc["spdxVersion"], doc["SPDXID"], doc["dataLicense"]), ("SPDX-2.3", "SPDXRef-DOCUMENT", "CC0-1.0"))
+        pkg = doc["packages"][0]
+        self.assertEqual((pkg["name"], pkg["versionInfo"], pkg["licenseDeclared"]), ("demo", "1.2.0", "Apache-2.0"))
+        self.assertEqual(pkg["downloadLocation"], f"git+https://github.com/example/demo.git@{'c' * 40}#gen")
+        self.assertEqual(pkg["externalRefs"][0]["referenceLocator"],
+                         f"pkg:oci/demo@sha256%3A{'a' * 64}?repository_url=ghcr.io/kadet-hub/demo&tag=1.2.0")
+        names = sorted(f["fileName"] for f in doc["files"])
+        self.assertEqual(names, ["./kapitan-generator.yaml", "./lib-a.py", "./lib/b.py", "./lib/sub/c.j2"])
+        b = next(f for f in doc["files"] if f["fileName"] == "./lib/b.py")
+        self.assertIn({"algorithm": "SHA256", "checksumValue": hashlib.sha256(b"b = 1\n").hexdigest()}, b["checksums"])
+        sha1s = sorted(c["checksumValue"] for f in doc["files"] for c in f["checksums"] if c["algorithm"] == "SHA1")
+        self.assertEqual(pkg["packageVerificationCode"]["packageVerificationCodeValue"], hashlib.sha1("".join(sha1s).encode()).hexdigest())
+        self.assertEqual(len({f["SPDXID"] for f in doc["files"]}), 4)
+        self.assertEqual(len(doc["relationships"]), 5)
+        json.dumps(doc)
