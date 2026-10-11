@@ -1241,6 +1241,22 @@ review (OQ-1); values only the operator can supply are `tbd` (OQ-2).
   - Test: `catalog/test_catalog.py`
   - Since: #48
 
+- LEG-5: The footer of every page, the install section of every generator
+  page, `README.md`, `docs/consumers.md` and `TERMS.md` MUST say that the
+  marketplace is offered free of charge, as is and on a best-effort basis,
+  and that use is at the user's own risk.
+
+  The notice sets expectations: nothing is promised about a generator's
+  quality or fitness, the checks are a best effort by volunteers, and the
+  user reviews the compiled output before applying it. It does not remove
+  the liability German law keeps (LEG-2), but it rules out any implied
+  assurance and supports the gratuitous character of the service
+  (§ 521 BGB); a user who ignores a clear warning bears part of a damage
+  (§ 254 BGB).
+
+  - Test: `catalog/test_catalog.py` (the site); none for the documents
+  - Since: #48
+
 ## Incident response
 
 - INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,
