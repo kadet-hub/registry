@@ -3,12 +3,13 @@ import os
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from view import view
+from view import README_MAX, readme, view
 
 OWNER = "kadet-hub"
 
@@ -28,12 +29,43 @@ INDEX = {"serial": 7, "generators": {
 }}
 
 
-def build(index, tmp):
+README = """# Demo
+
+Intro with <script>alert(2)</script> raw HTML and <b>bold</b>.
+
+[docs](docs/usage.md) [site](https://example.org/x) [bad](javascript:alert(3)) [anchor](#usage)
+[proto](//evil.example/x)
+
+![diagram](img/arch.png)
+
+## Usage
+
+```yaml
+parameters:
+  demo: {}
+```
+
+| a | b |
+|---|---|
+| 1 | 2 |
+"""
+
+
+def artifact(path, files):
+    with tarfile.open(path, "w") as t:
+        for name, text in files.items():
+            data = text.encode()
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            t.addfile(info, __import__("io").BytesIO(data))
+
+
+def build(index, tmp, artifacts=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
     out = os.path.join(tmp, "out")
-    env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1")
+    env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -42,7 +74,11 @@ class Site(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
-        cls.out = build(INDEX, cls.tmp.name)
+        arts = os.path.join(cls.tmp.name, "artifacts")
+        os.mkdir(arts)
+        artifact(os.path.join(arts, "demo.tar"), {"README.md": README, "kapitan-generator.yaml": "name: demo\n"})
+        artifact(os.path.join(arts, "old.tar"), {"README.md": "# Old readme\n"})
+        cls.out = build(INDEX, cls.tmp.name, arts)
 
     @classmethod
     def tearDownClass(cls):
@@ -51,6 +87,13 @@ class Site(unittest.TestCase):
     def page(self, *parts):
         with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
             return f.read()
+
+    def pages(self):
+        return [self.page(), self.page("generators", "demo"), self.page("generators", "old")]
+
+    def readme_html(self):
+        html = self.page("generators", "demo")
+        return html[html.index('class="readme"'):html.index('<aside')]
 
     def test_version_page_shows_pinned_entry_and_verification(self):
         html = self.page("generators", "demo")
@@ -76,9 +119,68 @@ class Site(unittest.TestCase):
             self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
 
     def test_no_resource_from_another_origin(self):
-        for html in (self.page(), self.page("generators", "demo"), self.page("generators", "old")):
+        for html in self.pages():
             for ref in re.findall(r'<(?:script|link|img)\b[^>]*\b(?:src|href)="([^"]*)"', html):
-                self.assertNotRegex(ref, r"^(https?:)?//", ref)
+                if 'rel="canonical"' not in html[html.rfind("<", 0, html.index(ref)):html.index(ref)]:
+                    self.assertNotRegex(ref, r"^(https?:)?//", ref)
+            self.assertNotIn(' style="', html)  # the CSP blocks inline styles
+
+    def test_readme_of_the_latest_version_without_raw_html(self):
+        html = self.readme_html()
+        self.assertIn("<h2", html)  # README headings sit below the page's h1
+        self.assertNotIn("<script", html)
+        self.assertIn("<!-- raw HTML omitted -->alert(2)", html)
+        self.assertNotIn("<b>", html)
+        self.assertNotIn("javascript:", html)
+        self.assertNotIn("evil.example", html)
+        self.assertIn(f'href="https://github.com/example/demo/blob/{"c" * 40}/docs/usage.md"', html)
+        self.assertIn('href="https://example.org/x" rel="nofollow noopener"', html)
+        self.assertIn('href="#readme-usage"', html)
+        self.assertIn('id="readme-usage"', html)
+        self.assertNotIn("<img", html)
+        self.assertIn(f'href="https://github.com/example/demo/blob/{"c" * 40}/img/arch.png"', html)
+        self.assertIn('class="chroma"', html)
+        self.assertNotIn("Old readme", self.page("generators", "old"))  # every version yanked
+
+    def test_tags_link_to_the_filtered_home_page(self):
+        self.assertIn('href="../../?tags=helm"', self.page("generators", "demo"))
+        home = self.page()
+        self.assertIn('href="./?tags=helm"', home)
+        self.assertIn('data-tag="helm" aria-pressed="false"', home)
+
+    def test_copy_buttons_and_wrapping(self):
+        html = self.page("generators", "demo")
+        for block in re.findall(r'<pre id="([^"]+)">', html):
+            self.assertIn(f'data-copy="{block}"', html)
+        self.assertGreaterEqual(html.count('class="copy icon-button"'), 4)
+        with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertRegex(css, r"pre \{[^}]*white-space: pre-wrap")
+        self.assertRegex(css, r"pre \{[^}]*overflow-x: hidden")
+
+    def test_sort_keys(self):
+        home = self.page()
+        self.assertIn('<select id="sort">', home)
+        self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-stars="0"', home)
+
+    def test_seo(self):
+        for parts in ((), ("generators", "demo"), ("generators", "old")):
+            html = self.page(*parts)
+            title = re.search(r"<title>([^<]*)</title>", html).group(1)
+            desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
+            self.assertTrue(30 <= len(title) <= 65, title)
+            self.assertTrue(50 <= len(__import__("html").unescape(desc)) <= 160, desc)
+            self.assertEqual(html.count("<h1"), 1)
+            self.assertIn(f'<link rel="canonical" href="https://kadet-hub.org/{"/".join(parts) + "/" if parts else ""}">', html)
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            sitemap = f.read()
+        for name in ("demo", "old"):
+            self.assertIn(f"<loc>https://kadet-hub.org/generators/{name}/</loc>", sitemap)
+        with open(os.path.join(self.out, "robots.txt"), encoding="utf-8") as f:
+            self.assertIn("Sitemap: https://kadet-hub.org/sitemap.xml", f.read())
+        ld = re.search(r'<script type="application/ld\+json">(.*?)</script>', self.page("generators", "demo"), re.S).group(1)
+        self.assertNotIn("<", ld)
+        self.assertEqual(json.loads(ld)["description"], "<script>alert(1)</script>")
 
     def test_home_links_both_guides(self):
         html = self.page()
@@ -94,6 +196,17 @@ class Site(unittest.TestCase):
 
 
 class View(unittest.TestCase):
+    def test_readme_limits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            small, big, none = (os.path.join(tmp, n) for n in ("small.tar", "big.tar", "none.tar"))
+            artifact(small, {"./README.md": "# hi\n"})
+            artifact(big, {"README.md": "x" * (README_MAX + 1)})
+            artifact(none, {"docs/README.md": "# nested\n"})
+            self.assertEqual(readme(small), "# hi\n")
+            self.assertIsNone(readme(big))
+            self.assertIsNone(readme(none))
+            self.assertIsNone(readme(os.path.join(tmp, "missing.tar")))
+
     def test_display_data_from_the_api(self):
         answers = {"/repos/example/demo": {"stargazers_count": 0}, "/user/331675722": {"login": "someone"}}
         g = view(INDEX, OWNER, answers.get)["generators"][0]

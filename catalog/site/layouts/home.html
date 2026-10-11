@@ -1,31 +1,56 @@
 {{ define "main" }}
 {{ $docs := printf "https://github.com/%s/registry/blob/main/docs/" site.Data.catalog.owner }}
-<p class="intro">Each listed version passed the marketplace gate: secret, malware and code scans, a fixture compile in a gVisor sandbox and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.
-<a href="{{ $docs }}consumers.md">Use a generator</a> · <a href="{{ $docs }}authors.md">Add a generator</a></p>
-{{ with site.Data.catalog.generators }}
+{{ $gens := site.Data.catalog.generators }}
+<section class="hero">
+  <h1>Kapitan generators, gate-checked and attested</h1>
+  <p class="lead">Every listed version passed secret, malware and code scans, a fixture compile in a gVisor sandbox without network and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.</p>
+  <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a></p>
+</section>
+{{ with $gens }}
 {{ $all := slice }}{{ range . }}{{ $all = $all | append .tags }}{{ end }}
-<div class="filters">
-  <input id="search" type="search" placeholder="Search generators" aria-label="Search generators">
-  <div id="tags">{{ range ($all | uniq | sort) }}<button type="button" data-tag="{{ . }}">{{ . }}</button>{{ end }}</div>
-</div>
-<ul class="cards">
-{{ range . }}
-  <li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}" data-tags="{{ delimit .tags " " }}">
-    <a href="{{ printf "/generators/%s/" .name | relURL }}"><h2>{{ .name }}</h2></a>
-    <p>{{ .description }}</p>
-    <p class="tags">{{ range .tags }}<span>{{ . }}</span>{{ end }}</p>
-    <dl>
-      <dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · {{ substr . 0 10 }}{{ end }}{{ else }}none, all versions yanked{{ end }}</dd>
-      <dt>License</dt><dd>{{ .license }}</dd>
-      <dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd>
-      {{ with .stars }}<dt>Stars</dt><dd>{{ . }}</dd>{{ end }}
-    </dl>
-  </li>
-{{ end }}
-</ul>
-<p id="empty" hidden>No generator matches.</p>
-<script src="{{ "search.js" | relURL }}"></script>
+<section class="browse" aria-label="Generators">
+  <div class="filters">
+    <label class="search">
+      <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+      <span class="visually-hidden">Search generators</span>
+      <input id="search" type="search" placeholder="Search {{ len . }} generators" autocomplete="off">
+    </label>
+    <div id="tags" class="tag-filter" role="group" aria-label="Filter by tag; a generator must have every selected tag">
+      {{ range ($all | uniq | sort) }}<button type="button" class="chip" data-tag="{{ . }}" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }} <span class="count"></span></button>{{ end }}
+      <button type="button" id="clear" class="chip clear" hidden><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>Clear</button>
+    </div>
+    <div class="toolbar">
+      <p id="result" class="result" aria-live="polite"></p>
+      <label class="sort">Sort <select id="sort">
+        <option value="name">Name</option>
+        <option value="published">Recently published</option>
+        <option value="stars">Stars</option>
+      </select></label>
+    </div>
+  </div>
+  <ul class="cards">
+  {{ range . }}
+    <li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}" data-tags="{{ delimit .tags " " }}" data-name="{{ .name }}" data-published="{{ with .latest }}{{ .published }}{{ end }}" data-stars="{{ .stars | default "0" }}">
+      <div class="card-head">
+        <span class="monogram hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
+        <div>
+          <h2><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></h2>
+          <p class="meta-line">{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</p>
+        </div>
+      </div>
+      <p class="description">{{ .description }}</p>
+      {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/?tags=%s" . | relURL }}">{{ . }}</a>{{ end }}</p>{{ end }}
+      <dl class="facts">
+        <div><dt><svg class="icon" aria-label="License"><use href="#i-license"/></svg></dt><dd>{{ .license }}</dd></div>
+        <div><dt><span class="visually-hidden">Owners</span>@</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
+        {{ with .stars }}<div><dt><svg class="icon" aria-label="Stars"><use href="#i-star"/></svg></dt><dd>{{ . }}</dd></div>{{ end }}
+      </dl>
+    </li>
+  {{ end }}
+  </ul>
+  <p id="empty" class="empty" hidden>No generator matches. <button type="button" id="reset" class="link">Show all</button></p>
+</section>
 {{ else }}
-<p>No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>
+<p class="empty">No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>
 {{ end }}
 {{ end }}

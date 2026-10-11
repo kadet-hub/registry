@@ -1,0 +1,13 @@
+{{/* What a version declares and how it was built. dict: v (a version record). */}}
+{{ with .v }}
+<dl class="details">
+  <dt>Kapitan</dt><dd>{{ .kapitan }}</dd>
+  <dt>krab</dt><dd>{{ with .krab }}{{ . }}{{ else }}not checked{{ end }}</dd>
+  <dt>Source</dt><dd>{{ .source.tag }} · <code>{{ .source.sha }}</code>{{ if ne .source.path "." }} · {{ .source.path }}{{ end }}</dd>
+  <dt>Binaries</dt><dd>{{ with .binaries }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
+  <dt>Output capabilities</dt><dd>{{ with .output_capabilities }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
+  {{ with .unparsed_outputs }}<dt>Unparsed outputs</dt><dd>{{ delimit . ", " }}</dd>{{ end }}
+  {{ with .charts }}<dt>Charts</dt><dd>{{ range . }}{{ .name }} {{ .version }} ({{ .repo }}) {{ end }}</dd>{{ end }}
+  <dt>Digest</dt><dd><code>{{ .digest }}</code></dd>
+</dl>
+{{ end }}

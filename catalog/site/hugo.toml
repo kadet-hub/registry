@@ -1,5 +1,14 @@
-# Catalog site (CAT-1 to CAT-5). data/catalog.json is written by view.py.
-baseURL = "/"
+# Catalog site (CAT-1 to CAT-11). data/catalog.json is written by view.py;
+# build passes --baseURL, so canonical URLs and the sitemap are absolute.
+baseURL = "https://kadet-hub.org/"
 relativeURLs = true
 title = "kadet-hub"
-disableKinds = ["section", "taxonomy", "term", "rss", "sitemap"]
+enableRobotsTXT = true
+disableKinds = ["section", "taxonomy", "term", "rss"]
+
+[sitemap]
+changeFreq = "daily"
+
+# Highlighting as classes: the CSP blocks inline styles.
+[markup.highlight]
+noClasses = false
