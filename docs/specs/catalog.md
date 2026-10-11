@@ -256,14 +256,19 @@ remembered in the browser's `localStorage`.
   - Since: #55
 
 - CAT-19: A generator page MUST show its sections in one centered column
-  of equal width, in the order Install, Verify, Checks, Details, README,
-  Versions, and MUST have an "On this page" list linking each section that
-  is present, which marks the section in view.
+  of equal width, in the order README, Versions, and MUST have an "On this
+  page" list linking each section that is present, which marks the section
+  in view. Versions MUST show the newest listed version expanded, with its
+  inventory entry, verify command, details and checks, and state once above
+  the list how to consume a version (consumer workflow, terms, index
+  serial, what the checks cover).
 
+  Separate Install, Verify, Checks and Details panels for the newest
+  version repeated what its expanded entry under Versions already shows.
   A side column made the panels different widths and pushed Checks and
   Details below the README on narrow screens. The list replaces it as the
   way to jump to a section; sections a generator does not have, such as
-  Install for a fully yanked one, are left out of the list. On wide
+  the README for a fully yanked one, are left out of the list. On wide
   screens it sits beside the column and stays in view while scrolling, as
   on MDN and GitHub Docs, so the column keeps its width; on narrow screens
   it is a collapsed disclosure above the sections. Without JavaScript it is
@@ -298,7 +303,7 @@ remembered in the browser's `localStorage`.
   - Since: #57
 
 The footer names the index serial the site was built from, and the
-version page's Verify section explains it: consumers set `index_serial`
+generator page's Versions section explains it: consumers set `index_serial`
 in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
 index is refused (CON-2).
 
