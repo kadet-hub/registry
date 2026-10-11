@@ -164,7 +164,7 @@ remembered in the browser's `localStorage`.
   has keyboard focus, not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73, tbd
+  - Since: #73, #81
 
 - CAT-15: The card and the version page MUST show what a version is built
   for, from the software and versions of the schemas QA-7 and QA-8
