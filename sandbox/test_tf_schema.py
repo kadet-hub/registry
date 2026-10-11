@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from schema_check import check
-from tf_schema import extract
+from tf_schema import compare, describe, extract
 
 ADDRESS = "registry.terraform.io/example/cloud"
 FULL = {
@@ -105,6 +105,30 @@ class TerraformSchema(unittest.TestCase):
         self.assertEqual(sorted(schema["resource_schemas"]), ["cloud_net"])
         self.assertEqual(sorted(schema["data_source_schemas"]), ["cloud_zone"])
         self.assertIn("block", schema["provider"])
+
+
+    def test_compare_finds_edited_and_invented_types(self):
+        with tempfile.TemporaryDirectory() as root:
+            full, ext = os.path.join(root, "full.json"), os.path.join(root, "example_cloud_1.2.3.json")
+            with open(full, "w", encoding="utf-8") as f:
+                json.dump(FULL, f)
+            shipped = json.loads(json.dumps(FULL))
+            part = shipped["provider_schemas"][ADDRESS]
+            del part["resource_schemas"]["cloud_unused"]
+            with open(ext, "w", encoding="utf-8") as f:
+                json.dump(shipped, f)
+            self.assertEqual(compare(ext, full), [])  # a subset is fine
+            self.assertEqual(describe(ext), ("example/cloud", "1.2.3"))
+            part["resource_schemas"]["cloud_net"]["block"]["attributes"]["extra"] = {"type": "string", "optional": True}
+            part["resource_schemas"]["cloud_made_up"] = {"block": {}}
+            part["provider"] = {"block": {}}
+            with open(ext, "w", encoding="utf-8") as f:
+                json.dump(shipped, f)
+            self.assertEqual(compare(ext, full), [
+                f"{ADDRESS}: provider block differs",
+                f"{ADDRESS}: resource cloud_made_up does not exist in this version",
+                f"{ADDRESS}: resource cloud_net differs",
+            ])
 
 
 if __name__ == "__main__":

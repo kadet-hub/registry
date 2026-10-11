@@ -1,0 +1,43 @@
+name: tf-schema-verify
+
+# QA-9: a maintainer checks that a pull request's Terraform schema extracts
+# equal the schemas of the provider versions they name. Started by hand; the
+# generator tree is fetched as data, only the providers run.
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number of the entry or bump
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Terraform
+        env:
+          # renovate: datasource=github-releases depName=hashicorp/terraform
+          TERRAFORM_VERSION: 1.16.5
+          TERRAFORM_SHA256: 2bc2fcfff033265c9e02ca0351f01794eb122f62a9b2a49a3294b9e49eaab5e4
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/terraform.zip" "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          echo "${TERRAFORM_SHA256}  $RUNNER_TEMP/terraform.zip" | sha256sum -c -
+          sudo unzip -q -o "$RUNNER_TEMP/terraform.zip" terraform -d /usr/local/bin
+
+      - name: Compare the extracts with the provider schemas
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ inputs.pr }}
+        run: gate/tf-schema-verify

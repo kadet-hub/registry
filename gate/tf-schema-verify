@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# QA-9: compare the Terraform schema extracts of a pull request's generator
+# with the schemas of the provider versions they name. The generator tree
+# is fetched as data and never executed; only the providers run.
+#
+# Usage: tf-schema-verify
+# Needs: GH_TOKEN (contents and pull-requests read), REPO, PR, terraform,
+# yq, git, python3.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+[[ $PR =~ ^[0-9]+$ ]] || { echo "PR must be a number"; exit 2; }
+
+head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+entry=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | select(.status != "removed") | .filename' \
+  | grep -E '^generators/[a-z0-9][a-z0-9-]*\.yaml$' | head -1 || true)
+[[ -n $entry ]] || { echo "QA-9: #$PR changes no generator entry"; exit 1; }
+gh api -H "Accept: application/vnd.github.raw" "repos/$REPO/contents/$entry?ref=$head" >"$work/entry.yaml"
+src=$(yq -r .source.repo "$work/entry.yaml") path=$(yq -r .source.path "$work/entry.yaml") sha=$(yq -r .source.sha "$work/entry.yaml")
+[[ $src =~ ^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$ && $sha =~ ^[0-9a-f]{40}$ ]] \
+  || { echo "QA-9: $entry: unexpected source"; exit 1; }
+
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$work/src.git")
+"${gitc[@]}" init -q --bare
+"${gitc[@]}" fetch -q --depth=1 --no-tags -- "$src" "$sha"
+python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --path "$path" --out "$work/tree"
+
+schemas=$(yq -r '.schemas // ""' "$work/tree/kapitan-generator.yaml")
+[[ $schemas != /* && /$schemas/ != */../* ]] || { echo "QA-9: $entry: schemas must stay inside the tree"; exit 1; }
+shopt -s nullglob
+extracts=("$work/tree/$schemas"/terraform/*.json)
+[[ -n $schemas && ${#extracts[@]} -gt 0 ]] || { echo "QA-9: $entry: no Terraform schema extract"; exit 0; }
+
+status=0
+for extract in "${extracts[@]}"; do
+  read -r source version < <(python3 -I "$root/sandbox/tf_schema.py" describe --extract "$extract")
+  mod=$work/mod-${source//\//_}
+  mkdir -p -- "$mod"
+  jq -n --arg s "$source" --arg v "$version" '{terraform: {required_providers: {p: {source: $s, version: $v}}}}' >"$mod/main.tf.json"
+  terraform -chdir="$mod" init -backend=false -input=false -no-color >/dev/null
+  terraform -chdir="$mod" providers schema -json >"$mod/full.json"
+  python3 -I "$root/sandbox/tf_schema.py" compare --extract "$extract" --full "$mod/full.json" || status=1
+done
+exit "$status"
