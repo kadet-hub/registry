@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: kyverno
+  tag: kyverno-v1.0.0
+  sha: c3fd859273b2e76315c54f56052dc743669ac318
+owners: [3042152]
