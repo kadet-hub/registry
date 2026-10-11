@@ -6,6 +6,8 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import urllib.parse
+from html import unescape as _unescape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -126,10 +128,12 @@ class Site(unittest.TestCase):
         self.assertIn(f"https://github.com/{OWNER}/registry/security/advisories/GHSA-2345-6789-cfgh", html)
         self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
         self.assertNotIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'a' * 64}", html)
-        self.assertIn("none, all versions yanked", self.page())
+        old_card = self.card("old")
+        self.assertIn('<span class="version">yanked</span>', old_card)
+        self.assertIn("no listed version", old_card)
 
     def test_owner_without_login_shows_the_user_id(self):
-        self.assertIn("<dd>331675722</dd>", self.page())
+        self.assertIn("<dd>@331675722</dd>", self.page())
 
     def test_values_are_escaped(self):
         for html in (self.page(), self.page("generators", "demo")):
@@ -238,7 +242,7 @@ class Site(unittest.TestCase):
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
         self.assertIn("No scan record", older)
         self.assertIn("No SBOM attestation for this version.", older)
-        self.assertIn("checked 2026-10-10", self.page())
+        self.assertIn("scanned 2026-10-10", self.page())
 
     def test_llms_txt(self):
         with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
@@ -296,6 +300,40 @@ class Site(unittest.TestCase):
         self.assertEqual(positions, sorted(positions))
         old = self.page("generators", "old")  # every version yanked: no install, no readme
         self.assertEqual(re.findall(r'href="#([a-z]+)"', old[old.index('id="toc"'):old.index("</nav>", old.index('id="toc"'))]), ["versions"])
+
+    def card(self, name):
+        home = self.page()
+        start = home.index(f'data-name="{name}"')
+        return home[start:home.index("</li>", start)]
+
+    def test_cards_show_the_same_fields_in_the_same_order(self):
+        for name in ("demo", "old"):
+            card = self.card(name)
+            order = ['class="stretched"', 'class="version"', 'class="description"', 'class="built-for',
+                     ">Owners<", ">Thumbs up<", ">Repository stars<", ">Updated<", ">Scan<"]
+            positions = [card.index(marker) for marker in order]
+            self.assertEqual(positions, sorted(positions), name)
+            self.assertNotIn("Apache-2.0", card)  # CAT-22: license only on the page
+            self.assertEqual(card.count("<a "), 1 + card.count('class="tag"'))
+        self.assertIn("Built for External Secrets Operator 2.11.0", self.card("demo"))
+        self.assertIn("Built for: not recorded", self.card("old"))
+        self.assertIn("not scanned", self.card("old"))
+
+    def test_request_a_feature_goes_to_the_source_repository(self):
+        html = self.page("generators", "demo")
+        link = re.search(r'<a class="button" href="([^"]+)">Request a feature</a>', html).group(1)
+        self.assertTrue(link.startswith("https://github.com/example/demo/issues/new?"))
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(_unescape(link)).query)
+        self.assertEqual(query["title"], ["[demo] "])
+        self.assertIn("Version: 1.10.0", query["body"][0])
+        self.assertIn("Catalog: https://kadet-hub.org/generators/demo/", query["body"][0])
+        gitlab = dict(INDEX, generators={"g": {"1.0.0": dict(record("e"), source=dict(record("e")["source"], repo="https://gitlab.com/group/proj.git"))}})
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(build(gitlab, tmp), "generators", "g", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        link = re.search(r'<a class="button" href="([^"]+)">Request a feature</a>', page).group(1)
+        self.assertTrue(link.startswith("https://gitlab.com/group/proj/-/issues/new?"))
+        self.assertIn("issue[title]", urllib.parse.unquote(_unescape(link)))
 
     def test_sort_keys(self):
         home = self.page()
