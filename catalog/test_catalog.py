@@ -224,8 +224,8 @@ class Site(unittest.TestCase):
             for href in ("privacy/", "imprint/", "registry/blob/main/TERMS.md", "SECURITY.md#removal-requests"):
                 self.assertIn(href, html)
         demo = self.page("generators", "demo")
-        install = demo[demo.index('id="install"'):demo.index('class="readme"')]
-        self.assertIn("use at your own risk", install)
+        versions = demo[demo.index('id="versions"'):demo.index('id="v1.10.0"')]
+        self.assertIn("use at your own risk", versions)
         privacy = self.page("privacy")
         self.assertIn("GitHub Pages", privacy)
         self.assertIn("localStorage", privacy)
@@ -236,7 +236,7 @@ class Site(unittest.TestCase):
 
     def test_scan_record_and_sbom(self):
         html = self.page("generators", "demo")
-        latest = html[html.index('id="checks"'):html.index('id="details"')]
+        latest = html[html.index('id="v1.10.0"'):html.index('id="v1.2.0"')]
         self.assertIn('href="https://github.com/kadet-hub/registry/actions/runs/42">release run</a>', latest)
         self.assertIn("<code>dddddddddddd</code>, with 1 reviewed exception.", latest)
         self.assertIn("<strong>Secrets</strong> <span class=\"tool\">gitleaks 8.30.1</span>", latest)
@@ -290,9 +290,12 @@ class Site(unittest.TestCase):
         self.assertIn('href="https://search.sigstore.dev/?logIndex=3202022821">Rekor entry 3202022821</a>', html)
         self.assertIn('href="https://search.sigstore.dev/?logIndex=17">Rekor entry 17</a>', html)  # yanked keeps its entry
         self.assertNotIn("not-a-number", html)
-        main = html[html.index('id="install"'):html.index('id="readme"')]
-        self.assertIn("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:", main)
-        self.assertIn("\n  --owner kadet-hub \\\n  --cert-identity https://", main)
+        newest = html[html.index('id="v1.10.0"'):html.index('id="v1.2.0"')]
+        self.assertIn("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:", newest)
+        self.assertIn("\n  --owner kadet-hub \\\n  --cert-identity https://", newest)
+        for gone in ('id="install"', 'id="verify"', 'id="checks"', 'id="details"'):
+            self.assertNotIn(gone, html)  # CAT-19: the newest version is shown once, under Versions
+        self.assertEqual(html.count("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:" + "b" * 64), 1)
 
     def test_one_column_with_table_of_contents(self):
         html = self.page("generators", "demo")
@@ -301,11 +304,11 @@ class Site(unittest.TestCase):
         self.assertLess(html.index('class="toc"'), html.index('class="generator-body"'))  # beside the column, not in it
         start = html.index('id="toc"')
         toc = html[start:html.index("</nav>", start)]
-        links = ["install", "verify", "checks", "details", "readme", "versions"]
+        links = ["readme", "versions"]
         self.assertEqual(re.findall(r'href="#([a-z]+)"', toc), links)
         positions = [html.index(f'id="{a}"') for a in links]
         self.assertEqual(positions, sorted(positions))
-        old = self.page("generators", "old")  # every version yanked: no install, no readme
+        old = self.page("generators", "old")  # every version yanked: no readme
         self.assertEqual(re.findall(r'href="#([a-z]+)"', old[old.index('id="toc"'):old.index("</nav>", old.index('id="toc"'))]), ["versions"])
 
     def card(self, name):
