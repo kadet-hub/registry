@@ -9,12 +9,12 @@ description: Imprint (Impressum) of kadet-hub, a community catalog of Kapitan ge
 ## Angaben gemäß § 5 DDG und § 18 MStV
 
 tbd (name)<br>
-tbd (serviceable postal address, or c/o address service)<br>
+Postal address: follows (c/o address service)<br>
 Germany
 
 E-mail: [contact@kadet-hub.org](mailto:contact@kadet-hub.org)
 
-Responsible for content under § 18(2) MStV: tbd (name, address as above)
+Responsible for content under § 18(2) MStV: as above
 
 ## Not affiliated with Kapitan
 
