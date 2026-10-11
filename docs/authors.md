@@ -47,7 +47,9 @@ owners: [<GitHub user ID>, ...]
 ```
 
 The pull request changes only this file, is opened by one of the
-manifest's owners, and lists the same owners as the manifest at `sha`.
+manifest's owners, and lists the same owners as the manifest at `sha`. Opening it accepts the [terms of listing](../TERMS.md): you
+allow the marketplace to republish the tree under its license and confirm
+you have the rights to it.
 
 The gate fetches the tree at `sha` without running it, scans it for
 secrets, malware and dangerous code, and compiles the fixture project in a

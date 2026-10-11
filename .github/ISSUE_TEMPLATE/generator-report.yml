@@ -9,6 +9,7 @@ body:
         Malicious behaviour or a security vulnerability: report it **privately** through
         [private vulnerability reporting](https://github.com/kadet-hub/registry/security/advisories/new), not here.
         A bug in the generator's own code is usually best reported in its source repository, linked on its catalog page.
+        A removal request for infringing or unlawful content: choose "License, copyright or trademark concern"; [SECURITY.md](https://github.com/kadet-hub/registry/blob/main/SECURITY.md#removal-requests) explains what to include.
   - type: input
     id: generator
     attributes:

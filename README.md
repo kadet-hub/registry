@@ -9,4 +9,11 @@ maintainer's review, and is published as an attested OCI artifact under
 - Using a generator: [docs/consumers.md](docs/consumers.md)
 - Adding a generator: [docs/authors.md](docs/authors.md)
 - Design and requirements: [docs/specs/marketplace.md](docs/specs/marketplace.md)
-- Reporting a vulnerability: [SECURITY.md](SECURITY.md)
+- Reporting a vulnerability or requesting removal: [SECURITY.md](SECURITY.md)
+- Terms of listing: [TERMS.md](TERMS.md)
+
+kadet-hub is a community project and is not affiliated with or endorsed by
+the Kapitan project or kapicorp. Listed generators are the work of their
+authors. The marketplace is offered free of charge, as is and on a
+best-effort basis: use it at your own risk, and review the compiled output
+before you apply it ([TERMS.md](TERMS.md#no-warranty)).

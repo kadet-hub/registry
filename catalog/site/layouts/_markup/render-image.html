@@ -1,9 +1,10 @@
 {{- /* CAT-7: images are not loaded (CSP img-src 'self'); each becomes a link. */ -}}
 {{- $u := urls.Parse .Destination -}}
-{{- $g := index (where site.Data.catalog.generators "name" .Page.Params.generator) 0 -}}
+{{- $base := "" -}}
+{{- with .Page.Params.generator }}{{ with index (where site.Data.catalog.generators "name" .) 0 }}{{ $base = .blob_url }}{{ end }}{{ end -}}
 {{- $href := "" -}}
 {{- if in (slice "http" "https") $u.Scheme -}}{{ $href = .Destination }}
-{{- else if and (eq $u.Scheme "") (eq $u.Host "") (not (strings.HasPrefix .Destination "#")) -}}{{ $href = printf "%s%s" $g.blob_url (strings.TrimPrefix "/" (strings.TrimPrefix "./" .Destination)) }}
+{{- else if and (eq $u.Scheme "") (eq $u.Host "") (not (strings.HasPrefix .Destination "#")) -}}{{ $href = cond (ne $base "") (printf "%s%s" $base (strings.TrimPrefix "/" (strings.TrimPrefix "./" .Destination))) .Destination }}
 {{- end -}}
 {{- $label := .PlainText | default "image" -}}
 {{- if $href -}}<a class="image-link" href="{{ $href }}" rel="nofollow noopener">Image: {{ $label }}</a>{{- else -}}Image: {{ $label }}{{- end -}}
