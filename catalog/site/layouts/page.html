@@ -18,7 +18,13 @@
       {{ with .discussion }}<div><dt>Thumbs up</dt><dd><a href="{{ .url }}">👍 {{ .up }}</a> on GitHub Discussions</dd></div>{{ end }}
     </dl>
     {{ $q := dict "template" "generator-report.yml" "generator" .name "title" (printf "[report] %s: " .name) }}{{ with .latest }}{{ $q = merge $q (dict "version" .version) }}{{ end }}
-    <p class="actions small"><a class="button" href="{{ printf "https://github.com/%s/registry/issues/new?%s" $owner (querify $q) | safeURL }}">Report a problem</a></p>
+    {{/* CAT-21: feature requests go to the source repository's tracker. */}}
+    {{ $title := printf "[%s] " .name }}
+    {{ $version := "none" }}{{ with .latest }}{{ $version = .version }}{{ end }}
+    {{ $body := printf "Generator: %s\nVersion: %s\nCatalog: %s\n\nWhat should it do, and what inventory would you write for it?\n" .name $version (printf "generators/%s/" .name | absURL) }}
+    {{ $feature := printf "%s/issues/new?%s" .source_url (querify "title" $title "body" $body) }}
+    {{ if hasPrefix .source_url "https://gitlab.com/" }}{{ $feature = printf "%s/-/issues/new?%s" .source_url (querify "issue[title]" $title "issue[description]" $body) }}{{ end }}
+    <p class="actions small"><a class="button" href="{{ $feature | safeURL }}">Request a feature</a> <a class="button" href="{{ printf "https://github.com/%s/registry/issues/new?%s" $owner (querify $q) | safeURL }}">Report a problem</a></p>
   </div>
 </header>
 
