@@ -1047,8 +1047,7 @@ remembered in the browser's `localStorage`.
 
   Tags are multiply assigned (a generator can be `helm`, `operators` and
   `kubernetes` at once), so OR would widen the result with every click.
-  Each tag button shows how many generators the selection would leave and
-  is disabled at zero; the result line names the selected tags. Without
+  The result line names the selected tags. Without
   JavaScript the home page lists every generator.
 
   - Test: `catalog/test_catalog.py` (partial: the links and the markup; the
@@ -1145,6 +1144,22 @@ index is refused (CON-2).
   `database`, `ci`, at most five per manifest.
   - Test: `gate/test_check_entry.py` (`Manifest`)
   - Since: #16
+
+- CAT-13: `policy/tags.yaml` MUST define every tag of the enum, with its
+  meaning and when to assign it and when not; the site MUST render it at
+  `/tags/`, linked from the tag filter, and MUST have a glossary at
+  `/glossary/` that links to the Kapitan documentation.
+
+  The file is the reference for review: a tag is a claim by the
+  submitter, and the reviewer checks it against this text. The
+  `evidence` field names what the gate can verify for `kubernetes`,
+  `helm` and `terraform`; checking it in the gate is a separate change.
+  Each tag button shows how many listed generators carry the tag, as
+  `security (6)`, and is disabled when the current selection would leave
+  none.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #45
 
 - CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none
@@ -1364,6 +1379,7 @@ None.
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3 |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
+| `policy/tags.yaml` | CAT-4, CAT-13 |
 | `catalog/` | CAT-1 to CAT-12: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
