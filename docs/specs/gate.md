@@ -638,10 +638,12 @@ review go into the review comment and do not fail the gate.
   author's `terraform validate` and with plan time.
 
   The catalog's "Built for" (CAT-15) lists the provider from the same
-  result, for example "hashicorp/aws 6.68.0".
+  result, for example "hashicorp/aws 6.68.0". On a bump the gate report lists
+  each provider's version before and after, as QA-7 does for schema
+  groups (`gate/schema_diff.py`).
 
-  - Test: `sandbox/test_tf_schema.py`; workflow job `gate-selftest`
-    (`fail-tf-schema-invalid`)
+  - Test: `sandbox/test_tf_schema.py`, `gate/test_schema_diff.py`;
+    workflow job `gate-selftest` (`fail-tf-schema-invalid`)
   - Since: #72
 
 ## Review
