@@ -1297,7 +1297,7 @@ remembered in the browser's `localStorage`.
   share them.
 
   - Test: `catalog/test_catalog.py`
-  - Since: tbd
+  - Since: #57
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
