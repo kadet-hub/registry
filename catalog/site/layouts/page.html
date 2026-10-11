@@ -22,7 +22,14 @@
 </header>
 
 <div class="generator-body">
-<div class="readme-col">
+<nav class="panel toc" aria-labelledby="toc">
+  <h2 id="toc">On this page</h2>
+  <ol>
+    {{ with .latest }}<li><a href="#install">Install</a></li><li><a href="#verify">Verify</a></li><li><a href="#checks">Checks</a></li><li><a href="#details">Details</a></li>{{ end }}
+    {{ with .readme }}<li><a href="#readme">README</a></li>{{ end }}
+    <li><a href="#versions">Versions</a></li>
+  </ol>
+</nav>
 {{ with .latest }}
 <section class="panel" aria-labelledby="install">
   <h2 id="install">Install {{ .version }}</h2>
@@ -35,16 +42,6 @@
   {{ partial "verify.html" (dict "v" . "name" $name "id" "verify-latest" "label" "verify command") }}
   <p class="note">This catalog was built from index serial {{ site.Data.catalog.serial }}. Set <code>index_serial: {{ site.Data.catalog.serial }}</code> in <code>.kapitan-sandbox.yaml</code> and the consumer workflow refuses any older index, so a rolled-back index cannot bring back a yanked version.</p>
 </section>
-{{ end }}
-{{ with .readme }}
-<section class="readme" aria-label="README">
-  {{ $page.RenderString (dict "display" "block") . }}
-</section>
-{{ end }}
-</div>
-
-<aside class="side">
-{{ with .latest }}
 <section class="panel" aria-labelledby="checks">
   <h2 id="checks">Checks</h2>
   {{ partial "scan.html" (dict "v" . "name" $name) }}
@@ -55,7 +52,11 @@
   {{ partial "details.html" (dict "v" .) }}
 </section>
 {{ end }}
-</aside>
+{{ with .readme }}
+<section class="readme" id="readme" aria-label="README">
+  {{ $page.RenderString (dict "display" "block") . }}
+</section>
+{{ end }}
 </div>
 
 <section class="versions" aria-labelledby="versions">

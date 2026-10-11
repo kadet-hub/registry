@@ -106,7 +106,7 @@ class Site(unittest.TestCase):
 
     def readme_html(self):
         html = self.page("generators", "demo")
-        return html[html.index('class="readme"'):html.index('<aside')]
+        return html[html.index('class="readme"'):html.index('class="versions"')]
 
     def test_version_page_shows_pinned_entry_and_verification(self):
         html = self.page("generators", "demo")
@@ -233,10 +233,21 @@ class Site(unittest.TestCase):
         self.assertIn('href="https://search.sigstore.dev/?logIndex=3202022821">Rekor entry 3202022821</a>', html)
         self.assertIn('href="https://search.sigstore.dev/?logIndex=17">Rekor entry 17</a>', html)  # yanked keeps its entry
         self.assertNotIn("not-a-number", html)
-        main = html[html.index('id="install"'):html.index('<aside')]
-        self.assertIn('id="verify"', main)  # CAT-17: verify in the main column
+        main = html[html.index('id="install"'):html.index('id="readme"')]
         self.assertIn("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:", main)
         self.assertIn("\n  --owner kadet-hub \\\n  --cert-identity https://", main)
+
+    def test_one_column_with_table_of_contents(self):
+        html = self.page("generators", "demo")
+        self.assertNotIn("<aside", html)
+        start = html.index('id="toc"')
+        toc = html[start:html.index("</nav>", start)]
+        links = ["install", "verify", "checks", "details", "readme", "versions"]
+        self.assertEqual(re.findall(r'href="#([a-z]+)"', toc), links)
+        positions = [html.index(f'id="{a}"') for a in links]
+        self.assertEqual(positions, sorted(positions))
+        old = self.page("generators", "old")  # every version yanked: no install, no readme
+        self.assertEqual(re.findall(r'href="#([a-z]+)"', old[old.index('id="toc"'):old.index("</nav>", old.index('id="toc"'))]), ["versions"])
 
     def test_sort_keys(self):
         home = self.page()
