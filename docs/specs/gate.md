@@ -638,7 +638,7 @@ review go into the review comment and do not fail the gate.
   author's `terraform validate` and with plan time.
 
   The catalog's "Built for" (CAT-15) lists the provider from the same
-  result, for example "AWS provider (hashicorp/aws) 6.68.0".
+  result, for example "hashicorp/aws 6.68.0".
 
   - Test: `sandbox/test_tf_schema.py`; workflow job `gate-selftest`
     (`fail-tf-schema-invalid`)
