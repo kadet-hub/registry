@@ -193,8 +193,12 @@ class Site(unittest.TestCase):
     def test_legal_pages_and_notices(self):
         for html in self.pages():
             self.assertIn("not affiliated with or endorsed by the Kapitan project or kapicorp", html)
+            self.assertIn("as is and on a best-effort basis: use at your own risk", html)
             for href in ("privacy/", "imprint/", "registry/blob/main/TERMS.md", "SECURITY.md#removal-requests"):
                 self.assertIn(href, html)
+        demo = self.page("generators", "demo")
+        install = demo[demo.index('id="install"'):demo.index('class="readme"')]
+        self.assertIn("use at your own risk", install)
         privacy = self.page("privacy")
         self.assertIn("GitHub Pages", privacy)
         self.assertIn("localStorage", privacy)

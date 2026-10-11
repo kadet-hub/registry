@@ -14,4 +14,6 @@ maintainer's review, and is published as an attested OCI artifact under
 
 kadet-hub is a community project and is not affiliated with or endorsed by
 the Kapitan project or kapicorp. Listed generators are the work of their
-authors.
+authors. The marketplace is offered free of charge, as is and on a
+best-effort basis: use it at your own risk, and review the compiled output
+before you apply it ([TERMS.md](TERMS.md#no-warranty)).

@@ -214,3 +214,5 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 /* Prose pages (LEG-1) */
 .prose h2 { font-size: 1.3rem; margin: 2rem 0 .5rem; }
 .prose p { max-width: 46rem; }
+
+.disclaimer { color: var(--text-muted); font-size: .875rem; }

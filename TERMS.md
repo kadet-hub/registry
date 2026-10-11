@@ -34,8 +34,9 @@ a confirmed security problem. They tell the owners the reason.
 
 ## No warranty
 
-kadet-hub is run by volunteers without payment. Listing, artifacts and the
-catalog are provided as they are. The checks and the review find known
+kadet-hub is run by volunteers without payment, on a best-effort basis.
+Listing, artifacts and the catalog are provided free of charge and as they
+are, and you use them at your own risk. The checks and the review find known
 patterns and obvious problems; they do not guarantee that a generator is
 correct, secure or fit for a purpose. You use listed generators at your own
 risk and review the compiled output before you apply it.
