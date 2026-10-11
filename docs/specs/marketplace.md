@@ -1061,6 +1061,35 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (partial: the markup)
   - Since: this change
 
+- CAT-10: The home page MUST let visitors sort the cards by name, by the
+  time of the latest version and by source stars.
+
+  Download counts would be the better signal, but GHCR exposes none: the
+  REST package objects have no download field, and the GraphQL package
+  statistics do not cover registries with granular permissions such as
+  the Container registry. Stars come from the GitHub API at build time
+  like the rest of the display data.
+
+  - Test: `catalog/test_catalog.py` (partial: the sort keys in the markup)
+  - Since: this change
+
+- CAT-11: Every page MUST have a title of 30 to 65 characters, a meta
+  description of 50 to 160 characters, one `h1` and an absolute canonical
+  URL; the site MUST publish `sitemap.xml` with every generator page and a
+  `robots.txt` that names it.
+
+  The length limits are the ones kapicorp/kapitan enforces for its
+  documentation (`tests/test_docs_rendering.py`); here they are checked on
+  the built HTML. Filtered views (`?tags=`) are the home page and share
+  its canonical URL. Generator pages carry schema.org
+  `SoftwareSourceCode` as JSON-LD, which the CSP does not block because a
+  data block is never executed. A generator description that leaves the
+  title or description outside the limits is padded or cut by the
+  template, not rejected at the gate.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
 in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
