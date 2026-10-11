@@ -578,6 +578,11 @@ review go into the review comment and do not fail the gate.
   `kapitan validate` was considered, but it downloads schemas at compile
   time, which the sandbox does not allow.
 
+  `pattern` is matched with the `regex` module, which Kapitan already
+  installs, not with Python's `re`: CRDs use Unicode property classes such
+  as `^\PC*$` (Cilium's `spec.log.value`), which `re` cannot compile, so
+  the check crashed on any output that set such a field.
+
   The schemas live in the generator's tree, so each version is validated
   against the schemas of its own commit and the catalog shows each
   version's own result. A version that moves to a newer upstream release
