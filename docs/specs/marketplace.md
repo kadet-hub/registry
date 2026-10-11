@@ -775,7 +775,7 @@ review go into the review comment and do not fail the gate.
 
   - Test: `sandbox/test_schema_check.py`; workflow job `gate-selftest`
     (`fail-schema-invalid`)
-  - Since: this change
+  - Since: #50
 
 ## Review
 
@@ -1227,7 +1227,7 @@ remembered in the browser's `localStorage`.
   this requirement carry it.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #50
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
