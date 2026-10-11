@@ -1206,7 +1206,7 @@ review (OQ-1); values only the operator can supply are `tbd` (OQ-2).
   address, so the page exists with `tbd` values.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #48
 
 - LEG-2: `TERMS.md` MUST state the terms under which a generator is listed
   and republished, and the entry pull request MUST link to it.
@@ -1219,7 +1219,7 @@ review (OQ-1); values only the operator can supply are `tbd` (OQ-2).
   health).
 
   - Test: none
-  - Since: this change
+  - Since: #48
 
 - LEG-3: `SECURITY.md` MUST describe how to request removal of content
   that infringes rights or is unlawful, and the site and the report form
@@ -1233,13 +1233,13 @@ review (OQ-1); values only the operator can supply are `tbd` (OQ-2).
   of OQ-1.
 
   - Test: `catalog/test_catalog.py` (the links)
-  - Since: this change
+  - Since: #48
 
 - LEG-4: The site footer and `README.md` MUST say that kadet-hub is not
   affiliated with or endorsed by the Kapitan project or kapicorp, and that
   listed generators are third-party work.
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #48
 
 ## Incident response
 
