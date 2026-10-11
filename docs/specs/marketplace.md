@@ -1249,7 +1249,7 @@ remembered in the browser's `localStorage`.
   the main column, with the verify command split into one flag per line.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #54
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
