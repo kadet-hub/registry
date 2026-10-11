@@ -12,7 +12,7 @@ tbd (name)<br>
 tbd (serviceable postal address, or c/o address service)<br>
 Germany
 
-E-mail: tbd
+E-mail: [contact@kadet-hub.org](mailto:contact@kadet-hub.org)
 
 Responsible for content under § 18(2) MStV: tbd (name, address as above)
 

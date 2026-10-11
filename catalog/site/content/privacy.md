@@ -8,7 +8,7 @@ description: How kadet-hub.org handles personal data. The site sets no cookies, 
 
 ## Who is responsible
 
-The controller is the operator of kadet-hub: tbd (name), tbd (postal address), tbd (e-mail).
+The controller is the operator of kadet-hub: tbd (name), tbd (postal address), [privacy@kadet-hub.org](mailto:privacy@kadet-hub.org).
 
 ## What happens when you visit
 

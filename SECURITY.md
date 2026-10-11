@@ -3,7 +3,8 @@
 Report a vulnerability in the marketplace itself (the gate, the sandbox, the
 release workflow, a way to get unreviewed code to consumers) privately through
 [GitHub private vulnerability reporting](https://github.com/kadet-hub/registry/security/advisories/new).
-Do not open a public issue for it.
+Do not open a public issue for it. Without a GitHub account, write to
+security@kadet-hub.org.
 
 A listed generator that behaves maliciously is reported the same way. A
 confirmed malicious version is yanked, its artifact deleted and an advisory
@@ -20,7 +21,7 @@ because it infringes your rights (copyright, license, trademark) or is
 unlawful, open a [report](https://github.com/kadet-hub/registry/issues/new?template=generator-report.yml)
 and choose "License, copyright or trademark concern". Name the generator and
 version, the content concerned and why it is infringing or unlawful. If the
-request cannot be public, send it to tbd (e-mail, OQ-2). The maintainers
+request cannot be public, send it to abuse@kadet-hub.org. The maintainers
 check each request, tell you and the generator's owners their decision and
 its reason, and yank or remove the content when the request is justified
 (LEG-3, [TERMS.md](TERMS.md#review-and-removal)).
