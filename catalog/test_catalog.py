@@ -65,13 +65,13 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
     out = os.path.join(tmp, "out")
     env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"),
-               CATALOG_SBOMS=sboms or os.path.join(tmp, "none"))
+               CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -88,7 +88,10 @@ class Site(unittest.TestCase):
         os.makedirs(sboms)
         with open(os.path.join(sboms, "1.10.0.spdx.json"), "w", encoding="utf-8") as f:
             f.write('{"spdxVersion": "SPDX-2.3"}')
-        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms))
+        rekor = os.path.join(cls.tmp.name, "rekor.json")
+        with open(rekor, "w", encoding="utf-8") as f:
+            json.dump({"demo": {"1.10.0": "3202022821", "1.0.0": "17", "1.2.0": "not-a-number"}}, f)
+        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor)
 
     @classmethod
     def tearDownClass(cls):
@@ -108,7 +111,7 @@ class Site(unittest.TestCase):
     def test_version_page_shows_pinned_entry_and_verification(self):
         html = self.page("generators", "demo")
         self.assertIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
-        self.assertIn(f"gh attestation verify oci://ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
+        self.assertIn(f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
         self.assertIn(f"https://github.com/{OWNER}/registry/.github/workflows/release.yml@refs/heads/main", html)
         self.assertLess(html.index(">1.10.0"), html.index(">1.2.0"))
 
@@ -221,6 +224,19 @@ class Site(unittest.TestCase):
         self.assertIn('<a href="https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases">External Secrets Operator 2.11.0</a>', html)
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
         self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", older)
+
+    def test_version_permalinks_and_transparency_log(self):
+        html = self.page("generators", "demo")
+        for v in ("1.10.0", "1.2.0", "1.0.0"):
+            self.assertIn(f'id="v{v}"', html)
+            self.assertIn(f'<a class="permalink" href="#v{v}" aria-label="Link to version {v}">#</a>', html)
+        self.assertIn('href="https://search.sigstore.dev/?logIndex=3202022821">Rekor entry 3202022821</a>', html)
+        self.assertIn('href="https://search.sigstore.dev/?logIndex=17">Rekor entry 17</a>', html)  # yanked keeps its entry
+        self.assertNotIn("not-a-number", html)
+        main = html[html.index('id="install"'):html.index('<aside')]
+        self.assertIn('id="verify"', main)  # CAT-17: verify in the main column
+        self.assertIn("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:", main)
+        self.assertIn("\n  --owner kadet-hub \\\n  --cert-identity https://", main)
 
     def test_sort_keys(self):
         home = self.page()

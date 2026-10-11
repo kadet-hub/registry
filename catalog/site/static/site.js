@@ -15,6 +15,17 @@ themeButton.addEventListener("click", () => {
   try { localStorage.setItem("theme", next); } catch (e) { /* not remembered */ }
 });
 
+// Version permalinks (CAT-17): open the version a #v<version> link points to.
+function openVersion() {
+  const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (target && target.tagName === "DETAILS") {
+    target.open = true;
+    target.scrollIntoView();
+  }
+}
+addEventListener("hashchange", openVersion);
+openVersion();
+
 // Copy buttons
 for (const button of document.querySelectorAll("button.copy")) {
   if (!navigator.clipboard) continue;

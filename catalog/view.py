@@ -1,13 +1,14 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
 A failed lookup leaves the user ID or no stars; --offline skips the API.
 DIR/<name>.tar is the latest version's artifact layer; its README.md is
 shown on the generator page (CAT-7). DIR/<name>/<version>.spdx.json marks a
-version whose SBOM the site offers (CAT-14).
+version whose SBOM the site offers (CAT-14); --rekor maps name and version to
+the transparency log index of the verified attestation (CAT-17).
 """
 
 import argparse
@@ -59,10 +60,11 @@ def semver(v):
     return tuple(int(x) for x in v.split("."))
 
 
-def view(index, owner, lookup, artifacts=None, sboms=None):
+def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None):
     generators = []
     for name, versions in sorted(index.get("generators", {}).items()):
-        ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")))
+        ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
+                        rekor=(rekor or {}).get(name, {}).get(v))
                    for v, r in sorted(versions.items(), key=lambda kv: semver(kv[0]), reverse=True)]
         latest = next((r for r in ordered if not r.get("yanked")), None)
         shown = latest or ordered[0]
@@ -95,6 +97,15 @@ def view(index, owner, lookup, artifacts=None, sboms=None):
     return {"owner": owner, "serial": index.get("serial"), "generators": generators}
 
 
+def load_rekor(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, TypeError, ValueError):
+        return {}
+    return {n: {v: str(i) for v, i in vs.items() if str(i).isdigit()} for n, vs in data.items() if isinstance(vs, dict)}
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--index", required=True)
@@ -102,11 +113,12 @@ def main():
     p.add_argument("--offline", action="store_true")
     p.add_argument("--artifacts")
     p.add_argument("--sboms")
+    p.add_argument("--rekor")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
         index = json.load(f)
-    result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms)
+    result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor))
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0
