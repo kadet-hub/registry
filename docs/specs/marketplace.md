@@ -1039,7 +1039,7 @@ remembered in the browser's `localStorage`.
   256 KiB is not shown.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #45
 
 - CAT-8: Selecting several tags MUST show the generators that carry all of
   them, and the selection MUST be kept in the URL as `?tags=<a>,<b>`; every
@@ -1053,13 +1053,13 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py` (partial: the links and the markup; the
     filter itself runs in the browser)
-  - Since: this change
+  - Since: #45
 
 - CAT-9: Code blocks, tables and long values such as digests MUST wrap
   instead of scrolling horizontally, and every inventory entry and command
   MUST have a copy button.
   - Test: `catalog/test_catalog.py` (partial: the markup)
-  - Since: this change
+  - Since: #45
 
 - CAT-10: The home page MUST let visitors sort the cards by name, by the
   time of the latest version and by source stars.
@@ -1071,7 +1071,7 @@ remembered in the browser's `localStorage`.
   like the rest of the display data.
 
   - Test: `catalog/test_catalog.py` (partial: the sort keys in the markup)
-  - Since: this change
+  - Since: #45
 
 - CAT-11: Every page MUST have a title of 30 to 65 characters, a meta
   description of 50 to 160 characters, one `h1` and an absolute canonical
@@ -1088,7 +1088,7 @@ remembered in the browser's `localStorage`.
   template, not rejected at the gate.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #45
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
