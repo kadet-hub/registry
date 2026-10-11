@@ -134,7 +134,7 @@ remembered in the browser's `localStorage`.
   Owners implement features in their own repository and watch its
   tracker, not the registry's; the registry's report form (CAT-12) stays
   for problems with a listed version. Sources are on github.com or
-  gitlab.com (REG-1), so there are two URL forms: `/issues/new?title=&body=`
+  gitlab.com (`policy/entry.schema.json`), so there are two URL forms: `/issues/new?title=&body=`
   and `/-/issues/new?issue[title]=&issue[description]=`. The link is on
   the page, not the card, as in the catalogs compared (Raycast puts
   "Request Feature" on the extension page, none of ten catalogs on the
