@@ -19,8 +19,7 @@ of migrating site data.
 
 Each generator has a card (CAT-22) and a page at `/generators/<name>/`
 with the latest version's README and every version. The home page's
-introduction spans the width of the card grid below it, with its lines
-balanced. Search and tag filter run in the browser over the rendered cards.
+introduction spans the width of the card grid below it. Search and tag filter run in the browser over the rendered cards.
 Owner logins and stars come from the GitHub API at build time; they are
 display data only, and a failed lookup shows the user ID or no stars.
 

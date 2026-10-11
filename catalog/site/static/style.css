@@ -68,7 +68,9 @@ footer.site p { margin: .25rem 0; }
 button.link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 
 /* Hero */
-.hero { padding: 2.5rem 0 1.5rem; max-width: 50rem; }
+.hero { padding: 2.5rem 0 1.5rem; }
+.hero h1 { text-wrap: balance; }
+.hero .lead { max-width: none; font-size: 1.2rem; text-wrap: pretty; }
 .hero h1 { font-size: clamp(1.9rem, 1.2rem + 3vw, 3rem); margin: 0 0 .75rem; letter-spacing: -.025em; }
 .lead { font-size: 1.1rem; color: var(--text-muted); margin: 0 0 1.25rem; max-width: 46rem; }
 .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0; }
