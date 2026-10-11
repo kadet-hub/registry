@@ -148,7 +148,7 @@ remembered in the browser's `localStorage`.
   cannot tell whether a foreign repository has the form.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73
+  - Since: #73, #93
 
 - CAT-22: Every card MUST show the same fields in the same order: the
   name as the only card-wide link, below it the latest version and its
