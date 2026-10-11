@@ -729,6 +729,23 @@ review go into the review comment and do not fail the gate.
   - Test: `gate/test_check_entry.py` (`Entry`, `Manifest`)
   - Since: #8
 
+- QA-6: The gate MUST fail when the manifest carries `kubernetes`, `helm` or
+  `terraform` without the evidence `policy/tags.yaml` names for it, and
+  MUST list every other tag for review.
+
+  `kubernetes` needs a document with `apiVersion` and `kind` in the
+  compiled output, `terraform` a `*.tf.json` or `*.tf` file there, `helm`
+  a chart in `charts` or `helm template` in `binaries`. The check runs on
+  the first backend's output in the sandbox image without network, like
+  SEC-12. The other tags describe purpose, which no file shows; the gate
+  comment names them as `review:` lines, and the reviewer checks them
+  against `/tags/` (CAT-13). Evidence for a tag the manifest does not
+  carry is a `review:` line, not a finding.
+
+  - Test: `sandbox/test_tag_check.py`; workflow job `gate-selftest`
+    (`fail-tag-without-evidence`)
+  - Since: this change
+
 ## Review
 
 The gate posts one comment: results, the krab result, REG-3 flags,
@@ -1160,8 +1177,8 @@ index is refused (CON-2).
 
   The file is the reference for review: a tag is a claim by the
   submitter, and the reviewer checks it against this text. The
-  `evidence` field names what the gate can verify for `kubernetes`,
-  `helm` and `terraform`; checking it in the gate is a separate change.
+  `evidence` field names what the gate verifies for `kubernetes`,
+  `helm` and `terraform` (QA-6).
   Each tag button shows how many listed generators carry the tag, as
   `security (6)`, and is disabled when the current selection would leave
   none.
