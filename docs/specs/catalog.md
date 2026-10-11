@@ -204,8 +204,10 @@ remembered in the browser's `localStorage`.
   build time like the stars. It never opens a second discussion for a title
   that exists in the category, and counts only the discussion the workflow
   opened, so a discussion someone else opened under that title is not
-  counted. Without the category the catalog shows no counts and the job
-  warns. The release workflow also runs daily, so counts are at most a day
+  counted. The opening post asks for a 👍, links the generator page and
+  sends bug and security reports to the report form (CAT-12), so they
+  reach the owners instead of a comment thread. Without the category the
+  catalog shows no counts and the job warns. The release workflow also runs daily, so counts are at most a day
   old.
 
   Where several listed generators share a source repository, the stars

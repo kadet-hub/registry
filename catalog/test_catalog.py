@@ -375,7 +375,7 @@ class Discussions(unittest.TestCase):
     def run_with(self, categories, nodes):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        log = os.path.join(tmp.name, "log")
+        log = self.log = os.path.join(tmp.name, "log")
         state = os.path.join(tmp.name, "nodes.json")
         with open(state, "w", encoding="utf-8") as f:
             json.dump(nodes, f)
@@ -389,6 +389,7 @@ fields = dict(a.split("=", 1) for a in args if "=" in a and not a.startswith("qu
 nodes = json.load(open({state!r}))
 if "createDiscussion" in query:
     open({log!r}, "a").write(fields["t"] + "\\n")
+    open({log!r} + ".body", "w").write(fields["b"])
     nodes.append({{"title": fields["t"], "url": "https://github.com/kadet-hub/registry/discussions/" + str(len(nodes) + 1),
                   "author": {{"login": "github-actions"}}, "reactions": {{"totalCount": 0}}}})
     json.dump(nodes, open({state!r}, "w"))
@@ -416,6 +417,11 @@ else:
                  {"title": "squatted", "url": url + "2", "author": {"login": "someone"}, "reactions": {"totalCount": 99}}]
         result, created, _ = self.run_with([{"id": "C_1", "name": "Generators"}], nodes)
         self.assertEqual(created, ["demo"])  # not old (all yanked), not keda or squatted (title exists)
+        with open(self.log + ".body", encoding="utf-8") as f:
+            body = f.read()
+        self.assertIn("👍 this post if you use **demo**", body)
+        self.assertIn("(https://kadet-hub.org/generators/demo/)", body)
+        self.assertIn(f"(https://github.com/{OWNER}/registry/issues/new?template=generator-report.yml&generator=demo)", body)
         self.assertEqual(result, {"keda": {"url": url + "1", "up": 4}, "demo": {"url": url + "3", "up": 0}})
 
     def test_without_the_category_nothing_is_opened(self):
