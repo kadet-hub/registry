@@ -157,7 +157,11 @@ exception in review.
 ## New versions and yanking
 
 Renovate opens a pull request when you push a newer tag with the same
-prefix; the gate and the review run again on the new commit. You can also
+prefix; the gate and the review run again on the new commit. When a version
+moves to a newer release of the software it renders for, update its
+`schemas/` and `schemas/sources.yaml` in the same commit: the gate
+validates each version against its own schemas, and the catalog's "Built
+for" comes from them. You can also
 open the bump yourself. The version must increase, and `repo` and `path`
 stay fixed.
 
