@@ -122,6 +122,7 @@ unparsed_outputs: []             # output globs SEC-12 cannot parse, e.g. "*.md"
 charts: []                       # repo, name, version, sha256 of the .tgz, output_path
 inventory_backends: [reclass-rs] # each one is compiled
 fixtures: tests/consumer         # relative to the generator dir
+schemas: schemas                 # optional, relative to the generator dir (QA-7)
 ```
 
 The fixture project is an ordinary Kapitan project inside the generator
@@ -746,6 +747,36 @@ review go into the review comment and do not fail the gate.
     (`fail-tag-without-evidence`)
   - Since: #49
 
+- QA-7: When the manifest names a `schemas` directory, every document with
+  `apiVersion` and `kind` in the compiled output for which it holds a
+  schema MUST validate against it, and the result MUST name the software
+  and version of each schema group used.
+
+  The directory holds JSON Schemas as `<group>/<kind>_<version>.json`
+  (`core` for the core group), the layout of the
+  [kubernetes-json-schema](https://github.com/yannh/kubernetes-json-schema)
+  and CRD extracts, and `sources.yaml`, which maps each group to the
+  software, its version and the upstream URL the schemas come from:
+
+  ```yaml
+  external-secrets.io:
+    software: External Secrets Operator
+    version: 2.11.0
+    source: https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases
+  ```
+
+  The check runs on the first backend's output in the sandbox image
+  without network, like SEC-12 and QA-6. A document of a group without
+  schemas is a `review:` line, a group without a `sources.yaml` entry is
+  a finding. The schemas are part of the reviewed tree, so they pass the
+  same scans and the reviewer sees the pinned source. Kapitan's own
+  `kapitan validate` was considered, but it downloads schemas at compile
+  time, which the sandbox does not allow.
+
+  - Test: `sandbox/test_schema_check.py`; workflow job `gate-selftest`
+    (`fail-schema-invalid`)
+  - Since: this change
+
 ## Review
 
 The gate posts one comment: results, the krab result, REG-3 flags,
@@ -1186,6 +1217,17 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-11)
   - Since: #47
+
+- CAT-15: The card and the version page MUST show what a version is built
+  for, from the software and versions of the schemas QA-7 validated its
+  output against, marked as schema-checked.
+
+  The release's compile gate records the result in `meta.json` as
+  `compatibility`, like the krab result, so only versions published after
+  this requirement carry it.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
