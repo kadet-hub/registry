@@ -969,7 +969,7 @@ own.
 
   - Test: manual: gitlab.com rehearsal (2026-10-10); `gate-selftest`
     compiles `pass-plain` with `SANDBOX_TRACE=0` as a non-root user
-  - Since: #31, this change
+  - Since: #31, #44
 
 - CON-1b: The compile step MUST run SEC-12 over the output and fail on every
   match the policy's `output_capabilities` does not accept for that path.
