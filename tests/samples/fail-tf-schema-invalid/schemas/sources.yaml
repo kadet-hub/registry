@@ -1,0 +1,4 @@
+terraform/hashicorp/null:
+  software: Null provider (hashicorp/null)
+  version: 3.2.4
+  source: https://registry.terraform.io/providers/hashicorp/null/3.2.4

@@ -1,12 +1,13 @@
-"""Validate the compiled output against the generator's own schemas (QA-7).
+"""Validate the compiled output against the generator's own schemas (QA-7, QA-8).
 
 Usage: schema_check.py --schemas DIR --out DIR [--result FILE]
 
 DIR holds <group>/<kind>_<version>.json and sources.yaml. Every document
 with apiVersion and kind whose schema exists must validate; a group
 without schemas is a review line, a group with schemas but without a
-sources.yaml entry a finding. --result receives the software and versions
-of the groups used, as JSON. Exits 1 on any finding.
+sources.yaml entry a finding. Terraform provider schemas under
+DIR/terraform/ are checked by tf_schema.py (QA-8). --result receives the
+software and versions of the groups used, as JSON. Exits 1 on any finding.
 """
 
 import argparse
@@ -18,6 +19,7 @@ import jsonschema
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tf_schema
 from tag_check import files
 
 
@@ -69,13 +71,20 @@ def check(schemas, out):
                 where = "/".join(str(p) for p in e.absolute_path) or "(root)"
                 findings.append(f"QA-7: {rel}: {doc['kind']} {where}: {e.message[:200]}")
             used[group] = sources[group]
+    tf_findings, tf_lines, tf_used = tf_schema.check(schemas, out, sources)
+    findings += tf_findings
+    lines += tf_lines
+    used.update(tf_used)
     result = []
     for s in used.values():
         entry = {k: str(s.get(k, "")) for k in ("software", "version", "source")}
         if entry not in result:
             result.append(entry)
     result.sort(key=lambda s: s["software"])
-    lines += [f"QA-7: validated against {s['software']} {s['version']}" for s in result]
+    for group, s in sorted(used.items(), key=lambda g: str(g[1].get("software", ""))):
+        line = f"{'QA-8' if group.startswith('terraform/') else 'QA-7'}: validated against {s.get('software', '')} {s.get('version', '')}"
+        if line not in lines:
+            lines.append(line)
     return sorted(set(findings)), lines, result
 
 
