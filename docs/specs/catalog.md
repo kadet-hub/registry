@@ -275,7 +275,7 @@ remembered in the browser's `localStorage`.
   open and only the marking of the section in view is missing.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #56, #79
+  - Since: #56, #79, #111
 
 - CAT-20: Each listed generator MUST have one discussion in the
   "Generators" category of the registry's GitHub Discussions, and its card
