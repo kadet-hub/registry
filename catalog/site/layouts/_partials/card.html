@@ -2,16 +2,17 @@
 <li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}" data-tags="{{ delimit .tags " " }}" data-name="{{ .name }}" data-published="{{ with .latest }}{{ .published }}{{ end }}" data-stars="{{ .stars | default "0" }}" data-up="{{ with .discussion }}{{ .up }}{{ else }}0{{ end }}">
   <div class="card-head">
     <span class="tile hue-{{ .hue }}" aria-hidden="true">{{ with .tags }}<svg class="icon"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ else }}{{ $.monogram }}{{ end }}</span>
-    <h2><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a> <span class="version">{{ with .latest }}{{ .version }}{{ else }}yanked{{ end }}</span></h2>
+    <div>
+      <h2><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></h2>
+      <p class="meta-line">{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}no listed version, all yanked{{ end }}</p>
+    </div>
   </div>
   <p class="description">{{ .description }}</p>
   {{ with .latest }}{{ with .compatibility }}<p class="built-for">Built for {{ range $i, $c := . }}{{ if $i }} · {{ end }}{{ $c.software }} {{ $c.version }}{{ end }}</p>{{ else }}<p class="built-for none">Built for: not recorded</p>{{ end }}{{ else }}<p class="built-for none">Built for: not recorded</p>{{ end }}
   {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/?tags=%s" . | relURL }}">{{ . }}</a>{{ end }}</p>{{ end }}
   <dl class="facts">
-    <div><dt class="visually-hidden">Owners</dt><dd>@{{ range $i, $o := .owners }}{{ if $i }}, @{{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
-    <div><dt><span aria-hidden="true">👍</span><span class="visually-hidden">Thumbs up</span></dt><dd>{{ with .discussion }}{{ .up }}{{ else }}0{{ end }}</dd></div>
-    <div><dt><svg class="icon" aria-hidden="true"><use href="#i-star"/></svg><span class="visually-hidden">Repository stars</span></dt><dd>{{ .stars | default "0" }}</dd></div>
-    <div><dt class="visually-hidden">Updated</dt><dd>{{ with .latest }}{{ with .published }}<time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}no listed version{{ end }}</dd></div>
-    <div><dt class="visually-hidden">Scan</dt><dd>{{ with .latest }}{{ with .scan }}scanned {{ substr .at 0 10 }}{{ else }}not scanned{{ end }}{{ else }}not scanned{{ end }}</dd></div>
+    <div><dt>{{ if gt (len .owners) 1 }}Maintainers{{ else }}Maintainer{{ end }}</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a class="fact-link" href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
+    <div><dt>Popularity</dt><dd><span aria-hidden="true">👍</span><span class="visually-hidden">thumbs up:</span> {{ with .discussion }}{{ .up }}{{ else }}0{{ end }} · <svg class="icon" aria-hidden="true"><use href="#i-star"/></svg><span class="visually-hidden">repository stars:</span> {{ .stars | default "0" }}</dd></div>
+    <div><dt>Scanned</dt><dd>{{ with .latest }}{{ with .scan }}{{ substr .at 0 10 }}{{ else }}not scanned{{ end }}{{ else }}not scanned{{ end }}</dd></div>
   </dl>
 </li>
