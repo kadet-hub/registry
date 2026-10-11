@@ -42,7 +42,7 @@ jobs:
       - name: Unit tests in the sandbox image
         run: |
           docker run --rm --network none -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox \
-            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && cd ../consumer && python -m unittest discover -v && cd ../sandbox && python -m unittest discover -p "test_output*.py" -v && python -m unittest discover -p "test_tag*.py" -v'
+            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && cd ../consumer && python -m unittest discover -v && cd ../sandbox && python -m unittest discover -p "test_output*.py" -v && python -m unittest discover -p "test_tag*.py" -v && python -m unittest discover -p "test_schema*.py" -v'
 
       - name: Gate selftest
         run: tests/selftest

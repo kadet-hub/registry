@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Compile a generator's fixture project in the gVisor sandbox and judge the
-# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, QA-4, QA-6).
+# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, QA-4, QA-6, QA-7).
 #
 # Usage: gate-compile <generator dir> <name> [<charts dir>]
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
 # Writes compatible or incompatible (CMP-4) to $KRAB_RESULT if set, and the
-# first backend's output to $OUTPUT_DIR if set (SEC-13). COMPILE_ONLY=1 stops
+# first backend's output to $OUTPUT_DIR if set (SEC-13), and the software and
+# versions its output was validated against to $SCHEMA_RESULT if set (QA-7). COMPILE_ONLY=1 stops
 # after that compile.
 set -euo pipefail
 
@@ -75,6 +76,24 @@ tags() {
     "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
     python -I /base/sandbox/tag_check.py --manifest /manifest.yaml --out /out || status=1
 }
+# QA-7: the output against the generator's own schemas, same isolation.
+schemas=$(yq -r '.schemas // ""' -- "$manifest")
+if [[ -n $schemas && ( ! $schemas =~ ^[A-Za-z0-9._/-]+$ || $schemas == *..* || $schemas == /* ) ]]; then
+  echo "manifest: schemas must be a relative path inside the generator: $schemas"
+  exit 1
+fi
+mkdir -- "$work/schema-result"
+echo '[]' >"$work/schema-result/result.json"
+schema_check() {
+  [[ -n $schemas ]] || return 0
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" \
+    --mount "type=bind,src=$(realpath -- "$gen/$schemas"),dst=/schemas,readonly" \
+    --mount "type=bind,src=$1,dst=/out,readonly" \
+    --mount "type=bind,src=$work/schema-result,dst=/result" \
+    "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
+    python -I /base/sandbox/schema_check.py --schemas /schemas --out /out --result /result/result.json || status=1
+}
 # compile <out dir> [run options]: compile into <out dir> on $backend.
 compile() {
   local out=$1
@@ -96,7 +115,11 @@ for backend in "${backends[@]}"; do
     fi
   done
   sec12 "$work/out-$backend"
-  if [[ $backend == "${backends[0]}" ]]; then tags "$work/out-$backend"; fi
+  if [[ $backend == "${backends[0]}" ]]; then
+    tags "$work/out-$backend"
+    schema_check "$work/out-$backend"
+    if [[ -n ${SCHEMA_RESULT:-} ]]; then cp -- "$work/schema-result/result.json" "$SCHEMA_RESULT"; fi
+  fi
 done
 
 # CMP-2: the same output with CI set, on the first backend.
