@@ -644,6 +644,34 @@ review go into the review comment and do not fail the gate.
     (`fail-tf-schema-invalid`)
   - Since: #72
 
+- QA-9: A maintainer MUST be able to check, before approving, that every
+  Terraform schema extract (QA-8) in a pull request's generator equals the
+  schema of the provider version it names.
+
+  QA-8 trusts the extract the author ships, as QA-7 trusts CRD extracts,
+  and an extract that was edited by hand would let wrong arguments pass.
+  The `tf-schema-verify` workflow takes a pull request number, is started
+  by hand (`workflow_dispatch`) and runs with `contents: read` and no
+  secrets. Like the gate (GI-1) it reads the entry through the API and
+  fetches the generator tree as data with `gate/fetch_tree.py`; it never
+  runs generator code. For each extract it runs `terraform init` for the
+  named provider and version, which downloads the provider from its
+  registry and checks the release signature, then `terraform providers
+  schema -json`, and compares the provider block and every resource and
+  data source type in the extract with the original
+  (`sandbox/tf_schema.py compare`). A difference fails the run and names
+  the type. The provider binary runs here, but in a job without the
+  submitted code and without write permissions.
+
+  A required check on every pull request was considered; it would put a
+  network download and a third-party binary into every gate run, which
+  the gate avoids by design (QA-8), while the extract only changes when a
+  generator raises its pin.
+
+  - Test: `sandbox/test_tf_schema.py` (compare); manual: workflow run on
+    a bump pull request
+  - Since: tbd
+
 ## Review
 
 The gate posts one comment: results, the krab result, REG-3 flags,

@@ -302,11 +302,6 @@ coverage is named at each:
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
-- OQ-3: QA-8 trusts the Terraform schema extract the author ships, as
-  QA-7 trusts CRD extracts. Open is whether a maintainer job regenerates
-  it from the pinned provider version (with network, outside the gate)
-  and compares it before approval, or whether the reviewer checks the
-  `sources.yaml` entry against the pinned version by hand.
 
 ## Implementation inventory
 
@@ -326,6 +321,7 @@ coverage is named at each:
 | `policy/licenses.txt` | QA-2 |
 | `policy/ruff.toml` | QA-3 |
 | `sandbox/schema_check.py`, `sandbox/tf_schema.py` | QA-7, QA-8 |
+| `.github/workflows/tf-schema-verify.yml`, `gate/tf-schema-verify` | QA-9 |
 | `sandbox/` | SEC-9 to SEC-12: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
 | `tests/consumers/` | AC-10 |
