@@ -65,13 +65,11 @@ remembered in the browser's `localStorage`.
   - Since: #45
 
 - CAT-10: The home page MUST let visitors sort the cards by name, by the
-  time of the latest version, by source stars and by 👍 count (CAT-20).
+  time of the latest version and by popularity score (CAT-23).
 
-  Download counts would be the better signal, but GHCR exposes none: the
-  REST package objects have no download field, and the GraphQL package
-  statistics do not cover registries with granular permissions such as
-  the Container registry. Stars come from the GitHub API at build time
-  like the rest of the display data.
+  Sorting by stars or 👍 alone was replaced by the score, which combines
+  both with pulls; sorting by maintainer was considered and left out while
+  every generator has the same one.
 
   - Test: `catalog/test_catalog.py` (partial: the sort keys in the markup)
   - Since: #45
@@ -149,8 +147,8 @@ remembered in the browser's `localStorage`.
   date, the description clamped to three lines, what the version is built
   for or "Built for: not recorded", the tags, and labelled facts:
   "Maintainer" (the owners, each linked to their profile), "Popularity"
-  (👍 count and repository stars) and "Scanned" (the scan date or "not
-  scanned").
+  (the score of CAT-23, linked to its explanation) and "Scanned" (the scan
+  date or "not scanned").
 
   Users read the top left first and scan the first words of lines (NN/g);
   attributes that appear on some cards and not on others make a catalog
@@ -166,6 +164,35 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #73, #81
+
+- CAT-23: Every generator MUST have a popularity score
+  `round(10·log2(1 + 👍) + 4·log2(1 + stars ÷ n) + 2·log2(1 + pulls))`,
+  shown on its card and page and explained at `/popularity/` with the
+  inputs of every generator.
+
+  👍 is the count on the generator's discussion (CAT-20), stars are the
+  source repository's stars divided by the n listed generators that share
+  the repository, pulls the "Total downloads" of the generator's package.
+  The logarithm keeps one source from dominating and makes inflating a
+  count by automation or bought stars pay off less and less; the weights
+  follow how specific a signal is to one generator: a 👍 is given to this
+  generator on purpose, stars are given to a repository and can be bought
+  (arXiv:2412.13459), pulls include automation.
+
+  GHCR has no download API: the REST package objects have no download
+  field and the GraphQL package statistics do not cover the Container
+  registry. The catalog job therefore reads the number from the public
+  package page; when the page cannot be read, pulls count as 0 and the page
+  says so. Every manifest fetch counts (measured: one `oras manifest
+  fetch` raised the count by one), and the catalog job fetched each latest
+  artifact on every build. The site therefore publishes its view model as
+  `/catalog.json`, and the next build takes README, log index and SBOM of
+  every unchanged digest from it and from the published SBOM files, so the
+  job pulls each version once. A cache (`actions/cache`) would do the same
+  but is forbidden by GI-10.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #83
 
 - CAT-15: The card and the version page MUST show what a version is built
   for, from the software and versions of the schemas QA-7 and QA-8

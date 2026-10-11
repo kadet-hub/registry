@@ -83,15 +83,14 @@ if (search) {
   const known = new Set(buttons.map((b) => b.dataset.tag));
   let selected = new Set((params.get("tags") || "").split(",").filter((t) => known.has(t)));
   search.value = params.get("q") || "";
-  if (["name", "published", "stars", "up"].includes(params.get("sort"))) sort.value = params.get("sort");
+  if (["name", "published", "popularity"].includes(params.get("sort"))) sort.value = params.get("sort");
 
   const tagsOf = (card) => card.dataset.tags.split(" ").filter(Boolean);
   const matches = (card, q, tags) => card.dataset.text.includes(q) && [...tags].every((t) => tagsOf(card).includes(t));
   const keys = {
     name: (a, b) => a.dataset.name.localeCompare(b.dataset.name),
     published: (a, b) => b.dataset.published.localeCompare(a.dataset.published) || keys.name(a, b),
-    stars: (a, b) => Number(b.dataset.stars) - Number(a.dataset.stars) || keys.name(a, b),
-    up: (a, b) => Number(b.dataset.up) - Number(a.dataset.up) || keys.name(a, b),
+    popularity: (a, b) => Number(b.dataset.popularity) - Number(a.dataset.popularity) || keys.name(a, b),
   };
 
   function apply() {
