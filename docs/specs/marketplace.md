@@ -1436,6 +1436,48 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
 
 ## Verification
 
+A pull request runs only the test jobs whose inputs it changes. Before
+this, any change under `catalog/` or `release/` started the gate and
+consumer selftests, 16 to 27 minutes of gVisor runs for checks that
+cover none of the changed files.
+
+- CI-1: Each pull request test job MUST run exactly when the change
+  touches one of its inputs below, and MUST NOT run otherwise; the
+  required `gate` check runs on every pull request (GI-1).
+
+  The inputs are the job's own files plus every file outside them that
+  its scripts call or read, taken from the scripts themselves. A script
+  that starts using another area's file MUST add it here and to the
+  workflow's `paths` in the same pull request. Each job is its own
+  workflow, because `paths` filters whole workflows; none of them is a
+  required check, so a skipped workflow blocks no merge.
+
+  | Job | Workflow | Inputs |
+  |---|---|---|
+  | `gate-selftest` | `selftest.yml` | `sandbox/`, `scan/`, `gate/`, `policy/`, `consumer/unpack.py`, `tests/selftest`, `tests/samples/`, actions `setup-gate`, `setup-gvisor` |
+  | `consumer-selftest` | `consumer-selftest.yml` | `consumer/`, `sandbox/`, `gate/fetch_tree.py`, `policy/output/`, `policy/binaries.txt`, `tests/consumer-selftest`, `tests/consumers/`, action `setup-gvisor` |
+  | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, action `setup-hugo` |
+  | `release-tests` | `release-tests.yml` | `release/` |
+  | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
+
+  Every workflow also lists its own file. `workflow_dispatch` runs a job
+  regardless of the change.
+
+  - Test: manual: the checks of the pull request that introduced this
+  - Since: tbd
+
+- CI-2: A push to `main` MUST NOT start the release workflow when it
+  changes only files that no release job reads: `docs/`, `tests/`,
+  Markdown files at the repository root, `renovate.json`, issue and pull
+  request templates, and the test-only workflows of CI-1.
+
+  This list ignores paths instead of listing them, so a new file a release
+  job reads still triggers a release; the daily scheduled run (CAT-20)
+  catches up on anything a skipped push left out.
+
+  - Test: manual: the release run after the merge of the pull request that introduced this
+  - Since: tbd
+
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
   `exec` under `tests/` and in a file above 1,000,000 bytes, `# nosemgrep`,
