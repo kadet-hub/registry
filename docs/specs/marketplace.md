@@ -1260,6 +1260,21 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #54
 
+- CAT-18: The site MUST have a page per tag at `/tags/<tag>/` with the tag's
+  definition from `policy/tags.yaml` and the cards of every generator that
+  carries it, an Atom feed of published versions at `/index.xml`, an
+  `og:image` on every page, and guides under `/guides/`.
+
+  Tag pages are landing pages for searches such as "Kapitan Kubernetes
+  generator"; they reuse the tag definitions and the card markup instead
+  of copying them. The feed lists one entry per published version, newest
+  first, linking its permalink (CAT-17). The guides are articles for
+  people deciding whether and how to write or consume a generator; they
+  link the reference documents instead of repeating them.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #55
+
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
 in `.kapitan-sandbox.yaml` to the serial they last checked, so an older

@@ -1,0 +1,20 @@
+{{ define "main" }}
+{{ $id := .Params.tag }}
+{{ $t := index site.Data.tags $id }}
+{{ $gens := where site.Data.catalog.generators "tags" "intersect" (slice $id) }}
+<section class="prose-page">
+<p class="crumbs"><a href="{{ "/tags/" | relURL }}">Tags</a> / {{ $id }}</p>
+<h1><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ $id }}"/></svg> {{ $t.title }} generators for Kapitan</h1>
+<p class="lead">{{ $t.means }}</p>
+<dl class="details">
+  <dt>Tag a generator when</dt><dd>{{ $t.assign | markdownify }}</dd>
+  <dt>Not when</dt><dd>{{ $t.not | markdownify }}</dd>
+  {{ with $t.evidence }}<dt>Checked by the gate</dt><dd>{{ . | markdownify }}</dd>{{ end }}
+</dl>
+</section>
+{{ with $gens }}
+<ul class="cards tag-cards">{{ range . }}{{ partial "card.html" . }}{{ end }}</ul>
+{{ else }}
+<p class="empty">No generator is tagged {{ $id }} yet. <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request one</a> or <a href="https://github.com/kadet-hub/generator-template">write one</a>.</p>
+{{ end }}
+{{ end }}

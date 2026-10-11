@@ -7,7 +7,7 @@
 {{ range $id, $t := site.Data.tags }}
 {{ $n := len (where $gens "tags" "intersect" (slice $id)) }}
 <section class="panel tag-def" id="{{ $id }}">
-  <h2><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ $id }}"/></svg>{{ $t.title }} <code>{{ $id }}</code></h2>
+  <h2><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ $id }}"/></svg><a href="{{ printf "/tags/%s/" $id | relURL }}">{{ $t.title }}</a> <code>{{ $id }}</code></h2>
   <p>{{ $t.means }}</p>
   <dl class="details">
     <dt>Assign when</dt><dd>{{ $t.assign | markdownify }}</dd>

@@ -1,0 +1,4 @@
+{{/* One landing page per tag at /tags/<tag>/ (CAT-18); text from policy/tags.yaml. */}}
+{{ range $id, $t := site.Data.tags }}
+  {{ $.AddPage (dict "kind" "page" "path" (printf "tags/%s" $id) "title" (printf "%s generators" $t.title) "layout" "tag" "params" (dict "tag" $id) "description" (printf "Kapitan generators for %s: %s" $t.title $t.means)) }}
+{{ end }}

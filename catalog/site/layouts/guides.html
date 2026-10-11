@@ -1,0 +1,9 @@
+{{ define "main" }}
+<section class="prose-page">
+<h1>Guides</h1>
+<p class="lead">{{ .Description }}</p>
+<ul class="guide-list">
+{{ range where site.RegularPages "Section" "guides" }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p></li>{{ end }}
+</ul>
+</section>
+{{ end }}
