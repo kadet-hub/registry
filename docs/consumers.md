@@ -128,6 +128,10 @@ gate scanned.
 
 ## What a listing covers
 
+The marketplace is offered free of charge, as is and on a best-effort basis
+by volunteers. Using a generator is at your own risk; review the compiled
+output before you apply it ([terms](../TERMS.md#no-warranty)).
+
 A listed version passed the gate: secret, malware and code scans of the
 generator tree, a fixture compile in the gVisor sandbox with a syscall trace
 and decoy credentials, and a maintainer's review. The artifact contains

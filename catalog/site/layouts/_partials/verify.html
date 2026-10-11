@@ -1,0 +1,5 @@
+{{/* CAT-17: the verify command, one flag per line, and the transparency log entry. dict: v, name, id, label. */}}
+{{ $owner := site.Data.catalog.owner }}
+{{ $identity := printf "https://github.com/%s/registry/.github/workflows/release.yml@refs/heads/main" $owner }}
+{{ partial "snippet.html" (dict "id" .id "label" .label "text" (printf "gh attestation verify \\\n  oci://ghcr.io/%s/%s@%s \\\n  --owner %s \\\n  --cert-identity %s" $owner .name .v.digest $owner $identity)) }}
+{{ with .v.rekor }}<p class="note">Transparency log: <a href="https://search.sigstore.dev/?logIndex={{ . }}">Rekor entry {{ . }}</a>, in Sigstore's public, append-only log, so the attestation stays checkable independent of this site.</p>{{ end }}

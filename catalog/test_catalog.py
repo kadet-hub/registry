@@ -65,13 +65,13 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
     out = os.path.join(tmp, "out")
     env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"),
-               CATALOG_SBOMS=sboms or os.path.join(tmp, "none"))
+               CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -88,7 +88,10 @@ class Site(unittest.TestCase):
         os.makedirs(sboms)
         with open(os.path.join(sboms, "1.10.0.spdx.json"), "w", encoding="utf-8") as f:
             f.write('{"spdxVersion": "SPDX-2.3"}')
-        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms))
+        rekor = os.path.join(cls.tmp.name, "rekor.json")
+        with open(rekor, "w", encoding="utf-8") as f:
+            json.dump({"demo": {"1.10.0": "3202022821", "1.0.0": "17", "1.2.0": "not-a-number"}}, f)
+        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor)
 
     @classmethod
     def tearDownClass(cls):
@@ -108,7 +111,7 @@ class Site(unittest.TestCase):
     def test_version_page_shows_pinned_entry_and_verification(self):
         html = self.page("generators", "demo")
         self.assertIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
-        self.assertIn(f"gh attestation verify oci://ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
+        self.assertIn(f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
         self.assertIn(f"https://github.com/{OWNER}/registry/.github/workflows/release.yml@refs/heads/main", html)
         self.assertLess(html.index(">1.10.0"), html.index(">1.2.0"))
 
@@ -200,6 +203,23 @@ class Site(unittest.TestCase):
         self.assertIn('href="https://kapitan.dev/"', glossary)
         self.assertIn('id="index"', glossary)
 
+    def test_legal_pages_and_notices(self):
+        for html in self.pages():
+            self.assertIn("not affiliated with or endorsed by the Kapitan project or kapicorp", html)
+            self.assertIn("as is and on a best-effort basis: use at your own risk", html)
+            for href in ("privacy/", "imprint/", "registry/blob/main/TERMS.md", "SECURITY.md#removal-requests"):
+                self.assertIn(href, html)
+        demo = self.page("generators", "demo")
+        install = demo[demo.index('id="install"'):demo.index('class="readme"')]
+        self.assertIn("use at your own risk", install)
+        privacy = self.page("privacy")
+        self.assertIn("GitHub Pages", privacy)
+        self.assertIn("localStorage", privacy)
+        self.assertIn("Art. 77", privacy)
+        self.assertIn("§ 5 DDG", self.page("imprint"))
+        with open(os.path.join(HERE, "..", "README.md"), encoding="utf-8") as f:
+            self.assertIn("not affiliated with or endorsed by\nthe Kapitan project or kapicorp", f.read())
+
     def test_scan_record_and_sbom(self):
         html = self.page("generators", "demo")
         latest = html[html.index('id="checks"'):html.index('id="details"')]
@@ -214,6 +234,13 @@ class Site(unittest.TestCase):
         self.assertIn("No scan record", older)
         self.assertIn("No SBOM attestation for this version.", older)
         self.assertIn("checked 2026-10-10", self.page())
+
+    def test_llms_txt(self):
+        with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertTrue(text.startswith("# kadet-hub\n\n> "))
+        for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
+            self.assertIn(link, text)
 
     def test_built_for(self):
         self.assertIn('<p class="built-for">Built for External Secrets Operator 2.11.0</p>', self.page())
@@ -241,6 +268,19 @@ class Site(unittest.TestCase):
             self.assertIn(f"guides/{slug}/", guides)
             self.page("guides", slug)
 
+    def test_version_permalinks_and_transparency_log(self):
+        html = self.page("generators", "demo")
+        for v in ("1.10.0", "1.2.0", "1.0.0"):
+            self.assertIn(f'id="v{v}"', html)
+            self.assertIn(f'<a class="permalink" href="#v{v}" aria-label="Link to version {v}">#</a>', html)
+        self.assertIn('href="https://search.sigstore.dev/?logIndex=3202022821">Rekor entry 3202022821</a>', html)
+        self.assertIn('href="https://search.sigstore.dev/?logIndex=17">Rekor entry 17</a>', html)  # yanked keeps its entry
+        self.assertNotIn("not-a-number", html)
+        main = html[html.index('id="install"'):html.index('<aside')]
+        self.assertIn('id="verify"', main)  # CAT-17: verify in the main column
+        self.assertIn("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:", main)
+        self.assertIn("\n  --owner kadet-hub \\\n  --cert-identity https://", main)
+
     def test_sort_keys(self):
         home = self.page()
         self.assertIn('<select id="sort">', home)
@@ -248,7 +288,7 @@ class Site(unittest.TestCase):
 
     def test_seo(self):
         for parts in ((), ("generators", "demo"), ("generators", "old"), ("tags",), ("glossary",), ("tags", "helm"), ("tags", "observability"),
-                      ("guides",), ("guides", "writing-a-kapitan-generator"), ("guides", "supply-chain-security-for-kapitan-generators")):
+                      ("guides",), ("privacy",), ("imprint",), ("guides", "writing-a-kapitan-generator"), ("guides", "supply-chain-security-for-kapitan-generators")):
             html = self.page(*parts)
             title = re.search(r"<title>([^<]*)</title>", html).group(1)
             desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)

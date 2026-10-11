@@ -1226,6 +1226,15 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-11)
   - Since: #47
 
+- CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
+  the marketplace's purpose and linking the author guide, the template and
+  its `AGENTS.md`, the tags, the glossary and the gate's policy files.
+
+  Coding agents asked to write a generator start there instead of guessing
+  the gate's rules from the HTML.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #51
 - CAT-15: The card and the version page MUST show what a version is built
   for, from the software and versions of the schemas QA-7 validated its
   output against, marked as schema-checked.
@@ -1236,6 +1245,20 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #50
+
+- CAT-17: Every version on a generator page MUST have a permalink
+  (`/generators/<name>/#v<version>`) that opens it, and MUST link the
+  Sigstore transparency log entry of its provenance attestation.
+
+  The catalog job reads the log index from the attestation it verifies
+  with `gh attestation verify`, so a link only appears for a verified
+  attestation. The entry lives in Sigstore's public, append-only Rekor
+  log, independent of this site and of GitHub, so it stays checkable when
+  a version is yanked or the catalog changes. Install and Verify sit in
+  the main column, with the verify command split into one flag per line.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #54
 
 - CAT-18: The site MUST have a page per tag at `/tags/<tag>/` with the tag's
   definition from `policy/tags.yaml` and the cards of every generator that
@@ -1315,11 +1338,89 @@ index is refused (CON-2).
   `docs/authors.md`, and MUST say so when no generator is listed.
 
   `docs/authors.md` describes registration for authors: manifest, fixture
-  project, entry and what the gate and the review check. The root
-  `README.md` points to the catalog and both documents.
+  project, entry and what the gate and the review check, and when a
+  generator is worth writing and when another Kapitan input is the better
+  tool, with ideas for generators. The root `README.md` points to the
+  catalog and both documents, and the template repository
+  `kadet-hub/generator-template` starts a generator with the files the gate
+  expects, a local check and `AGENTS.md` for coding agents.
 
   - Test: `catalog/test_catalog.py`
   - Since: #18
+
+## Legal
+
+The marketplace is run by a private person in Germany, without payment
+and without a company. It republishes reviewed third-party code under its
+own registry namespace, which is the main legal exposure: under German case
+law a provider who checks content and presents it as part of its own
+offering can be held to have adopted it (BGH I ZR 166/07). The texts below
+describe the generators as third-party work, offer a takedown route and
+state what the review does not promise. They are drafts for a lawyer's
+review (OQ-1); the operator's name and address are `tbd` (OQ-2).
+
+- LEG-1: The site MUST have a privacy notice at `/privacy/` and an imprint at
+  `/imprint/`, both linked from every page's footer.
+
+  The privacy notice names GitHub Pages as host, its access logs with IP
+  addresses, the US transfer under the EU-US Data Privacy Framework, that
+  the site loads nothing from other origins, sets no cookies and writes
+  `localStorage` only when the visitor uses the theme toggle, and the
+  rights under GDPR Articles 15 to 21. Whether §5 DDG requires an imprint
+  for an unpaid project is unsettled; §18 MStV likely requires name and
+  address, so the page exists with `tbd` values.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #48
+
+- LEG-2: `TERMS.md` MUST state the terms under which a generator is listed
+  and republished, and the entry pull request MUST link to it.
+
+  The author grants the right to redistribute the tree under its license,
+  warrants holding the rights to it, and accepts removal at the
+  maintainers' discretion. Listing is provided free of charge and as is;
+  liability is excluded only as far as German law allows (§§ 309 Nr. 7,
+  521 BGB: not for intent, gross negligence or injury to life, body or
+  health).
+
+  - Test: none
+  - Since: #48
+
+- LEG-3: `SECURITY.md` MUST describe how to request removal of content
+  that infringes rights or is unlawful, and the site and the report form
+  MUST link to it.
+
+  Rights holders and others report through the `generator-report` form
+  ("License, copyright or trademark concern") or, for anything that must
+  not be public, privately to the contact in OQ-2. The maintainers answer
+  with the decision and its reason, as DSA Articles 16 and 17 ask of
+  hosting services; whether the DSA applies to an unpaid service is part
+  of OQ-1.
+
+  - Test: `catalog/test_catalog.py` (the links)
+  - Since: #48
+
+- LEG-4: The site footer and `README.md` MUST say that kadet-hub is not
+  affiliated with or endorsed by the Kapitan project or kapicorp, and that
+  listed generators are third-party work.
+  - Test: `catalog/test_catalog.py`
+  - Since: #48
+
+- LEG-5: The footer of every page, the install section of every generator
+  page, `README.md`, `docs/consumers.md` and `TERMS.md` MUST say that the
+  marketplace is offered free of charge, as is and on a best-effort basis,
+  and that use is at the user's own risk.
+
+  The notice sets expectations: nothing is promised about a generator's
+  quality or fitness, the checks are a best effort by volunteers, and the
+  user reviews the compiled output before applying it. It does not remove
+  the liability German law keeps (LEG-2), but it rules out any implied
+  assurance and supports the gratuitous character of the service
+  (§ 521 BGB); a user who ignores a clear warning bears part of a damage
+  (§ 254 BGB).
+
+  - Test: `catalog/test_catalog.py` (the site); none for the documents
+  - Since: #48
 
 ## Incident response
 
@@ -1493,7 +1594,19 @@ coverage is named at each:
 
 ## Open questions
 
-None.
+- OQ-1: A lawyer reviews LEG-1 to LEG-4: whether republishing reviewed code
+  under the marketplace's namespace counts as adopting it, whether the DSA
+  applies to an unpaid service, whether the operator is a controller of
+  GitHub Pages' access logs, and whether an imprint is required.
+- OQ-2: The operator supplies the name for the imprint and the privacy
+  notice, and the serviceable postal address of an address service that
+  holds a written power to accept service (Zustellungsvollmacht) for the
+  imprint; a mail-forwarding address or PO box does not suffice, and the
+  operator's private address is not published. § 18(1) MStV requires the
+  real full name; a pseudonym or group name does not satisfy it. Until then
+  the name reads `tbd` and the imprint says the address follows. The e-mail
+  addresses are decided: `contact@`, `privacy@`, `abuse@` and
+  `security@kadet-hub.org`, role addresses the operator routes.
 
 ## Implementation inventory
 
@@ -1526,8 +1639,9 @@ None.
 | `docs/consumers.md` | CON-2, CON-3 |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
+| `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |
 | `release/scan-record`, `release/sbom.py` | PUB-7, PUB-8 |
-| `catalog/` | CAT-1 to CAT-12: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
+| `catalog/` | CAT-1 to CAT-14: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
