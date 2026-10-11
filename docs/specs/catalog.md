@@ -141,7 +141,7 @@ remembered in the browser's `localStorage`.
   card); the card keeps one click target and the tag links.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73, tbd
+  - Since: #73
 
 - CAT-22: Every card MUST show the same fields in the same order: the
   name as the only card-wide link, below it the latest version and its
@@ -164,7 +164,7 @@ remembered in the browser's `localStorage`.
   has keyboard focus, not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73
+  - Since: #73, tbd
 
 - CAT-15: The card and the version page MUST show what a version is built
   for, from the software and versions of the schemas QA-7 and QA-8
