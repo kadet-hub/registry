@@ -773,8 +773,16 @@ review go into the review comment and do not fail the gate.
   `kapitan validate` was considered, but it downloads schemas at compile
   time, which the sandbox does not allow.
 
-  - Test: `sandbox/test_schema_check.py`; workflow job `gate-selftest`
-    (`fail-schema-invalid`)
+  The schemas live in the generator's tree, so each version is validated
+  against the schemas of its own commit and the catalog shows each
+  version's own result. A version that moves to a newer upstream release
+  must bring the newer schemas in the same commit; on a bump the gate
+  report lists every group's software and version before and after
+  (`gate/schema_diff.py`), so the reviewer sees schemas that stayed behind
+  the code.
+
+  - Test: `sandbox/test_schema_check.py`, `gate/test_schema_diff.py`;
+    workflow job `gate-selftest` (`fail-schema-invalid`)
   - Since: #50
 
 ## Review
