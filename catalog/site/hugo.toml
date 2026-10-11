@@ -12,3 +12,15 @@ changeFreq = "daily"
 # Highlighting as classes: the CSP blocks inline styles.
 [markup.highlight]
 noClasses = false
+
+# CAT-18: Atom feed of published versions at /index.xml.
+[outputFormats.atom]
+mediaType = "application/atom+xml"
+baseName = "index"
+isPlainText = false
+
+[mediaTypes."application/atom+xml"]
+suffixes = ["xml"]
+
+[outputs]
+home = ["html", "atom"]

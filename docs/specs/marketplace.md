@@ -60,8 +60,9 @@ Trust boundaries, from outside in:
   file plus a manifest, consumption a standard `kapitan.dependencies` OCI
   entry, the index a generated JSON file. The consumer sandbox (DEC-11)
   reuses the gate's sandbox image. The only web UI is the static catalog at
-  `https://kadet-hub.org`, generated from the index (Catalog); ratings,
-  accounts and a backend stay out of scope.
+  `https://kadet-hub.org`, generated from the index (Catalog). Accounts, a
+  backend and ratings of its own stay out of scope; the only rating is a
+  👍 count read from GitHub Discussions (CAT-20).
 - DEC-6: The author's own test suite is not run; fixture compiles in the
   sandbox exercise the generator instead.
 - DEC-7: The marketplace lives in the GitHub organization `kadet-hub`. Gate
@@ -1163,7 +1164,7 @@ remembered in the browser's `localStorage`.
   - Since: #45
 
 - CAT-10: The home page MUST let visitors sort the cards by name, by the
-  time of the latest version and by source stars.
+  time of the latest version, by source stars and by 👍 count (CAT-20).
 
   Download counts would be the better signal, but GHCR exposes none: the
   REST package objects have no download field, and the GraphQL package
@@ -1259,6 +1260,44 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #54
+
+- CAT-18: The site MUST have a page per tag at `/tags/<tag>/` with the tag's
+  definition from `policy/tags.yaml` and the cards of every generator that
+  carries it, an Atom feed of published versions at `/index.xml`, an
+  `og:image` on every page, and guides under `/guides/`.
+
+  Tag pages are landing pages for searches such as "Kapitan Kubernetes
+  generator"; they reuse the tag definitions and the card markup instead
+  of copying them. The feed lists one entry per published version, newest
+  first, linking its permalink (CAT-17). The guides are articles for
+  people deciding whether and how to write or consume a generator; they
+  link the reference documents instead of repeating them.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #55
+
+- CAT-20: Each listed generator MUST have one discussion in the
+  "Generators" category of the registry's GitHub Discussions, and its card
+  and page MUST show the discussion's 👍 count and link it.
+
+  Stars belong to a repository, and one repository can hold several
+  generators, so they say nothing about a single generator. A 👍 on the
+  generator's discussion does, needs only a GitHub account and no backend
+  here. The catalog job opens a missing discussion, titled with the
+  generator's name, with `discussions: write`, and reads the counts at
+  build time like the stars. It never opens a second discussion for a title
+  that exists in the category, and counts only the discussion the workflow
+  opened, so a discussion someone else opened under that title is not
+  counted. Without the category the catalog shows no counts and the job
+  warns. The release workflow also runs daily, so counts are at most a day
+  old.
+
+  Where several listed generators share a source repository, the stars
+  MUST be labelled as repository stars with the number of generators that
+  share them.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #57
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`

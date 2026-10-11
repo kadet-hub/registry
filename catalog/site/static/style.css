@@ -228,6 +228,15 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 /* Built for (CAT-15) */
 .built-for { margin: 0; font-size: .85rem; color: var(--ok); font-weight: 600; }
 
+/* Tag pages and guides (CAT-18) */
+.crumbs { color: var(--text-muted); font-size: .9rem; margin: 0 0 .5rem; }
+.tag-cards { margin-top: 1.5rem; }
+.guide-list { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.guide-list li { padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.guide-list a { font-weight: 700; font-size: 1.1rem; }
+.guide-list p { margin: .35rem 0 0; color: var(--text-muted); }
+.prose table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: .9rem; }
+.prose th, .prose td { border: 1px solid var(--border); padding: .5rem .6rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 /* Version permalinks (CAT-17) */
 .permalink { color: var(--text-muted); text-decoration: none; padding: 0 .25rem; opacity: .6; }
 .permalink:hover, .permalink:focus-visible { opacity: 1; color: var(--accent); }

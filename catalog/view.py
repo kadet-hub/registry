@@ -1,6 +1,6 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
@@ -8,7 +8,8 @@ A failed lookup leaves the user ID or no stars; --offline skips the API.
 DIR/<name>.tar is the latest version's artifact layer; its README.md is
 shown on the generator page (CAT-7). DIR/<name>/<version>.spdx.json marks a
 version whose SBOM the site offers (CAT-14); --rekor maps name and version to
-the transparency log index of the verified attestation (CAT-17).
+the transparency log index of the verified attestation (CAT-17);
+--discussions maps name to the URL and 👍 count of its discussion (CAT-20).
 """
 
 import argparse
@@ -60,7 +61,7 @@ def semver(v):
     return tuple(int(x) for x in v.split("."))
 
 
-def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None):
+def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None):
     generators = []
     for name, versions in sorted(index.get("generators", {}).items()):
         ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
@@ -90,10 +91,15 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None):
             "license": shown.get("license"),
             "latest": latest,
             "stars": stars,
+            "discussion": (discussions or {}).get(name),
             "owners": owners,
             "source_url": repo.removesuffix(".git"),
             "versions": ordered,
         })
+    listed = [g["source_url"] for g in generators if g["latest"]]
+    for g in generators:
+        n = listed.count(g["source_url"])
+        g["stars_shared"] = n if n > 1 and g["stars"] is not None else None
     return {"owner": owner, "serial": index.get("serial"), "generators": generators}
 
 
@@ -106,6 +112,17 @@ def load_rekor(path):
     return {n: {v: str(i) for v, i in vs.items() if str(i).isdigit()} for n, vs in data.items() if isinstance(vs, dict)}
 
 
+def load_discussions(path, owner):
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, TypeError, ValueError):
+        return {}
+    prefix = f"https://github.com/{owner}/registry/discussions/"
+    return {n: {"url": d["url"], "up": d["up"]} for n, d in data.items()
+            if isinstance(d, dict) and str(d.get("url", "")).startswith(prefix) and type(d.get("up")) is int}
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--index", required=True)
@@ -114,11 +131,13 @@ def main():
     p.add_argument("--artifacts")
     p.add_argument("--sboms")
     p.add_argument("--rekor")
+    p.add_argument("--discussions")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
         index = json.load(f)
-    result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor))
+    result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor),
+                  load_discussions(a.discussions, a.owner))
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0

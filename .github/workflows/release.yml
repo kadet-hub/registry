@@ -1,6 +1,6 @@
 name: release
 
-# PUB-1 to PUB-8, CMP-4, CAT-1, CAT-7, CAT-14. Only this workflow holds publishing permissions:
+# PUB-1 to PUB-8, CMP-4, CAT-1, CAT-7, CAT-14, CAT-20. Only this workflow holds publishing permissions:
 # its sign, sandbox and index jobs in the release environment, and its pages
 # job in the github-pages environment (GI-8).
 on:
@@ -20,6 +20,8 @@ on:
       - .github/workflows/catalog-tests.yml
       - .github/workflows/release-tests.yml
       - .github/workflows/workflows.yml
+  schedule:
+    - cron: "17 4 * * *" # CAT-20: refresh the 👍 counts and stars daily
   workflow_dispatch:
 
 permissions: {}
@@ -223,6 +225,7 @@ jobs:
       contents: read
       packages: read # the latest artifacts' READMEs (CAT-7)
       attestations: read # the SBOM attestations (CAT-14)
+      discussions: write # one discussion per generator and its 👍 count (CAT-20)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
