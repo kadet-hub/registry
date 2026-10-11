@@ -1187,6 +1187,16 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-11)
   - Since: #47
 
+- CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
+  the marketplace's purpose and linking the author guide, the template and
+  its `AGENTS.md`, the tags, the glossary and the gate's policy files.
+
+  Coding agents asked to write a generator start there instead of guessing
+  the gate's rules from the HTML.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
 in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
@@ -1250,8 +1260,12 @@ index is refused (CON-2).
   `docs/authors.md`, and MUST say so when no generator is listed.
 
   `docs/authors.md` describes registration for authors: manifest, fixture
-  project, entry and what the gate and the review check. The root
-  `README.md` points to the catalog and both documents.
+  project, entry and what the gate and the review check, and when a
+  generator is worth writing and when another Kapitan input is the better
+  tool, with ideas for generators. The root `README.md` points to the
+  catalog and both documents, and the template repository
+  `kadet-hub/generator-template` starts a generator with the files the gate
+  expects, a local check and `AGENTS.md` for coding agents.
 
   - Test: `catalog/test_catalog.py`
   - Since: #18
