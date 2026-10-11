@@ -139,8 +139,16 @@ remembered in the browser's `localStorage`.
   "Request Feature" on the extension page, none of ten catalogs on the
   card); the card keeps one click target and the tag links.
 
+  Sources under the registry's GitHub owner open the issue form
+  `feature-request.yml` instead (`template=` with the `generator` and
+  `version` fields prefilled). The form is an organisation default in the
+  owner's `.github` repository, so every generator repository there gets
+  it, and the generator template ships a copy for repositories created
+  from it. Other sources keep the prefilled body, because the registry
+  cannot tell whether a foreign repository has the form.
+
   - Test: `catalog/test_catalog.py`
-  - Since: #73
+  - Since: #73, #93
 
 - CAT-22: Every card MUST show the same fields in the same order: the
   name as the only card-wide link, below it the latest version and its
