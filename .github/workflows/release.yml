@@ -6,6 +6,20 @@ name: release
 on:
   push:
     branches: [main]
+    paths-ignore: # CI-2: files no release job reads
+      - docs/**
+      - tests/**
+      - "*.md"
+      - renovate.json
+      - .github/ISSUE_TEMPLATE/**
+      - .github/pull_request_template.md
+      - .github/CODEOWNERS
+      - .github/ruleset.json
+      - .github/workflows/selftest.yml
+      - .github/workflows/consumer-selftest.yml
+      - .github/workflows/catalog-tests.yml
+      - .github/workflows/release-tests.yml
+      - .github/workflows/workflows.yml
   schedule:
     - cron: "17 4 * * *" # CAT-20: refresh the 👍 counts and stars daily
   workflow_dispatch:
