@@ -1,11 +1,15 @@
 """Terraform JSON against provider schema extracts (QA-8).
 
 Usage: tf_schema.py extract --full FILE --out DIR [--source NAMESPACE/TYPE]
+       tf_schema.py describe --extract FILE
+       tf_schema.py compare --extract FILE --full FILE
 
 check() is called by schema_check.py. extract reduces the output of
 `terraform providers schema -json` to the provider configuration and the
 resource and data source types the compiled *.tf.json under DIR use, and
 prints it for schemas/terraform/<namespace>_<type>_<version>.json.
+describe prints "<source> <version>" of an extract; compare (QA-9) exits 1
+when an extract differs from the full schema it was taken from.
 """
 
 import argparse
@@ -263,6 +267,39 @@ def extract(full, out, only=None):
     return {"format_version": data.get("format_version"), "provider_schemas": reduced}
 
 
+def describe(path):
+    """(source, version) of the provider in an extract, from its content and file name."""
+    m = re.fullmatch(r".+_(\d+\.\d+\.\d+)\.json", os.path.basename(path))
+    with open(path, encoding="utf-8") as f:
+        addresses = list((json.load(f).get("provider_schemas") or {}))
+    if not m or len(addresses) != 1:
+        raise ValueError(f"{path}: expected one provider and a <namespace>_<type>_<version>.json name")
+    return source_of(addresses[0]), m.group(1)
+
+
+def compare(extract_path, full_path):
+    """Differences between an extract and the full schema of the same provider version (QA-9)."""
+    with open(extract_path, encoding="utf-8") as f:
+        shipped = json.load(f).get("provider_schemas") or {}
+    with open(full_path, encoding="utf-8") as f:
+        full = json.load(f).get("provider_schemas") or {}
+    diffs = []
+    for address, part in sorted(shipped.items()):
+        original = full.get(address)
+        if original is None:
+            diffs.append(f"{address}: not in the provider's schema")
+            continue
+        if part.get("provider") != original.get("provider"):
+            diffs.append(f"{address}: provider block differs")
+        for key, label in (("resource_schemas", "resource"), ("data_source_schemas", "data source")):
+            for rtype, schema in sorted((part.get(key) or {}).items()):
+                if rtype not in (original.get(key) or {}):
+                    diffs.append(f"{address}: {label} {rtype} does not exist in this version")
+                elif original[key][rtype] != schema:
+                    diffs.append(f"{address}: {label} {rtype} differs")
+    return diffs
+
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -270,7 +307,19 @@ def main():
     e.add_argument("--full", required=True)
     e.add_argument("--out", required=True)
     e.add_argument("--source")
+    d = sub.add_parser("describe")
+    d.add_argument("--extract", required=True)
+    c = sub.add_parser("compare")
+    c.add_argument("--extract", required=True)
+    c.add_argument("--full", required=True)
     a = p.parse_args()
+    if a.cmd == "describe":
+        print(*describe(a.extract))
+        return 0
+    if a.cmd == "compare":
+        diffs = compare(a.extract, a.full)
+        print("\n".join(f"QA-9: {d}" for d in diffs) or f"QA-9: {os.path.basename(a.extract)} matches the provider schema")
+        return 1 if diffs else 0
     json.dump(extract(a.full, a.out, a.source), sys.stdout, indent=1, sort_keys=True)
     sys.stdout.write("\n")
     return 0
