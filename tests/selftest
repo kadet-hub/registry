@@ -41,6 +41,8 @@ mv -- "$work/fail-no-minimal/tests/consumer/inventory/targets/minimal.yml" "$wor
 derive fail-chart-sha "SEC-8: chart podinfo 6.9.2 has sha256"
 cp -R -- "$work/pass-declared-chart/." "$work/fail-chart-sha/"
 sed -i 's/pass-declared-chart/fail-chart-sha/; s/sha256: a/sha256: b/' "$work/fail-chart-sha/kapitan-generator.yaml" "$work/fail-chart-sha/tests/consumer/inventory/targets/minimal.yml"
+derive fail-tag-without-evidence "QA-6: tag terraform: no *.tf.json or *.tf file in the compiled output"
+yq -i '.tags = ["terraform"]' "$work/fail-tag-without-evidence/kapitan-generator.yaml"
 derive fail-big-file-eval "semgrep: dynamic-code: big.py"
 python3 -c 'print("x = 1\n" * 166_700 + "eval(\"1\")")' >"$work/fail-big-file-eval/big.py"
 
