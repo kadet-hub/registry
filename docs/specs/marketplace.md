@@ -1507,8 +1507,11 @@ coverage is named at each:
   applies to an unpaid service, whether the operator is a controller of
   GitHub Pages' access logs, and whether an imprint is required.
 - OQ-2: The operator supplies the name for the imprint and the privacy
-  notice, and the serviceable postal address of a c/o address service for
-  the imprint; the operator's private address is not published. Until then
+  notice, and the serviceable postal address of an address service that
+  holds a written power to accept service (Zustellungsvollmacht) for the
+  imprint; a mail-forwarding address or PO box does not suffice, and the
+  operator's private address is not published. § 18(1) MStV requires the
+  real full name; a pseudonym or group name does not satisfy it. Until then
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
