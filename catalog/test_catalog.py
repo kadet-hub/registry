@@ -158,6 +158,13 @@ class Site(unittest.TestCase):
         self.assertRegex(css, r"pre \{[^}]*white-space: pre-wrap")
         self.assertRegex(css, r"pre \{[^}]*overflow-x: hidden")
 
+    def test_issue_forms_are_linked(self):
+        links = [__import__("html").unescape(h) for h in re.findall(r'href="([^"]*issues/new[^"]*)"', self.page("generators", "demo"))]
+        self.assertIn(f"https://github.com/{OWNER}/registry/issues/new?generator=demo&template=generator-report.yml&title=%5Breport%5D+demo%3A+&version=1.10.0", links)
+        self.assertIn(f"https://github.com/{OWNER}/registry/issues/new?template=generator-request.yml", self.page())
+        for form in ("generator-report", "generator-request"):
+            self.assertTrue(os.path.isfile(os.path.join(HERE, "..", ".github", "ISSUE_TEMPLATE", f"{form}.yml")))
+
     def test_sort_keys(self):
         home = self.page()
         self.assertIn('<select id="sort">', home)

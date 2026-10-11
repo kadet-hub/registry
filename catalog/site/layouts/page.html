@@ -17,6 +17,8 @@
       <div><dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
       <div><dt>Source</dt><dd><a href="{{ .source_url }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} stars{{ end }}</dd></div>
     </dl>
+    {{ $q := dict "template" "generator-report.yml" "generator" .name "title" (printf "[report] %s: " .name) }}{{ with .latest }}{{ $q = merge $q (dict "version" .version) }}{{ end }}
+    <p class="actions small"><a class="button" href="{{ printf "https://github.com/%s/registry/issues/new?%s" $owner (querify $q) | safeURL }}">Report a problem</a></p>
   </div>
 </header>
 

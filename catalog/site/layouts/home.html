@@ -4,7 +4,7 @@
 <section class="hero">
   <h1>Kapitan generators, gate-checked and attested</h1>
   <p class="lead">Every listed version passed secret, malware and code scans, a fixture compile in a gVisor sandbox without network and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.</p>
-  <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a></p>
+  <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a><a class="button" href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request a generator</a></p>
 </section>
 {{ with $gens }}
 {{ $all := slice }}{{ range . }}{{ $all = $all | append .tags }}{{ end }}
@@ -48,7 +48,7 @@
     </li>
   {{ end }}
   </ul>
-  <p id="empty" class="empty" hidden>No generator matches. <button type="button" id="reset" class="link">Show all</button></p>
+  <p id="empty" class="empty" hidden>No generator matches. <button type="button" id="reset" class="link">Show all</button> or <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">request one</a>.</p>
 </section>
 {{ else }}
 <p class="empty">No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a vulnerability or a malicious generator
+    url: https://github.com/kadet-hub/registry/security/advisories/new
+    about: Private report to the maintainers (SECURITY.md); do not open a public issue for it.

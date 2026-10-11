@@ -1,0 +1,49 @@
+name: Report a problem with a generator
+description: A listed generator compiles wrongly, is documented wrongly or is listed wrongly (CAT-12).
+title: "[report] "
+labels: [generator-report]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Malicious behaviour or a security vulnerability: report it **privately** through
+        [private vulnerability reporting](https://github.com/kadet-hub/registry/security/advisories/new), not here.
+        A bug in the generator's own code is usually best reported in its source repository, linked on its catalog page.
+  - type: input
+    id: generator
+    attributes:
+      label: Generator
+      description: Name as listed on kadet-hub.org
+      placeholder: keda
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 1.0.0
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong
+      options:
+        - Compile fails or the output is wrong
+        - README or usage example is wrong
+        - Listing is wrong (description, tags, owners)
+        - License, copyright or trademark concern
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What you did, what you expected and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: inventory
+    attributes:
+      label: Inventory to reproduce
+      description: The smallest inventory that shows the problem. No secrets.
+      render: yaml
