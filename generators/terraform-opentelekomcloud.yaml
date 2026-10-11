@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: terraform-opentelekomcloud
-  tag: terraform-opentelekomcloud-v0.1.0
-  sha: 3ec7a80b223e8561ba752c469c23efd664e767fc
+  tag: terraform-opentelekomcloud-v0.1.1
+  sha: 90a1da0e1a83651901e7ad2e7d53ad45d0076416
 owners: [3042152]
