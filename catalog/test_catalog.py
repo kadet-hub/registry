@@ -354,6 +354,14 @@ class Site(unittest.TestCase):
         link = re.search(r'<a class="button" href="([^"]+)">Request a feature</a>', page).group(1)
         self.assertTrue(link.startswith("https://gitlab.com/group/proj/-/issues/new?"))
         self.assertIn("issue[title]", urllib.parse.unquote(_unescape(link)))
+        own = dict(INDEX, generators={"g": {"1.0.0": dict(record("e"), source=dict(record("e")["source"], repo=f"https://github.com/{OWNER}/generators.git"))}})
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(build(own, tmp), "generators", "g", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        link = re.search(r'<a class="button" href="([^"]+)">Request a feature</a>', page).group(1)
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(_unescape(link)).query)
+        self.assertTrue(link.startswith(f"https://github.com/{OWNER}/generators/issues/new?"))
+        self.assertEqual((query["template"], query["generator"], query["version"]), (["feature-request.yml"], ["g"], ["1.0.0"]))
 
     def test_sort_keys(self):
         home = self.page()
