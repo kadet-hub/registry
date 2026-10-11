@@ -144,9 +144,9 @@ remembered in the browser's `localStorage`.
 
 - CAT-22: Every card MUST show the same fields in the same order: the
   name as the only card-wide link, below it the latest version and its
-  date, the description clamped to three lines, what the version is built
-  for or "Built for: not recorded", the tags, and labelled facts:
-  "Maintainer" (the owners, each linked to their profile), "Popularity"
+  date, the description clamped to three lines, the tags, and labelled
+  facts: "Built for" (one software and version per line, or "not
+  recorded"), "Maintainer" (the owners, each linked to their profile), "Popularity"
   (the score of CAT-23, linked to its explanation) and "Scanned" (the scan
   date or "not scanned").
 
@@ -157,13 +157,16 @@ remembered in the browser's `localStorage`.
   by several generators move to the generator page, where there is room
   to explain them. The version sits on its own line under the name, so it
   is in the same place on every card whatever the length of the name.
-  Facts carry visible labels instead of bare icons. The name link
+  Facts carry visible labels instead of bare icons. A generator built for
+  several products, such as cert-manager with trust-manager, lists each
+  on its own line, because a run-on line with separators reads like the
+  version line above it and wraps mid-name on narrow cards. The name link
   stretches over the card and the tag and maintainer links sit above it, the block-link pattern recommended by Heydon
   Pickering and Adrian Roselli; the focus ring is drawn when the name link
   has keyboard focus, not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73, #81
+  - Since: #73, #81, #92
 
 - CAT-23: Every generator MUST have a popularity score
   `round(10·log2(1 + 👍) + 4·log2(1 + stars ÷ n) + 2·log2(1 + pulls))`,
