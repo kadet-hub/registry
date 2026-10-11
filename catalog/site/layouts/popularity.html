@@ -1,0 +1,15 @@
+{{ define "main" }}
+{{/* CAT-23: the score and its inputs for every generator. */}}
+<section class="prose-page prose">
+<h1>{{ .Title }}</h1>
+{{ .Content }}
+<table class="popularity">
+<thead><tr><th scope="col">Generator</th><th scope="col">👍</th><th scope="col">Stars ÷ n</th><th scope="col">Pulls</th><th scope="col">Score</th></tr></thead>
+<tbody>
+{{ range sort site.Data.catalog.generators "score" "desc" }}
+<tr id="{{ .name }}"><th scope="row"><a href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></th><td>{{ with .discussion }}{{ .up }}{{ else }}0{{ end }}</td><td>{{ .stars | default "0" }} ÷ {{ .stars_shared | default 1 }}</td><td>{{ with .pulls }}{{ . }}{{ else }}not read{{ end }}</td><td>{{ .score }}</td></tr>
+{{ end }}
+</tbody>
+</table>
+</section>
+{{ end }}

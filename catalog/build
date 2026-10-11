@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# Build the catalog site from an index (CAT-1 to CAT-20).
+# Build the catalog site from an index (CAT-1 to CAT-23).
 #
 # Usage: build <index.json> <out dir>
 # Needs: OWNER (registry owner), hugo, python3, jq, oras, gh. GH_TOKEN raises
 # the API rate limit; CATALOG_OFFLINE=1 skips the API and the registry and
 # reads artifact layers from $CATALOG_ARTIFACTS/<name>.tar, SBOMs from
 # $CATALOG_SBOMS/<name>/<version>.spdx.json and transparency log indexes
-# from $CATALOG_REKOR (JSON {name: {version: index}}) instead.
+# from $CATALOG_REKOR (JSON {name: {version: index}}) instead. Online, the
+# previous build's published catalog.json supplies README, log index and
+# SBOM of every unchanged digest, so each version is pulled from the
+# registry once (CAT-23); CATALOG_PAGES receives the package pages.
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 index=$(realpath -- "$1")
@@ -22,13 +25,22 @@ artifacts=${CATALOG_ARTIFACTS:-$work/artifacts}
 sboms=${CATALOG_SBOMS:-$work/sboms}
 rekor=${CATALOG_REKOR:-$work/rekor.json}
 discussions=${CATALOG_DISCUSSIONS:-$work/discussions.json}
+pages=${CATALOG_PAGES:-$work/pages}
+site=${CATALOG_URL:-https://kadet-hub.org/}
 if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
   offline=(--offline)
 else
   # CAT-7: the layer of each generator's latest version that is not yanked, by digest.
+  # CAT-23: what the previous build published, to reuse for unchanged digests.
+  previous=$work/previous.json
+  curl -fsSL --max-time 20 "${site}catalog.json" -o "$previous" 2>/dev/null && jq -e .generators "$previous" >/dev/null 2>&1 \
+    || echo '{"generators": []}' >"$previous"
   mkdir -p -- "$artifacts"
   while read -r name digest; do
     ref=ghcr.io/$OWNER/$name
+    if jq -e --arg n "$name" --arg d "$digest" '.generators[] | select(.name == $n and .latest.digest == $d and .readme != null)' "$previous" >/dev/null; then
+      continue  # view.py takes the README from the previous build
+    fi
     if layer=$(oras manifest fetch -- "$ref@$digest" | jq -er 'select(.artifactType == "application/vnd.kadet-hub.generator.v1") | .layers[0].digest') \
       && oras blob fetch --output "$artifacts/$name.tar" -- "$ref@$layer"; then
       continue
@@ -43,17 +55,33 @@ else
   identity=https://github.com/$OWNER/registry/.github/workflows/release.yml@refs/heads/main
   echo '{}' >"$rekor"
   while read -r name version digest yanked; do
-    if logindex=$(gh attestation verify "oci://ghcr.io/$OWNER/$name@$digest" --owner "$OWNER" --cert-identity "$identity" \
-      --format json --jq '.[0].attestation.bundle.verificationMaterial.tlogEntries[0].logIndex' 2>/dev/null) && [[ $logindex =~ ^[0-9]+$ ]]; then
+    old=$(jq -c --arg n "$name" --arg d "$digest" 'first(.generators[] | select(.name == $n) | .versions[] | select(.digest == $d)) // {}' "$previous")
+    logindex=$(jq -r '.rekor // empty' <<<"$old")
+    if [[ ! $logindex =~ ^[0-9]+$ ]]; then
+      logindex=$(gh attestation verify "oci://ghcr.io/$OWNER/$name@$digest" --owner "$OWNER" --cert-identity "$identity" \
+        --format json --jq '.[0].attestation.bundle.verificationMaterial.tlogEntries[0].logIndex' 2>/dev/null) || logindex=
+    fi
+    if [[ $logindex =~ ^[0-9]+$ ]]; then
       jq --arg n "$name" --arg v "$version" --arg i "$logindex" '.[$n][$v] = $i' -- "$rekor" >"$work/rekor.tmp" && mv -- "$work/rekor.tmp" "$rekor"
     fi
     [[ $yanked == listed ]] || continue
     mkdir -p -- "$sboms/$name"
+    sbom=$sboms/$name/$version.spdx.json
+    if [[ $(jq -r '.sbom' <<<"$old") == true ]] && curl -fsSL --max-time 20 "${site}generators/$name/$version.spdx.json" -o "$sbom" 2>/dev/null \
+      && jq -e '.spdxVersion' "$sbom" >/dev/null 2>&1; then
+      continue
+    fi
     gh attestation verify "oci://ghcr.io/$OWNER/$name@$digest" --owner "$OWNER" --cert-identity "$identity" \
       --predicate-type https://spdx.dev/Document/v2.3 --format json --jq '.[0].verificationResult.statement.predicate' \
-      >"$sboms/$name/$version.spdx.json" 2>/dev/null || rm -f -- "$sboms/$name/$version.spdx.json"
+      >"$sbom" 2>/dev/null || rm -f -- "$sbom"
   done < <(jq -r '.generators | to_entries[] | .key as $n | .value | to_entries[]
     | "\($n) \(.key) \(.value.digest) \(if .value.yanked == null then "listed" else "yanked" end)"' -- "$index")
+  # CAT-23: the public package page is the only source of the pull count.
+  mkdir -p -- "$pages"
+  for name in $(jq -r '.generators | keys[]' -- "$index"); do
+    curl -fsSL --max-time 20 "https://github.com/orgs/$OWNER/packages/container/package/$name" -o "$pages/$name.html" \
+      || { rm -f -- "$pages/$name.html"; echo "::warning::$name: package page not read; pulls count as 0"; }
+  done
   # CAT-20: one discussion per listed generator and its 👍 count.
   "$here/discussions" "$index" >"$discussions" || echo "::warning::discussions not read; the catalog shows no 👍 counts"
 fi
@@ -62,5 +90,8 @@ if [[ -d $sboms ]]; then
   cp -R -- "$sboms/." "$work/static/generators/"
 fi
 cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --out "$work/data/catalog.json"
+previous_arg=()
+if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --out "$work/data/catalog.json"
+cp -- "$work/data/catalog.json" "$work/static/catalog.json"  # CAT-23: the next build reuses it
 hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"

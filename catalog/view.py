@@ -1,6 +1,6 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
@@ -10,11 +10,17 @@ shown on the generator page (CAT-7). DIR/<name>/<version>.spdx.json marks a
 version whose SBOM the site offers (CAT-14); --rekor maps name and version to
 the transparency log index of the verified attestation (CAT-17);
 --discussions maps name to the URL and 👍 count of its discussion (CAT-20).
+DIR/<name>.html is the generator's public package page; its "Total
+downloads" are the pulls of the popularity score (CAT-23). --previous is the
+catalog.json of the last build; its README is used when the latest digest
+is unchanged and no artifact layer was fetched.
 """
 
 import argparse
 import hashlib
+import html
 import json
+import math
 import os
 import re
 import sys
@@ -57,11 +63,33 @@ def api(path):
         return None
 
 
+PULLS = re.compile(r"Total downloads\s*([0-9][0-9.,]*)\s*([kKmM]?)")
+
+
+def pulls(path):
+    """Total downloads from a package page, or None when it cannot be read."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = html.unescape(re.sub(r"<[^>]+>", " ", f.read()))
+    except OSError:
+        return None
+    m = PULLS.search(re.sub(r"\s+", " ", text))
+    if not m:
+        return None
+    number = float(m.group(1).replace(",", ""))
+    return int(number * {"": 1, "k": 1000, "m": 1000000}[m.group(2).lower()])
+
+
+def score(up, stars, shared, downloads):
+    """CAT-23: round(10·log2(1 + 👍) + 4·log2(1 + stars ÷ n) + 2·log2(1 + pulls))."""
+    return round(10 * math.log2(1 + up) + 4 * math.log2(1 + stars / shared) + 2 * math.log2(1 + downloads))
+
+
 def semver(v):
     return tuple(int(x) for x in v.split("."))
 
 
-def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None):
+def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, previous=None):
     generators = []
     for name, versions in sorted(index.get("generators", {}).items()):
         ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
@@ -84,7 +112,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             "name": name,
             "monogram": name[0].upper(),
             "hue": int(hashlib.sha256(name.encode()).hexdigest(), 16) % HUES,
-            "readme": readme(tar) if tar and os.path.isfile(tar) else None,
+            "readme": readme(tar) if tar and os.path.isfile(tar) else (previous or {}).get((name, (latest or {}).get("digest"))),
             "blob_url": blob_url(shown["source"]),
             "description": shown.get("description", ""),
             "tags": shown.get("tags", []),
@@ -92,6 +120,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             "latest": latest,
             "stars": stars,
             "discussion": (discussions or {}).get(name),
+            "pulls": pulls(os.path.join(pages, f"{name}.html")) if pages else None,
             "owners": owners,
             "source_url": repo.removesuffix(".git"),
             "versions": ordered,
@@ -100,6 +129,8 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
     for g in generators:
         n = listed.count(g["source_url"])
         g["stars_shared"] = n if n > 1 and g["stars"] is not None else None
+        up = g["discussion"]["up"] if g["discussion"] else 0
+        g["score"] = score(up, int(g["stars"] or 0), max(n, 1), g["pulls"] or 0)
     return {"owner": owner, "serial": index.get("serial"), "generators": generators}
 
 
@@ -123,6 +154,18 @@ def load_discussions(path, owner):
             if isinstance(d, dict) and str(d.get("url", "")).startswith(prefix) and type(d.get("up")) is int}
 
 
+def load_previous(path):
+    """{(name, latest digest): README} from the last build's catalog.json."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, TypeError, ValueError):
+        return {}
+    return {(g["name"], g["latest"]["digest"]): g["readme"] for g in data.get("generators", [])
+            if isinstance(g, dict) and isinstance(g.get("latest"), dict) and isinstance(g.get("readme"), str)
+            and len(g["readme"].encode()) <= README_MAX}
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--index", required=True)
@@ -132,12 +175,14 @@ def main():
     p.add_argument("--sboms")
     p.add_argument("--rekor")
     p.add_argument("--discussions")
+    p.add_argument("--pages")
+    p.add_argument("--previous")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
         index = json.load(f)
     result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor),
-                  load_discussions(a.discussions, a.owner))
+                  load_discussions(a.discussions, a.owner), a.pages, load_previous(a.previous))
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0

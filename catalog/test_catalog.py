@@ -68,14 +68,15 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
     out = os.path.join(tmp, "out")
     env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"),
                CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"),
-               CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"))
+               CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"),
+               CATALOG_PAGES=pages or os.path.join(tmp, "none"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -99,7 +100,11 @@ class Site(unittest.TestCase):
         with open(discussions, "w", encoding="utf-8") as f:
             json.dump({"demo": {"url": f"https://github.com/{OWNER}/registry/discussions/5", "up": 3},
                        "old": {"url": "https://evil.example/x", "up": 1}}, f)
-        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions)
+        pages = os.path.join(cls.tmp.name, "pages")
+        os.mkdir(pages)
+        with open(os.path.join(pages, "demo.html"), "w", encoding="utf-8") as f:
+            f.write('<span class="h6">Total downloads</span>\n<h3 title="1215">1.2k</h3>')
+        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages)
 
     @classmethod
     def tearDownClass(cls):
@@ -312,7 +317,7 @@ class Site(unittest.TestCase):
         for name in ("demo", "old"):
             card = self.card(name)
             order = ['class="stretched"', 'class="meta-line"', 'class="description"', 'class="built-for',
-                     "<dt>Maintainer</dt>", "<dt>Popularity</dt>", "thumbs up:", "repository stars:", "<dt>Scanned</dt>"]
+                     "<dt>Maintainer</dt>", "<dt>Popularity</dt>", "<dt>Scanned</dt>"]
             positions = [card.index(marker) for marker in order]
             self.assertEqual(positions, sorted(positions), name)
             self.assertNotIn("Apache-2.0", card)  # CAT-22: license only on the page
@@ -354,8 +359,50 @@ class Site(unittest.TestCase):
     def test_sort_keys(self):
         home = self.page()
         self.assertIn('<select id="sort">', home)
-        self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-stars="0" data-up="3"', home)
-        self.assertIn('<option value="up">Thumbs up</option>', home)
+        self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-popularity="40"', home)
+        self.assertIn('<option value="popularity">Popularity</option>', home)
+        self.assertNotIn('value="stars"', home)
+
+    def test_popularity_score(self):
+        from view import pulls, score
+        # 10·log2(1+3) + 4·log2(1+0) + 2·log2(1+1200) = 20 + 0 + 20.46
+        self.assertEqual(score(3, 0, 1, 1200), 40)
+        self.assertEqual(score(0, 0, 6, 229), 16)
+        self.assertEqual(score(10, 0, 1, 5), 40)
+        self.assertEqual(score(0, 12, 6, 0), 6)  # 12 stars shared by 6 generators count as 2
+        with tempfile.TemporaryDirectory() as tmp:
+            page = os.path.join(tmp, "p.html")
+            for text, expected in (("Total downloads 229", 229), ("Total downloads</span> <h3>1.2k</h3>", 1200),
+                                   ("Total downloads 3,456", 3456), ("Total downloads 2M", 2000000), ("no count", None)):
+                with open(page, "w", encoding="utf-8") as f:
+                    f.write(text)
+                self.assertEqual(pulls(page), expected, text)
+            self.assertIsNone(pulls(os.path.join(tmp, "missing.html")))
+
+    def test_previous_build_supplies_the_readme_of_an_unchanged_digest(self):
+        from view import load_previous
+        with tempfile.TemporaryDirectory() as tmp:
+            prev = os.path.join(tmp, "catalog.json")
+            digest = INDEX["generators"]["demo"]["1.10.0"]["digest"]
+            with open(prev, "w", encoding="utf-8") as f:
+                json.dump({"generators": [{"name": "demo", "latest": {"digest": digest}, "readme": "# Kept"},
+                                          {"name": "big", "latest": {"digest": "sha256:x"}, "readme": "x" * (README_MAX + 1)}]}, f)
+            previous = load_previous(prev)
+        self.assertEqual(previous, {("demo", digest): "# Kept"})  # oversized README dropped
+        g = view(INDEX, OWNER, lambda _: None, previous=previous)["generators"][0]
+        self.assertEqual(g["readme"], "# Kept")
+        moved = {"generators": dict(INDEX["generators"], demo=dict(INDEX["generators"]["demo"], **{"1.11.0": record("f")}))}
+        self.assertIsNone(view(moved, OWNER, lambda _: None, previous=previous)["generators"][0]["readme"])  # new digest
+        with open(os.path.join(self.out, "catalog.json"), encoding="utf-8") as f:
+            self.assertIn("demo", [g["name"] for g in json.load(f)["generators"]])  # published for the next build
+
+    def test_popularity_page_and_links(self):
+        page = self.page("popularity")
+        self.assertIn("score = round( 10 · log2(1 + 👍)", page)
+        self.assertIn('<tr id="demo"><th scope="row"><a href="../generators/demo/">demo</a></th><td>3</td><td>0 ÷ 1</td><td>1200</td><td>40</td></tr>', page)
+        self.assertIn("<td>not read</td>", page)  # old: no package page
+        self.assertIn('<dt>Popularity</dt><dd><a class="fact-link" href="./popularity/#demo">40</a></dd>', self.page())
+        self.assertIn("· 1200 pulls</dd>", self.page("generators", "demo"))
 
     def test_thumbs_up_from_discussions(self):
         self.assertIn(f'<a href="https://github.com/{OWNER}/registry/discussions/5">👍 3</a> on GitHub Discussions', self.page("generators", "demo"))

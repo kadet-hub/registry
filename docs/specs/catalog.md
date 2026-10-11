@@ -183,9 +183,13 @@ remembered in the browser's `localStorage`.
   field and the GraphQL package statistics do not cover the Container
   registry. The catalog job therefore reads the number from the public
   package page; when the page cannot be read, pulls count as 0 and the page
-  says so. The count includes the catalog job's own pulls, so the job
-  keeps fetched artifacts, SBOMs and log indexes in a cache keyed by digest
-  and pulls each version at most once.
+  says so. Every manifest fetch counts (measured: one `oras manifest
+  fetch` raised the count by one), and the catalog job fetched each latest
+  artifact on every build. The site therefore publishes its view model as
+  `/catalog.json`, and the next build takes README, log index and SBOM of
+  every unchanged digest from it and from the published SBOM files, so the
+  job pulls each version once. A cache (`actions/cache`) would do the same
+  but is forbidden by GI-10.
 
   - Test: `catalog/test_catalog.py`
   - Since: tbd
