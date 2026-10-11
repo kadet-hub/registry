@@ -1,0 +1,28 @@
+name: catalog-tests
+
+# CI-1: the catalog tests, on pull requests that change their inputs.
+on:
+  pull_request:
+    paths:
+      - catalog/**
+      - policy/tags.yaml
+      - .github/actions/setup-hugo/**
+      - .github/workflows/catalog-tests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-hugo # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s catalog -v

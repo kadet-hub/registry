@@ -1469,7 +1469,8 @@ cover none of the changed files.
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
   Markdown files at the repository root, `renovate.json`, issue and pull
-  request templates, and the test-only workflows of CI-1.
+  request templates, `CODEOWNERS`, `.github/ruleset.json`, and the
+  test-only workflows of CI-1.
 
   This list ignores paths instead of listing them, so a new file a release
   job reads still triggers a release; the daily scheduled run (CAT-20)
