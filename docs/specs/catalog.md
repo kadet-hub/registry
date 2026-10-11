@@ -164,8 +164,8 @@ remembered in the browser's `localStorage`.
   - Since: #73
 
 - CAT-15: The card and the version page MUST show what a version is built
-  for, from the software and versions of the schemas QA-7 validated its
-  output against, marked as schema-checked.
+  for, from the software and versions of the schemas QA-7 and QA-8
+  validated its output against, marked as schema-checked.
 
   The release's compile gate records the result in `meta.json` as
   `compatibility`, like the krab result, so only versions published after
