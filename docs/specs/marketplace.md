@@ -887,8 +887,12 @@ since the documented package API has no visibility call.
   run reported. Versions published before this requirement have no
   record; the catalog says so instead of implying a result.
 
-  - Test: `release/test_release.py` (partial: the record's shape; the run
-    itself is the release workflow)
+  Run on 2026-10-11 in the rehearsal fork with external-secrets and keda
+  1.0.0 unpublished there: the build job reran the static checks and the
+  compile gate for both, and keda's config blob carried the record with
+  nine checks and their tool versions, the run and the registry commit.
+
+  - Test: manual: fork rehearsal (2026-10-11)
   - Since: #47
 
 - PUB-8: The sign job MUST attest an SPDX 2.3 SBOM for every artifact it
@@ -902,7 +906,12 @@ since the documented package API has no visibility call.
   `actions/attest` with `sbom-path` stores it with the predicate type
   `https://spdx.dev/Document/v2.3`.
 
-  - Test: `release/test_release.py` (the document); manual: release run
+  In the same rehearsal `gh attestation verify --predicate-type
+  https://spdx.dev/Document/v2.3` verified keda's SBOM (8 files, purl with
+  the pushed digest); `pyspdxtools` validates the document written for
+  the published keda 1.0.0 tar.
+
+  - Test: `release/test_release.py::Sbom`; manual: fork rehearsal (2026-10-11)
   - Since: #47
 
 ## Consumers
@@ -1147,7 +1156,10 @@ remembered in the browser's `localStorage`.
   that ran and passed, and links to what a listing covers; it shows no
   score or "secure" badge.
 
-  - Test: `catalog/test_catalog.py`
+  In the rehearsal the fork's catalog showed the record and served
+  `generators/keda/1.0.0.spdx.json`.
+
+  - Test: `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-11)
   - Since: #47
 
 The footer names the index serial the site was built from, and the
