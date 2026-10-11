@@ -5,6 +5,8 @@
     "helpers:pinGitHubActionDigests"
   ],
   "dependencyDashboard": true,
+  "timezone": "Europe/Berlin",
+  "schedule": ["* 0-5 * * 1"],
   "automerge": false,
   "rebaseWhen": "behind-base-branch",
   "pip-compile": {

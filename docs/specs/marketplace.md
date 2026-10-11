@@ -183,6 +183,11 @@ fetched tree; this is the layout consumers use.
   locks are for its Python, and actionlint 1.7.12 does not know newer
   labels.
 
+  Renovate opens pull requests on Mondays before 06:00 Europe/Berlin
+  (`schedule`, cron syntax), so they wait as one batch at the start of the
+  week. Vulnerability fixes and the Dependency Dashboard's manual
+  checkboxes are not bound to the schedule.
+
   - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
     entries (partial: no CI check)
   - Since: #6
