@@ -34,6 +34,7 @@
 <section class="panel" aria-labelledby="install">
   <h2 id="install">Install {{ .version }}</h2>
   <p>Add the dependency to your inventory, then compile with the <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#workflow">consumer workflow</a>, which verifies the artifact and runs Kapitan in the sandbox.</p>
+  <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk, and review the compiled output before you apply it. <a href="https://github.com/{{ $owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
   {{ partial "snippet.html" (dict "id" "entry-latest" "label" "inventory entry" "text" (printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/%s@%s\n        output_path: lib/%s" $owner $name .digest $name)) }}
 </section>
 <section class="panel" aria-labelledby="verify">
