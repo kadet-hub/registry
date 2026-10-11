@@ -17,6 +17,10 @@ class SchemaDiff(unittest.TestCase):
             "QA-7: schemas keda.sh: KEDA 2.21.0 -> KEDA 2.22.0",
         ])
 
+    def test_terraform_providers_are_qa8(self):
+        new = {"terraform/hashicorp/aws": {"software": "hashicorp/aws", "version": "6.68.0"}}
+        self.assertEqual(diff({}, new), ["QA-8: schemas terraform/hashicorp/aws: none -> hashicorp/aws 6.68.0"])
+
     def test_no_schemas_no_lines(self):
         self.assertEqual(diff({}, {}), [])
 
