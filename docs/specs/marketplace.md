@@ -1506,10 +1506,12 @@ coverage is named at each:
   under the marketplace's namespace counts as adopting it, whether the DSA
   applies to an unpaid service, whether the operator is a controller of
   GitHub Pages' access logs, and whether an imprint is required.
-- OQ-2: The operator supplies name and a serviceable postal address (or a
-  c/o service) for the imprint and the privacy notice; until then they read
-  `tbd`. The e-mail addresses are decided: `contact@`, `privacy@`, `abuse@`
-  and `security@kadet-hub.org`, role addresses the operator routes.
+- OQ-2: The operator supplies the name for the imprint and the privacy
+  notice, and the serviceable postal address of a c/o address service for
+  the imprint; the operator's private address is not published. Until then
+  the name reads `tbd` and the imprint says the address follows. The e-mail
+  addresses are decided: `contact@`, `privacy@`, `abuse@` and
+  `security@kadet-hub.org`, role addresses the operator routes.
 
 ## Implementation inventory
 
