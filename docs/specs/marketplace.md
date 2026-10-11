@@ -1265,7 +1265,7 @@ law a provider who checks content and presents it as part of its own
 offering can be held to have adopted it (BGH I ZR 166/07). The texts below
 describe the generators as third-party work, offer a takedown route and
 state what the review does not promise. They are drafts for a lawyer's
-review (OQ-1); values only the operator can supply are `tbd` (OQ-2).
+review (OQ-1); the operator's name and address are `tbd` (OQ-2).
 
 - LEG-1: The site MUST have a privacy notice at `/privacy/` and an imprint at
   `/imprint/`, both linked from every page's footer.
@@ -1506,9 +1506,10 @@ coverage is named at each:
   under the marketplace's namespace counts as adopting it, whether the DSA
   applies to an unpaid service, whether the operator is a controller of
   GitHub Pages' access logs, and whether an imprint is required.
-- OQ-2: The operator supplies name, a serviceable postal address (or a c/o
-  service) and a contact e-mail for the imprint, the privacy notice and
-  private takedown requests; until then they read `tbd`.
+- OQ-2: The operator supplies name and a serviceable postal address (or a
+  c/o service) for the imprint and the privacy notice; until then they read
+  `tbd`. The e-mail addresses are decided: `contact@`, `privacy@`, `abuse@`
+  and `security@kadet-hub.org`, role addresses the operator routes.
 
 ## Implementation inventory
 
