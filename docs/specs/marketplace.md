@@ -1464,7 +1464,7 @@ cover none of the changed files.
   regardless of the change.
 
   - Test: manual: the checks of the pull request that introduced this
-  - Since: tbd
+  - Since: #58
 
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
@@ -1477,7 +1477,7 @@ cover none of the changed files.
   catches up on anything a skipped push left out.
 
   - Test: manual: the release run after the merge of the pull request that introduced this
-  - Since: tbd
+  - Since: #58
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
