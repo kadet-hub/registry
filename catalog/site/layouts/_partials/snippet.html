@@ -1,0 +1,5 @@
+{{/* A code block with a copy button (CAT-9). dict: id, label, text. */}}
+<div class="snippet">
+  <pre id="{{ .id }}"><code>{{ .text }}</code></pre>
+  <button type="button" class="copy icon-button" data-copy="{{ .id }}" aria-label="Copy {{ .label }}" hidden><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button>
+</div>

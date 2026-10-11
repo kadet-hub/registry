@@ -23,7 +23,9 @@ its own directory or at the root. That directory carries:
   `CHANGELOG.md` with a heading for the version (`## 1.4.0`), and `LICENSE`
   here or at the repository root. `license` in the manifest is one of
   [`policy/licenses.txt`](../policy/licenses.txt), and `LICENSE` has to
-  read as that license.
+  read as that license. The catalog shows the README of the latest
+  version as Markdown: raw HTML is dropped, images become links, and
+  relative links point into your repository at the pinned commit.
 
 The Python code has to pass `ruff check` with
 [`policy/ruff.toml`](../policy/ruff.toml): syntax errors and pyflakes

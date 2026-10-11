@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Build the catalog site from an index (CAT-1 to CAT-5).
+# Build the catalog site from an index (CAT-1 to CAT-9).
 #
 # Usage: build <index.json> <out dir>
-# Needs: OWNER (registry owner), hugo, python3. GH_TOKEN raises the API rate
-# limit; CATALOG_OFFLINE=1 skips the API.
+# Needs: OWNER (registry owner), hugo, python3, jq, oras. GH_TOKEN raises the
+# API rate limit; CATALOG_OFFLINE=1 skips the API and the registry and reads
+# artifact layers from $CATALOG_ARTIFACTS/<name>.tar instead.
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 index=$(realpath -- "$1")
@@ -15,6 +16,23 @@ trap 'rm -rf -- "$work"' EXIT
 cp -R -- "$here/site/." "$work/"
 mkdir -- "$work/data"
 offline=()
-[[ ${CATALOG_OFFLINE:-} != 1 ]] || offline=(--offline)
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --out "$work/data/catalog.json"
-hugo --quiet --source "$work" --destination "$out"
+artifacts=${CATALOG_ARTIFACTS:-$work/artifacts}
+if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
+  offline=(--offline)
+else
+  # CAT-7: the layer of each generator's latest version that is not yanked, by digest.
+  mkdir -p -- "$artifacts"
+  while read -r name digest; do
+    ref=ghcr.io/$OWNER/$name
+    if layer=$(oras manifest fetch -- "$ref@$digest" | jq -er 'select(.artifactType == "application/vnd.kadet-hub.generator.v1") | .layers[0].digest') \
+      && oras blob fetch --output "$artifacts/$name.tar" -- "$ref@$layer"; then
+      continue
+    fi
+    echo "::warning::$name: artifact $digest not fetched; the page shows no README"
+  done < <(jq -r '.generators | to_entries[] | .key as $n
+    | [.value | to_entries[] | select(.value.yanked == null)] | sort_by(.key | split(".") | map(tonumber)) | last
+    | select(. != null) | "\($n) \(.value.digest)"' -- "$index")
+fi
+cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --out "$work/data/catalog.json"
+hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"

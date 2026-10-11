@@ -1,0 +1,48 @@
+name: Request a generator
+description: Ask for a generator that is not listed yet (CAT-12).
+title: "[request] "
+labels: [generator-request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe what the generator should render and what it would build on. Anyone can pick up a request
+        and publish the generator; [docs/authors.md](https://github.com/kadet-hub/registry/blob/main/docs/authors.md) explains how.
+  - type: input
+    id: subject
+    attributes:
+      label: What should it render?
+      placeholder: cert-manager Issuers and Certificates
+    validations:
+      required: true
+  - type: checkboxes
+    id: sources
+    attributes:
+      label: What would it build on?
+      options:
+        - label: Helm chart
+        - label: Kustomize base
+        - label: Plain manifests or CRDs
+        - label: Dockerfile or container image
+        - label: Terraform module or provider
+  - type: textarea
+    id: links
+    attributes:
+      label: Upstream links
+      description: Chart repository and name, Kustomize base, CRD or Dockerfile URLs, documentation.
+      placeholder: |
+        Helm chart: https://charts.jetstack.io (cert-manager)
+        CRDs: https://github.com/cert-manager/cert-manager/releases
+    validations:
+      required: true
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Use case
+      description: What would you configure in the inventory, and what should come out?
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to write and publish this generator myself

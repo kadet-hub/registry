@@ -1,0 +1,12 @@
+{{- /* CAT-7: README links. http(s) and mailto stay, fragments stay, relative
+links point into the source tree at source.sha, any other scheme is dropped. */ -}}
+{{- $u := urls.Parse .Destination -}}
+{{- $g := index (where site.Data.catalog.generators "name" .Page.Params.generator) 0 -}}
+{{- $href := "" -}}
+{{- if in (slice "http" "https" "mailto") $u.Scheme -}}{{ $href = .Destination }}
+{{- else if and (eq $u.Scheme "") (strings.HasPrefix .Destination "#") -}}{{ $href = printf "#readme-%s" (strings.TrimPrefix "#" .Destination) }}
+{{- else if and (eq $u.Scheme "") (ne $u.Host "") -}}{{ $href = "" }}
+{{- else if eq $u.Scheme "" -}}{{ $href = printf "%s%s" $g.blob_url (strings.TrimPrefix "/" (strings.TrimPrefix "./" .Destination)) }}
+{{- end -}}
+{{- if $href -}}<a href="{{ $href }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if ne $u.Scheme "" }} rel="nofollow noopener"{{ end }}>{{ .Text }}</a>
+{{- else -}}{{ .Text }}{{- end -}}

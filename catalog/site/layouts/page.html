@@ -1,45 +1,78 @@
 {{ define "main" }}
 {{ $owner := site.Data.catalog.owner }}
 {{ $identity := printf "https://github.com/%s/registry/.github/workflows/release.yml@refs/heads/main" $owner }}
+{{ $page := . }}
 {{ range where site.Data.catalog.generators "name" .Params.generator }}
 {{ $name := .name }}
-<h1>{{ .name }}</h1>
-<p>{{ .description }}</p>
-<p class="tags">{{ range .tags }}<span>{{ . }}</span>{{ end }}</p>
-<dl>
-  <dt>Source</dt><dd><a href="{{ .source_url }}">{{ .source_url }}</a>{{ with .stars }} · {{ . }} stars{{ end }}</dd>
-  <dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd>
-  <dt>License</dt><dd>{{ .license }}</dd>
-</dl>
-{{ range .versions }}
-<section class="version{{ if .yanked }} yanked{{ end }}" id="v{{ .version }}">
-  <h2>{{ .version }}{{ with .published }} <small>{{ substr . 0 10 }}</small>{{ end }}</h2>
+<article class="generator">
+<header class="generator-head">
+  <span class="monogram large hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
+  <div>
+    <h1>{{ .name }}</h1>
+    <p class="lead">{{ .description }}</p>
+    {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/?tags=%s" . | relURL }}"><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }}</a>{{ end }}</p>{{ end }}
+    <dl class="facts">
+      <div><dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</dd></div>
+      <div><dt>License</dt><dd>{{ .license }}</dd></div>
+      <div><dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
+      <div><dt>Source</dt><dd><a href="{{ .source_url }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} stars{{ end }}</dd></div>
+    </dl>
+    {{ $q := dict "template" "generator-report.yml" "generator" .name "title" (printf "[report] %s: " .name) }}{{ with .latest }}{{ $q = merge $q (dict "version" .version) }}{{ end }}
+    <p class="actions small"><a class="button" href="{{ printf "https://github.com/%s/registry/issues/new?%s" $owner (querify $q) | safeURL }}">Report a problem</a></p>
+  </div>
+</header>
+
+<div class="generator-body">
+<div class="readme-col">
+{{ with .latest }}
+<section class="panel" aria-labelledby="install">
+  <h2 id="install">Install {{ .version }}</h2>
+  <p>Add the dependency to your inventory, then compile with the <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#workflow">consumer workflow</a>, which verifies the artifact and runs Kapitan in the sandbox.</p>
+  {{ partial "snippet.html" (dict "id" "entry-latest" "label" "inventory entry" "text" (printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/%s@%s\n        output_path: lib/%s" $owner $name .digest $name)) }}
+</section>
+{{ end }}
+{{ with .readme }}
+<section class="readme" aria-label="README">
+  {{ $page.RenderString (dict "display" "block") . }}
+</section>
+{{ end }}
+</div>
+
+<aside class="side">
+{{ with .latest }}
+<section class="panel" aria-labelledby="verify">
+  <h2 id="verify">Verify</h2>
+  <p>The digest is attested by the marketplace's release workflow:</p>
+  {{ partial "snippet.html" (dict "id" "verify-latest" "label" "verify command" "text" (printf "gh attestation verify oci://ghcr.io/%s/%s@%s \\\n  --owner %s --cert-identity %s" $owner $name .digest $owner $identity)) }}
+  <p class="note">This catalog was built from index serial {{ site.Data.catalog.serial }}. Set <code>index_serial: {{ site.Data.catalog.serial }}</code> in <code>.kapitan-sandbox.yaml</code> and the consumer workflow refuses any older index, so a rolled-back index cannot bring back a yanked version.</p>
+</section>
+<section class="panel" aria-labelledby="details">
+  <h2 id="details">Details</h2>
+  {{ partial "details.html" (dict "v" .) }}
+</section>
+{{ end }}
+</aside>
+</div>
+
+<section class="versions" aria-labelledby="versions">
+<h2 id="versions">Versions</h2>
+{{ range $i, $v := .versions }}
+<details class="version{{ if .yanked }} yanked{{ end }}" id="v{{ .version }}"{{ if eq $i 0 }} open{{ end }}>
+  <summary><span class="v">{{ .version }}</span>{{ with .published }} <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ if .yanked }} <span class="pill warn">yanked</span>{{ end }}</summary>
   {{ if .yanked }}
   <p class="warning">Yanked: {{ .yanked }}</p>
   <p>Digest: <code>{{ .digest }}</code></p>
-  {{ with .advisories }}<p>Advisories: {{ range $i, $a := . }}{{ if $i }}, {{ end }}<a href="https://github.com/{{ $owner }}/registry/security/advisories/{{ $a }}">{{ $a }}</a>{{ end }}</p>{{ end }}
+  {{ with .advisories }}<p>Advisories: {{ range $j, $a := . }}{{ if $j }}, {{ end }}<a href="https://github.com/{{ $owner }}/registry/security/advisories/{{ $a }}">{{ $a }}</a>{{ end }}</p>{{ end }}
   {{ else }}
   <h3>Inventory</h3>
-  <pre><code>parameters:
-  kapitan:
-    dependencies:
-      - type: oci
-        source: ghcr.io/{{ $owner }}/{{ $name }}@{{ .digest }}
-        output_path: lib/{{ $name }}</code></pre>
+  {{ partial "snippet.html" (dict "id" (printf "entry-%d" $i) "label" (printf "inventory entry for %s" .version) "text" (printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/%s@%s\n        output_path: lib/%s" $owner $name .digest $name)) }}
   <h3>Verify</h3>
-  <pre><code>gh attestation verify oci://ghcr.io/{{ $owner }}/{{ $name }}@{{ .digest }} \
-  --owner {{ $owner }} --cert-identity {{ $identity }}</code></pre>
+  {{ partial "snippet.html" (dict "id" (printf "verify-%d" $i) "label" (printf "verify command for %s" .version) "text" (printf "gh attestation verify oci://ghcr.io/%s/%s@%s \\\n  --owner %s --cert-identity %s" $owner $name .digest $owner $identity)) }}
+  {{ partial "details.html" (dict "v" .) }}
   {{ end }}
-  <dl>
-    <dt>Kapitan</dt><dd>{{ .kapitan }}</dd>
-    <dt>Source</dt><dd>{{ .source.tag }} · {{ .source.sha }}{{ if ne .source.path "." }} · {{ .source.path }}{{ end }}</dd>
-    <dt>Binaries</dt><dd>{{ with .binaries }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
-    <dt>Output capabilities</dt><dd>{{ with .output_capabilities }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
-    {{ with .unparsed_outputs }}<dt>Unparsed outputs</dt><dd>{{ delimit . ", " }}</dd>{{ end }}
-    {{ with .charts }}<dt>Charts</dt><dd>{{ range . }}{{ .name }} {{ .version }} ({{ .repo }}) {{ end }}</dd>{{ end }}
-    <dt>Digest</dt><dd><code>{{ .digest }}</code></dd>
-  </dl>
-</section>
+</details>
 {{ end }}
+</section>
+</article>
 {{ end }}
 {{ end }}

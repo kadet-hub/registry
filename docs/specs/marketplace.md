@@ -1022,10 +1022,102 @@ of migrating site data.
 
 Each generator has a card with name, description, tags, license, latest
 version, owners, source stars and the time of the latest version, and a
-page at `/generators/<name>/` with every version. Search and tag filter run
-in the browser over the rendered cards. Owner logins and stars
-come from the GitHub API at build time; they are display data only, and a
-failed lookup shows the user ID or no stars.
+page at `/generators/<name>/` with the latest version's README and every
+version. Search and tag filter run in the browser over the rendered cards.
+Owner logins and stars come from the GitHub API at build time; they are
+display data only, and a failed lookup shows the user ID or no stars.
+
+A generator has no logo of its own: the card shows a monogram of its name,
+coloured from a fixed palette by a hash of the name, and the icon of its
+first tag. Submitters supply no images, so none needs to be checked. The
+icons are Lucide's (ISC), inlined into every page as an SVG sprite. The
+site follows the system colour scheme; a toggle overrides it and is
+remembered in the browser's `localStorage`.
+
+- CAT-7: The generator page MUST show the README of the latest version that
+  is not yanked, read from that version's published artifact by digest, as
+  Markdown without raw HTML.
+
+  The README passed the gate and the review with the rest of the tree;
+  the catalog job pulls the layer by digest, so it shows exactly what
+  consumers fetch. Raw HTML is omitted and links with a script or data
+  scheme are dropped. Images are not loaded, since the CSP allows only
+  the site's own origin; each becomes a link to its target. Relative links
+  and images point into the source tree at `source.sha`. A README above
+  256 KiB is not shown.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #45
+
+- CAT-8: Selecting several tags MUST show the generators that carry all of
+  them, and the selection MUST be kept in the URL as `?tags=<a>,<b>`; every
+  tag shown on a card or page MUST link to that filtered view.
+
+  Tags are multiply assigned (a generator can be `helm`, `operators` and
+  `kubernetes` at once), so OR would widen the result with every click.
+  The result line names the selected tags. Without
+  JavaScript the home page lists every generator.
+
+  - Test: `catalog/test_catalog.py` (partial: the links and the markup; the
+    filter itself runs in the browser)
+  - Since: #45
+
+- CAT-9: Code blocks, tables and long values such as digests MUST wrap
+  instead of scrolling horizontally, and every inventory entry and command
+  MUST have a copy button.
+  - Test: `catalog/test_catalog.py` (partial: the markup)
+  - Since: #45
+
+- CAT-10: The home page MUST let visitors sort the cards by name, by the
+  time of the latest version and by source stars.
+
+  Download counts would be the better signal, but GHCR exposes none: the
+  REST package objects have no download field, and the GraphQL package
+  statistics do not cover registries with granular permissions such as
+  the Container registry. Stars come from the GitHub API at build time
+  like the rest of the display data.
+
+  - Test: `catalog/test_catalog.py` (partial: the sort keys in the markup)
+  - Since: #45
+
+- CAT-11: Every page MUST have a title of 30 to 65 characters, a meta
+  description of 50 to 160 characters, one `h1` and an absolute canonical
+  URL; the site MUST publish `sitemap.xml` with every generator page and a
+  `robots.txt` that names it.
+
+  The length limits are the ones kapicorp/kapitan enforces for its
+  documentation (`tests/test_docs_rendering.py`); here they are checked on
+  the built HTML. Filtered views (`?tags=`) are the home page and share
+  its canonical URL. Generator pages carry schema.org
+  `SoftwareSourceCode` as JSON-LD, which the CSP does not block because a
+  data block is never executed. A generator description that leaves the
+  title or description outside the limits is padded or cut by the
+  template, not rejected at the gate.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #45
+
+- CAT-12: The generator page MUST link to an issue form for reporting a
+  problem with that generator, prefilled with its name and latest version,
+  and the home page MUST link to an issue form for requesting a new
+  generator.
+
+  The forms are GitHub issue forms in `.github/ISSUE_TEMPLATE`; the site
+  has no backend, so a visitor needs a GitHub account. The report form
+  sends malicious behaviour and vulnerabilities to private vulnerability
+  reporting (SECURITY.md) instead of a public issue. The request form
+  asks what the generator should render and for the upstream sources it
+  would wrap: Helm chart, Kustomize base, manifests or CRDs, Dockerfile,
+  Terraform module.
+
+  - Test: `catalog/test_catalog.py` (the links); `tests/workflow-policy`
+    does not cover the forms
+  - Since: #45
+
+The footer names the index serial the site was built from, and the
+version page's Verify section explains it: consumers set `index_serial`
+in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
+index is refused (CON-2).
 
 - CAT-1: The release workflow MUST build the catalog from the index it
   published or verified in the same run, and deploy it from a job bound to
@@ -1060,6 +1152,22 @@ failed lookup shows the user ID or no stars.
   `database`, `ci`, at most five per manifest.
   - Test: `gate/test_check_entry.py` (`Manifest`)
   - Since: #16
+
+- CAT-13: `policy/tags.yaml` MUST define every tag of the enum, with its
+  meaning and when to assign it and when not; the site MUST render it at
+  `/tags/`, linked from the tag filter, and MUST have a glossary at
+  `/glossary/` that links to the Kapitan documentation.
+
+  The file is the reference for review: a tag is a claim by the
+  submitter, and the reviewer checks it against this text. The
+  `evidence` field names what the gate can verify for `kubernetes`,
+  `helm` and `terraform`; checking it in the gate is a separate change.
+  Each tag button shows how many listed generators carry the tag, as
+  `security (6)`, and is disabled when the current selection would leave
+  none.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #45
 
 - CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none
@@ -1278,7 +1386,9 @@ None.
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3 |
-| `catalog/` | CAT-1 to CAT-6: Hugo site, `build` script, `test_catalog.py` |
+| `.github/ISSUE_TEMPLATE/` | CAT-12 |
+| `policy/tags.yaml` | CAT-4, CAT-13 |
+| `catalog/` | CAT-1 to CAT-12: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |

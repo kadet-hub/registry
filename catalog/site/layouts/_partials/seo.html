@@ -1,0 +1,30 @@
+{{- /* CAT-11: title, description, canonical, Open Graph and JSON-LD. */ -}}
+{{- $title := "kadet-hub: gate-checked Kapitan generators" -}}
+{{- $desc := "Find Kapitan generators that passed secret, malware and code scans and a sandboxed compile, published as attested OCI artifacts you pin by digest." -}}
+{{- $g := dict -}}
+{{- with .Params.generator }}{{ $g = index (where site.Data.catalog.generators "name" .) 0 }}{{ end -}}
+{{- if and (not .IsHome) (not .Params.generator) -}}
+  {{- $title = printf "%s · kadet-hub, a catalog of Kapitan generators" .Title -}}
+  {{- $desc = .Description -}}
+{{- end -}}
+{{- with $g -}}
+  {{- $title = printf "%s · Kapitan generator · kadet-hub" .name -}}
+  {{- if gt (len $title) 65 }}{{ $title = printf "%s · Kapitan generator" .name }}{{ end -}}
+  {{- $desc = .description -}}
+  {{- if lt (len $desc) 50 }}{{ $desc = printf "%s A Kapitan generator on kadet-hub, gate-checked and attested." $desc }}{{ end -}}
+  {{- $desc = truncate 160 "…" $desc -}}
+{{- end -}}
+<title>{{ $title }}</title>
+<meta name="description" content="{{ $desc }}">
+<link rel="canonical" href="{{ .Permalink }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ site.Title }}">
+<meta property="og:title" content="{{ $title }}">
+<meta property="og:description" content="{{ $desc }}">
+<meta property="og:url" content="{{ .Permalink }}">
+{{- with $g }}
+{{- $ld := dict "@context" "https://schema.org" "@type" "SoftwareSourceCode" "name" .name "description" .description "codeRepository" .source_url "url" $.Permalink "programmingLanguage" "Python" "license" (printf "https://spdx.org/licenses/%s.html" .license) -}}
+{{- with .latest }}{{ $ld = merge $ld (dict "version" .version) }}{{ end }}
+{{- with .tags }}{{ $ld = merge $ld (dict "keywords" (delimit . ", ")) }}{{ end }}
+<script type="application/ld+json">{{ $ld }}</script>
+{{- end }}
