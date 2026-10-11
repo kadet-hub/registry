@@ -17,16 +17,14 @@ published or verified unchanged, and deploys it with GitHub Pages from
 its own, so a later platform with ratings can read the same index instead
 of migrating site data.
 
-Each generator has a card with name, description, tags, license, latest
-version, owners, source stars and the time of the latest version, and a
-page at `/generators/<name>/` with the latest version's README and every
-version. Search and tag filter run in the browser over the rendered cards.
+Each generator has a card (CAT-22) and a page at `/generators/<name>/`
+with the latest version's README and every version. Search and tag filter run in the browser over the rendered cards.
 Owner logins and stars come from the GitHub API at build time; they are
 display data only, and a failed lookup shows the user ID or no stars.
 
-A generator has no logo of its own: the card shows a monogram of its name,
-coloured from a fixed palette by a hash of the name, and the icon of its
-first tag. Submitters supply no images, so none needs to be checked. The
+A generator has no logo of its own: the card shows the icon of its first
+tag on a tile coloured from a fixed palette by a hash of the name; the
+generator page keeps the monogram of its name. Submitters supply no images, so none needs to be checked. The
 icons are Lucide's (ISC), inlined into every page as an SVG sprite. The
 site follows the system colour scheme; a toggle overrides it and is
 remembered in the browser's `localStorage`.
@@ -128,6 +126,42 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-11)
   - Since: #47
+
+- CAT-21: The generator page MUST link "Request a feature" to a new issue
+  in the generator's source repository, prefilled with the generator's
+  name in the title and its version and catalog page in the body.
+
+  Owners implement features in their own repository and watch its
+  tracker, not the registry's; the registry's report form (CAT-12) stays
+  for problems with a listed version. Sources are on github.com or
+  gitlab.com (REG-1), so there are two URL forms: `/issues/new?title=&body=`
+  and `/-/issues/new?issue[title]=&issue[description]=`. The link is on
+  the page, not the card, as in the catalogs compared (Raycast puts
+  "Request Feature" on the extension page, none of ten catalogs on the
+  card); the card keeps one click target and the tag links.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: tbd
+
+- CAT-22: Every card MUST show the same fields in the same order: the
+  name as the only card-wide link with the latest version next to it, the
+  description clamped to two lines, what the version is built for or
+  "Built for: not recorded", the tags, and one row with owners, 👍 count,
+  repository stars, the date of the latest version and the scan date or
+  "not scanned".
+
+  Users read the top left first and scan the first words of lines (NN/g);
+  attributes that appear on some cards and not on others make a catalog
+  look smaller and are hard to compare (Baymard), so missing values are
+  stated instead of omitted. License and the note that stars are shared
+  by several generators move to the generator page, where there is room
+  to explain them. The name link stretches over the card and the tag
+  links sit above it, the block-link pattern recommended by Heydon
+  Pickering and Adrian Roselli; the focus ring is drawn when the name link
+  has keyboard focus, not when a tag link does.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: tbd
 
 - CAT-15: The card and the version page MUST show what a version is built
   for, from the software and versions of the schemas QA-7 validated its
