@@ -16,11 +16,18 @@ import os
 import sys
 
 import jsonschema
+import regex
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tf_schema
 from tag_check import files
+
+
+def pattern(validator, patrn, instance, schema):
+    """QA-7: CRD patterns use Unicode property classes such as \\PC, which re cannot compile."""
+    if validator.is_type(instance, "string") and not regex.search(patrn, instance):
+        yield jsonschema.ValidationError(f"{instance!r} does not match {patrn!r}")
 
 
 def documents(path):
@@ -65,7 +72,7 @@ def check(schemas, out):
                 with open(path, encoding="utf-8") as f:
                     schema = json.load(f)
                 cls = jsonschema.validators.validator_for(schema, default=jsonschema.Draft7Validator)
-                cache[path] = cls(schema)
+                cache[path] = jsonschema.validators.extend(cls, {"pattern": pattern})(schema)
             errors = sorted(cache[path].iter_errors(doc), key=lambda e: list(e.absolute_path))
             for e in errors[:5]:
                 where = "/".join(str(p) for p in e.absolute_path) or "(root)"

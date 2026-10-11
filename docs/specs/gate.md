@@ -578,6 +578,11 @@ review go into the review comment and do not fail the gate.
   `kapitan validate` was considered, but it downloads schemas at compile
   time, which the sandbox does not allow.
 
+  `pattern` is matched with the `regex` module, which Kapitan already
+  installs, not with Python's `re`: CRDs use Unicode property classes such
+  as `^\PC*$` (Cilium's `spec.log.value`), which `re` cannot compile, so
+  the check crashed on any output that set such a field.
+
   The schemas live in the generator's tree, so each version is validated
   against the schemas of its own commit and the catalog shows each
   version's own result. A version that moves to a newer upstream release
@@ -588,7 +593,7 @@ review go into the review comment and do not fail the gate.
 
   - Test: `sandbox/test_schema_check.py`, `gate/test_schema_diff.py`;
     workflow job `gate-selftest` (`fail-schema-invalid`)
-  - Since: #50
+  - Since: #50, #110
 
 - QA-8: When the manifest names a `schemas` directory that holds a
   Terraform provider schema, every provider block, resource and data

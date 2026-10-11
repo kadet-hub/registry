@@ -39,6 +39,16 @@ class SchemaCheck(unittest.TestCase):
         findings, _, _ = self.run_check({"a/cm.yml": "apiVersion: v1\nkind: ConfigMap\ndata: {a: 1}\n"})
         self.assertEqual(findings, ["QA-7: a/cm.yml: ConfigMap data/a: 1 is not of type 'string'"])
 
+    def test_unicode_property_pattern(self):
+        log = {"type": "object", "properties": {"value": {"type": "string", "pattern": "^\\PC*$"}}}
+        schemas = {"schemas/core/configmap_v1.json": dict(CM, properties=dict(CM["properties"], log=log))}
+        ok = "apiVersion: v1\nkind: ConfigMap\ndata: {}\nlog: {value: audit}\n"
+        bad = "apiVersion: v1\nkind: ConfigMap\ndata: {}\nlog: {value: \"a\\x07\"}\n"
+        self.assertEqual(self.run_check({"a/cm.yml": ok}, schemas=schemas)[0], [])
+        findings = self.run_check({"a/cm.yml": bad}, schemas=schemas)[0]
+        self.assertEqual(len(findings), 1)
+        self.assertIn("QA-7: a/cm.yml: ConfigMap log/value: ", findings[0])
+
     def test_kind_without_schema_is_review(self):
         findings, lines, result = self.run_check({"a/s.yml": "apiVersion: apps/v1\nkind: Deployment\n---\napiVersion: apps/v1\nkind: Deployment\n"})
         self.assertEqual((findings, result), ([], []))
