@@ -1,0 +1,23 @@
+{{/* CAT-14: what the publishing run checked. dict: v (a version record), name. */}}
+{{ $labels := dict
+  "secrets" (slice "Secrets" "No secret matched the marketplace's gitleaks rules.")
+  "malware" (slice "Malware" "No file matched a ClamAV signature.")
+  "package" (slice "Malicious package heuristics" "No GuardDog threat rule matched.")
+  "code" (slice "Dangerous code" "No marketplace Semgrep rule matched, such as eval, subprocess or network calls.")
+  "python" (slice "Python errors" "No syntax error or undefined name (Ruff, error rules only).")
+  "tree" (slice "File tree" "No symlink, executable or banned file; imports within the allowlist.")
+  "sandbox" (slice "Sandboxed compile" "The fixture compiled without network, with decoy credentials; no undeclared program ran, no decoy was read.")
+  "output" (slice "Output capabilities" "The compiled output uses only the capabilities the manifest declares.")
+  "ci-env" (slice "CI detection" "The output is the same with CI variables set.")
+}}
+{{ with .v.scan }}
+<p class="scan-head"><svg class="icon" aria-hidden="true"><use href="#i-scan"/></svg>Checked by the <a href="{{ .run }}">release run</a> on <time datetime="{{ .at }}">{{ substr .at 0 10 }}</time>, gate at <code>{{ substr .gate 0 12 }}</code>{{ if .exceptions }}, with {{ .exceptions }} reviewed exception{{ if gt .exceptions 1 }}s{{ end }}{{ end }}.</p>
+<ul class="checks">
+{{ range .checks }}{{ $l := index $labels .id | default (slice .id "") }}
+  <li><svg class="icon ok" aria-label="passed"><use href="#i-check"/></svg><div><strong>{{ index $l 0 }}</strong> <span class="tool">{{ .tool }}</span><br><span class="muted">{{ index $l 1 }}</span></div></li>
+{{ end }}
+</ul>
+{{ else }}
+<p class="muted">No scan record: this version was published before the release run recorded its checks. It passed the gate in its pull request.</p>
+{{ end }}
+{{ if .v.sbom }}<p><a class="button small-button" href="{{ printf "/generators/%s/%s.spdx.json" .name .v.version | relURL }}" download><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>SBOM (SPDX 2.3)</a></p>{{ else }}<p class="muted">No SBOM attestation for this version.</p>{{ end }}

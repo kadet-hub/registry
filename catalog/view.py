@@ -1,12 +1,13 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
 A failed lookup leaves the user ID or no stars; --offline skips the API.
 DIR/<name>.tar is the latest version's artifact layer; its README.md is
-shown on the generator page (CAT-7).
+shown on the generator page (CAT-7). DIR/<name>/<version>.spdx.json marks a
+version whose SBOM the site offers (CAT-14).
 """
 
 import argparse
@@ -58,10 +59,11 @@ def semver(v):
     return tuple(int(x) for x in v.split("."))
 
 
-def view(index, owner, lookup, artifacts=None):
+def view(index, owner, lookup, artifacts=None, sboms=None):
     generators = []
     for name, versions in sorted(index.get("generators", {}).items()):
-        ordered = [dict(r, version=v) for v, r in sorted(versions.items(), key=lambda kv: semver(kv[0]), reverse=True)]
+        ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")))
+                   for v, r in sorted(versions.items(), key=lambda kv: semver(kv[0]), reverse=True)]
         latest = next((r for r in ordered if not r.get("yanked")), None)
         shown = latest or ordered[0]
         repo = shown["source"]["repo"]
@@ -99,11 +101,12 @@ def main():
     p.add_argument("--owner", required=True)
     p.add_argument("--offline", action="store_true")
     p.add_argument("--artifacts")
+    p.add_argument("--sboms")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
         index = json.load(f)
-    result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts)
+    result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0

@@ -881,6 +881,44 @@ since the documented package API has no visibility call.
   - Test: manual: AC-6 consumer run (2026-10-09)
   - Since: #15
 
+- PUB-7: For every version it publishes, the build job MUST rerun the
+  static checks with the entry's exceptions and the compile gate, fail on
+  any finding, and record the run in the artifact's `meta.json` as `scan`.
+
+  The record holds the time, the registry commit and the release run,
+  every check with the tool and version that ran it, and the number of
+  exceptions applied. It is part of the attested artifact, so the catalog
+  shows what the publishing run itself checked, not what a pull request
+  run reported. Versions published before this requirement have no
+  record; the catalog says so instead of implying a result.
+
+  Run on 2026-10-11 in the rehearsal fork with external-secrets and keda
+  1.0.0 unpublished there: the build job reran the static checks and the
+  compile gate for both, and keda's config blob carried the record with
+  nine checks and their tool versions, the run and the registry commit.
+
+  - Test: manual: fork rehearsal (2026-10-11)
+  - Since: #47
+
+- PUB-8: The sign job MUST attest an SPDX 2.3 SBOM for every artifact it
+  pushes, for the same digest.
+
+  The SBOM is written from the pushed tar (`release/sbom.py`): one package
+  with the manifest's license as declared license, the source repository
+  at `source.sha` as download location and a `pkg:oci` purl with the
+  digest, and every file with its SHA-256 and SHA-1. Generators have no
+  dependencies (DEC-10), so the SBOM is the reviewed file list.
+  `actions/attest` with `sbom-path` stores it with the predicate type
+  `https://spdx.dev/Document/v2.3`.
+
+  In the same rehearsal `gh attestation verify --predicate-type
+  https://spdx.dev/Document/v2.3` verified keda's SBOM (8 files, purl with
+  the pushed digest); `pyspdxtools` validates the document written for
+  the published keda 1.0.0 tar.
+
+  - Test: `release/test_release.py::Sbom`; manual: fork rehearsal (2026-10-11)
+  - Since: #47
+
 ## Consumers
 
 Kapitan 0.36.3 verifies neither attestations nor digests on OCI fetch, and
@@ -1113,6 +1151,24 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (the links); `tests/workflow-policy`
     does not cover the forms
   - Since: #45
+
+- CAT-14: The card MUST show the date of the latest version's scan record
+  and the version page the full record with a link to the release run;
+  the page MUST offer the version's SBOM for download, taken from its
+  verified attestation.
+
+  The catalog job runs `gh attestation verify` with the SBOM predicate
+  type for each listed version and writes the predicate to
+  `/generators/<name>/<version>.spdx.json`. A version without a record or
+  SBOM says so. The page names what the checks cover, as listed checks
+  that ran and passed, and links to what a listing covers; it shows no
+  score or "secure" badge.
+
+  In the rehearsal the fork's catalog showed the record and served
+  `generators/keda/1.0.0.spdx.json`.
+
+  - Test: `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-11)
+  - Since: #47
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
@@ -1379,7 +1435,7 @@ None.
 | `tests/consumers/` | AC-10 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
-| `.github/workflows/release.yml` | PUB-1 to PUB-6, GI-8, CAT-1, index and catalog |
+| `.github/workflows/release.yml` | PUB-1 to PUB-8, GI-8, CAT-1, CAT-7, CAT-14, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5: `build.py`, `tree.py`, `index.py` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
@@ -1388,6 +1444,7 @@ None.
 | `docs/consumers.md` | CON-2, CON-3 |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
+| `release/scan-record`, `release/sbom.py` | PUB-7, PUB-8 |
 | `catalog/` | CAT-1 to CAT-12: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |

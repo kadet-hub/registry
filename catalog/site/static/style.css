@@ -210,3 +210,12 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .glossary dt { font-weight: 700; font-size: 1.1rem; margin-top: 1.5rem; }
 .glossary dd { margin: .35rem 0 0; color: var(--text-muted); }
 .glossary dd a { white-space: nowrap; }
+
+/* Checks (CAT-14) */
+.scan-head { display: flex; gap: .4rem; align-items: baseline; font-size: .9rem; }
+.checks { list-style: none; padding: 0; margin: .75rem 0; display: grid; gap: .6rem; font-size: .9rem; }
+.checks li { display: flex; gap: .55rem; align-items: flex-start; }
+.checks .icon.ok { color: var(--ok); margin-top: .2rem; }
+.checks .tool { color: var(--text-muted); font-size: .8rem; }
+.muted { color: var(--text-muted); }
+.small-button { min-height: 36px; gap: .4rem; font-size: .9rem; }
