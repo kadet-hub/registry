@@ -166,7 +166,7 @@ remembered in the browser's `localStorage`.
   has keyboard focus, not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73, #81
+  - Since: #73, #81, #92
 
 - CAT-23: Every generator MUST have a popularity score
   `round(10·log2(1 + 👍) + 4·log2(1 + stars ÷ n) + 2·log2(1 + pulls))`,
