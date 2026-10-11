@@ -77,7 +77,7 @@ It then:
 5. checks the output against the marketplace's output rules (privileged
    containers, `hostPath`, `cluster-admin` bindings, admission webhooks,
    Terraform provisioners and others; the list is under SEC-12 in the
-   [spec](specs/marketplace.md#sandbox-and-runtime-detection)) and fails on
+   [spec](specs/gate.md#sandbox-and-runtime-detection)) and fails on
    a match that `output_capabilities` does not accept for its path. `*`
    in a glob also matches `/`. Files the rules cannot parse are listed, not
    judged.

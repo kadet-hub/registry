@@ -5,7 +5,7 @@ to this repository. The gate checks the tagged source, a maintainer reviews
 it, and after the merge the release workflow publishes the checked tree as
 `ghcr.io/kadet-hub/<name>` and lists it on [kadet-hub.org](https://kadet-hub.org).
 The fields of the manifest and the entry are defined under
-[Registration](specs/marketplace.md#registration).
+[Registration](specs/registration.md#registration).
 
 ## When a generator is worth writing
 

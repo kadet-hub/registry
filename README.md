@@ -8,7 +8,7 @@ maintainer's review, and is published as an attested OCI artifact under
 - Catalog: [kadet-hub.org](https://kadet-hub.org)
 - Using a generator: [docs/consumers.md](docs/consumers.md)
 - Adding a generator: [docs/authors.md](docs/authors.md)
-- Design and requirements: [docs/specs/marketplace.md](docs/specs/marketplace.md)
+- Design and requirements: [docs/specs/marketplace.md](docs/specs/marketplace.md) and the area specs it indexes
 - Reporting a vulnerability or requesting removal: [SECURITY.md](SECURITY.md)
 - Terms of listing: [TERMS.md](TERMS.md)
 

@@ -1,6 +1,9 @@
 # Specs
 
-One living spec per area in `docs/specs/<area>.md`. A change to code,
+One living spec per area in `docs/specs/<area>.md`. `marketplace.md` holds what spans
+the areas: problem, threat model, decisions, acceptance criteria, residual
+risks, open questions and the implementation inventory, plus the index of
+area specs. A change to code,
 configuration or CI starts by editing the spec it touches, in the same merge
 request, as its first commit.
 

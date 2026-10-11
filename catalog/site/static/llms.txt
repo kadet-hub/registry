@@ -18,7 +18,7 @@ Writing a generator for the marketplace: start from the template and follow its 
 - [Tags and when to assign them](https://github.com/kadet-hub/registry/blob/main/policy/tags.yaml)
 - [Allowed licenses](https://github.com/kadet-hub/registry/blob/main/policy/licenses.txt)
 - [Programs a generator may declare](https://github.com/kadet-hub/registry/blob/main/policy/binaries.txt)
-- [Specification](https://github.com/kadet-hub/registry/blob/main/docs/specs/marketplace.md): every requirement with its check
+- [Specification](https://github.com/kadet-hub/registry/blob/main/docs/specs/marketplace.md): overview and index of the area specs, which hold every requirement with its check
 
 ## Using generators
 

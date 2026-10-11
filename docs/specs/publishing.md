@@ -1,0 +1,195 @@
+# Kapitan generator marketplace: Publishing
+
+Status: Approved
+Code: `release/`, `.github/workflows/release.yml`, `docs/incident.md`
+Verified against: main @ 970a5d4
+
+Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
+acceptance criteria, residual risks, open questions and the implementation inventory.
+
+## Publishing
+
+On a push to `main`, and on `workflow_dispatch` from `main`, the release
+workflow reconciles every entry on `main`: the entry's current version gets
+an artifact, an attestation and a `<version>` tag unless it is yanked or
+already has them. The workflow takes the registry namespace and the
+certificate identity from its own repository, so the same file runs in the
+rehearsal fork (AC-6); the documented verification names `kadet-hub`.
+
+The build job has `contents: read` and `packages: read` only. It fetches
+each source without checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
+(GI-9), repeats REG-2 and REG-3 across all entries on `main`, and writes a
+normalized tar of the tree `source.sha:source.path` with its metadata: the
+manifest fields the index lists, the source, and the tree ID computed from the
+files. It runs the checks in the sandbox image without network, and the
+compile gate under gVisor for versions without a published tag (CMP-4).
+
+The sign job runs once per entry in the `release` environment. It fetches
+`source.sha` itself, blobless, compares the git tree of `source.path` with
+the tree ID of the tar's contents and with the metadata, writes the OCI
+manifest itself, pushes config and layer to `ghcr.io/kadet-hub/<name>` by
+digest, attests the digest, and then sets the `<version>` tag. The krab
+result is the build job's (CMP-4).
+
+The artifact is an OCI image manifest with artifact type
+`application/vnd.kadet-hub.generator.v1`, the metadata as config blob
+(`application/vnd.kadet-hub.generator.config.v1+json`) and one layer
+`application/vnd.oci.image.layer.v1.tar` titled `<name>.tar`. The tar holds
+the tree at its root: sorted entries, mode 0644, mtime 0, owner 0. Kapitan
+0.36.3 pulls it with oras-py and extracts the tar into `output_path`.
+
+```yaml
+# consumer inventory
+parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/<name>@sha256:<digest>
+        output_path: lib/<name>
+```
+
+GitHub documents new packages as private. The first release in `kadet-hub`
+created `index` as private; in the rehearsal fork under a user account,
+packages pushed by the workflow were public. A package that is not public
+fails consumer pulls; the index job prints a warning for every such package,
+the index included, and a maintainer changes the visibility in the web UI,
+since the documented package API has no visibility call.
+
+- PUB-1: The build job MUST build the artifact from the git tree
+  `source.sha:source.path` alone, reproducibly (normalized tar, no timestamp
+  in the manifest), MUST NOT use files produced by the gate, and MUST NOT
+  hold `id-token` or `packages` permissions. The sign job MUST fail when the
+  tree ID of the tar differs from the tree of `source.sha:source.path` read by
+  its own fetch.
+  - Test: `release/test_release.py` (partial: reproducibility and tree ID;
+    the sign job's comparison by AC-6)
+  - Since: #13
+
+- PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
+  existing `<version>` tag, MUST fail when an existing tag points to a digest
+  without a marketplace attestation, MUST complete every version left
+  untagged by an earlier run, MUST NOT tag a version that is not newer than
+  the newest tagged version of the package, and MUST NOT build, attest or
+  tag a yanked version.
+
+  The last ordering rule replaces REG-6 at release time: the gate compares
+  against the previous entry, the sign job against what consumers can
+  already pull.
+
+  - Test: manual: AC-6
+  - Since: #13
+
+- PUB-3: Every published artifact MUST carry a GitHub artifact attestation
+  (SLSA provenance) from the release workflow. The documented verification
+  MUST match the certificate identity
+  `https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main`
+  exactly.
+  - Test: manual: AC-6
+  - Since: #13
+
+- PUB-4: The release workflow MUST publish an attested index as
+  `ghcr.io/kadet-hub/index` with a `serial` that increases with every
+  publication, listing per version: name, version, digest, tree ID,
+  description, tags, license, Kapitan range, krab result, output
+  capabilities, unparsed outputs, binaries, chart digests, owners, source
+  repository and SHA, the time it was first published, `yanked` with its
+  reason, and advisories (INC-1).
+
+  The index job reads the versions from the registry tags, each version's
+  metadata from its config blob, and accepts only digests with a marketplace
+  attestation. Versions of a removed entry stay listed as yanked with reason
+  `entry removed`. The index is tagged `<serial>` and `latest`; the serial
+  is the verified `latest` serial plus one, and an index whose content
+  equals `latest` apart from the serial is not published. Advisories stay
+  empty until INC-1 is implemented.
+
+  `published` is the index job's time when a version first appears and is
+  carried over from the previous index afterwards; the artifact itself holds
+  no timestamp, so its digest stays reproducible. Versions built before
+  description and tags entered the metadata list neither.
+
+  - Test: `release/test_release.py` (partial: content and serial; publishing
+    by AC-6)
+  - Since: #13
+
+- PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
+  artifact; deleting it is INC-1's call.
+  - Test: `release/test_release.py::Index.test_yanked_and_removed`
+  - Since: #13
+
+- PUB-6: The release workflow MUST publish the sandbox image as
+  `ghcr.io/kadet-hub/sandbox:<tree>`, where `<tree>` is the git tree ID of
+  `sandbox/` on `main`, attest its digest before tagging, and never move the
+  tag.
+
+  The consumer workflow derives `<tree>` from its own commit (CON-1), so the
+  scripts and the image it runs always come from the same tree. A tree that
+  is already tagged with an attested digest is not rebuilt.
+
+  - Test: manual: AC-6 consumer run (2026-10-09)
+  - Since: #15
+
+- PUB-7: For every version it publishes, the build job MUST rerun the
+  static checks with the entry's exceptions and the compile gate, fail on
+  any finding, and record the run in the artifact's `meta.json` as `scan`.
+
+  The record holds the time, the registry commit and the release run,
+  every check with the tool and version that ran it, and the number of
+  exceptions applied. It is part of the attested artifact, so the catalog
+  shows what the publishing run itself checked, not what a pull request
+  run reported. Versions published before this requirement have no
+  record; the catalog says so instead of implying a result.
+
+  Run on 2026-10-11 in the rehearsal fork with external-secrets and keda
+  1.0.0 unpublished there: the build job reran the static checks and the
+  compile gate for both, and keda's config blob carried the record with
+  nine checks and their tool versions, the run and the registry commit.
+
+  - Test: manual: fork rehearsal (2026-10-11)
+  - Since: #47
+
+- PUB-8: The sign job MUST attest an SPDX 2.3 SBOM for every artifact it
+  pushes, for the same digest.
+
+  The SBOM is written from the pushed tar (`release/sbom.py`): one package
+  with the manifest's license as declared license, the source repository
+  at `source.sha` as download location and a `pkg:oci` purl with the
+  digest, and every file with its SHA-256 and SHA-1. Generators have no
+  dependencies (DEC-10), so the SBOM is the reviewed file list.
+  `actions/attest` with `sbom-path` stores it with the predicate type
+  `https://spdx.dev/Document/v2.3`.
+
+  In the same rehearsal `gh attestation verify --predicate-type
+  https://spdx.dev/Document/v2.3` verified keda's SBOM (8 files, purl with
+  the pushed digest); `pyspdxtools` validates the document written for
+  the published keda 1.0.0 tar.
+
+  - Test: `release/test_release.py::Sbom`; manual: fork rehearsal (2026-10-11)
+  - Since: #47
+
+## Incident response
+
+- INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,
+  and a GitHub security advisory published and listed in the index. The
+  target is 24 hours from confirmation, best effort with one maintainer.
+
+  `docs/incident.md` is the runbook. The entry records advisories as
+  `advisories: {<version>: [GHSA-…]}`; only a maintainer pull request may
+  add or change them (the gate fails otherwise), and the release copies
+  them into the version's index record. The maintainer deletes the
+  artifact by hand after the yank is merged, since the deletion cannot be
+  undone. The index then keeps the version: a yanked version whose
+  artifact is gone is carried over from the previous attested index with
+  its digest, reason and advisories, so consumers still find why their
+  pinned digest is rejected (CON-2) and the catalog shows the advisory.
+  GitHub refuses to delete the last tagged version of a package; the
+  runbook deletes the package then.
+
+  Run on 2026-10-10 in the rehearsal fork with a draft advisory: the yank
+  with the advisory raised the index serial and the catalog showed both;
+  after the package was deleted, a release run reported the index
+  unchanged, still listing the version with digest, reason and advisory.
+
+  - Test: `release/test_release.py`, `gate/test_check_entry.py`,
+    `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-10)
+  - Since: #32
