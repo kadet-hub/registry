@@ -1014,10 +1014,57 @@ of migrating site data.
 
 Each generator has a card with name, description, tags, license, latest
 version, owners, source stars and the time of the latest version, and a
-page at `/generators/<name>/` with every version. Search and tag filter run
-in the browser over the rendered cards. Owner logins and stars
-come from the GitHub API at build time; they are display data only, and a
-failed lookup shows the user ID or no stars.
+page at `/generators/<name>/` with the latest version's README and every
+version. Search and tag filter run in the browser over the rendered cards.
+Owner logins and stars come from the GitHub API at build time; they are
+display data only, and a failed lookup shows the user ID or no stars.
+
+A generator has no logo of its own: the card shows a monogram of its name,
+coloured from a fixed palette by a hash of the name, and the icon of its
+first tag. Submitters supply no images, so none needs to be checked. The
+icons are Lucide's (ISC), inlined into every page as an SVG sprite. The
+site follows the system colour scheme; a toggle overrides it and is
+remembered in the browser's `localStorage`.
+
+- CAT-7: The generator page MUST show the README of the latest version that
+  is not yanked, read from that version's published artifact by digest, as
+  Markdown without raw HTML.
+
+  The README passed the gate and the review with the rest of the tree;
+  the catalog job pulls the layer by digest, so it shows exactly what
+  consumers fetch. Raw HTML is omitted and links with a script or data
+  scheme are dropped. Images are not loaded, since the CSP allows only
+  the site's own origin; each becomes a link to its target. Relative links
+  and images point into the source tree at `source.sha`. A README above
+  256 KiB is not shown.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
+- CAT-8: Selecting several tags MUST show the generators that carry all of
+  them, and the selection MUST be kept in the URL as `?tags=<a>,<b>`; every
+  tag shown on a card or page MUST link to that filtered view.
+
+  Tags are multiply assigned (a generator can be `helm`, `operators` and
+  `kubernetes` at once), so OR would widen the result with every click.
+  Each tag button shows how many generators the selection would leave and
+  is disabled at zero; the result line names the selected tags. Without
+  JavaScript the home page lists every generator.
+
+  - Test: `catalog/test_catalog.py` (partial: the links and the markup; the
+    filter itself runs in the browser)
+  - Since: this change
+
+- CAT-9: Code blocks, tables and long values such as digests MUST wrap
+  instead of scrolling horizontally, and every inventory entry and command
+  MUST have a copy button.
+  - Test: `catalog/test_catalog.py` (partial: the markup)
+  - Since: this change
+
+The footer names the index serial the site was built from, and the
+version page's Verify section explains it: consumers set `index_serial`
+in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
+index is refused (CON-2).
 
 - CAT-1: The release workflow MUST build the catalog from the index it
   published or verified in the same run, and deploy it from a job bound to
@@ -1270,7 +1317,7 @@ None.
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3 |
-| `catalog/` | CAT-1 to CAT-6: Hugo site, `build` script, `test_catalog.py` |
+| `catalog/` | CAT-1 to CAT-9: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
