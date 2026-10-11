@@ -26,6 +26,33 @@ function openVersion() {
 addEventListener("hashchange", openVersion);
 openVersion();
 
+// CAT-19: the table of contents is collapsed on narrow screens and marks the section in view.
+const toc = document.querySelector(".toc details");
+if (toc) {
+  if (!matchMedia("(min-width: 78rem)").matches) toc.open = false;
+  const links = new Map([...toc.querySelectorAll("a")].map((a) => [a.hash.slice(1), a]));
+  const seen = new Set();
+  const mark = () => {
+    const current = [...links.keys()].find((id) => seen.has(id));
+    if (!current) return; // between headings: keep the last mark
+    for (const [id, a] of links) {
+      if (id === current) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    }
+  };
+  const observer = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) seen.add(e.target.id);
+      else seen.delete(e.target.id);
+    }
+    mark();
+  }, { rootMargin: "0px 0px -60% 0px" });
+  for (const id of links.keys()) {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  }
+}
+
 // Copy buttons
 for (const button of document.querySelectorAll("button.copy")) {
   if (!navigator.clipboard) continue;
