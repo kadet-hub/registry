@@ -1,0 +1,32 @@
+# kadet-hub
+
+> kadet-hub is a community catalog of Kapitan generators (kadet Python modules that turn a block of inventory parameters into many output files). Every listed version passed secret, malware and code scans, a compile of its fixture project in a gVisor sandbox without network, tag and schema checks, and a maintainer's review, and is published as an attested OCI artifact at ghcr.io/kadet-hub/<name>, pinned by digest. Offered free of charge, as is, on a best-effort basis.
+
+Writing a generator for the marketplace: start from the template and follow its AGENTS.md. Decide first whether a generator is the right tool (see "When not" in the author guide).
+
+## Writing a generator
+
+- [AGENTS.md (template)](https://github.com/kadet-hub/generator-template/blob/main/AGENTS.md): the rules the gate enforces, layout and workflow, written for coding agents
+- [Generator template](https://github.com/kadet-hub/generator-template): files the gate expects, local ./check script
+- [Author guide](https://github.com/kadet-hub/registry/blob/main/docs/authors.md): when to write a generator and when not, manifest, fixtures, entry pull request, exceptions, new versions
+- [Terms of listing](https://github.com/kadet-hub/registry/blob/main/TERMS.md)
+
+## Gate policy
+
+- [Manifest schema](https://github.com/kadet-hub/registry/blob/main/policy/manifest.schema.json)
+- [Import allowlist](https://github.com/kadet-hub/registry/blob/main/policy/imports.txt)
+- [Tags and when to assign them](https://github.com/kadet-hub/registry/blob/main/policy/tags.yaml)
+- [Allowed licenses](https://github.com/kadet-hub/registry/blob/main/policy/licenses.txt)
+- [Programs a generator may declare](https://github.com/kadet-hub/registry/blob/main/policy/binaries.txt)
+- [Specification](https://github.com/kadet-hub/registry/blob/main/docs/specs/marketplace.md): every requirement with its check
+
+## Using generators
+
+- [Consumer guide](https://github.com/kadet-hub/registry/blob/main/docs/consumers.md): inventory entry, consumer workflow, verifying by hand, what a listing covers
+- [Catalog](https://kadet-hub.org/): all generators; each page has the pinned inventory entry and the verify command
+
+## Optional
+
+- [Tags](https://kadet-hub.org/tags/)
+- [Glossary](https://kadet-hub.org/glossary/)
+- [Kapitan documentation](https://kapitan.dev/)

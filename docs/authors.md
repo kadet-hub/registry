@@ -7,7 +7,90 @@ it, and after the merge the release workflow publishes the checked tree as
 The fields of the manifest and the entry are defined under
 [Registration](specs/marketplace.md#registration).
 
+## When a generator is worth writing
+
+A generator turns a compact block of inventory into output that would
+otherwise be written by hand, many times, with the same decisions in it.
+It pays off when it carries knowledge the inventory author should not have
+to repeat:
+
+- One input fans out into many resources that must agree with each other:
+  a service entry that yields a Deployment, Service, ServiceAccount,
+  NetworkPolicy, PodDisruptionBudget and ServiceMonitor with matching
+  names, labels and ports.
+- The output encodes defaults or conventions: resource requests, security
+  contexts, label schemes, naming rules, which fields an operator needs
+  together.
+- Values have to be derived, not copied: a port list turns into container
+  ports, Service ports and NetworkPolicy rules; a secret reference turns
+  into an ExternalSecret and the volume that mounts it.
+- The same intent must come out in several formats: a database entry that
+  yields the operator's custom resource, a Grafana dashboard, alert rules
+  and a runbook page.
+- An upstream API is awkward to write by hand and stable enough to model:
+  CRDs with deep nesting, shorthands that expand to verbose specs.
+
+## When not
+
+A generator that only reshapes YAML into the same YAML adds a layer
+without adding knowledge. An Ansible generator is the standard example:
+the inventory would hold the playbook's structure, the generator would
+copy it into a playbook, and the result is the YAML the author could have
+written directly, now with a second schema to learn. Signs that a
+generator is the wrong tool:
+
+- The inventory block mirrors the output field by field. Use a `jinja2` or
+  `copy` input, or write the file.
+- An upstream Helm chart already renders it and its values are the real
+  interface. Use the `helm` input with the chart pinned; a generator that
+  wraps a chart only renames its values.
+- It produces one resource with no defaults or derived values.
+- The target tool has its own composition that does the job better, such
+  as Kustomize overlays for per-environment patches of the same manifests.
+- It would generate secrets or call out to the network at compile time.
+  The gate forbids both; use Kapitan refs for secrets.
+- It is specific to one project's naming and structure. Keep it in that
+  project; the marketplace is for generators other projects can use with
+  their own inventory.
+
+## Ideas
+
+Generators that would be useful to many Kapitan projects, beyond rendering
+one operator's resources:
+
+- **Workload bundles**: one service entry to Deployment, Service,
+  autoscaling, disruption budget, network policy and monitoring, with
+  security defaults that pass admission policies.
+- **Policy as code**: Kyverno or Gatekeeper policies and their exceptions
+  from a short list of rules and namespaces.
+- **Observability from the inventory**: Prometheus rules, Grafana dashboards
+  and alert routing generated from the services and SLOs the inventory
+  already lists.
+- **Network intent**: NetworkPolicies, Cilium policies or Gateway API
+  routes from a service dependency graph.
+- **GitOps wiring**: Argo CD Applications or ApplicationSets, Flux
+  Kustomizations, one per target.
+- **Platform catalogs**: Backstage `catalog-info.yaml` and ownership data
+  from the same inventory that deploys the service.
+- **Cloud resources**: Terraform JSON for buckets, DNS records, IAM bindings
+  that a workload needs, next to the Kubernetes side.
+- **Pipelines**: GitLab CI or GitHub Actions workflows for each target,
+  with the compile and diff steps the project uses.
+- **Documentation**: runbooks, README sections and Mermaid diagrams of the
+  deployed topology, generated from the values that are actually deployed.
+- **Container builds**: Dockerfiles with pinned bases and labels from a
+  short image description.
+
+If you would use one of these but will not write it, [request
+it](https://github.com/kadet-hub/registry/issues/new?template=generator-request.yml).
+
 ## In your repository
+
+The quickest start is the template repository
+[kadet-hub/generator-template](https://github.com/kadet-hub/generator-template):
+it has the files below, a `./check` script that runs the gate's ruff
+rules and sandbox compile locally, and `AGENTS.md` for coding agents.
+
 
 The generator lives in a public repository on github.com or gitlab.com, in
 its own directory or at the root. That directory carries:
