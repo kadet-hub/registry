@@ -952,8 +952,10 @@ own.
   `consumer/run` against a `docker:dind` service with `SANDBOX_TRACE=0`.
   In that mode `sandbox/run` uses the default runtime, needs no sudo, and
   writes `/out` to a plain directory that is checked for the 50 MiB limit
-  after the compile; `noexec` on `/out` and the SEC-10 trace are not
-  enforced. Network isolation, the read-only root, decoys, SEC-11 and
+  after the compile, then emptied through the sandbox image as the sandbox
+  user, since a non-root caller cannot delete what that user wrote;
+  `noexec` on `/out` and the SEC-10 trace are not enforced. Network
+  isolation, the read-only root, decoys, SEC-11 and
   SEC-12 apply as on GitHub. Work directories live under
   `$CI_PROJECT_DIR`, which the job and the dind service share. The job
   needs a `GH_TOKEN` CI variable, a GitHub token without permissions, for
@@ -965,8 +967,9 @@ own.
   the undeclared `hostPath` in `compiled/app` and accepted the one in
   `compiled/logging`.
 
-  - Test: manual: gitlab.com rehearsal (2026-10-10)
-  - Since: #31
+  - Test: manual: gitlab.com rehearsal (2026-10-10); `gate-selftest`
+    compiles `pass-plain` with `SANDBOX_TRACE=0` as a non-root user
+  - Since: #31, #44
 
 - CON-1b: The compile step MUST run SEC-12 over the output and fail on every
   match the policy's `output_capabilities` does not accept for that path.

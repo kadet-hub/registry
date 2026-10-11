@@ -36,7 +36,9 @@ work=$(mktemp -d)
 if ((trace)); then
   trap 'sudo umount -- "$work/judge/out" 2>/dev/null || true; rm -rf -- "$work"' EXIT
 else
-  trap 'rm -rf -- "$work"' EXIT
+  # /out holds files of the sandbox user, which a non-root caller cannot delete.
+  trap 'docker run --rm --network none --user 10001:10001 --mount "type=bind,src=$work/judge/out,dst=/out" \
+    "$image" find /out -mindepth 1 -delete; rm -rf -- "$work"' EXIT
 fi
 
 # Decoy credentials, random per run (SEC-11).
