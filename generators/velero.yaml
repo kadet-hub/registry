@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: velero
+  tag: velero-v1.0.0
+  sha: cd660d06c2e97a2bc842f0e75475f639a82f128d
+owners: [3042152]
