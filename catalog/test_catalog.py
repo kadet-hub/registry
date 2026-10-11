@@ -257,7 +257,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
 
     def test_built_for(self):
-        self.assertIn('<p class="built-for">Built for External Secrets Operator 2.11.0</p>', self.page())
+        self.assertIn('<dt>Built for</dt><dd class="built-for"><span>External Secrets Operator 2.11.0</span></dd>', self.page())
         html = self.page("generators", "demo")
         self.assertIn('<a href="https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases">External Secrets Operator 2.11.0</a>', html)
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
@@ -316,14 +316,13 @@ class Site(unittest.TestCase):
     def test_cards_show_the_same_fields_in_the_same_order(self):
         for name in ("demo", "old"):
             card = self.card(name)
-            order = ['class="stretched"', 'class="meta-line"', 'class="description"', 'class="built-for',
-                     "<dt>Maintainer</dt>", "<dt>Popularity</dt>", "<dt>Scanned</dt>"]
+            order = ['class="stretched"', 'class="meta-line"', 'class="description"',
+                     "<dt>Built for</dt>", "<dt>Maintainer</dt>", "<dt>Popularity</dt>", "<dt>Scanned</dt>"]
             positions = [card.index(marker) for marker in order]
             self.assertEqual(positions, sorted(positions), name)
             self.assertNotIn("Apache-2.0", card)  # CAT-22: license only on the page
             self.assertEqual(card.count("<a "), 1 + card.count('class="tag"') + card.count('class="fact-link"'))
-        self.assertIn("Built for External Secrets Operator 2.11.0", self.card("demo"))
-        self.assertIn("Built for: not recorded", self.card("old"))
+        self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", self.card("old"))
         self.assertIn("<dt>Scanned</dt><dd>not scanned</dd>", self.card("old"))
         self.assertIn('<p class="meta-line">1.10.0 · <time datetime="2026-10-09T05:34:57Z">2026-10-09</time></p>', self.card("demo"))
 
