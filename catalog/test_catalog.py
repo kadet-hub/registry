@@ -232,6 +232,13 @@ class Site(unittest.TestCase):
         self.assertIn("No SBOM attestation for this version.", older)
         self.assertIn("checked 2026-10-10", self.page())
 
+    def test_llms_txt(self):
+        with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertTrue(text.startswith("# kadet-hub\n\n> "))
+        for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
+            self.assertIn(link, text)
+
     def test_built_for(self):
         self.assertIn('<p class="built-for">Built for External Secrets Operator 2.11.0</p>', self.page())
         html = self.page("generators", "demo")
