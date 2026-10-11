@@ -57,9 +57,10 @@ while IFS= read -r name; do
   if [[ -n $(ls -A -- "$work/charts-$name") ]]; then
     "$root/scan/static-scan" "$work/charts-$name" || { echo "PUB-7: $name $version: the chart scan failed"; exit 1; }
   fi
-  KRAB_RESULT=$work/krab "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" \
+  KRAB_RESULT=$work/krab SCHEMA_RESULT=$work/compatibility.json "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" \
     || { echo "CMP-4: $name $version: the compile gate failed"; exit 1; }
   "$root/release/scan-record" "$(jq length -- "$work/exceptions.json")" >"$work/scan.json"
-  jq -c -S --arg krab "$(cat -- "$work/krab")" --slurpfile scan "$work/scan.json" '.krab = $krab | .scan = $scan[0]' -- "$meta" >"$work/meta.json"
+  jq -c -S --arg krab "$(cat -- "$work/krab")" --slurpfile scan "$work/scan.json" --slurpfile compat "$work/compatibility.json" \
+    '.krab = $krab | .scan = $scan[0] | .compatibility = $compat[0]' -- "$meta" >"$work/meta.json"
   cp -- "$work/meta.json" "$meta"
 done < <(jq -r '.[]' -- "$out/names.json")

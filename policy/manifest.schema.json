@@ -36,6 +36,7 @@
       }
     },
     "inventory_backends": {"type": "array", "uniqueItems": true, "items": {"enum": ["reclass", "reclass-rs", "omegaconf"]}},
-    "fixtures": {"$ref": "#/$defs/relpath"}
+    "fixtures": {"$ref": "#/$defs/relpath"},
+    "schemas": {"$ref": "#/$defs/relpath"}
   }
 }

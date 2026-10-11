@@ -40,6 +40,7 @@
         </div>
       </div>
       <p class="description">{{ .description }}</p>
+      {{ with .latest }}{{ with .compatibility }}<p class="built-for">Built for {{ range $i, $c := . }}{{ if $i }} · {{ end }}{{ $c.software }} {{ $c.version }}{{ end }}</p>{{ end }}{{ end }}
       {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/?tags=%s" . | relURL }}">{{ . }}</a>{{ end }}</p>{{ end }}
       <dl class="facts">
         <div><dt><svg class="icon" aria-label="License"><use href="#i-license"/></svg></dt><dd>{{ .license }}</dd></div>
