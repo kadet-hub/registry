@@ -167,6 +167,23 @@ for" comes from them. You can also
 open the bump yourself. The version must increase, and `repo` and `path`
 stay fixed.
 
+A generator that renders Terraform ships the schema of the provider
+version it pins in `required_providers` instead of JSON Schemas. In the
+compiled output directory, after `terraform init -backend=false`, run
+`terraform providers schema -json > full.json`, then reduce it to the
+types your output uses with `sandbox/tf_schema.py` from a registry
+checkout:
+
+```sh
+python3 sandbox/tf_schema.py extract --full full.json --out compiled/ \
+  > schemas/terraform/hashicorp_aws_6.68.0.json
+```
+
+and add an entry keyed `terraform/hashicorp/aws` to `schemas/sources.yaml`.
+The gate then checks every provider block, resource and data source
+against it ([QA-8](specs/gate.md#quality-gate)); regenerate the file
+whenever you raise the pinned version.
+
 To withdraw a version, add it under `yanked` with a reason. The catalog
 then shows the reason instead of the inventory entry. A version that is
 malicious is reported as described in [SECURITY.md](../SECURITY.md).

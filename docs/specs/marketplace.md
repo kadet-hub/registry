@@ -325,6 +325,7 @@ coverage is named at each:
 | `policy/output/` | SEC-12 rego rules |
 | `policy/licenses.txt` | QA-2 |
 | `policy/ruff.toml` | QA-3 |
+| `sandbox/schema_check.py`, `sandbox/tf_schema.py` | QA-7, QA-8 |
 | `sandbox/` | SEC-9 to SEC-12: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
 | `tests/consumers/` | AC-10 |

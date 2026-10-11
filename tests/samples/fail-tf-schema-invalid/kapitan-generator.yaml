@@ -1,0 +1,4 @@
+name: fail-tf-schema-invalid
+binaries: []
+fixtures: tests/consumer
+schemas: schemas
