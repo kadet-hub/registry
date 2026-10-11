@@ -1,3 +1,4 @@
 {{- /* README headings sit one level below the page's own (h1 is the generator name). */ -}}
-{{- $l := add .Level 1 | math.Min 6 | int -}}
-<h{{ $l }} id="readme-{{ .Anchor }}">{{ .Text }}</h{{ $l }}>
+{{- $l := .Level -}}{{- $id := .Anchor -}}
+{{- if .Page.Params.generator }}{{ $l = add .Level 1 | math.Min 6 | int }}{{ $id = printf "readme-%s" .Anchor }}{{ end -}}
+<h{{ $l }} id="{{ $id }}">{{ .Text }}</h{{ $l }}>

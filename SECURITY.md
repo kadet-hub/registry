@@ -12,3 +12,15 @@ maintainer, so the 24-hour target is best effort.
 
 For vulnerabilities in a generator's own code that are not malicious, contact
 the generator's repository first.
+
+## Removal requests
+
+To request removal of a listed generator or of content on kadet-hub.org
+because it infringes your rights (copyright, license, trademark) or is
+unlawful, open a [report](https://github.com/kadet-hub/registry/issues/new?template=generator-report.yml)
+and choose "License, copyright or trademark concern". Name the generator and
+version, the content concerned and why it is infringing or unlawful. If the
+request cannot be public, send it to tbd (e-mail, OQ-2). The maintainers
+check each request, tell you and the generator's owners their decision and
+its reason, and yank or remove the content when the request is justified
+(LEG-3, [TERMS.md](TERMS.md#review-and-removal)).

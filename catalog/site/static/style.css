@@ -210,3 +210,7 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .glossary dt { font-weight: 700; font-size: 1.1rem; margin-top: 1.5rem; }
 .glossary dd { margin: .35rem 0 0; color: var(--text-muted); }
 .glossary dd a { white-space: nowrap; }
+
+/* Prose pages (LEG-1) */
+.prose h2 { font-size: 1.3rem; margin: 2rem 0 .5rem; }
+.prose p { max-width: 46rem; }
