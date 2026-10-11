@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Sign job, before the attestation (PUB-1, PUB-2): compare the built tar with
-# an own fetch of the source, check the existing tags, push by digest.
+# Sign job, before the attestations (PUB-1, PUB-2, PUB-8): compare the built
+# tar with an own fetch of the source, check the existing tags, push by
+# digest and write the SBOM of what was pushed.
 #
 # Usage: sign <name> <built dir>
 # Needs: REGISTRY (ghcr.io/<owner>), IDENTITY (certificate identity),
 # GITHUB_REPOSITORY, GH_TOKEN, oras logged in, the main checkout as working
-# directory. Writes ref, digest, version and publish=true|false to
+# directory. Writes ref, digest, version, sbom and publish=true|false to
 # $GITHUB_OUTPUT.
 set -euo pipefail
 name=$1 built=$2
@@ -64,5 +65,7 @@ digest=$("$root/release/oci-push" "$ref" application/vnd.kadet-hub.generator.v1 
   application/vnd.kadet-hub.generator.config.v1+json "$meta" \
   application/vnd.oci.image.layer.v1.tar "$tar" "$name.tar")
 echo "$name $version: pushed $digest"
+python3 -I "$root/release/sbom.py" --tar "$tar" --meta "$meta" --ref "$ref" --digest "$digest" --out "$built/sbom.spdx.json"
 out "digest=$digest"
+out "sbom=$built/sbom.spdx.json"
 out "publish=true"

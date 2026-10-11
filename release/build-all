@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Build job (PUB-1, CMP-4): fetch every entry's source without checkout,
-# validate and build in the sandbox image without network, then run the
-# compile gate for versions not yet published and record the krab result.
+# Build job (PUB-1, PUB-7, CMP-4): fetch every entry's source without
+# checkout, validate and build in the sandbox image without network, then
+# rerun the static checks and the compile gate for versions not yet
+# published and record the run and the krab result in meta.json.
 #
 # Usage: build-all <out dir>
 # Needs: the sandbox image $SANDBOX_IMAGE, yq, jq, oras, REGISTRY, what
-# sandbox/gate-compile needs, the main checkout. Writes the artifacts and
+# scan/static-scan, sandbox/gate-compile and release/scan-record need, the
+# main checkout. Writes the artifacts and
 # names.json to <out dir>.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -46,8 +48,18 @@ while IFS= read -r name; do
   echo "## $name $version: compile gate"
   "$root/gate/fetch-charts" "$work/src/$name" "$work/charts-$name" \
     || { echo "SEC-8: $name $version: the charts do not match"; exit 1; }
+  # PUB-7: the static checks with the entry's exceptions (SEC-14), as in gate/run.
+  yq -o json '.exceptions // []' "$root/generators/$name.yaml" >"$work/exceptions.json"
+  rc=0
+  "$root/scan/static-scan" "$work/src/$name" >"$work/static.txt" 2>&1 || rc=$?
+  python3 -I "$root/scan/exceptions.py" --tree "$work/src/$name" --exceptions "$work/exceptions.json" \
+    --report "$work/static.txt" --rc "$rc" || { echo "PUB-7: $name $version: the static checks failed"; exit 1; }
+  if [[ -n $(ls -A -- "$work/charts-$name") ]]; then
+    "$root/scan/static-scan" "$work/charts-$name" || { echo "PUB-7: $name $version: the chart scan failed"; exit 1; }
+  fi
   KRAB_RESULT=$work/krab "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" \
     || { echo "CMP-4: $name $version: the compile gate failed"; exit 1; }
-  jq -c -S --arg krab "$(cat -- "$work/krab")" '.krab = $krab' -- "$meta" >"$work/meta.json"
+  "$root/release/scan-record" "$(jq length -- "$work/exceptions.json")" >"$work/scan.json"
+  jq -c -S --arg krab "$(cat -- "$work/krab")" --slurpfile scan "$work/scan.json" '.krab = $krab | .scan = $scan[0]' -- "$meta" >"$work/meta.json"
   cp -- "$work/meta.json" "$meta"
 done < <(jq -r '.[]' -- "$out/names.json")
