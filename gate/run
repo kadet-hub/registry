@@ -101,6 +101,12 @@ else
     echo "SEC-13: the approved version's compile reported, not judged:"
     head -n 20 -- "$work/previous.txt"
   fi
+  # QA-7: did the bump move its schemas along with the code?
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" \
+    --mount "type=bind,src=$work/previous,dst=/old,readonly" \
+    --mount "type=bind,src=$gen,dst=/new,readonly" \
+    "$image" python -I /base/gate/schema_diff.py --old /old --new /new || true
   python3 -I "$root/gate/output_diff.py" --old "$work/out-previous" --new "$work/out-new" \
     --compile-log "$work/compile.txt" --full "${GATE_OUT:-$work}/output.diff"
 fi
