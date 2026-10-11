@@ -744,7 +744,7 @@ review go into the review comment and do not fail the gate.
 
   - Test: `sandbox/test_tag_check.py`; workflow job `gate-selftest`
     (`fail-tag-without-evidence`)
-  - Since: this change
+  - Since: #49
 
 ## Review
 
