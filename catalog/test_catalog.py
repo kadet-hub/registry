@@ -22,11 +22,13 @@ def record(d, yanked=None, description="Renders a ConfigMap", tags=("helm",), ad
             "source": {"repo": "https://github.com/example/demo.git", "path": ".", "tag": "v1.0.0", "sha": "c" * 40}}
 
 
+COMPAT = [{"software": "External Secrets Operator", "version": "2.11.0", "source": "https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases"}]
+
 SCAN = {"at": "2026-10-10T08:00:00Z", "gate": "d" * 40, "run": "https://github.com/kadet-hub/registry/actions/runs/42",
         "exceptions": 1, "checks": [{"id": "secrets", "tool": "gitleaks 8.30.1"}, {"id": "sandbox", "tool": "gVisor 20261005, Kapitan 0.36.3"}]}
 
 INDEX = {"serial": 7, "generators": {
-    "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]), "1.10.0": dict(record("b", description="<script>alert(1)</script>"), scan=SCAN),
+    "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]), "1.10.0": dict(record("b", description="<script>alert(1)</script>"), scan=SCAN, compatibility=COMPAT),
              "1.2.0": record("c")},
     "old": {"0.1.0": record("d", yanked="entry removed", tags=())},
 }}
@@ -212,6 +214,13 @@ class Site(unittest.TestCase):
         self.assertIn("No scan record", older)
         self.assertIn("No SBOM attestation for this version.", older)
         self.assertIn("checked 2026-10-10", self.page())
+
+    def test_built_for(self):
+        self.assertIn('<p class="built-for">Built for External Secrets Operator 2.11.0</p>', self.page())
+        html = self.page("generators", "demo")
+        self.assertIn('<a href="https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases">External Secrets Operator 2.11.0</a>', html)
+        older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
+        self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", older)
 
     def test_sort_keys(self):
         home = self.page()
