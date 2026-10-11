@@ -1090,6 +1090,23 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #45
 
+- CAT-12: The generator page MUST link to an issue form for reporting a
+  problem with that generator, prefilled with its name and latest version,
+  and the home page MUST link to an issue form for requesting a new
+  generator.
+
+  The forms are GitHub issue forms in `.github/ISSUE_TEMPLATE`; the site
+  has no backend, so a visitor needs a GitHub account. The report form
+  sends malicious behaviour and vulnerabilities to private vulnerability
+  reporting (SECURITY.md) instead of a public issue. The request form
+  asks what the generator should render and for the upstream sources it
+  would wrap: Helm chart, Kustomize base, manifests or CRDs, Dockerfile,
+  Terraform module.
+
+  - Test: `catalog/test_catalog.py` (the links); `tests/workflow-policy`
+    does not cover the forms
+  - Since: #45
+
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
 in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
@@ -1346,7 +1363,8 @@ None.
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3 |
-| `catalog/` | CAT-1 to CAT-9: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
+| `.github/ISSUE_TEMPLATE/` | CAT-12 |
+| `catalog/` | CAT-1 to CAT-12: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
