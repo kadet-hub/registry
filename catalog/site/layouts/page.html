@@ -1,6 +1,5 @@
 {{ define "main" }}
 {{ $owner := site.Data.catalog.owner }}
-{{ $identity := printf "https://github.com/%s/registry/.github/workflows/release.yml@refs/heads/main" $owner }}
 {{ $page := . }}
 {{ range where site.Data.catalog.generators "name" .Params.generator }}
 {{ $name := .name }}
@@ -31,6 +30,12 @@
   <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk, and review the compiled output before you apply it. <a href="https://github.com/{{ $owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
   {{ partial "snippet.html" (dict "id" "entry-latest" "label" "inventory entry" "text" (printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/%s@%s\n        output_path: lib/%s" $owner $name .digest $name)) }}
 </section>
+<section class="panel" aria-labelledby="verify">
+  <h2 id="verify">Verify</h2>
+  <p>The digest is attested by the marketplace's release workflow (<a href="#v{{ .version }}">version {{ .version }}</a>):</p>
+  {{ partial "verify.html" (dict "v" . "name" $name "id" "verify-latest" "label" "verify command") }}
+  <p class="note">This catalog was built from index serial {{ site.Data.catalog.serial }}. Set <code>index_serial: {{ site.Data.catalog.serial }}</code> in <code>.kapitan-sandbox.yaml</code> and the consumer workflow refuses any older index, so a rolled-back index cannot bring back a yanked version.</p>
+</section>
 {{ end }}
 {{ with .readme }}
 <section class="readme" aria-label="README">
@@ -41,12 +46,6 @@
 
 <aside class="side">
 {{ with .latest }}
-<section class="panel" aria-labelledby="verify">
-  <h2 id="verify">Verify</h2>
-  <p>The digest is attested by the marketplace's release workflow:</p>
-  {{ partial "snippet.html" (dict "id" "verify-latest" "label" "verify command" "text" (printf "gh attestation verify oci://ghcr.io/%s/%s@%s \\\n  --owner %s --cert-identity %s" $owner $name .digest $owner $identity)) }}
-  <p class="note">This catalog was built from index serial {{ site.Data.catalog.serial }}. Set <code>index_serial: {{ site.Data.catalog.serial }}</code> in <code>.kapitan-sandbox.yaml</code> and the consumer workflow refuses any older index, so a rolled-back index cannot bring back a yanked version.</p>
-</section>
 <section class="panel" aria-labelledby="checks">
   <h2 id="checks">Checks</h2>
   {{ partial "scan.html" (dict "v" . "name" $name) }}
@@ -64,16 +63,17 @@
 <h2 id="versions">Versions</h2>
 {{ range $i, $v := .versions }}
 <details class="version{{ if .yanked }} yanked{{ end }}" id="v{{ .version }}"{{ if eq $i 0 }} open{{ end }}>
-  <summary><span class="v">{{ .version }}</span>{{ with .published }} <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ if .yanked }} <span class="pill warn">yanked</span>{{ end }}</summary>
+  <summary><span class="v">{{ .version }}</span><a class="permalink" href="#v{{ .version }}" aria-label="Link to version {{ .version }}">#</a>{{ with .published }} <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ if .yanked }} <span class="pill warn">yanked</span>{{ end }}</summary>
   {{ if .yanked }}
   <p class="warning">Yanked: {{ .yanked }}</p>
   <p>Digest: <code>{{ .digest }}</code></p>
+  {{ with .rekor }}<p class="note">Transparency log: <a href="https://search.sigstore.dev/?logIndex={{ . }}">Rekor entry {{ . }}</a></p>{{ end }}
   {{ with .advisories }}<p>Advisories: {{ range $j, $a := . }}{{ if $j }}, {{ end }}<a href="https://github.com/{{ $owner }}/registry/security/advisories/{{ $a }}">{{ $a }}</a>{{ end }}</p>{{ end }}
   {{ else }}
   <h3>Inventory</h3>
   {{ partial "snippet.html" (dict "id" (printf "entry-%d" $i) "label" (printf "inventory entry for %s" .version) "text" (printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/%s@%s\n        output_path: lib/%s" $owner $name .digest $name)) }}
   <h3>Verify</h3>
-  {{ partial "snippet.html" (dict "id" (printf "verify-%d" $i) "label" (printf "verify command for %s" .version) "text" (printf "gh attestation verify oci://ghcr.io/%s/%s@%s \\\n  --owner %s --cert-identity %s" $owner $name .digest $owner $identity)) }}
+  {{ partial "verify.html" (dict "v" . "name" $name "id" (printf "verify-%d" $i) "label" (printf "verify command for %s" .version)) }}
   {{ partial "details.html" (dict "v" .) }}
   <h3>Checks</h3>
   {{ partial "scan.html" (dict "v" . "name" $name) }}

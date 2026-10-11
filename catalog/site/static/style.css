@@ -227,3 +227,8 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 
 /* Built for (CAT-15) */
 .built-for { margin: 0; font-size: .85rem; color: var(--ok); font-weight: 600; }
+
+/* Version permalinks (CAT-17) */
+.permalink { color: var(--text-muted); text-decoration: none; padding: 0 .25rem; opacity: .6; }
+.permalink:hover, .permalink:focus-visible { opacity: 1; color: var(--accent); }
+details.version:target { border-color: var(--accent); }

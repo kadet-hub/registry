@@ -4,8 +4,9 @@
 # Usage: build <index.json> <out dir>
 # Needs: OWNER (registry owner), hugo, python3, jq, oras, gh. GH_TOKEN raises
 # the API rate limit; CATALOG_OFFLINE=1 skips the API and the registry and
-# reads artifact layers from $CATALOG_ARTIFACTS/<name>.tar and SBOMs from
-# $CATALOG_SBOMS/<name>/<version>.spdx.json instead.
+# reads artifact layers from $CATALOG_ARTIFACTS/<name>.tar, SBOMs from
+# $CATALOG_SBOMS/<name>/<version>.spdx.json and transparency log indexes
+# from $CATALOG_REKOR (JSON {name: {version: index}}) instead.
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 index=$(realpath -- "$1")
@@ -19,6 +20,7 @@ mkdir -- "$work/data"
 offline=()
 artifacts=${CATALOG_ARTIFACTS:-$work/artifacts}
 sboms=${CATALOG_SBOMS:-$work/sboms}
+rekor=${CATALOG_REKOR:-$work/rekor.json}
 if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
   offline=(--offline)
 else
@@ -34,20 +36,28 @@ else
   done < <(jq -r '.generators | to_entries[] | .key as $n
     | [.value | to_entries[] | select(.value.yanked == null)] | sort_by(.key | split(".") | map(tonumber)) | last
     | select(. != null) | "\($n) \(.value.digest)"' -- "$index")
-  # CAT-14: each listed version's SBOM, from its verified attestation (PUB-8).
+  # CAT-14: each listed version's SBOM, from its verified attestation (PUB-8);
+  # CAT-17: every version's Rekor log index, from its verified provenance
+  # attestation; a yanked version keeps it while its artifact exists.
   identity=https://github.com/$OWNER/registry/.github/workflows/release.yml@refs/heads/main
-  while read -r name version digest; do
+  echo '{}' >"$rekor"
+  while read -r name version digest yanked; do
+    if logindex=$(gh attestation verify "oci://ghcr.io/$OWNER/$name@$digest" --owner "$OWNER" --cert-identity "$identity" \
+      --format json --jq '.[0].attestation.bundle.verificationMaterial.tlogEntries[0].logIndex' 2>/dev/null) && [[ $logindex =~ ^[0-9]+$ ]]; then
+      jq --arg n "$name" --arg v "$version" --arg i "$logindex" '.[$n][$v] = $i' -- "$rekor" >"$work/rekor.tmp" && mv -- "$work/rekor.tmp" "$rekor"
+    fi
+    [[ $yanked == listed ]] || continue
     mkdir -p -- "$sboms/$name"
     gh attestation verify "oci://ghcr.io/$OWNER/$name@$digest" --owner "$OWNER" --cert-identity "$identity" \
       --predicate-type https://spdx.dev/Document/v2.3 --format json --jq '.[0].verificationResult.statement.predicate' \
       >"$sboms/$name/$version.spdx.json" 2>/dev/null || rm -f -- "$sboms/$name/$version.spdx.json"
   done < <(jq -r '.generators | to_entries[] | .key as $n | .value | to_entries[]
-    | select(.value.yanked == null) | "\($n) \(.key) \(.value.digest)"' -- "$index")
+    | "\($n) \(.key) \(.value.digest) \(if .value.yanked == null then "listed" else "yanked" end)"' -- "$index")
 fi
 if [[ -d $sboms ]]; then
   mkdir -p -- "$work/static/generators"
   cp -R -- "$sboms/." "$work/static/generators/"
 fi
 cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --out "$work/data/catalog.json"
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --out "$work/data/catalog.json"
 hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"

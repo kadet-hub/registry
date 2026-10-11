@@ -1246,6 +1246,20 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #50
 
+- CAT-17: Every version on a generator page MUST have a permalink
+  (`/generators/<name>/#v<version>`) that opens it, and MUST link the
+  Sigstore transparency log entry of its provenance attestation.
+
+  The catalog job reads the log index from the attestation it verifies
+  with `gh attestation verify`, so a link only appears for a verified
+  attestation. The entry lives in Sigstore's public, append-only Rekor
+  log, independent of this site and of GitHub, so it stays checkable when
+  a version is yanked or the catalog changes. Install and Verify sit in
+  the main column, with the verify command split into one flag per line.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #54
+
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
 in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
