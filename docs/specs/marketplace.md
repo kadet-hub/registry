@@ -1262,7 +1262,7 @@ remembered in the browser's `localStorage`.
   Install for a fully yanked one, are left out of the list.
 
   - Test: `catalog/test_catalog.py`
-  - Since: tbd
+  - Since: #56
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
