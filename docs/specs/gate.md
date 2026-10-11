@@ -672,7 +672,7 @@ review go into the review comment and do not fail the gate.
 
   - Test: `sandbox/test_tf_schema.py` (compare); manual: workflow run on
     a bump pull request
-  - Since: tbd
+  - Since: #80
 
 ## Review
 
