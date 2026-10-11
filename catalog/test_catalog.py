@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -129,11 +130,10 @@ class Site(unittest.TestCase):
         self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
         self.assertNotIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'a' * 64}", html)
         old_card = self.card("old")
-        self.assertIn('<span class="version">yanked</span>', old_card)
-        self.assertIn("no listed version", old_card)
+        self.assertIn('<p class="meta-line">no listed version, all yanked</p>', old_card)
 
     def test_owner_without_login_shows_the_user_id(self):
-        self.assertIn("<dd>@331675722</dd>", self.page())
+        self.assertIn("<dt>Maintainer</dt><dd>331675722</dd>", self.page())
 
     def test_values_are_escaped(self):
         for html in (self.page(), self.page("generators", "demo")):
@@ -242,7 +242,7 @@ class Site(unittest.TestCase):
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
         self.assertIn("No scan record", older)
         self.assertIn("No SBOM attestation for this version.", older)
-        self.assertIn("scanned 2026-10-10", self.page())
+        self.assertIn("<dt>Scanned</dt><dd>2026-10-10</dd>", self.page())
 
     def test_llms_txt(self):
         with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
@@ -311,15 +311,29 @@ class Site(unittest.TestCase):
     def test_cards_show_the_same_fields_in_the_same_order(self):
         for name in ("demo", "old"):
             card = self.card(name)
-            order = ['class="stretched"', 'class="version"', 'class="description"', 'class="built-for',
-                     ">Owners<", ">Thumbs up<", ">Repository stars<", ">Updated<", ">Scan<"]
+            order = ['class="stretched"', 'class="meta-line"', 'class="description"', 'class="built-for',
+                     "<dt>Maintainer</dt>", "<dt>Popularity</dt>", "thumbs up:", "repository stars:", "<dt>Scanned</dt>"]
             positions = [card.index(marker) for marker in order]
             self.assertEqual(positions, sorted(positions), name)
             self.assertNotIn("Apache-2.0", card)  # CAT-22: license only on the page
-            self.assertEqual(card.count("<a "), 1 + card.count('class="tag"'))
+            self.assertEqual(card.count("<a "), 1 + card.count('class="tag"') + card.count('class="fact-link"'))
         self.assertIn("Built for External Secrets Operator 2.11.0", self.card("demo"))
         self.assertIn("Built for: not recorded", self.card("old"))
-        self.assertIn("not scanned", self.card("old"))
+        self.assertIn("<dt>Scanned</dt><dd>not scanned</dd>", self.card("old"))
+        self.assertIn('<p class="meta-line">1.10.0 · <time datetime="2026-10-09T05:34:57Z">2026-10-09</time></p>', self.card("demo"))
+
+    def test_maintainer_links_to_the_profile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            site = os.path.join(tmp, "site")
+            shutil.copytree(os.path.join(HERE, "site"), site)
+            os.makedirs(os.path.join(site, "data"))
+            shutil.copy(os.path.join(HERE, "..", "policy", "tags.yaml"), os.path.join(site, "data", "tags.yaml"))
+            with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
+                json.dump(view(INDEX, OWNER, {"/user/331675722": {"login": "someone"}}.get), f)
+            subprocess.run(["hugo", "--quiet", "--source", site, "--destination", os.path.join(tmp, "out")], check=True)
+            with open(os.path.join(tmp, "out", "index.html"), encoding="utf-8") as f:
+                home = f.read()
+        self.assertIn('<dt>Maintainer</dt><dd><a class="fact-link" href="https://github.com/someone">someone</a></dd>', home)
 
     def test_request_a_feature_goes_to_the_source_repository(self):
         html = self.page("generators", "demo")

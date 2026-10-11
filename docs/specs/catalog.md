@@ -144,24 +144,27 @@ remembered in the browser's `localStorage`.
   - Since: #73
 
 - CAT-22: Every card MUST show the same fields in the same order: the
-  name as the only card-wide link with the latest version next to it, the
-  description clamped to two lines, what the version is built for or
-  "Built for: not recorded", the tags, and one row with owners, 👍 count,
-  repository stars, the date of the latest version and the scan date or
-  "not scanned".
+  name as the only card-wide link, below it the latest version and its
+  date, the description clamped to three lines, what the version is built
+  for or "Built for: not recorded", the tags, and labelled facts:
+  "Maintainer" (the owners, each linked to their profile), "Popularity"
+  (👍 count and repository stars) and "Scanned" (the scan date or "not
+  scanned").
 
   Users read the top left first and scan the first words of lines (NN/g);
   attributes that appear on some cards and not on others make a catalog
   look smaller and are hard to compare (Baymard), so missing values are
   stated instead of omitted. License and the note that stars are shared
   by several generators move to the generator page, where there is room
-  to explain them. The name link stretches over the card and the tag
-  links sit above it, the block-link pattern recommended by Heydon
+  to explain them. The version sits on its own line under the name, so it
+  is in the same place on every card whatever the length of the name.
+  Facts carry visible labels instead of bare icons. The name link
+  stretches over the card and the tag and maintainer links sit above it, the block-link pattern recommended by Heydon
   Pickering and Adrian Roselli; the focus ring is drawn when the name link
   has keyboard focus, not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73
+  - Since: #73, #81
 
 - CAT-15: The card and the version page MUST show what a version is built
   for, from the software and versions of the schemas QA-7 and QA-8
