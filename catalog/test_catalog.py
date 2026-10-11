@@ -222,13 +222,33 @@ class Site(unittest.TestCase):
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
         self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", older)
 
+    def test_tag_pages_feed_og_and_guides(self):
+        page = self.page("tags", "helm")
+        self.assertIn("Helm generators for Kapitan", page)
+        self.assertIn('data-name="demo"', page)  # the card partial
+        self.assertIn("No generator is tagged ci yet.", self.page("tags", "ci"))
+        with open(os.path.join(self.out, "index.xml"), encoding="utf-8") as f:
+            feed = f.read()
+        self.assertTrue(feed.startswith('<?xml version="1.0" encoding="utf-8"?>'))
+        __import__("xml.dom.minidom").dom.minidom.parseString(feed)
+        self.assertLess(feed.index("demo 1.10.0"), feed.index("old 0.1.0 (yanked)") if "old 0.1.0" in feed else len(feed))
+        self.assertIn("https://kadet-hub.org/generators/demo/#v1.10.0", feed)
+        for html in self.pages():
+            self.assertIn('<meta property="og:image" content="https://kadet-hub.org/og.png">', html)
+        self.assertTrue(os.path.isfile(os.path.join(self.out, "og.png")))
+        guides = self.page("guides")
+        for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators"):
+            self.assertIn(f"guides/{slug}/", guides)
+            self.page("guides", slug)
+
     def test_sort_keys(self):
         home = self.page()
         self.assertIn('<select id="sort">', home)
         self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-stars="0"', home)
 
     def test_seo(self):
-        for parts in ((), ("generators", "demo"), ("generators", "old"), ("tags",), ("glossary",)):
+        for parts in ((), ("generators", "demo"), ("generators", "old"), ("tags",), ("glossary",), ("tags", "helm"), ("tags", "observability"),
+                      ("guides",), ("guides", "writing-a-kapitan-generator"), ("guides", "supply-chain-security-for-kapitan-generators")):
             html = self.page(*parts)
             title = re.search(r"<title>([^<]*)</title>", html).group(1)
             desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)

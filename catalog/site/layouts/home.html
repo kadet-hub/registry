@@ -31,24 +31,7 @@
   </div>
   <ul class="cards">
   {{ range . }}
-    <li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}" data-tags="{{ delimit .tags " " }}" data-name="{{ .name }}" data-published="{{ with .latest }}{{ .published }}{{ end }}" data-stars="{{ .stars | default "0" }}">
-      <div class="card-head">
-        <span class="monogram hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
-        <div>
-          <h2><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></h2>
-          <p class="meta-line">{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</p>
-        </div>
-      </div>
-      <p class="description">{{ .description }}</p>
-      {{ with .latest }}{{ with .compatibility }}<p class="built-for">Built for {{ range $i, $c := . }}{{ if $i }} · {{ end }}{{ $c.software }} {{ $c.version }}{{ end }}</p>{{ end }}{{ end }}
-      {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/?tags=%s" . | relURL }}">{{ . }}</a>{{ end }}</p>{{ end }}
-      <dl class="facts">
-        <div><dt><svg class="icon" aria-label="License"><use href="#i-license"/></svg></dt><dd>{{ .license }}</dd></div>
-        <div><dt><span class="visually-hidden">Owners</span>@</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
-        {{ with .stars }}<div><dt><svg class="icon" aria-label="Stars"><use href="#i-star"/></svg></dt><dd>{{ . }}</dd></div>{{ end }}
-        <div><dt><svg class="icon" aria-label="Checks"><use href="#i-scan"/></svg></dt><dd>{{ with .latest }}{{ with .scan }}checked {{ substr .at 0 10 }}{{ else }}no scan record{{ end }}{{ end }}</dd></div>
-      </dl>
-    </li>
+    {{ partial "card.html" . }}
   {{ end }}
   </ul>
   <p id="empty" class="empty" hidden>No generator matches. <button type="button" id="reset" class="link">Show all</button> or <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">request one</a>.</p>

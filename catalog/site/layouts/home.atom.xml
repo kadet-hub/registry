@@ -1,0 +1,22 @@
+{{- /* CAT-18: one entry per published version, newest first. */ -}}
+{{- $entries := slice -}}
+{{- range site.Data.catalog.generators -}}{{ $g := . }}{{ range .versions }}{{ if .published }}{{ $entries = $entries | append (dict "g" $g "v" .) }}{{ end }}{{ end }}{{ end -}}
+{{ printf "<?xml version=\"1.0\" encoding=\"utf-8\"?>" | safeHTML }}
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>kadet-hub: new generator versions</title>
+  <subtitle>Kapitan generators, scanned, sandbox-compiled and published as attested OCI artifacts.</subtitle>
+  <link rel="self" href="{{ "index.xml" | absURL }}"/>
+  <link rel="alternate" href="{{ "/" | absURL }}"/>
+  <id>{{ "/" | absURL }}</id>
+  <updated>{{ with index (sort $entries "v.published" "desc") 0 }}{{ .v.published }}{{ else }}{{ now.UTC.Format "2006-01-02T15:04:05Z" }}{{ end }}</updated>
+  <author><name>kadet-hub</name></author>
+{{- range sort $entries "v.published" "desc" }}{{ $url := printf "%sgenerators/%s/#v%s" ("/" | absURL) .g.name .v.version }}
+  <entry>
+    <title>{{ .g.name }} {{ .v.version }}{{ with .v.yanked }} (yanked){{ end }}</title>
+    <link href="{{ $url }}"/>
+    <id>{{ $url }}</id>
+    <updated>{{ .v.published }}</updated>
+    <summary>{{ .g.description }}</summary>
+  </entry>
+{{- end }}
+</feed>
