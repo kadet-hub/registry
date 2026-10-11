@@ -139,9 +139,9 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .generator-head .facts dt::after { content: ":"; }
 .generator-head .facts dd { color: var(--text); }
 @media (max-width: 36rem) { .generator-head { flex-direction: column; } }
+.generator { max-width: 52rem; margin-inline: auto; }
 .generator-body { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 64rem) { .generator-body { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; } .side { position: sticky; top: 1rem; } }
-.readme-col, .side { display: grid; gap: 1.5rem; min-width: 0; }
+.toc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; }
 .panel { padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
 .panel h2 { margin: 0 0 .6rem; font-size: 1.1rem; }
 .panel p { margin: .5rem 0; }

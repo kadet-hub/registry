@@ -1255,8 +1255,8 @@ remembered in the browser's `localStorage`.
   with `gh attestation verify`, so a link only appears for a verified
   attestation. The entry lives in Sigstore's public, append-only Rekor
   log, independent of this site and of GitHub, so it stays checkable when
-  a version is yanked or the catalog changes. Install and Verify sit in
-  the main column, with the verify command split into one flag per line.
+  a version is yanked or the catalog changes. The verify command is split
+  into one flag per line.
 
   - Test: `catalog/test_catalog.py`
   - Since: #54
@@ -1275,6 +1275,19 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #55
+
+- CAT-19: A generator page MUST show its sections in one centered column
+  of equal width, in the order Install, Verify, Checks, Details, README,
+  Versions, and MUST open with an "On this page" list linking each
+  section that is present.
+
+  A side column made the panels different widths and pushed Checks and
+  Details below the README on narrow screens. The list replaces it as the
+  way to jump to a section; sections a generator does not have, such as
+  Install for a fully yanked one, are left out of the list.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #56
 
 - CAT-20: Each listed generator MUST have one discussion in the
   "Generators" category of the registry's GitHub Discussions, and its card
