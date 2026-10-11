@@ -1250,7 +1250,7 @@ remembered in the browser's `localStorage`.
   link the reference documents instead of repeating them.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #55
 
 The footer names the index serial the site was built from, and the
 version page's Verify section explains it: consumers set `index_serial`
