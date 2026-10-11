@@ -33,5 +33,6 @@ else
     | [.value | to_entries[] | select(.value.yanked == null)] | sort_by(.key | split(".") | map(tonumber)) | last
     | select(. != null) | "\($n) \(.value.digest)"' -- "$index")
 fi
+cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
 python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --out "$work/data/catalog.json"
 hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"

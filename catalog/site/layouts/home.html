@@ -16,8 +16,9 @@
       <input id="search" type="search" placeholder="Search {{ len . }} generators" autocomplete="off">
     </label>
     <div id="tags" class="tag-filter" role="group" aria-label="Filter by tag; a generator must have every selected tag">
-      {{ range ($all | uniq | sort) }}<button type="button" class="chip" data-tag="{{ . }}" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }} <span class="count"></span></button>{{ end }}
+      {{ range ($all | uniq | sort) }}{{ $n := len (where $gens "tags" "intersect" (slice .)) }}<button type="button" class="chip" data-tag="{{ . }}" aria-pressed="false"{{ with index site.Data.tags . }} title="{{ .means }}"{{ end }}><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }} <span class="count">({{ $n }})</span></button>{{ end }}
       <button type="button" id="clear" class="chip clear" hidden><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>Clear</button>
+      <a class="tags-help" href="{{ "/tags/" | relURL }}">What the tags mean</a>
     </div>
     <div class="toolbar">
       <p id="result" class="result" aria-live="polite"></p>

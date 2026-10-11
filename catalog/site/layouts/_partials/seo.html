@@ -3,6 +3,10 @@
 {{- $desc := "Find Kapitan generators that passed secret, malware and code scans and a sandboxed compile, published as attested OCI artifacts you pin by digest." -}}
 {{- $g := dict -}}
 {{- with .Params.generator }}{{ $g = index (where site.Data.catalog.generators "name" .) 0 }}{{ end -}}
+{{- if and (not .IsHome) (not .Params.generator) -}}
+  {{- $title = printf "%s · kadet-hub, a catalog of Kapitan generators" .Title -}}
+  {{- $desc = .Description -}}
+{{- end -}}
 {{- with $g -}}
   {{- $title = printf "%s · Kapitan generator · kadet-hub" .name -}}
   {{- if gt (len $title) 65 }}{{ $title = printf "%s · Kapitan generator" .name }}{{ end -}}

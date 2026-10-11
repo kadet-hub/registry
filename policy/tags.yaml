@@ -1,0 +1,57 @@
+# CAT-4, CAT-13: the manifest tags, what they mean and when to assign them.
+# The keys must equal the tags enum in manifest.schema.json. `evidence`
+# names what the gate can check in the manifest or the compiled output;
+# tags without it are checked in review against this text.
+kubernetes:
+  title: Kubernetes
+  means: Renders Kubernetes resources.
+  assign: The compiled output contains Kubernetes manifests (documents with apiVersion and kind).
+  not: The generator only renders files that end up in a Kubernetes cluster indirectly, such as a Dockerfile or Terraform for a managed cluster.
+  evidence: Kubernetes manifests in the compiled output
+helm:
+  title: Helm
+  means: Renders a Helm chart or builds on one.
+  assign: The manifest declares a chart under `charts` or runs `helm template`.
+  not: The output merely resembles a chart's resources without using the chart, or the generator only writes a values file for someone else to install.
+  evidence: a chart in the manifest or `helm template` in `binaries`
+operators:
+  title: Operators
+  means: Configures software that runs as a Kubernetes operator, through its custom resources.
+  assign: The main output are custom resources of an operator (ExternalSecret, ScaledObject, Certificate, ServiceMonitor) or the operator's own installation.
+  not: The output contains CustomResourceDefinitions only as a side effect, or only plain built-in resources.
+terraform:
+  title: Terraform
+  means: Renders Terraform configuration.
+  assign: The compiled output contains Terraform JSON (`*.tf.json`).
+  not: The generator renders Kubernetes resources that a Terraform provider later applies.
+  evidence: Terraform JSON in the compiled output
+cloud:
+  title: Cloud
+  means: Manages resources of a public cloud provider.
+  assign: The output creates or configures resources of AWS, Azure, Google Cloud or a similar provider, including through their Kubernetes controllers.
+  not: The output only runs on a cloud-hosted cluster without touching provider resources.
+observability:
+  title: Observability
+  means: Metrics, logs, traces, dashboards or alerting.
+  assign: The main purpose is to collect, store, visualise or alert on telemetry (Prometheus, Grafana, Loki, OpenTelemetry).
+  not: The generator adds a ServiceMonitor or annotations to an otherwise unrelated workload.
+security:
+  title: Security
+  means: Secrets, identity, policy, certificates or scanning.
+  assign: The main purpose is a security function, such as secret delivery, certificates, admission policy or workload identity.
+  not: The generator only follows good security practice in its own output, such as non-root containers.
+networking:
+  title: Networking
+  means: Traffic between and into workloads.
+  assign: The main purpose is ingress, gateways, service mesh, DNS, network policy or CNI configuration.
+  not: The generator creates a Service or an Ingress as part of a larger application.
+database:
+  title: Database
+  means: Databases, caches and message brokers.
+  assign: The main purpose is to run or configure a data store or broker (PostgreSQL, Redis, RabbitMQ, Kafka).
+  not: The generator only passes a connection string to an application.
+ci:
+  title: CI/CD
+  means: Build and delivery pipelines.
+  assign: The output configures a CI or CD system (pipelines, runners, Argo CD applications, Tekton).
+  not: The generator is merely built or tested in CI.

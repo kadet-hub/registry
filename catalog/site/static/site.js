@@ -67,7 +67,6 @@ if (search) {
       const next = new Set(selected); next.add(b.dataset.tag);
       const count = cards.filter((c) => matches(c, q, next)).length;
       b.setAttribute("aria-pressed", String(on));
-      b.querySelector(".count").textContent = count;
       b.disabled = !on && count === 0;
     }
     clear.hidden = selected.size === 0;

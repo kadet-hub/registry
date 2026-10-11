@@ -165,13 +165,38 @@ class Site(unittest.TestCase):
         for form in ("generator-report", "generator-request"):
             self.assertTrue(os.path.isfile(os.path.join(HERE, "..", ".github", "ISSUE_TEMPLATE", f"{form}.yml")))
 
+    def test_tags_page_and_glossary(self):
+        with open(os.path.join(HERE, "..", "policy", "tags.yaml"), encoding="utf-8") as f:
+            tags, tag = {}, None  # top-level keys and their fields; no PyYAML on the runner's python
+            for line in f:
+                if m := re.match(r"^([a-z]+):$", line):
+                    tag = tags.setdefault(m.group(1), set())
+                elif (m := re.match(r"^  ([a-z]+): \S", line)) and tag is not None:
+                    tag.add(m.group(1))
+        with open(os.path.join(HERE, "..", "policy", "manifest.schema.json"), encoding="utf-8") as f:
+            enum = json.load(f)["properties"]["tags"]["items"]["enum"]
+        self.assertEqual(sorted(tags), sorted(enum))
+        for name, fields in tags.items():
+            self.assertTrue({"title", "means", "assign", "not"} <= fields, name)
+        page = self.page("tags")
+        for tag in enum:
+            self.assertIn(f'id="{tag}"', page)
+        self.assertIn('href="../?tags=helm">1 generator tagged helm</a>', page)
+        self.assertIn("No generator tagged ci yet.", page)
+        home = self.page()
+        self.assertIn('data-tag="helm" aria-pressed="false" title="Renders a Helm chart or builds on one."><svg class="icon" aria-hidden="true"><use href="#i-tag-helm"/></svg>helm <span class="count">(1)</span>', home)
+        self.assertIn('href="./tags/"', home)
+        glossary = self.page("glossary")
+        self.assertIn('href="https://kapitan.dev/"', glossary)
+        self.assertIn('id="index"', glossary)
+
     def test_sort_keys(self):
         home = self.page()
         self.assertIn('<select id="sort">', home)
         self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-stars="0"', home)
 
     def test_seo(self):
-        for parts in ((), ("generators", "demo"), ("generators", "old")):
+        for parts in ((), ("generators", "demo"), ("generators", "old"), ("tags",), ("glossary",)):
             html = self.page(*parts)
             title = re.search(r"<title>([^<]*)</title>", html).group(1)
             desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
