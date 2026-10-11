@@ -292,6 +292,8 @@ class Site(unittest.TestCase):
     def test_one_column_with_table_of_contents(self):
         html = self.page("generators", "demo")
         self.assertNotIn("<aside", html)
+        self.assertIn('<nav class="toc" aria-labelledby="toc">\n<details open>', html)  # open without JavaScript
+        self.assertLess(html.index('class="toc"'), html.index('class="generator-body"'))  # beside the column, not in it
         start = html.index('id="toc"')
         toc = html[start:html.index("</nav>", start)]
         links = ["install", "verify", "checks", "details", "readme", "versions"]
