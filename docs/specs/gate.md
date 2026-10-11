@@ -590,6 +590,51 @@ review go into the review comment and do not fail the gate.
     workflow job `gate-selftest` (`fail-schema-invalid`)
   - Since: #50
 
+- QA-8: When the manifest names a `schemas` directory that holds a
+  Terraform provider schema, every resource and data source in the
+  compiled `*.tf.json` of that provider MUST validate against it, and the
+  result MUST name the provider source and version.
+
+  QA-7 covers only documents with `apiVersion` and `kind`, so Terraform
+  output is not checked today; the terraform generators (kadet-hub/generators#3)
+  pass the gate with only the QA-6 file check. Their authors ran
+  `terraform validate` locally, which the gate cannot reproduce.
+
+  The schema is the output of `terraform providers schema -json` for the
+  provider version the generator pins in `required_providers`, reduced to
+  the resource and data source types the generator emits, stored as
+  `schemas/terraform/<source with / as _>_<version>.json`, for example
+  `schemas/terraform/hashicorp_aws_6.68.0.json`. The full schema exceeds
+  the 1 MiB file limit (SEC-5): for `hashicorp/aws` 6.68.0 it is 19.7 MB,
+  the extract of the 15 resource types terraform-aws emits 56 KB (both
+  measured with Terraform 1.16.5). `sources.yaml` gets one entry per provider,
+  keyed `terraform/<source>`, with `software`, `version`, `source` (the
+  registry page of that version) and the Terraform version that produced
+  the file.
+
+  The check walks each `resource` and `data` block and reports, as QA-7
+  does: a type missing from the schema, an unknown argument or nested
+  block, a missing required argument, a block nested more often than
+  `max_items` allows, and a literal whose type does not match the
+  attribute type. Values that are interpolations (`${...}`) are not
+  type-checked. It runs on the first backend's output in the sandbox
+  image without network and without Terraform or provider binaries.
+
+  Running `terraform validate` in the gate was considered. It needs the
+  provider binary, which means a download per provider version and
+  executing a third-party plugin next to submitted code; the schema
+  extract gives the same argument-level check without either. What it does
+  not cover is provider-side validation (value ranges, regular
+  expressions, conflicts between arguments); that stays with the author's
+  `terraform validate` and with plan time.
+
+  The catalog's "Built for" (CAT-15) then lists the provider, for example
+  "hashicorp/aws 6.68.0", from the same result.
+
+  - Test: tbd (planned: `sandbox/test_tf_schema_check.py`, a
+    `fail-tf-schema-invalid` sample in `gate-selftest`)
+  - Since: not implemented
+
 ## Review
 
 The gate posts one comment: results, the krab result, REG-3 flags,
