@@ -91,6 +91,8 @@ class Server:
         return json.loads(body)
 
     def stop(self):
+        if self.conn is not None:
+            self.conn.close()
         for p in self.procs:
             p.kill()
             p.wait()
