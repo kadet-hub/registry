@@ -1,6 +1,0 @@
-source:
-  repo: https://github.com/kadet-hub/generators.git
-  path: calico-resources
-  tag: calico-resources-v1.0.0
-  sha: dccb03cf01fd06f12e450d884b7e415e8aa2e959
-owners: [3042152]
