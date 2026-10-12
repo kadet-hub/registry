@@ -570,6 +570,13 @@ review go into the review comment and do not fail the gate.
     source: https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases
   ```
 
+  An entry keyed `<group>/<version>` applies to that version of the
+  group and takes precedence over the `<group>` entry. Talos machine
+  config documents carry `apiVersion: v1alpha1` without a group, so their
+  schemas sit under `core/` next to Kubernetes ones; `core/v1alpha1`
+  names Talos, `core` names Kubernetes, and each shows with its own
+  source and licence.
+
   The check runs on the first backend's output in the sandbox image
   without network, like SEC-12 and QA-6. A document of a group without
   schemas is a `review:` line, a group without a `sources.yaml` entry is
