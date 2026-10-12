@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: k3d
+  tag: k3d-v1.0.0
+  sha: 313f1ca5e57679c11b891880f2cf10687832e4fc
+owners: [3042152]
