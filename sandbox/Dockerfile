@@ -11,15 +11,24 @@ ADD --checksum=sha256:${CONFTEST_SHA256} https://github.com/open-policy-agent/co
 ARG KRAB_VERSION=2.0.0-alpha.5
 ARG KRAB_SHA256=c57cb602e6c89174894708e00b9d4373e67f08582fdd6f7b95517a6658ab9c85
 ADD --checksum=sha256:${KRAB_SHA256} https://github.com/kapicorp/krab/releases/download/v${KRAB_VERSION}/krab-${KRAB_VERSION}-x86_64-unknown-linux-gnu.tar.gz /tmp/krab.tgz
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+ARG KUBERNETES_VERSION=v1.37.1
+ARG KUBE_APISERVER_SHA256=de9b1b43c10143f448408b3aaf15f44fd5248b97a56301417a1fe2f1fc47a691
+ADD --checksum=sha256:${KUBE_APISERVER_SHA256} --chmod=755 https://dl.k8s.io/release/${KUBERNETES_VERSION}/bin/linux/amd64/kube-apiserver /usr/local/bin/kube-apiserver
+# renovate: datasource=github-releases depName=etcd-io/etcd
+ARG ETCD_VERSION=v3.7.2
+ARG ETCD_SHA256=3a3679bc51a4ee9d30bccea1da7cd4fe62c6fc1d2ca1255068d2c53bf3026135
+ADD --checksum=sha256:${ETCD_SHA256} https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz /tmp/etcd.tgz
 COPY requirements.txt /tmp/requirements.txt
 COPY krab/requirements.txt /tmp/krab-requirements.txt
 RUN tar -xzf /tmp/helm.tgz -C /usr/local/bin --strip-components=1 linux-amd64/helm \
  && tar -xzf /tmp/conftest.tgz -C /usr/local/bin conftest \
+ && tar -xzf /tmp/etcd.tgz -C /usr/local/bin --strip-components=1 "etcd-${ETCD_VERSION}-linux-amd64/etcd" \
  && pip install --no-cache-dir --require-hashes --no-deps -r /tmp/requirements.txt \
  && tar -xzf /tmp/krab.tgz -C /usr/local/bin --strip-components=1 "krab-${KRAB_VERSION}-x86_64-unknown-linux-gnu/krab" \
  && python -m venv /opt/krab-python \
  && /opt/krab-python/bin/pip install --no-cache-dir --require-hashes --no-deps -r /tmp/krab-requirements.txt \
- && rm /tmp/helm.tgz /tmp/conftest.tgz /tmp/krab.tgz /tmp/requirements.txt /tmp/krab-requirements.txt \
+ && rm /tmp/helm.tgz /tmp/conftest.tgz /tmp/etcd.tgz /tmp/krab.tgz /tmp/requirements.txt /tmp/krab-requirements.txt \
  && useradd -m -u 10001 gate
 ENV KRAB_PYTHON=/opt/krab-python/bin/python KRAB_NO_DAEMON=1 \
     XDG_CACHE_HOME=/tmp/xdg/cache XDG_STATE_HOME=/tmp/xdg/state XDG_RUNTIME_DIR=/tmp/xdg/run \

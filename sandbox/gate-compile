@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile a generator's fixture project in the gVisor sandbox and judge the
-# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, QA-4, QA-6, QA-7).
+# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, QA-4, QA-6, QA-7, QA-10).
 #
 # Usage: gate-compile <generator dir> <name> [<charts dir>]
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
@@ -94,6 +94,14 @@ schema_check() {
     "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
     python -I /base/sandbox/schema_check.py --schemas /schemas --out /out --result /result/result.json || status=1
 }
+# QA-10: built-in kinds on a throwaway kube-apiserver, same isolation; its etcd lives in /tmp.
+apiserver_check() {
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" --tmpfs /tmp:size=512m \
+    --mount "type=bind,src=$root,dst=/base,readonly" \
+    --mount "type=bind,src=$1,dst=/out,readonly" \
+    "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
+    python -I /base/sandbox/apiserver_check.py --out /out || status=1
+}
 # compile <out dir> [run options]: compile into <out dir> on $backend.
 compile() {
   local out=$1
@@ -118,6 +126,7 @@ for backend in "${backends[@]}"; do
   if [[ $backend == "${backends[0]}" ]]; then
     tags "$work/out-$backend"
     schema_check "$work/out-$backend"
+    apiserver_check "$work/out-$backend"
     if [[ -n ${SCHEMA_RESULT:-} ]]; then cp -- "$work/schema-result/result.json" "$SCHEMA_RESULT"; fi
   fi
 done

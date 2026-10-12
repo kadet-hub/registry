@@ -686,6 +686,101 @@ review go into the review comment and do not fail the gate.
     a bump pull request
   - Since: #80
 
+- QA-10: Every document of a built-in Kubernetes kind in the first
+  backend's compiled output MUST be accepted by a real kube-apiserver of
+  the pinned version on create with `dryRun=All`. Each rejection is a
+  finding.
+
+  QA-7 checks the output against JSON Schemas, which describe types and
+  required fields but not the API server's validation and decoding code.
+  A generator of about 4000 lines passed QA-7, and a Kubernetes 1.37 API
+  server rejected every workload it rendered: probes without a handler, a
+  Service without ports, Secret `data` that was not base64.
+
+  The sandbox image carries kube-apiserver and etcd, pinned in
+  `sandbox/Dockerfile` as `KUBERNETES_VERSION` (v1.37.1, from dl.k8s.io)
+  and `ETCD_VERSION` (v3.7.2, from the etcd GitHub release), each checked
+  against the sha256 its publisher lists. Kubernetes 1.37.1 names etcd
+  3.7.0 in `build/dependencies.yaml`; 3.7.2 is the newest patch of that
+  minor. Renovate proposes both versions independently, and the reviewer
+  of a bump updates the checksums and keeps etcd on the minor the
+  Kubernetes release names. envtest from kubernetes-sigs/controller-tools
+  was considered: one archive instead of two, but it publishes 1.37.0 only
+  and ships kubectl, which the check does not need.
+
+  `sandbox/apiserver_check.py` starts etcd and kube-apiserver on loopback
+  in the sandbox image without network, like SEC-12, QA-6 and QA-7, with
+  their state in a 512 MiB tmpfs at `/tmp`. The client is Python's
+  `http.client`, authenticated with a random static token as a member of
+  `system:masters` under `AlwaysAllow` authorization, so RBAC escalation
+  checks pass. Each document is POSTed to its collection with
+  `dryRun=All&fieldValidation=Strict`, the request `kubectl create
+  --dry-run=server` sends with kubectl's default `--validate=strict`, so
+  unknown fields are rejected as well. An output without any document
+  with `apiVersion` and `kind` starts no server.
+
+  A kind is built in when the server, which runs without CRDs or
+  aggregated APIs, serves it in some version; discovery at the start of
+  the check decides. That covers the core group and the `*.k8s.io` groups
+  kube-apiserver serves itself, including CustomResourceDefinitions and
+  APIServices. Custom resources are skipped; QA-7 covers them when the
+  generator ships their schemas. A built-in kind in a version the server
+  no longer serves, such as `batch/v1beta1` CronJob, is a finding. A kind
+  the server does not serve in any version is skipped: removed kinds such
+  as `policy/v1beta1` PodSecurityPolicy and `extensions/v1beta1` Ingress,
+  client-side kinds such as `v1` Config and `v1` List, and Talos machine
+  config with `apiVersion: v1alpha1`.
+
+  Nothing of the output is persisted, so admission that looks up other
+  objects would reject references the output itself satisfies.
+  Namespaces are therefore created for real, without labels, before the
+  first object in them: NamespaceLifecycle and PodSecurity look them up,
+  and PodSecurity admits everything in an unlabelled namespace. The
+  ServiceAccount, Priority and RuntimeClass plugins are disabled; with
+  1.37.1 each rejects a Pod whose service account, priority class or
+  runtime class does not exist in the server. A `409 AlreadyExists`, for
+  objects the server creates itself such as `kube-system` or
+  `cluster-admin`, counts as accepted, because the server validates before
+  it looks for an existing object. The server runs with
+  `--allow-privileged`, as kubeadm configures it; without it every
+  privileged container is rejected. Service IPs come from `10.96.0.0/12`
+  and `fd00:10:96::/108`, the kubeadm IPv4 default plus an IPv6 range, so
+  a fixed `clusterIP` outside them is a finding, as on a cluster with
+  these ranges.
+
+  A finding reads `QA-10: <file>: <kind> <name>: <message>` with the
+  server's message cut at 1000 characters. The result line reads `QA-10:
+  validated against kube-apiserver v1.37.1: <n> built-in documents, <m>
+  skipped`. A server that is not ready within 90 seconds fails the gate
+  with the last ten lines of its log (GI-7).
+
+  The release build job repeats the gate compile, and QA-10 with it, for
+  versions not yet published (CMP-4); published versions are not compiled
+  again, so a later Kubernetes bump applies to versions published after
+  it. On 2026-10-12 all 30 listed versions were published. Compiled as
+  `release/build-all` fetches them, all 30 passed QA-10: 13 documents of
+  built-in kinds in prometheus-operator 1.1.0 (9), rabbitmq 1.0.0 (3) and
+  talos 1.0.0 (1) were accepted; the other 27 render only custom
+  resources or no Kubernetes documents. No listed version is affected.
+
+  Measured on 2026-10-12 on a 24-core workstation without gVisor: the
+  check took 2.9 to 4.3 s per gate compile on outputs with Kubernetes
+  documents and 0.8 to 0.9 s on outputs without, over the 30 listed
+  versions. On the `ubuntu-24.04` runner of #154, the unit test that
+  starts the server and sends 13 documents took 2.4 s; the
+  `gate-selftest` step took 1341 s, within the 843 to 1425 s of the ten
+  runs before it, so its total does not resolve the check's share. The
+  image's unpacked root filesystem grew from 599.7 MB to
+  720.6 MB (kube-apiserver 95.9 MB, etcd 24.9 MB), its layers compressed
+  with `docker save | gzip -6` from 230.9 MB to 292.0 MB, which includes
+  the etcd archive that stays in its `ADD` layer. The consumer sandbox
+  (CON-1) uses the same image. Generator code that starts either binary in
+  the compile sandbox fails SEC-10 like any undeclared program.
+
+  - Test: `sandbox/test_apiserver_check.py`; workflow job `gate-selftest`
+    (`fail-service-without-ports`)
+  - Since: #154
+
 ## Review
 
 The gate posts one comment: results, the krab result, REG-3 flags,
