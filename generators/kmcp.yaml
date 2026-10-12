@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: kmcp
+  tag: kmcp-v1.0.0
+  sha: ca99da41af01d25182ca2c036625b32c62701a0b
+owners: [3042152]
