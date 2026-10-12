@@ -341,9 +341,9 @@ index is refused (CON-2).
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
   `terraform`, `cloud`, `observability`, `security`, `networking`,
-  `database`, `ci`, at most five per manifest.
+  `database`, `ci`, `clusters`, at most five per manifest.
   - Test: `gate/test_check_entry.py` (`Manifest`)
-  - Since: #16
+  - Since: #16, #133
 
 - CAT-13: `policy/tags.yaml` MUST define every tag of the enum, with its
   meaning and when to assign it and when not; the site MUST render it at
