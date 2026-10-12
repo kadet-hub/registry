@@ -55,3 +55,8 @@ ci:
   means: Build and delivery pipelines.
   assign: The output configures a CI or CD system (pipelines, runners, Argo CD applications, Tekton).
   not: The generator is merely built or tested in CI.
+clusters:
+  title: Clusters
+  means: Creates or bootstraps Kubernetes clusters.
+  assign: The output is the configuration a cluster tool reads to create or join nodes (talosctl machine configs, kind or k3d cluster configs, RKE2 or k3s config.yaml).
+  not: The generator configures workloads or add-ons inside an existing cluster, or provisions the underlying machines only.
