@@ -218,7 +218,7 @@ remembered in the browser's `localStorage`.
   software and version with different sources; the first source is linked.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #50
+  - Since: #50, #132
 
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
