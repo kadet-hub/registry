@@ -49,6 +49,15 @@ class SchemaCheck(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertIn("QA-7: a/cm.yml: ConfigMap log/value: ", findings[0])
 
+    def test_group_version_entry_takes_precedence(self):
+        talos = {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}}}
+        sources = SOURCES + "core/v1alpha1:\n  software: Talos\n  version: 1.14.2\n  source: https://example.org/talos\n"
+        output = {"a/cm.yml": "apiVersion: v1\nkind: ConfigMap\ndata: {}\n---\napiVersion: v1alpha1\nkind: HostnameConfig\nname: n1\n"}
+        findings, lines, result = self.run_check(output, sources=sources, schemas={"schemas/core/hostnameconfig_v1alpha1.json": talos})
+        self.assertEqual(findings, [])
+        self.assertEqual([r["software"] for r in result], ["Kubernetes", "Talos"])
+        self.assertIn("QA-7: validated against Talos 1.14.2", lines)
+
     def test_kind_without_schema_is_review(self):
         findings, lines, result = self.run_check({"a/s.yml": "apiVersion: apps/v1\nkind: Deployment\n---\napiVersion: apps/v1\nkind: Deployment\n"})
         self.assertEqual((findings, result), ([], []))
