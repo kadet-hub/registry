@@ -8,3 +8,4 @@ kadet-hub
 marketplace
 registry
 official
+calico-resources
