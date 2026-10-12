@@ -213,8 +213,12 @@ remembered in the browser's `localStorage`.
   `compatibility`, like the krab result, so only versions published after
   this requirement carry it.
 
+  Each software and version is shown once. Several schema groups of one
+  release, such as linkerd.io and policy.linkerd.io, record the same
+  software and version with different sources; the first source is linked.
+
   - Test: `catalog/test_catalog.py`
-  - Since: #50
+  - Since: #50, #132
 
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
