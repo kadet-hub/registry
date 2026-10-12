@@ -95,6 +95,12 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
         ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
                         rekor=(rekor or {}).get(name, {}).get(v))
                    for v, r in sorted(versions.items(), key=lambda kv: semver(kv[0]), reverse=True)]
+        for r in ordered:  # CAT-15: one entry per software and version, the first source wins
+            first = {}
+            for c in r.get("compatibility") or []:
+                first.setdefault((c["software"], c["version"]), c)
+            if first:
+                r["compatibility"] = list(first.values())
         latest = next((r for r in ordered if not r.get("yanked")), None)
         shown = latest or ordered[0]
         repo = shown["source"]["repo"]
