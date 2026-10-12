@@ -600,7 +600,7 @@ review go into the review comment and do not fail the gate.
 
   - Test: `sandbox/test_schema_check.py`, `gate/test_schema_diff.py`;
     workflow job `gate-selftest` (`fail-schema-invalid`)
-  - Since: #50, #110
+  - Since: #50, #110, #139
 
 - QA-8: When the manifest names a `schemas` directory that holds a
   Terraform provider schema, every provider block, resource and data
