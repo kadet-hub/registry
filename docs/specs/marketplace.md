@@ -321,6 +321,7 @@ coverage is named at each:
 | `policy/licenses.txt` | QA-2 |
 | `policy/ruff.toml` | QA-3 |
 | `sandbox/schema_check.py`, `sandbox/tf_schema.py` | QA-7, QA-8 |
+| `sandbox/apiserver_check.py` | QA-10 |
 | `.github/workflows/tf-schema-verify.yml`, `gate/tf-schema-verify` | QA-9 |
 | `sandbox/` | SEC-9 to SEC-12: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
@@ -347,6 +348,7 @@ coverage is named at each:
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
-ClamAV, conftest, oras, helm, gh, zizmor, actionlint, Hugo) are pinned in
+ClamAV, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
+Hugo) are pinned in
 `sandbox/Dockerfile`, the requirements files, `.github/actions/` and
 `sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).
