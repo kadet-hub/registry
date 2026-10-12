@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: rook-ceph
+  tag: rook-ceph-v1.0.0
+  sha: 7a038f33c6f1db027e03b1c2be3ddfecac00b9b3
+owners: [3042152]
