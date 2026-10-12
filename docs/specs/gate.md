@@ -766,7 +766,11 @@ review go into the review comment and do not fail the gate.
   Measured on 2026-10-12 on a 24-core workstation without gVisor: the
   check took 2.9 to 4.3 s per gate compile on outputs with Kubernetes
   documents and 0.8 to 0.9 s on outputs without, over the 30 listed
-  versions. The image's unpacked root filesystem grew from 599.7 MB to
+  versions. On the `ubuntu-24.04` runner of #154, the unit test that
+  starts the server and sends 13 documents took 2.4 s; the
+  `gate-selftest` step took 1341 s, within the 843 to 1425 s of the ten
+  runs before it, so its total does not resolve the check's share. The
+  image's unpacked root filesystem grew from 599.7 MB to
   720.6 MB (kube-apiserver 95.9 MB, etcd 24.9 MB), its layers compressed
   with `docker save | gzip -6` from 230.9 MB to 292.0 MB, which includes
   the etcd archive that stays in its `ADD` layer. The consumer sandbox
