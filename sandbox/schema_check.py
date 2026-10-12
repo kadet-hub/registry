@@ -60,6 +60,9 @@ def check(schemas, out):
             continue
         for doc in documents(os.path.join(out, rel)):
             group, path = schema_path(schemas, doc["apiVersion"], doc["kind"])
+            versioned = f"{group}/{doc['apiVersion'].rpartition('/')[2]}"
+            if isinstance(sources.get(versioned), dict):
+                group = versioned
             if not os.path.isfile(path):
                 if (doc["apiVersion"], doc["kind"]) not in missing:
                     missing.add((doc["apiVersion"], doc["kind"]))
