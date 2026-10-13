@@ -378,4 +378,4 @@ index is refused (CON-2).
   expects, a local check and `AGENTS.md` for coding agents.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #18, this change
+  - Since: #18, #158
