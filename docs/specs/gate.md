@@ -950,6 +950,12 @@ review go into the review comment and do not fail the gate.
   versions as they are, without CRD files, the run took a median 0.04 s
   longer than QA-10 alone, and its QA-10 lines did not change.
 
+  On the `ubuntu-24.04` runner of #170, under gVisor, the `gate-selftest`
+  step took 1630 s against 1614 s in the last run of #159. The 45 samples
+  both runs share took a median 0.4 s less each, `fail-cr-cel` added
+  38.4 s, and the unit tests of `sandbox/test_apiserver_check.py` took
+  9.2 s instead of 2.4 s.
+
   The release build job repeats the gate compile, and QA-11 with it, for
   versions not yet published (CMP-4); published versions are not compiled
   again. The listed versions ship no CRD files, so QA-11 skips their
@@ -957,10 +963,10 @@ review go into the review comment and do not fail the gate.
   above shows that none of those custom resources would be rejected. Over
   the 35 versions measured above with their own `schemas` directories,
   the check found nothing and printed 58 `review: QA-11` lines for 30 of
-  them. The 1.0.1 versions `main` listed after that, none with CRD files,
-  pass the whole gate compile of #170 with review lines of the same kind:
-  argocd, certmanager, cilium, grafana, ironcore, keycloak, kmcp, kserve,
-  kubevirt, linkerd and loki. No listed version is affected.
+  them. The versions `main` listed after that are bumps built from
+  kadet-hub/generators 9166cb3, which has no CRD files; the 22 of them on
+  `main` at cb64712 pass the whole gate compile of #170 with review lines
+  of the same kind. No listed version is affected.
 
   Evaluating the CEL rules in the JSON Schemas within QA-7 with a Python
   CEL implementation was considered. It adds a dependency, lacks the
