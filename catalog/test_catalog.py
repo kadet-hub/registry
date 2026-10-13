@@ -282,6 +282,7 @@ class Site(unittest.TestCase):
         for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators"):
             self.assertIn(f"guides/{slug}/", guides)
             self.page("guides", slug)
+        self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
 
     def test_version_permalinks_and_transparency_log(self):
         html = self.page("generators", "demo")

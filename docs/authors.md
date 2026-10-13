@@ -114,6 +114,11 @@ The Python code has to pass `ruff check` with
 [`policy/ruff.toml`](../policy/ruff.toml): syntax errors and pyflakes
 findings, no style rules; `noqa` comments do not count.
 
+What Kapitan passes to `main()` and does with its return value, the
+inventory and naming conventions, and the gate rules for the code are
+collected in the
+[generator contract](https://kadet-hub.org/guides/writing-a-kapitan-generator/#generator-contract).
+
 Tag the commit with a semver, optionally prefixed for repositories with
 several generators (`v1.4.0`, `argocd-v1.4.0`).
 

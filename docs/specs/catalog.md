@@ -259,6 +259,25 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #55
 
+- CAT-24: The guide "Writing a Kapitan generator" MUST have a section
+  "Generator contract" at `#generator-contract` that states what `main()`
+  receives and returns, how a target wires a generator, and the
+  conventions for the inventory key, output file names and the
+  precedence of defaults, `spec` and flat keys, and that links the gate
+  requirements on imports, programs, network, determinism, output and
+  schemas.
+
+  Upstream has asked for this contract since 2023
+  ([kapicorp/kapitan#975](https://github.com/kapicorp/kapitan/issues/975));
+  the answer there links the anchor, so it stays stable like the URLs of
+  CAT-5. The Kapitan behaviour the section states is that of the pinned
+  0.36.3 (`kapitan/inputs/kadet.py`). The conventions are those of
+  kadet-hub/generators, which the gate does not check. Gate rules are
+  linked to their requirement, not restated, as CAT-18 has the guides do.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #157
+
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
   page" list linking each section that is present, which marks the section
