@@ -164,7 +164,7 @@ cover none of the changed files.
   EICAR test file. Samples that cannot live in this repository (token,
   EICAR, collisions, symlink) are generated at test time. Check: workflow
   job `gate-selftest` over `tests/samples/`.
-- AC-2 (CMP-1, CMP-2, QA-1 to QA-5, SEC-9, SEC-10): the benign samples pass,
+- AC-2 (CMP-1, CMP-2, CMP-5, QA-1 to QA-5, SEC-9, SEC-10): the benign samples pass,
   including one that wraps `helm template` with a declared chart and one
   compiled on `reclass-rs` and `omegaconf` that calls `getattr` with a
   computed name (flagged for review, not failed). Check: `gate-selftest`
@@ -217,11 +217,13 @@ cover none of the changed files.
 - AC-7 (SEC-15, SEC-16): moving a tag of a listed sample repository produces
   an issue on the next scheduled run. Check: manual: scheduled run in a test
   organization.
-- AC-8 (SEC-11, SEC-12, CMP-2): samples that copy a decoy value into a
-  ConfigMap, emit an undeclared `cluster-admin` binding, emit a `.tf.json`
-  with a `local-exec` provisioner, and change output when `CI` is set each
-  fail, and so does a target that produces no file; a sample that emits a
-  `hostPath` and declares `host-path` passes. Check: `gate-selftest`.
+- AC-8 (SEC-11, SEC-12, CMP-2, CMP-5): samples that copy a decoy value into
+  a ConfigMap, emit an undeclared `cluster-admin` binding, emit a `.tf.json`
+  with a `local-exec` provisioner, change output when `CI` is set, and read
+  an optional key through `inventory(lazy=True)`, which fails under
+  `--cache`, each fail, and so does a target that produces no file; a
+  sample that emits a `hostPath` and declares `host-path` passes. Check:
+  `gate-selftest`.
 - AC-9 (GI-1, GI-2, GI-5, GI-10): a fork pull request that edits the gate
   workflow, edits `policy/`, or adds a workflow reporting a check named like
   the gate cannot make the pull request mergeable, and no workflow uses a

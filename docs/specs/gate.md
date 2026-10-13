@@ -487,6 +487,72 @@ review go into the review comment and do not fail the gate.
   - Test: workflow job `gate-selftest` (AC-5); manual: fork rehearsal (2026-10-09)
   - Since: #24
 
+- CMP-5: The fixture project MUST compile to identical output in a further
+  run with Kapitan's `--cache` on every backend in `inventory_backends`. A
+  difference MUST name the first differing path.
+
+  Users turn the compile cache on because compiles are slow
+  (kapicorp/kapitan#839), and kadet generators break under it.
+  kapicorp/generators failed with `ModuleNotFoundError` on a cached
+  recompile (kapicorp/kapitan#1405). With Kapitan 0.36.3,
+  `inventory(lazy=True)` returns a Dict without default boxing once
+  `--cache` is set, because the cache key reads the inventory before the
+  module runs (kapicorp/kapitan#1620); a generator that looks up optional
+  keys lazily then fails with `BoxKeyError`.
+
+  Kapitan keeps the cache in `$XDG_CACHE_HOME/kapitan`, which the sandbox
+  image points into the per-run `/tmp` tmpfs (SEC-9), so the run starts
+  with an empty cache. It computes the cache key of every kadet input and
+  pickles each result into the cache, which covers #1620's lazy inventory
+  and output that does not pickle. The only other cache holds kadet
+  `HelmChart` renders, which SEC-3 does not let a generator import.
+
+  The run does not cover a cache hit, which needs a second run on the same
+  cache. In 0.36.3 a hit whose pickle names a missing kadet module counts
+  as a miss and is recomputed (`kapitan/inputs/cache.py`), so #1405 no
+  longer fails a compile. Covering hits would need a cache directory that
+  outlives one sandbox run, a writable mount SEC-9 does not have, and a
+  third compile per backend. Files a generator reads outside its input
+  paths are not in the cache key (#1620); with unchanged inputs a stale
+  key does not show.
+
+  The run goes through `sandbox/run` with the manifest's binaries allowed,
+  so SEC-10 and SEC-11 judge it like the first compile. `diff -r` compares
+  it with the same backend's first compile; the finding reads `CMP-5:
+  output differs with --cache on <backend>:` followed by the first 20 lines
+  of the diff, whose first line names the first differing path. A compile
+  that fails under `--cache` shows its exit status and the end of its
+  stderr, and its diff reads `Only in out-<backend>: compiled`.
+
+  The run covers every backend because the inventory the cache key hashes
+  and the output that gets pickled both depend on the backend. Running it
+  on the first backend only, as CMP-2 does, would save the `omegaconf`
+  compile, 6.5 of the 10.8 s median below.
+
+  The release build job repeats the gate compile, and CMP-5 with it, for
+  versions not yet published (CMP-4); published versions are not compiled
+  again, so CMP-5 applies to versions published after it. On 2026-10-13
+  all 35 listed versions were published. Compiled as `release/build-all`
+  fetches them, all 35 passed CMP-5 on both of their backends,
+  `reclass-rs` and `omegaconf`, and the whole gate compile passed. No
+  listed version is affected.
+
+  Measured on 2026-10-13 on a 24-core workstation without gVisor, over the
+  35 listed versions: CMP-5 took 10.4 to 11.7 s per gate compile (median
+  10.8 s; `reclass-rs` 4.2 s, `omegaconf` 6.5 s), on top of 22.3 to
+  32.3 s for the rest of it (median 25.9 s), 42 % more over all 35. On
+  the `ubuntu-24.04` runner of #159, under gVisor, the `gate-selftest`
+  step took 1360 and 1408 s in two runs against 999 s in the last run
+  before them (#154). Each sample with one backend took a median 7.2 and
+  8.1 s longer, and `pass-backends`, which uses `reclass-rs` and
+  `omegaconf` like every listed generator, 15.3 and 17.8 s longer. That
+  compares with one baseline run, and the step varied between 843 and
+  1425 s over the ten runs before QA-10. The whole Gate step of #155, a
+  registration, took 58 s.
+
+  - Test: workflow job `gate-selftest` (`fail-cache-lazy-inventory`)
+  - Since: #159
+
 ## Quality gate
 
 - QA-1: The generator tree MUST contain `README.md` with at least one

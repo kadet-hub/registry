@@ -51,6 +51,8 @@ printf '{"type": "object", "properties": {"data": {"type": "object", "additional
 printf 'core:\n  software: Kubernetes\n  version: "1.35"\n  source: https://github.com/yannh/kubernetes-json-schema\n' >"$work/fail-schema-invalid/schemas/sources.yaml"
 derive fail-service-without-ports 'QA-10: compiled/minimal/out/config.yaml: Service web: Service "web" is invalid: spec.ports: Required value'
 sed -i 's/{"kind": "ConfigMap", "data": {"a": "b"}}/{"apiVersion": "v1", "kind": "Service", "metadata": {"name": "web"}, "spec": {"selector": {"app": "web"}}}/' "$work/fail-service-without-ports/__init__.py"
+derive fail-cache-lazy-inventory "CMP-5: output differs with --cache on reclass:"
+sed -i 's/import BaseObj$/import BaseObj, inventory/; s/{"a": "b"}/{"a": inventory(lazy=True).parameters.optional or "b"}/' "$work/fail-cache-lazy-inventory/__init__.py"
 derive fail-big-file-eval "semgrep: dynamic-code: big.py"
 python3 -c 'print("x = 1\n" * 166_700 + "eval(\"1\")")' >"$work/fail-big-file-eval/big.py"
 
