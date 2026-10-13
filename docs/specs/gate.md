@@ -957,10 +957,10 @@ review go into the review comment and do not fail the gate.
   above shows that none of those custom resources would be rejected. Over
   the 35 versions measured above with their own `schemas` directories,
   the check found nothing and printed 58 `review: QA-11` lines for 30 of
-  them. The six versions `main` listed after that, argocd, certmanager,
-  cilium, grafana, ironcore and keycloak 1.0.1, pass the whole gate
-  compile of #170 with review lines of the same kind. No listed version is
-  affected.
+  them. The 1.0.1 versions `main` listed after that, none with CRD files,
+  pass the whole gate compile of #170 with review lines of the same kind:
+  argocd, certmanager, cilium, grafana, ironcore, keycloak, kmcp, kserve,
+  kubevirt, linkerd and loki. No listed version is affected.
 
   Evaluating the CEL rules in the JSON Schemas within QA-7 with a Python
   CEL implementation was considered. It adds a dependency, lacks the
