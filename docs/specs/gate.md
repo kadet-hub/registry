@@ -847,6 +847,287 @@ review go into the review comment and do not fail the gate.
     (`fail-service-without-ports`)
   - Since: #154
 
+- QA-11: Every custom resource in the first backend's compiled output
+  whose kind a CRD shipped with the generator (QA-12) defines MUST be
+  accepted on create with `dryRun=All` by the QA-10 kube-apiserver with
+  the shipped CRDs installed. Each rejection is a finding, and so is a
+  custom resource in a version its CRD does not serve.
+
+  QA-7 validates custom resources against JSON Schemas taken from the
+  CRDs' `openAPIV3Schema`. A JSON Schema validator does not evaluate what
+  only the API server evaluates: CEL rules (`x-kubernetes-validations`),
+  the uniqueness of `x-kubernetes-list-type` `set` and `map` lists, and
+  the server's metadata checks. The schemas of 21 of the 28 listed
+  versions that ship Kubernetes schemas carry 850 CEL rules QA-7 skips.
+  Reviews of flux, crossplane and kyverno found output that passed QA-7
+  and that the API server rejects. With the upstream CRDs installed in
+  the prototype measured below, the server rejects three documents QA-7
+  accepts: a HelmRelease that sets
+  both `chart` and `chartRef` ("either chart or chartRef must be set"), a
+  Crossplane Provider whose `package` names no registry ("must be a fully
+  qualified image name") and a Composition in `Pipeline` mode without
+  `pipeline`. A `helm.toolkit.fluxcd.io/v2beta1` HelmRelease, a version
+  the CRD of helm-controller 1.6.5 no longer defines, gets only a
+  `review:` line from QA-7.
+
+  The check extends `sandbox/apiserver_check.py` and uses QA-10's server
+  in the same container without network; `sandbox/gate-compile` mounts the
+  `schemas` directory into it read-only. Discovery decides which kinds are
+  built in before any CRD exists, as under QA-10. The check then creates
+  every shipped CRD for real, waits until each is `Established` and
+  discovery lists its served versions, and POSTs each custom resource of a
+  kind and version a shipped CRD serves to its collection with
+  `dryRun=All&fieldValidation=Strict`, creating its namespace first as
+  QA-10 does. Strict field validation rejects unknown fields, as QA-7's
+  closed schemas do. Transition rules, which compare with `oldSelf`, do
+  not run on create; the immutable `compositeTypeRef` of a Composition is
+  one.
+
+  Each CRD is installed with `spec.conversion` set to `strategy: None`. A
+  conversion webhook cannot run in the sandbox, and with `None` a custom
+  resource in any served version is validated against the schema and
+  rules of its own version. None of the 147 upstream CRDs measured below
+  declares a webhook; KServe adds one to LLMInferenceService and
+  LLMInferenceServiceConfig through patch files next to the CRDs, which
+  are not CRDs and are not shipped.
+
+  Validation in an operator's admission webhooks and controllers is not
+  covered, for example CloudNativePG's validating webhook, cert-manager's
+  webhook, Kyverno's admission controller and KubeVirt's virt-api.
+  Running them would mean executing the operator next to submitted
+  output, which QA-8 rejects for Terraform providers for the same reason.
+  That stays with the author's own tests, such as the Kyverno CLI, and
+  with the cluster.
+
+  A document that is neither built in nor of a kind a shipped CRD defines
+  is skipped and counted. That covers generators that ship no CRD, kinds
+  of aggregated API servers such as IronCore's, which have no CRD, and
+  documents no API server serves: Talos machine config (`v1alpha1`; a CRD
+  group needs a dot), k3d's `Simple` and kind's `Cluster`. Each
+  `apiVersion` with skipped documents gets one line `review: QA-11:
+  <apiVersion>: no CRD, <n> documents skipped`, which puts the question
+  whether a CRD is missing to the reviewer; a bump that drops a CRD the
+  previous version shipped shows the same line. Requiring the CRD of every
+  kind with a JSON Schema, with an opt-out such as `crds: none` and a
+  reason in the group's `sources.yaml` entry, was considered; it moves the
+  argument about exemptions into a field the gate has to validate.
+
+  Decided in #170 (OQ-6): kinds without a shipped CRD are skipped with one
+  `review:` line per `apiVersion`.
+
+  A finding reads `QA-11: <file>: <kind> <name>: <message>`, with the
+  server's message cut at 1000 characters as under QA-10; for a version
+  the CRD does not serve, the message reads `<apiVersion> <kind> is not
+  served by CRD <crd name>`. When the generator ships CRDs, the result
+  line reads `QA-11: validated against <n> CRDs: <m> custom resources,
+  <k> skipped`, with `<n>` the established CRDs. QA-10's line keeps
+  counting every document of a kind that is not built in as skipped. The
+  CRDs share their group's `sources.yaml` entry, so the "Built for" of
+  CAT-15 does not change.
+
+  Measured on 2026-10-13 on a 24-core workstation without gVisor, with a
+  prototype of the check in the sandbox image (kube-apiserver v1.37.1),
+  over the first backend's output of the 35 listed versions, each with the
+  upstream CRDs of the kinds it ships JSON Schemas for. All 147 CRDs of 23
+  generators were accepted, and each generator's set was established 0.2
+  to 4.0 s after its first create (KServe's 11 CRDs took the 4.0 s). The
+  server accepted all 302 custom
+  resources. 114 documents of seven generators had no CRD (Talos 51,
+  IronCore 17, KubeVirt and CDI 15, Linkerd 14, Loki 11, k3d 3, kind 3)
+  and 57 were built in. A run of the check, container start included, took
+  5.7 to 10.4 s (median 6.2 s) for the 23 versions with CRDs and 2.9 to
+  4.5 s (median 3.6 s) for the 12 without. QA-10 and QA-11 share the
+  server, so QA-11 adds the difference, 2.6 s at the median and 6.8 s for
+  kserve.
+
+  Measured again with the implementation on the same host and outputs,
+  with the 147 CRDs as QA-12 lays them out (123 upstream files, 24 compact
+  JSON) next to the generators' `sources.yaml`: all 147 were established
+  and all 302 custom resources accepted, without a finding. A run of
+  `sandbox/apiserver_check.py` as `sandbox/gate-compile` starts it took
+  5.8 to 11.0 s (median 6.4 s), 2.4 to 8.0 s (median 3.1 s) more than the
+  same version without CRD files; kserve's 11 CRDs make the 8.0 s. On the
+  versions as they are, without CRD files, the run took a median 0.04 s
+  longer than QA-10 alone, and its QA-10 lines did not change.
+
+  On the `ubuntu-24.04` runner of #170, under gVisor, the `gate-selftest`
+  step took 1630 s against 1614 s in the last run of #159. The 45 samples
+  both runs share took a median 0.4 s less each, `fail-cr-cel` added
+  38.4 s, and the unit tests of `sandbox/test_apiserver_check.py` took
+  9.2 s instead of 2.4 s.
+
+  The release build job repeats the gate compile, and QA-11 with it, for
+  versions not yet published (CMP-4); published versions are not compiled
+  again. The listed versions ship no CRD files, so QA-11 skips their
+  custom resources until a later version brings them, and the measurement
+  above shows that none of those custom resources would be rejected. Over
+  the 35 versions measured above with their own `schemas` directories,
+  the check found nothing and printed 58 `review: QA-11` lines for 30 of
+  them. The versions `main` listed after that are bumps built from
+  kadet-hub/generators 9166cb3, which has no CRD files; the 22 of them on
+  `main` at cb64712 pass the whole gate compile of #170 with review lines
+  of the same kind. No listed version is affected.
+
+  Evaluating the CEL rules in the JSON Schemas within QA-7 with a Python
+  CEL implementation was considered. It adds a dependency, lacks the
+  Kubernetes CEL libraries (quantities, IP addresses, CIDRs, formats) and
+  still misses list types, defaulting and the metadata checks, while the
+  server that runs all of them is already in the image for QA-10.
+  Building CRDs from the shipped JSON Schemas was considered too: scope,
+  names and the other versions of a CRD are not in them, and QA-7's
+  closing would have to be undone.
+
+  - Test: `sandbox/test_apiserver_check.py`
+    (`test_custom_resources_against_shipped_crds`); workflow job
+    `gate-selftest` (`fail-cr-cel`)
+  - Since: #170
+
+- QA-12: Every file under `<group>/crds/` in the manifest's `schemas`
+  directory MUST hold exactly one `apiextensions.k8s.io/v1`
+  CustomResourceDefinition of `<group>`, named `<plural>.yaml` or
+  `<plural>.json` after its `spec.names.plural`. Its group MUST have a
+  `sources.yaml` entry and MUST NOT be one kube-apiserver serves without
+  CRDs. A file that breaks this, or whose CRD the server rejects or does
+  not establish within 60 seconds, is a finding, and QA-11 does not use it.
+
+  The CRDs sit next to the JSON Schemas of their group, so one
+  `sources.yaml` entry names software, version, source and licence for
+  both, and the reviewer finds them where QA-7 already points. A flat
+  `schemas/crds/` with files named `<plural>.<group>.yaml` would separate
+  a CRD from the schemas and the `sources.yaml` entry of its group; a
+  `crds/` directory at the generator root would need a new key in
+  `policy/manifest.schema.json` and a second provenance file for the same
+  upstream source.
+
+  Decided in #170 (OQ-4): CRD files live in `schemas/<group>/crds/`.
+
+  A file holds one CRD because upstream files often hold several, or other
+  documents: Calico's `v3_projectcalico_org.yaml` holds every
+  projectcalico.org CRD in 3.5 MB, Rook's `crds.yaml` every Rook CRD,
+  Multus's `multus-daemonset-thick.yml` its DaemonSet too, and the VPA's
+  file two CRDs. The file name follows from the CRD, so the reviewer and
+  `tools/upstream.py` of kadet-hub/generators find each CRD without a
+  mapping.
+
+  `<plural>.yaml` is the upstream file byte for byte, when that file holds
+  only this CRD and is at most 1 MiB (SEC-5). Otherwise `<plural>.json`
+  holds the CRD document as compact JSON with keys in upstream order: the
+  data are unchanged, the encoding is not. Of the 147 CRDs measured
+  under QA-11, 123 are upstream files as they are and 24 need the JSON
+  form, 17 because their file holds other documents and 7 because they
+  exceed 1 MiB as YAML: Argo CD's ApplicationSet (1.39 MB), Tigera's
+  Installation (1.55 MB), KServe's InferenceService, LLMInferenceService
+  and LLMInferenceServiceConfig (1.96 to 2.75 MB) and Kyverno's
+  ClusterPolicy and Policy (1.42 MB each). The largest as compact JSON is
+  LLMInferenceService with 879 KB, which also stays below the 1.5 MiB
+  request limit of the server's etcd. The 147 CRDs add 26.2 MB to the
+  trees of the 23 generators, whose JSON Schemas take 27.2 MB; the most is
+  prometheus-operator's 4.6 MB next to 4.3 MB of schemas.
+
+  Always compact JSON would be one rule, but then no file can be compared
+  with upstream by checksum or read in review. Dropping the `description`
+  fields, 6.8 MB instead of 26.2 MB for the 147, changes the content for
+  size alone, and the reproduction in kadet-hub/generators would have to
+  repeat it. A `tree:large` exception (SEC-14) per file above 1 MiB lapses
+  on every bump, a higher SEC-5 limit under `schemas/` loosens a scan rule
+  for size, and neither handles files with several documents.
+
+  Decided in #170 (OQ-5): the upstream file byte for byte when it holds
+  only this CRD and fits 1 MiB, compact JSON otherwise.
+
+  A CRD file copies a CRD document that exists as a YAML file at the
+  group's `source`. KubeVirt's virt-operator assembles its CRDs in Go
+  (`crds.go`) from the schemas in `validations_generated.go` (2.0 MB), CDI
+  keeps its 12 CRDs as YAML in Go string literals (`crds_generated.go`),
+  and Linkerd's are Helm templates in `charts/linkerd-crds`. These
+  generators ship no CRDs, and their kinds, 29 of the 114 skipped
+  documents measured under QA-11, stay with QA-7. Deriving CRDs
+  mechanically, CDI's literals extracted or Linkerd's chart rendered with
+  `helm template` at the tag and its default values, with the derivation
+  named in the `sources.yaml` comment and reproduced by
+  `tools/upstream.py`, is a later change in kadet-hub/generators; the gate
+  treats a derived file like any other. KubeVirt has no such path short of
+  running virt-operator.
+
+  Decided in #170 (OQ-7): only CRD documents that exist as YAML files at
+  the `source` for now.
+
+  Only the CRDs of kinds the output uses need shipping, as with JSON
+  Schemas: Crossplane's provider-upjet-aws 2.9.0 has 2131 CRD files with
+  107 MB, of which the crossplane generator uses ProviderConfig and
+  ClusterProviderConfig.
+
+  The gate reads CRD files with the safe YAML loader, extended so that a
+  plain `=` is a string, as `tools/upstream.py` does. Prometheus
+  Operator's AlertmanagerConfig lists `=` among its matcher types, and
+  PyYAML's safe loader reads it as the YAML 1.1 value key and fails.
+
+  A CRD of a group the server serves before any CRD is installed, such as
+  `rbac.authorization.k8s.io` or `apiextensions.k8s.io`, would let a
+  generator add a version or kind to a built-in group, which the check
+  would then treat as served.
+  Groups under `k8s.io` that kube-apiserver does not serve, such as
+  `gateway.networking.k8s.io` and `autoscaling.k8s.io`, are allowed; their
+  upstream CRDs carry the `api-approved.kubernetes.io` annotation the
+  server requires there.
+
+  A file that breaks the layout is a finding that names the rule, with
+  `<file>` its path in the `schemas` directory, for example `QA-12:
+  example.com/crds/widget.yaml: not named example.com/crds/widgets.yaml or
+  .json`. A CRD the pinned server rejects, for example for a CEL rule
+  above the cost limit, is a finding `QA-12: <file>: <message>` with the
+  server's message. A CRD whose names another shipped CRD already holds
+  (`NamesAccepted` is `False`) is a finding at once, and one that is not
+  `Established` 60 seconds after the CRDs were created is one then; both
+  read `QA-12: <file>: not established within 60 s:` followed by the
+  condition's message. The generator then ships a
+  CRD the pinned server accepts, or none, which leaves its kinds to QA-7.
+  All 147 measured CRDs were accepted by v1.37.1. CRDs in the compiled
+  output are not installed; QA-10 dry-runs them as built-in documents, and
+  no listed version emits one.
+
+  The CRD files are part of the tree and pass the static scans, as the
+  JSON Schemas do, whose descriptions they repeat. gitleaks 8.30.1 with
+  `policy/gitleaks.toml` found nothing in the 147 CRDs as JSON, and none
+  contains a string SEC-3 bans in non-Python files. The gate does not
+  check the licence of schema files. A CRD file is a copy under the
+  licence of its group's `sources.yaml` entry (Apache-2.0, MPL-2.0 for
+  rabbitmq.com); for the JSON form the `sources.yaml` comment states the
+  re-encoding, as it does today for JSON Schemas written without
+  indentation.
+
+  The gate does not compare a CRD file with upstream, as it does not for
+  JSON Schemas: the reviewer checks the `sources.yaml` entry, and the
+  reproduction of UPD-2 in kadet-hub/generators covers its own
+  generators. An edited CRD only loosens or tightens the check of its own
+  generator, as an edited JSON Schema does, and consumers do not apply it.
+  Fetching upstream in the gate would put network into it. A
+  maintainer-started workflow like `tf-schema-verify` (QA-9) that fetches
+  each `source` at its ref and compares every CRD file as data follows
+  once a generator from outside kadet-hub/generators ships CRDs.
+
+  Decided in #170 (OQ-8): CRD files get the same trust as JSON Schemas.
+
+  - Test: `sandbox/test_apiserver_check.py`
+    (`test_crd_files_that_break_the_layout_are_findings`; the `=` loader
+    and conversion `None` in `test_custom_resources_against_shipped_crds`)
+  - Since: #170
+
+  QA-11 and QA-12 need no change to `./check` in kadet-hub/generators,
+  which runs `sandbox/gate-compile` from the registry's `main` (CHK-3).
+  Follow-ups outside this repository:
+
+  - kadet-hub/generators `tools/upstream.py` and its spec (UPD-2 to
+    UPD-4): regenerate each `schemas/<group>/crds/` file from the source
+    at the new release, trusted only if regenerating at the current ref
+    reproduces the committed file byte for byte; a CRD missing at the new
+    release becomes an issue. Go code and Helm templates stay not
+    regenerable.
+  - kadet-hub/generators: CRD files for the 23 generators whose sources
+    hold CRD files, in their next versions.
+  - kadet-hub/generator-template `AGENTS.md`: the "Schemas" rule names the
+    CRD files, their location and their form.
+
 ## Review
 
 The gate posts one comment: results, the krab result, REG-3 flags,

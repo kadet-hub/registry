@@ -331,6 +331,16 @@ The gate then checks every provider block, resource and data source
 against it ([QA-8](specs/gate.md#quality-gate)); regenerate the file
 whenever you raise the pinned version.
 
+A generator that renders custom resources can also ship the CRDs of
+their kinds, one per file, as `schemas/<group>/crds/<plural>.yaml`: the
+upstream file byte for byte when it holds only that CRD and is at most
+1 MiB, otherwise `<plural>.json` with the CRD as compact JSON. The
+group's `sources.yaml` entry covers them. The gate installs them in a
+throwaway kube-apiserver and creates every custom resource of their kinds
+with a server-side dry run, which also evaluates the CEL rules the JSON
+Schemas cannot ([QA-11, QA-12](specs/gate.md#quality-gate)). Kinds
+without a CRD get a review line.
+
 To withdraw a version, add it under `yanked` with a reason. The catalog
 then shows the reason instead of the inventory entry. A version that is
 malicious is reported as described in [SECURITY.md](../SECURITY.md).
