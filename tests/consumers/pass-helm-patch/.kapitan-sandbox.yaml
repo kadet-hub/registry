@@ -1,0 +1,4 @@
+index_serial: 0
+hosts:
+  helm: [stefanprodan.github.io]
+binaries: ["helm template"]

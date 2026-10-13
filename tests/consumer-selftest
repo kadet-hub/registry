@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # consumer-selftest (AC-10): run the consumer flow over every sample in
-# tests/consumers/. pass-* must pass; fail-* must fail with the finding in its
-# expect file. Uses the locally built sandbox image.
+# tests/consumers/. pass-* must pass, with every line of an expect file in
+# the output; fail-* must fail with the finding in its expect file. Uses the
+# locally built sandbox image.
 #
 # Usage: tests/consumer-selftest
 set -euo pipefail
@@ -10,6 +11,8 @@ root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 export OWNER=kadet-hub SANDBOX_IMAGE=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+
+has_lines() { while IFS= read -r line; do grep -rqF -- "$line" "$2" || return 1; done <"$1"; }
 
 failed=0
 for dir in "$root"/tests/consumers/*/; do
@@ -29,6 +32,9 @@ for dir in "$root"/tests/consumers/*/; do
     failed=1
   elif [[ $want == pass ]] && ! find "$work/$name.out/compiled" -type f | grep -q .; then
     echo "::error::$name: passed without compiled output"
+    failed=1
+  elif [[ $want == pass && -f $dir/expect ]] && ! has_lines "$dir/expect" "$work/$name.out/compiled"; then
+    echo "::error::$name: a line of its expect file is missing from the output"
     failed=1
   fi
 done

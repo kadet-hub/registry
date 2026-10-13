@@ -1,0 +1,33 @@
+parameters:
+  podinfo:
+    namespace: apps
+    patches:
+      Deployment/podinfo:
+        spec:
+          strategy:
+            rollingUpdate:
+              maxUnavailable: 0
+  kapitan:
+    dependencies:
+      - type: helm
+        source: https://stefanprodan.github.io/podinfo
+        chart_name: podinfo
+        version: 6.15.0
+        output_path: charts/podinfo
+    compile:
+      - input_type: helm
+        input_paths:
+          - charts/podinfo
+        output_path: podinfo
+        helm_params:
+          name: podinfo
+          namespace: ${podinfo:namespace}
+        helm_values:
+          replicaCount: 2
+      - input_type: kadet
+        input_paths:
+          - components/patch
+        output_path: podinfo
+        output_type: auto
+        input_params:
+          patches: ${podinfo:patches}
