@@ -1,0 +1,14 @@
+classes:
+  - podinfo
+
+parameters:
+  kapitan:
+    vars:
+      target: prod
+  podinfo:
+    patches:
+      Deployment/podinfo:
+        spec:
+          template:
+            spec:
+              terminationGracePeriodSeconds: 60

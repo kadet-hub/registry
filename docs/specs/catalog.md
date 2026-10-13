@@ -390,10 +390,11 @@ index is refused (CON-2).
   `docs/authors.md` describes registration for authors: manifest, fixture
   project, entry and what the gate and the review check, and when a
   generator is worth writing and when another Kapitan input is the better
-  tool, with ideas for generators. The root `README.md` points to the
+  tool, with ideas for generators, and how to patch a Helm chart instead of
+  wrapping it in a generator (DEC-15). The root `README.md` points to the
   catalog and both documents, and the template repository
   `kadet-hub/generator-template` starts a generator with the files the gate
   expects, a local check and `AGENTS.md` for coding agents.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #18
+  - Since: #18, #158

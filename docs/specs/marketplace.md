@@ -87,6 +87,12 @@ Trust boundaries, from outside in:
   `merge_group` checks run the workflow from the queued branch, which breaks
   GI-1. Authors update their own branches; a maintainer who updates a branch
   becomes the last pusher and cannot approve it (REV-1).
+- DEC-15: The marketplace lists no generator that renders a chart named in
+  the consumer's inventory. SEC-8 pins and scans only the charts a manifest
+  declares, so the gate cannot vouch for a chart it never fetched, and the
+  generator would mostly rename the chart's values. `docs/authors.md` shows
+  instead how to render a pinned chart with the `helm` input and patch the
+  output in a kadet step of the consumer's own project (#104).
 
 ## Area specs
 
@@ -229,12 +235,16 @@ cover none of the changed files.
   stayed `BLOCKED`; the status check rollup listed only the base
   repository's `gate` as required.
 - AC-10 (CON-1, CON-1b): the consumer workflow compiles a sample consumer with its own
-  helm input without network, and fails on a generator that reads a decoy
-  credential, on a vendored `resolvers.py` that opens a socket during
-  `kapitan inventory`, on a dependency URL built from `oc.env`, and on a
-  `hostPath` in a target the policy's `output_capabilities` does not cover
-  while accepting it in the target it covers. Check: `consumer-selftest`
-  over `tests/consumers/`.
+  helm input without network, and the recipe of `docs/authors.md` (DEC-15):
+  a public chart pinned by version, pulled outside the sandbox, rendered
+  with the helm input and patched in a kadet step, with a patch from the
+  class and one from the target in the output. It fails on a generator that
+  reads a decoy credential, on a vendored `resolvers.py` that opens a socket
+  during `kapitan inventory`, on a dependency URL built from `oc.env`, and
+  on a `hostPath` in a target the policy's `output_capabilities` does not
+  cover while accepting it in the target it covers. Check:
+  `consumer-selftest` over `tests/consumers/`; a `pass-*` sample with an
+  `expect` file passes only when every line of it appears in its output.
 - AC-11 (SEC-9, SEC-10): gVisor installs on a GitHub-hosted `ubuntu-24.04`
   runner, runs Kapitan's multiprocessing compile with `--network none`, and
   its trace records `execve` of a helm child process. Hostile probes that

@@ -43,7 +43,8 @@ generator is the wrong tool:
   `copy` input, or write the file.
 - An upstream Helm chart already renders it and its values are the real
   interface. Use the `helm` input with the chart pinned; a generator that
-  wraps a chart only renames its values.
+  wraps a chart only renames its values. For what the values do not expose,
+  [patch the rendered chart](#patching-a-helm-chart-instead-of-wrapping-it).
 - It produces one resource with no defaults or derived values.
 - The target tool has its own composition that does the job better, such
   as Kustomize overlays for per-environment patches of the same manifests.
@@ -52,6 +53,147 @@ generator is the wrong tool:
 - It is specific to one project's naming and structure. Keep it in that
   project; the marketplace is for generators other projects can use with
   their own inventory.
+
+## Patching a Helm chart instead of wrapping it
+
+The marketplace lists no generic `helm` generator that renders a chart
+named in your inventory ([DEC-15](specs/marketplace.md#decisions)): the
+gate pins and scans only the charts a manifest declares
+([SEC-8](specs/gate.md#dependencies-binaries-and-charts)), so it cannot
+vouch for yours. Kapitan renders a pinned chart itself, and a short kadet
+step in your own project patches what the chart's values do not expose.
+That is the overlay stage asked for in
+[kapicorp/kapitan#527](https://github.com/kapicorp/kapitan/issues/527).
+Kapitan's `kustomize` input can patch as well, but it runs the `kustomize`
+binary, which the sandbox image does not carry.
+
+A class pins the chart, renders it with the `helm` input and runs the kadet
+step over the same `output_path`. Kapitan runs compile entries in order and
+passes the kadet step that directory as `input_params.compile_path`.
+Patches are a map keyed `<kind>/<name>`, not a list, because the inventory
+merges maps across classes and targets but appends lists:
+
+```yaml
+# inventory/classes/podinfo.yml
+parameters:
+  podinfo:
+    namespace: apps
+    patches:
+      Deployment/podinfo:
+        spec:
+          strategy:
+            rollingUpdate:
+              maxUnavailable: 0
+  kapitan:
+    dependencies:
+      - type: helm
+        source: https://stefanprodan.github.io/podinfo
+        chart_name: podinfo
+        version: 6.15.0
+        output_path: charts/podinfo
+    compile:
+      - input_type: helm
+        input_paths:
+          - charts/podinfo
+        output_path: podinfo
+        helm_params:
+          name: podinfo
+          namespace: ${podinfo:namespace}
+        helm_values:
+          replicaCount: 2
+      - input_type: kadet
+        input_paths:
+          - components/patch
+        output_path: podinfo
+        output_type: auto
+        input_params:
+          patches: ${podinfo:patches}
+```
+
+A target, or a class per environment, adds its own patches on top; this one
+ends up with both:
+
+```yaml
+# inventory/targets/prod.yml
+classes:
+  - podinfo
+
+parameters:
+  kapitan:
+    vars:
+      target: prod
+  podinfo:
+    patches:
+      Deployment/podinfo:
+        spec:
+          template:
+            spec:
+              terminationGracePeriodSeconds: 60
+```
+
+The kadet step reads every file the helm entry wrote, merges each patch
+into the documents of that kind and name, maps recursively while lists and
+other values replace, and writes the files back under their names, which
+`output_type: auto` keeps. A patch that matches no document fails the
+compile, so a chart upgrade that renames a resource cannot drop a patch
+silently.
+
+```python
+# components/patch/__init__.py
+"""Patch the documents the helm entry before this one rendered (docs/authors.md)."""
+
+import os
+
+import yaml
+from kapitan.inputs.kadet import BaseObj, CompileError
+
+
+def merge(base, patch):
+    for key, value in patch.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            merge(base[key], value)
+        else:
+            base[key] = value
+
+
+def main(input_params):
+    root = input_params["compile_path"]
+    patches = input_params.get("patches") or {}
+    unmatched = set(patches)
+    out = BaseObj()
+    for folder, _, files in os.walk(root):
+        for file in files:
+            path = os.path.join(folder, file)
+            with open(path, encoding="utf-8") as f:
+                docs = list(yaml.safe_load_all(f))
+            for doc in docs:
+                key = f"{doc.get('kind')}/{doc.get('metadata', {}).get('name')}"
+                if key in patches:
+                    merge(doc, patches[key])
+                    unmatched.discard(key)
+            out.root[os.path.relpath(path, root)] = docs
+    if unmatched:
+        raise CompileError(f"patches match no rendered document: {sorted(unmatched)}")
+    return out
+```
+
+`kapitan compile --fetch` pulls the chart into `charts/podinfo`, pinned by
+version only, without a digest or a sandbox
+([Kapitan's `--fetch` is not enough](consumers.md#kapitans---fetch-is-not-enough)).
+The [consumer workflow](consumers.md#workflow) pulls it outside the sandbox
+and compiles without network, with this `.kapitan-sandbox.yaml`:
+
+```yaml
+index_serial: 0
+hosts:
+  helm: [stefanprodan.github.io]
+binaries: ["helm template"]
+```
+
+These files are the sample
+[`tests/consumers/pass-helm-patch`](../tests/consumers/pass-helm-patch),
+which the consumer selftest compiles with the Kapitan version the gate pins
+and checks for both patches in the output.
 
 ## Ideas
 
