@@ -546,7 +546,7 @@ review go into the review comment and do not fail the gate.
   set took 4.7 s, which puts a runner compile close to a local one.
 
   - Test: workflow job `gate-selftest` (`fail-cache-lazy-inventory`)
-  - Since: this change
+  - Since: #159
 
 ## Quality gate
 
