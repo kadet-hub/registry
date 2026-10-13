@@ -853,8 +853,6 @@ review go into the review comment and do not fail the gate.
   the shipped CRDs installed. Each rejection is a finding, and so is a
   custom resource in a version its CRD does not serve.
 
-  Related: OQ-4 to OQ-8 in [marketplace.md](marketplace.md#open-questions).
-
   QA-7 validates custom resources against JSON Schemas taken from the
   CRDs' `openAPIV3Schema`. A JSON Schema validator does not evaluate what
   only the API server evaluates: CEL rules (`x-kubernetes-validations`),
@@ -907,7 +905,15 @@ review go into the review comment and do not fail the gate.
   documents no API server serves: Talos machine config (`v1alpha1`; a CRD
   group needs a dot), k3d's `Simple` and kind's `Cluster`. Each
   `apiVersion` with skipped documents gets one line `review: QA-11:
-  <apiVersion>: no CRD, <n> documents skipped` (OQ-6).
+  <apiVersion>: no CRD, <n> documents skipped`, which puts the question
+  whether a CRD is missing to the reviewer; a bump that drops a CRD the
+  previous version shipped shows the same line. Requiring the CRD of every
+  kind with a JSON Schema, with an opt-out such as `crds: none` and a
+  reason in the group's `sources.yaml` entry, was considered; it moves the
+  argument about exemptions into a field the gate has to validate.
+
+  Decided in #170 (OQ-6): kinds without a shipped CRD are skipped with one
+  `review:` line per `apiVersion`.
 
   A finding reads `QA-11: <file>: <kind> <name>: <message>`, with the
   server's message cut at 1000 characters as under QA-10, or `QA-11:
@@ -960,8 +966,16 @@ review go into the review comment and do not fail the gate.
 
   The CRDs sit next to the JSON Schemas of their group, so one
   `sources.yaml` entry names software, version, source and licence for
-  both, and the reviewer finds them where QA-7 already points (OQ-4). A
-  file holds one CRD because upstream files often hold several, or other
+  both, and the reviewer finds them where QA-7 already points. A flat
+  `schemas/crds/` with files named `<plural>.<group>.yaml` would separate
+  a CRD from the schemas and the `sources.yaml` entry of its group; a
+  `crds/` directory at the generator root would need a new key in
+  `policy/manifest.schema.json` and a second provenance file for the same
+  upstream source.
+
+  Decided in #170 (OQ-4): CRD files live in `schemas/<group>/crds/`.
+
+  A file holds one CRD because upstream files often hold several, or other
   documents: Calico's `v3_projectcalico_org.yaml` holds every
   projectcalico.org CRD in 3.5 MB, Rook's `crds.yaml` every Rook CRD,
   Multus's `multus-daemonset-thick.yml` its DaemonSet too, and the VPA's
@@ -972,7 +986,7 @@ review go into the review comment and do not fail the gate.
   `<plural>.yaml` is the upstream file byte for byte, when that file holds
   only this CRD and is at most 1 MiB (SEC-5). Otherwise `<plural>.json`
   holds the CRD document as compact JSON with keys in upstream order: the
-  data are unchanged, the encoding is not (OQ-5). Of the 147 CRDs measured
+  data are unchanged, the encoding is not. Of the 147 CRDs measured
   under QA-11, 123 are upstream files as they are and 24 need the JSON
   form, 17 because their file holds other documents and 7 because they
   exceed 1 MiB as YAML: Argo CD's ApplicationSet (1.39 MB), Tigera's
@@ -983,6 +997,34 @@ review go into the review comment and do not fail the gate.
   request limit of the server's etcd. The 147 CRDs add 26.2 MB to the
   trees of the 23 generators, whose JSON Schemas take 27.2 MB; the most is
   prometheus-operator's 4.6 MB next to 4.3 MB of schemas.
+
+  Always compact JSON would be one rule, but then no file can be compared
+  with upstream by checksum or read in review. Dropping the `description`
+  fields, 6.8 MB instead of 26.2 MB for the 147, changes the content for
+  size alone, and the reproduction in kadet-hub/generators would have to
+  repeat it. A `tree:large` exception (SEC-14) per file above 1 MiB lapses
+  on every bump, a higher SEC-5 limit under `schemas/` loosens a scan rule
+  for size, and neither handles files with several documents.
+
+  Decided in #170 (OQ-5): the upstream file byte for byte when it holds
+  only this CRD and fits 1 MiB, compact JSON otherwise.
+
+  A CRD file copies a CRD document that exists as a YAML file at the
+  group's `source`. KubeVirt's virt-operator assembles its CRDs in Go
+  (`crds.go`) from the schemas in `validations_generated.go` (2.0 MB), CDI
+  keeps its 12 CRDs as YAML in Go string literals (`crds_generated.go`),
+  and Linkerd's are Helm templates in `charts/linkerd-crds`. These
+  generators ship no CRDs, and their kinds, 29 of the 114 skipped
+  documents measured under QA-11, stay with QA-7. Deriving CRDs
+  mechanically, CDI's literals extracted or Linkerd's chart rendered with
+  `helm template` at the tag and its default values, with the derivation
+  named in the `sources.yaml` comment and reproduced by
+  `tools/upstream.py`, is a later change in kadet-hub/generators; the gate
+  treats a derived file like any other. KubeVirt has no such path short of
+  running virt-operator.
+
+  Decided in #170 (OQ-7): only CRD documents that exist as YAML files at
+  the `source` for now.
 
   Only the CRDs of kinds the output uses need shipping, as with JSON
   Schemas: Crossplane's provider-upjet-aws 2.9.0 has 2131 CRD files with
@@ -1021,6 +1063,18 @@ review go into the review comment and do not fail the gate.
   rabbitmq.com); for the JSON form the `sources.yaml` comment states the
   re-encoding, as it does today for JSON Schemas written without
   indentation.
+
+  The gate does not compare a CRD file with upstream, as it does not for
+  JSON Schemas: the reviewer checks the `sources.yaml` entry, and the
+  reproduction of UPD-2 in kadet-hub/generators covers its own
+  generators. An edited CRD only loosens or tightens the check of its own
+  generator, as an edited JSON Schema does, and consumers do not apply it.
+  Fetching upstream in the gate would put network into it. A
+  maintainer-started workflow like `tf-schema-verify` (QA-9) that fetches
+  each `source` at its ref and compares every CRD file as data follows
+  once a generator from outside kadet-hub/generators ships CRDs.
+
+  Decided in #170 (OQ-8): CRD files get the same trust as JSON Schemas.
 
   - Test: tbd (planned: `sandbox/test_apiserver_check.py` with a CRD of
     another group, two CRDs in one file, a CRD of
