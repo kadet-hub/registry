@@ -276,7 +276,7 @@ remembered in the browser's `localStorage`.
   linked to their requirement, not restated, as CAT-18 has the guides do.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #157
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
