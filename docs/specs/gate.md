@@ -541,9 +541,14 @@ review go into the review comment and do not fail the gate.
   31 listed versions: CMP-5 took 10.4 to 11.7 s per gate compile (median
   10.9 s; `reclass-rs` 4.2 s, `omegaconf` 6.6 s), on top of 22.3 to
   32.3 s for the rest of it (median 26.0 s), 42 % more over all 31. On
-  the `ubuntu-24.04` runner the gate compile of kubernetes 1.0.0 in #155
-  took 24.4 s under gVisor, of which the `reclass-rs` compile with `CI`
-  set took 4.7 s, which puts a runner compile close to a local one.
+  the `ubuntu-24.04` runner of #159, under gVisor, the `gate-selftest`
+  step took 1360 and 1408 s in two runs against 999 s in the last run
+  before them (#154). Each sample with one backend took a median 7.2 and
+  8.1 s longer, and `pass-backends`, which uses `reclass-rs` and
+  `omegaconf` like every listed generator, 15.3 and 17.8 s longer. That
+  compares with one baseline run, and the step varied between 843 and
+  1425 s over the ten runs before QA-10. The whole Gate step of #155, a
+  registration, took 58 s.
 
   - Test: workflow job `gate-selftest` (`fail-cache-lazy-inventory`)
   - Since: #159
