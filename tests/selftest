@@ -51,6 +51,49 @@ printf '{"type": "object", "properties": {"data": {"type": "object", "additional
 printf 'core:\n  software: Kubernetes\n  version: "1.35"\n  source: https://github.com/yannh/kubernetes-json-schema\n' >"$work/fail-schema-invalid/schemas/sources.yaml"
 derive fail-service-without-ports 'QA-10: compiled/minimal/out/config.yaml: Service web: Service "web" is invalid: spec.ports: Required value'
 sed -i 's/{"kind": "ConfigMap", "data": {"a": "b"}}/{"apiVersion": "v1", "kind": "Service", "metadata": {"name": "web"}, "spec": {"selector": {"app": "web"}}}/' "$work/fail-service-without-ports/__init__.py"
+derive fail-cr-cel 'QA-11: compiled/minimal/out/config.yaml: HelmRelease web: HelmRelease.helm.toolkit.fluxcd.io "web" is invalid: spec: Invalid value: either chart or chartRef must be set'
+yq -i '.schemas = "schemas"' "$work/fail-cr-cel/kapitan-generator.yaml"
+sed -i 's|{"kind": "ConfigMap", "data": {"a": "b"}}|{"apiVersion": "helm.toolkit.fluxcd.io/v2", "kind": "HelmRelease", "metadata": {"name": "web"}, "spec": {"chart": {"spec": {"chart": "podinfo"}}, "chartRef": {"kind": "OCIRepository", "name": "podinfo"}}}|' "$work/fail-cr-cel/__init__.py"
+mkdir -p "$work/fail-cr-cel/schemas/helm.toolkit.fluxcd.io/crds"
+printf 'helm.toolkit.fluxcd.io:\n  software: Flux helm-controller\n  version: 1.6.5\n  source: https://github.com/fluxcd/helm-controller/tree/v1.6.5/config/crd/bases\n  license: Apache-2.0\n' >"$work/fail-cr-cel/schemas/sources.yaml"
+cat >"$work/fail-cr-cel/schemas/helm.toolkit.fluxcd.io/crds/helmreleases.yaml" <<'EOF'
+# Test fixture: the HelmRelease CRD of Flux helm-controller v1.6.5
+# (config/crd/bases/helm.toolkit.fluxcd.io_helmreleases.yaml, Apache-2.0),
+# reduced to spec.chart, spec.chartRef and their CEL rule.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: helmreleases.helm.toolkit.fluxcd.io
+spec:
+  group: helm.toolkit.fluxcd.io
+  names:
+    kind: HelmRelease
+    listKind: HelmReleaseList
+    plural: helmreleases
+    singular: helmrelease
+  scope: Namespaced
+  versions:
+  - name: v2
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              chart:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              chartRef:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+            x-kubernetes-validations:
+            - message: either chart or chartRef must be set
+              rule: (has(self.chart) && !has(self.chartRef)) || (!has(self.chart)
+                && has(self.chartRef))
+EOF
 derive fail-cache-lazy-inventory "CMP-5: output differs with --cache on reclass:"
 sed -i 's/import BaseObj$/import BaseObj, inventory/; s/{"a": "b"}/{"a": inventory(lazy=True).parameters.optional or "b"}/' "$work/fail-cache-lazy-inventory/__init__.py"
 derive fail-big-file-eval "semgrep: dynamic-code: big.py"

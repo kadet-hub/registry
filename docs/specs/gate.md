@@ -916,11 +916,14 @@ review go into the review comment and do not fail the gate.
   `review:` line per `apiVersion`.
 
   A finding reads `QA-11: <file>: <kind> <name>: <message>`, with the
-  server's message cut at 1000 characters as under QA-10, or `QA-11:
-  <file>: <apiVersion> <kind> is not served by CRD <name>`. The result line
-  reads `QA-11: validated against <n> CRDs: <m> custom resources, <k>
-  skipped`. The CRDs share their group's `sources.yaml` entry, so the
-  "Built for" of CAT-15 does not change.
+  server's message cut at 1000 characters as under QA-10; for a version
+  the CRD does not serve, the message reads `<apiVersion> <kind> is not
+  served by CRD <crd name>`. When the generator ships CRDs, the result
+  line reads `QA-11: validated against <n> CRDs: <m> custom resources,
+  <k> skipped`, with `<n>` the established CRDs. QA-10's line keeps
+  counting every document of a kind that is not built in as skipped. The
+  CRDs share their group's `sources.yaml` entry, so the "Built for" of
+  CAT-15 does not change.
 
   Measured on 2026-10-13 on a 24-core workstation without gVisor, with a
   prototype of the check in the sandbox image (kube-apiserver v1.37.1),
@@ -937,11 +940,27 @@ review go into the review comment and do not fail the gate.
   server, so QA-11 adds the difference, 2.6 s at the median and 6.8 s for
   kserve.
 
+  Measured again with the implementation on the same host and outputs,
+  with the 147 CRDs as QA-12 lays them out (123 upstream files, 24 compact
+  JSON) next to the generators' `sources.yaml`: all 147 were established
+  and all 302 custom resources accepted, without a finding. A run of
+  `sandbox/apiserver_check.py` as `sandbox/gate-compile` starts it took
+  5.8 to 11.0 s (median 6.4 s), 2.4 to 8.0 s (median 3.1 s) more than the
+  same version without CRD files; kserve's 11 CRDs make the 8.0 s. On the
+  versions as they are, without CRD files, the run took a median 0.04 s
+  longer than QA-10 alone, and its QA-10 lines did not change.
+
   The release build job repeats the gate compile, and QA-11 with it, for
   versions not yet published (CMP-4); published versions are not compiled
-  again. The 35 listed versions ship no CRD files, so QA-11 skips their
+  again. The listed versions ship no CRD files, so QA-11 skips their
   custom resources until a later version brings them, and the measurement
-  above shows that none of those custom resources would be rejected.
+  above shows that none of those custom resources would be rejected. Over
+  the 35 versions measured above with their own `schemas` directories,
+  the check found nothing and printed 58 `review: QA-11` lines for 30 of
+  them. The six versions `main` listed after that, argocd, certmanager,
+  cilium, grafana, ironcore and keycloak 1.0.1, pass the whole gate
+  compile of #170 with review lines of the same kind. No listed version is
+  affected.
 
   Evaluating the CEL rules in the JSON Schemas within QA-7 with a Python
   CEL implementation was considered. It adds a dependency, lacks the
@@ -952,9 +971,10 @@ review go into the review comment and do not fail the gate.
   names and the other versions of a CRD are not in them, and QA-7's
   closing would have to be undone.
 
-  - Test: tbd (planned: `sandbox/test_apiserver_check.py` with the three
-    rejections above; a `fail-cr-cel` sample in `gate-selftest`)
-  - Since: not implemented
+  - Test: `sandbox/test_apiserver_check.py`
+    (`test_custom_resources_against_shipped_crds`); workflow job
+    `gate-selftest` (`fail-cr-cel`)
+  - Since: #170
 
 - QA-12: Every file under `<group>/crds/` in the manifest's `schemas`
   directory MUST hold exactly one `apiextensions.k8s.io/v1`
@@ -1045,10 +1065,16 @@ review go into the review comment and do not fail the gate.
   upstream CRDs carry the `api-approved.kubernetes.io` annotation the
   server requires there.
 
-  A CRD the pinned server rejects, for example for a CEL rule above the
-  cost limit, is a finding `QA-12: <file>: <message>` with the server's
-  message; a CRD that is not established in time names the message of its
-  `NamesAccepted` or `Established` condition. The generator then ships a
+  A file that breaks the layout is a finding that names the rule, with
+  `<file>` its path in the `schemas` directory, for example `QA-12:
+  example.com/crds/widget.yaml: not named example.com/crds/widgets.yaml or
+  .json`. A CRD the pinned server rejects, for example for a CEL rule
+  above the cost limit, is a finding `QA-12: <file>: <message>` with the
+  server's message. A CRD whose names another shipped CRD already holds
+  (`NamesAccepted` is `False`) is a finding at once, and one that is not
+  `Established` 60 seconds after the CRDs were created is one then; both
+  read `QA-12: <file>: not established within 60 s:` followed by the
+  condition's message. The generator then ships a
   CRD the pinned server accepts, or none, which leaves its kinds to QA-7.
   All 147 measured CRDs were accepted by v1.37.1. CRDs in the compiled
   output are not installed; QA-10 dry-runs them as built-in documents, and
@@ -1076,14 +1102,14 @@ review go into the review comment and do not fail the gate.
 
   Decided in #170 (OQ-8): CRD files get the same trust as JSON Schemas.
 
-  - Test: tbd (planned: `sandbox/test_apiserver_check.py` with a CRD of
-    another group, two CRDs in one file, a CRD of
-    `rbac.authorization.k8s.io` and a group without `sources.yaml` entry)
-  - Since: not implemented
+  - Test: `sandbox/test_apiserver_check.py`
+    (`test_crd_files_that_break_the_layout_are_findings`; the `=` loader
+    and conversion `None` in `test_custom_resources_against_shipped_crds`)
+  - Since: #170
 
   QA-11 and QA-12 need no change to `./check` in kadet-hub/generators,
   which runs `sandbox/gate-compile` from the registry's `main` (CHK-3).
-  Follow-ups outside this change:
+  Follow-ups outside this repository:
 
   - kadet-hub/generators `tools/upstream.py` and its spec (UPD-2 to
     UPD-4): regenerate each `schemas/<group>/crds/` file from the source
@@ -1095,9 +1121,6 @@ review go into the review comment and do not fail the gate.
     hold CRD files, in their next versions.
   - kadet-hub/generator-template `AGENTS.md`: the "Schemas" rule names the
     CRD files, their location and their form.
-  - This repository: `docs/authors.md` explains the CRD files next to the
-    JSON Schemas, and the implementation inventory names QA-11 and QA-12
-    at `sandbox/apiserver_check.py`.
 
 ## Review
 
