@@ -314,6 +314,60 @@ coverage is named at each:
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
+- OQ-4 (QA-12): Where do the CRD files live? (a) `schemas/<group>/crds/`,
+  next to the group's JSON Schemas and under its `sources.yaml` entry;
+  (b) flat in `schemas/crds/` as `<plural>.<group>.yaml`, the group read
+  from the file; (c) a `crds/` directory at the generator root, named by a
+  new manifest key. Recommendation: (a). (b) works as well but separates
+  a CRD from the schemas and the `sources.yaml` entry of its group; (c)
+  needs a change to `policy/manifest.schema.json` and a second provenance
+  file for the same upstream source.
+- OQ-5 (QA-12): In which form are CRDs shipped, given the 1 MiB file
+  limit? (a) The upstream file when it holds only this CRD and fits,
+  compact JSON otherwise: 123 and 24 of the 147 measured. (b) Always
+  compact JSON: one rule, but no file can be compared with upstream by
+  checksum or read in review. (c) Without `description` fields, 6.8 MB
+  instead of 26.2 MB for the 147: a content change the reproduction in
+  kadet-hub/generators has to repeat, for size alone. (d) The upstream
+  file unchanged, with a `tree:large` exception (SEC-14) per file above
+  1 MiB, which lapses on every bump, or a higher SEC-5 limit under
+  `schemas/`, which loosens a scan rule for size; neither handles files
+  with several documents. Recommendation: (a).
+- OQ-6 (QA-11): Must a generator ship the CRD of every custom resource
+  kind it emits? (a) No: kinds without CRD are skipped, with one
+  `review:` line per `apiVersion`. (b) Yes, for every kind with a JSON
+  Schema, unless its group's `sources.yaml` entry opts out with a new key
+  such as `crds: none` and a reason (aggregated API, CRDs only in Go code
+  or Helm templates, documents no server serves). (c) As (a), and on a
+  bump a CRD the previous version shipped must not disappear.
+  Recommendation: (a). kadet-hub/generators adds CRDs to all 23
+  generators whose sources have them, and for another author the review
+  line puts the question to the reviewer; (b) moves the argument about
+  exemptions into a new `sources.yaml` field the gate has to validate.
+- OQ-7 (QA-12, kadet-hub/generators): Which sources count where upstream
+  has no plain CRD file? KubeVirt's virt-operator assembles its CRDs in Go
+  (`crds.go`) from the schemas in `validations_generated.go` (2.0 MB);
+  CDI keeps its 12 CRDs as YAML in Go string literals
+  (`crds_generated.go`); Linkerd's are Helm templates in
+  `charts/linkerd-crds`. Together they account for 29 of the 114 skipped
+  documents. (a) Only CRD documents that exist as YAML files at the
+  `source`; the three stay with QA-7. (b) Also CRDs derived mechanically,
+  with the derivation named in the `sources.yaml` comment and reproduced
+  by `tools/upstream.py`: CDI's literals extracted, Linkerd's chart
+  rendered with `helm template` at the tag and its default values.
+  KubeVirt has no such path short of running virt-operator.
+  Recommendation: (a) in this change, (b) per source as a later
+  kadet-hub/generators change; the gate treats both alike.
+- OQ-8 (QA-12): Who checks that a shipped CRD equals upstream? (a) As
+  for QA-7's JSON Schemas: the reviewer checks the `sources.yaml` entry,
+  and the reproduction of UPD-2 in kadet-hub/generators covers its own
+  generators. (b) A maintainer-started workflow like `tf-schema-verify`
+  (QA-9) that fetches each `source` at its ref and compares every shipped
+  CRD, as data and without generator code. (c) The gate fetches upstream itself, which
+  puts network into the gate. Recommendation: (a). An edited CRD only
+  loosens or tightens the check of its own generator, as an edited JSON
+  Schema does today, and consumers do not apply it; (b) once a generator
+  from outside kadet-hub/generators ships CRDs.
 
 ## Implementation inventory
 
