@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile a generator's fixture project in the gVisor sandbox and judge the
-# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, QA-4, QA-6, QA-7, QA-10).
+# trace and the output (SEC-9 to SEC-12, CMP-1, CMP-2, CMP-4, CMP-5, QA-4, QA-6, QA-7, QA-10).
 #
 # Usage: gate-compile <generator dir> <name> [<charts dir>]
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
@@ -140,6 +140,19 @@ if ! (cd -- "$work" && diff -r -- "out-$backend" out-ci) >"$work/ci.diff"; then
   head -n 20 -- "$work/ci.diff"
   status=1
 fi
+
+# CMP-5: the same output with Kapitan's compile cache, on every backend.
+for backend in "${backends[@]}"; do
+  echo "### backend $backend with --cache"
+  mkdir -- "$work/out-cache-$backend"
+  "$here/run" "${allow[@]}" --result "$work/out-cache-$backend" "$work/project" \
+    compile --output-path /out --inventory-backend "$backend" --cache || status=1
+  if ! (cd -- "$work" && diff -r -- "out-$backend" "out-cache-$backend") >"$work/cache.diff"; then
+    echo "CMP-5: output differs with --cache on $backend:"
+    head -n 20 -- "$work/cache.diff"
+    status=1
+  fi
+done
 
 # CMP-4: krab under the same checks; only a finding fails the gate.
 echo "### krab"
