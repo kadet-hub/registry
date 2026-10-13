@@ -527,20 +527,20 @@ review go into the review comment and do not fail the gate.
   The run covers every backend because the inventory the cache key hashes
   and the output that gets pickled both depend on the backend. Running it
   on the first backend only, as CMP-2 does, would save the `omegaconf`
-  compile, 6.6 of the 10.9 s median below.
+  compile, 6.5 of the 10.8 s median below.
 
   The release build job repeats the gate compile, and CMP-5 with it, for
   versions not yet published (CMP-4); published versions are not compiled
   again, so CMP-5 applies to versions published after it. On 2026-10-13
-  all 31 listed versions were published. Compiled as `release/build-all`
-  fetches them, all 31 passed CMP-5 on both of their backends,
+  all 35 listed versions were published. Compiled as `release/build-all`
+  fetches them, all 35 passed CMP-5 on both of their backends,
   `reclass-rs` and `omegaconf`, and the whole gate compile passed. No
   listed version is affected.
 
   Measured on 2026-10-13 on a 24-core workstation without gVisor, over the
-  31 listed versions: CMP-5 took 10.4 to 11.7 s per gate compile (median
-  10.9 s; `reclass-rs` 4.2 s, `omegaconf` 6.6 s), on top of 22.3 to
-  32.3 s for the rest of it (median 26.0 s), 42 % more over all 31. On
+  35 listed versions: CMP-5 took 10.4 to 11.7 s per gate compile (median
+  10.8 s; `reclass-rs` 4.2 s, `omegaconf` 6.5 s), on top of 22.3 to
+  32.3 s for the rest of it (median 25.9 s), 42 % more over all 35. On
   the `ubuntu-24.04` runner of #159, under gVisor, the `gate-selftest`
   step took 1360 and 1408 s in two runs against 999 s in the last run
   before them (#154). Each sample with one backend took a median 7.2 and
