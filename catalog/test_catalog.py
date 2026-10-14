@@ -476,22 +476,22 @@ class Site(unittest.TestCase):
 
     def test_goatcounter_counts_from_the_own_origin(self):
         with tempfile.TemporaryDirectory() as tmp:
-            os.environ["HUGO_PARAMS_GOATCOUNTER"] = "demo"
+            os.environ["HUGO_PARAMS_GOATCOUNTER"] = "https://stats.example.org/"
             try:
                 out = build(INDEX, tmp)
             finally:
                 del os.environ["HUGO_PARAMS_GOATCOUNTER"]
             with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
                 html = f.read()
-            self.assertIn('<script data-goatcounter="https://demo.goatcounter.com/count" async src="./count.js"></script>', html)
+            self.assertIn('<script data-goatcounter="https://stats.example.org/count" async src="./count.js"></script>', html)
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
             self.assertIn("script-src 'self';", csp)
-            self.assertIn("img-src 'self' https://demo.goatcounter.com;", csp)
-            self.assertIn("connect-src https://demo.goatcounter.com;", csp)
+            self.assertIn("img-src 'self' https://stats.example.org;", csp)
+            self.assertIn("connect-src https://stats.example.org;", csp)
             self.assertIn("licenses/goatcounter.txt", html)
             with open(os.path.join(out, "privacy", "index.html"), encoding="utf-8") as f:
                 privacy = f.read()
-            self.assertIn("demo.goatcounter.com", privacy)
+            self.assertIn("https://stats.example.org", privacy)
             self.assertNotIn("runs no analytics", privacy)
         with open(os.path.join(HERE, "site", "static", "count.js"), encoding="utf-8") as f:
             self.assertTrue(f.read().startswith("// GoatCounter: https://www.goatcounter.com\n"))

@@ -6,7 +6,7 @@ title = "kadet-hub"
 enableRobotsTXT = true
 disableKinds = ["section", "taxonomy", "term", "rss"]
 
-# CAT-25: GoatCounter site code; empty loads no counter.
+# CAT-25: origin of the GoatCounter instance, e.g. https://stats.example.org; empty loads no counter.
 [params]
 goatcounter = ""
 
