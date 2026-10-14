@@ -378,21 +378,24 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py`
   - Since: #16
 
-- CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names a
-  GoatCounter site code, every page MUST count its view with `count.js`
-  served from the site's own origin, and the CSP MUST allow
-  `https://<code>.goatcounter.com` in `connect-src` and `img-src` and no
-  other origin besides its own. Without the parameter the site MUST load
-  no counter and the privacy page MUST say it runs no analytics.
+- CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
+  origin of a GoatCounter instance, every page MUST count its view with
+  `count.js` served from the site's own origin, and the CSP MUST allow that
+  origin in `connect-src` and `img-src` and no other origin besides its
+  own. Without the parameter the site MUST load no counter and the privacy
+  page MUST say it runs no analytics.
 
-  GoatCounter counts without cookies. Its hosted `count.js` would need
+  GoatCounter counts without cookies. kadet-hub runs its own instance on a
+  server at netcup, so page views reach no third party; the hosted
+  goatcounter.com service would need an account there and was set aside
+  for that reason. The hosted `count.js` would need
   `script-src https://gc.zgo.at` and break CAT-3, so the site ships a copy
   of it, which receives no updates by itself: `static/count.js` is
   `https://gc.zgo.at/count.js` byte for byte, with its ISC license under
   `static/licenses/`. The script sends the path, title, referrer and
   screen width with `navigator.sendBeacon`, or an image request where
   that fails, and reads `skipgc` from `localStorage` to skip the
-  operator's own visits. The privacy page names GoatCounter and what it
+  operator's own visits. The privacy page names the instance and what it
   receives. Cloudflare Web Analytics was considered; its beacon script is
   only served from `static.cloudflareinsights.com`.
 
