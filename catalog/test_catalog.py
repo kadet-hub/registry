@@ -36,6 +36,8 @@ INDEX = {"serial": 7, "generators": {
              "1.2.0": record("c")},
     "old": {"0.1.0": record("d", yanked="entry removed", tags=())},
 }}
+# Site only: a listed generator without scan record or compatibility.
+SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": record("e", tags=())}}}
 
 
 README = """# Demo
@@ -105,7 +107,7 @@ class Site(unittest.TestCase):
         os.mkdir(pages)
         with open(os.path.join(pages, "demo.html"), "w", encoding="utf-8") as f:
             f.write('<span class="h6">Total downloads</span>\n<h3 title="1215">1.2k</h3>')
-        cls.out = build(INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages)
+        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages)
 
     @classmethod
     def tearDownClass(cls):
@@ -135,8 +137,7 @@ class Site(unittest.TestCase):
         self.assertIn(f"https://github.com/{OWNER}/registry/security/advisories/GHSA-2345-6789-cfgh", html)
         self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
         self.assertNotIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'a' * 64}", html)
-        old_card = self.card("old")
-        self.assertIn('<p class="meta-line">no listed version, all yanked</p>', old_card)
+        self.assertNotIn('data-name="old"', self.page())  # CAT-26
 
     def test_owner_without_login_shows_the_user_id(self):
         self.assertIn("<dt>Maintainer</dt><dd>331675722</dd>", self.page())
@@ -329,7 +330,7 @@ class Site(unittest.TestCase):
         return home[start:home.index("</li>", start)]
 
     def test_cards_show_the_same_fields_in_the_same_order(self):
-        for name in ("demo", "old"):
+        for name in ("demo", "plain"):
             card = self.card(name)
             order = ['class="stretched"', 'class="meta-line"', 'class="description"',
                      "<dt>Built for</dt>", "<dt>Maintainer</dt>", "<dt>Popularity</dt>", "<dt>Scanned</dt>"]
@@ -337,8 +338,8 @@ class Site(unittest.TestCase):
             self.assertEqual(positions, sorted(positions), name)
             self.assertNotIn("Apache-2.0", card)  # CAT-22: license only on the page
             self.assertEqual(card.count("<a "), 1 + card.count('class="tag"') + card.count('class="fact-link"'))
-        self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", self.card("old"))
-        self.assertIn("<dt>Scanned</dt><dd>not scanned</dd>", self.card("old"))
+        self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", self.card("plain"))
+        self.assertIn("<dt>Scanned</dt><dd>not scanned</dd>", self.card("plain"))
         self.assertIn('<p class="meta-line">1.10.0 · <time datetime="2026-10-09T05:34:57Z">2026-10-09</time></p>', self.card("demo"))
 
     def test_maintainer_links_to_the_profile(self):
@@ -518,6 +519,14 @@ class Site(unittest.TestCase):
             self.assertNotIn("runs no analytics", privacy)
         with open(os.path.join(HERE, "site", "static", "count.js"), encoding="utf-8") as f:
             self.assertTrue(f.read().startswith("// GoatCounter: https://www.goatcounter.com\n"))
+
+    def test_generators_without_a_listed_version_have_no_card(self):
+        home, tags = self.page(), self.page("tags")
+        self.assertNotIn('data-name="old"', home)
+        self.assertIn('placeholder="Search 2 generators"', home)
+        self.assertIn("Yanked: entry removed", self.page("generators", "old"))  # CAT-5: the page stays
+        self.assertIn('id="old"', self.page("popularity"))
+        self.assertIn("1 generator tagged helm", tags)
 
     def test_empty_index_says_so(self):
         with tempfile.TemporaryDirectory() as tmp:
