@@ -14,7 +14,7 @@
     <dt>Not when</dt><dd>{{ $t.not | markdownify }}</dd>
     {{ with $t.evidence }}<dt>Evidence</dt><dd>{{ . | markdownify }}</dd>{{ end }}
   </dl>
-  <p>{{ if $n }}<a href="{{ printf "/?tags=%s" $id | relURL }}">{{ $n }} generator{{ if ne $n 1 }}s{{ end }} tagged {{ $id }}</a>{{ else }}No generator tagged {{ $id }} yet.{{ end }}</p>
+  <p>{{ if $n }}<a href="{{ printf "/tags/%s/" $id | relURL }}">{{ $n }} generator{{ if ne $n 1 }}s{{ end }} tagged {{ $id }}</a>{{ else }}No generator tagged {{ $id }} yet.{{ end }}</p>
 </section>
 {{ end }}
 </div>
