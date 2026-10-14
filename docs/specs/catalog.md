@@ -217,6 +217,19 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #73, #81, #92
 
+- CAT-26: A generator without a listed version MUST NOT have a card on the
+  home page or a tag page, and MUST NOT be counted there.
+
+  Every version of a removed entry is yanked with the reason `entry
+  removed`, and the index keeps them. Their card read "no listed version,
+  all yanked" and looked like a second generator next to the one it was
+  merged into, as calico-resources did beside calico. The generator page
+  stays at its URL (CAT-5) and shows the reasons; the popularity page
+  keeps its row, which that page links to.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 - CAT-23: Every generator MUST have a popularity score
   `round(10·log2(1 + 👍) + 4·log2(1 + stars ÷ n) + 2·log2(1 + pulls))`,
   shown on its card and page and explained at `/popularity/` with the
