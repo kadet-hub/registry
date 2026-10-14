@@ -288,7 +288,8 @@ class Site(unittest.TestCase):
             self.assertIn('<meta property="og:image" content="https://kadet-hub.org/og.png">', html)
         self.assertTrue(os.path.isfile(os.path.join(self.out, "og.png")))
         guides = self.page("guides")
-        for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators"):
+        for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators",
+                     "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api"):
             self.assertIn(f"guides/{slug}/", guides)
             self.page("guides", slug)
         self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
@@ -432,7 +433,8 @@ class Site(unittest.TestCase):
 
     def test_seo(self):
         for parts in ((), ("generators", "demo"), ("generators", "old"), ("tags",), ("glossary",), ("tags", "helm"), ("tags", "observability"),
-                      ("guides",), ("privacy",), ("imprint",), ("guides", "writing-a-kapitan-generator"), ("guides", "supply-chain-security-for-kapitan-generators")):
+                      ("guides",), ("privacy",), ("imprint",), ("guides", "writing-a-kapitan-generator"), ("guides", "supply-chain-security-for-kapitan-generators"),
+                      ("guides", "checking-custom-resources-against-crds"), ("guides", "ingress-nginx-to-gateway-api")):
             html = self.page(*parts)
             title = re.search(r"<title>([^<]*)</title>", html).group(1)
             desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)

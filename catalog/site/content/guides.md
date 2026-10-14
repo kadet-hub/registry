@@ -1,5 +1,5 @@
 ---
 title: Guides
 layout: guides
-description: Guides on writing Kapitan generators, choosing between generators, Helm and jinja2, and consuming third-party generators safely.
+description: Guides on writing and choosing Kapitan generators, consuming them safely, checking custom resources and moving from ingress-nginx to Gateway API.
 ---
