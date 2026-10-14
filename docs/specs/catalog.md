@@ -66,7 +66,7 @@ remembered in the browser's `localStorage`.
   on the home page still combine tags.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #221
 
 - CAT-9: Code blocks, tables and long values such as digests MUST wrap
   instead of scrolling horizontally, and every inventory entry and command
@@ -121,7 +121,7 @@ remembered in the browser's `localStorage`.
   twice. The touch icon is `favicon.svg` rendered as a 180 by 180 PNG.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #221
 
 - CAT-11b: Headings MUST NOT skip a level, and a list of cards MUST sit
   under an `h2` with each card's name as `h3`.
