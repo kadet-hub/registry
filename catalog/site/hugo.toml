@@ -8,7 +8,7 @@ disableKinds = ["section", "taxonomy", "term", "rss"]
 
 # CAT-25: origin of the GoatCounter instance, e.g. https://stats.example.org; empty loads no counter.
 [params]
-goatcounter = ""
+goatcounter = "https://stats.kadet-hub.org"
 
 [sitemap]
 changeFreq = "daily"
