@@ -1,6 +1,7 @@
 {{ define "main" }}
 {{ $docs := printf "https://github.com/%s/registry/blob/main/docs/" site.Data.catalog.owner }}
-{{ $gens := site.Data.catalog.generators }}
+{{/* CAT-26: only generators with a listed version get a card. */}}
+{{ $gens := where site.Data.catalog.generators "latest" "!=" nil }}
 <section class="hero">
   <h1>Kapitan generators, gate-checked and attested</h1>
   <p class="lead">Every listed version of these Kapitan generators is gate-checked: it passed secret, malware and code scans, a fixture compile in a gVisor sandbox without network and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.</p>

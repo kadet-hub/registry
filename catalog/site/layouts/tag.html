@@ -1,7 +1,7 @@
 {{ define "main" }}
 {{ $id := .Params.tag }}
 {{ $t := index site.Data.tags $id }}
-{{ $gens := where site.Data.catalog.generators "tags" "intersect" (slice $id) }}
+{{ $gens := where (where site.Data.catalog.generators "latest" "!=" nil) "tags" "intersect" (slice $id) }}
 <section class="prose-page">
 <p class="crumbs"><a href="{{ "/tags/" | relURL }}">Tags</a> / {{ $id }}</p>
 <h1><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ $id }}"/></svg> {{ $t.title }} generators for Kapitan</h1>

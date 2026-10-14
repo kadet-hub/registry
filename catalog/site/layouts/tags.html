@@ -1,5 +1,5 @@
 {{ define "main" }}
-{{ $gens := site.Data.catalog.generators }}
+{{ $gens := where site.Data.catalog.generators "latest" "!=" nil }}
 <section class="prose-page">
 <h1>Tags</h1>
 <p class="lead">A tag is a claim by the generator's author. The maintainer checks it in review against this page; for <code>kubernetes</code>, <code>helm</code> and <code>terraform</code> the evidence named below can be checked in the manifest and the compiled output.</p>
