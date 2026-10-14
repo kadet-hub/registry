@@ -46,8 +46,7 @@ remembered in the browser's `localStorage`.
   - Since: #45
 
 - CAT-8: Selecting several tags MUST show the generators that carry all of
-  them, and the selection MUST be kept in the URL as `?tags=<a>,<b>`; every
-  tag shown on a card or page MUST link to that filtered view.
+  them, and the selection MUST be kept in the URL as `?tags=<a>,<b>`.
 
   Tags are multiply assigned (a generator can be `helm`, `operators` and
   `kubernetes` at once), so OR would widen the result with every click.
@@ -57,6 +56,17 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (partial: the links and the markup; the
     filter itself runs in the browser)
   - Since: #45
+
+- CAT-8a: Every tag shown on a card, a generator page or the tag overview
+  MUST link to that tag's page `/tags/<tag>/`.
+
+  Until this change the links went to the filtered home page. Audit tools
+  flag internal links with query parameters, and the tag page (CAT-18)
+  lists the same generators with the tag's definition; the filter chips
+  on the home page still combine tags.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
 
 - CAT-9: Code blocks, tables and long values such as digests MUST wrap
   instead of scrolling horizontally, and every inventory entry and command
@@ -102,6 +112,16 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #196
+
+- CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
+  link an Apple touch icon.
+
+  The logo next to the site name used `alt=""` as decorative; audit tools
+  count that as missing, so it is named at the cost of the name being read
+  twice. The touch icon is `favicon.svg` rendered as a 180 by 180 PNG.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
 
 - CAT-11b: Headings MUST NOT skip a level, and a list of cards MUST sit
   under an `h2` with each card's name as `h3`.
