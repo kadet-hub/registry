@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: flux
-  tag: flux-v1.0.0
-  sha: 572dda58b592673020f4a8d97142d1cdd2125440
+  tag: flux-v1.0.1
+  sha: e4891e8fd85ca0a19ebf361e8b54fd6473fd8a2f
 owners: [3042152]
