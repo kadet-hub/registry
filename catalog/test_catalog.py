@@ -469,10 +469,22 @@ class Site(unittest.TestCase):
             self.assertNotIn("<h2", cards.split("</ul>")[0])
 
     def test_no_counter_without_a_goatcounter_code(self):
-        for html in self.pages():
-            self.assertNotIn("count.js", html)
-            self.assertNotIn("goatcounter", html)
-        self.assertIn("The site runs no analytics or tracking.", self.page("privacy"))
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["HUGO_PARAMS_GOATCOUNTER"] = ""
+            try:
+                out = build(INDEX, tmp)
+            finally:
+                del os.environ["HUGO_PARAMS_GOATCOUNTER"]
+            for parts in ((), ("privacy",)):
+                with open(os.path.join(out, *parts, "index.html"), encoding="utf-8") as f:
+                    html = f.read()
+                self.assertNotIn("count.js", html)
+                self.assertNotIn("goatcounter.com/count", html)
+                self.assertNotIn("connect-src", html)
+            self.assertIn("The site runs no analytics or tracking.", html)
+
+    def test_site_counts_on_its_own_instance(self):
+        self.assertIn('<script data-goatcounter="https://stats.kadet-hub.org/count" async src="./count.js"></script>', self.page())
 
     def test_goatcounter_counts_from_the_own_origin(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -385,8 +385,9 @@ index is refused (CON-2).
   own. Without the parameter the site MUST load no counter and the privacy
   page MUST say it runs no analytics.
 
-  GoatCounter counts without cookies. kadet-hub runs its own instance on a
-  server at netcup, so page views reach no third party; the hosted
+  GoatCounter counts without cookies. kadet-hub runs its own instance,
+  `https://stats.kadet-hub.org`, on a server at netcup, so page views
+  reach no third party; the hosted
   goatcounter.com service would need an account there and was set aside
   for that reason. The hosted `count.js` would need
   `script-src https://gc.zgo.at` and break CAT-3, so the site ships a copy
