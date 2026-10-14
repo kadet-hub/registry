@@ -101,7 +101,7 @@ remembered in the browser's `localStorage`.
   publish.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #196
 
 - CAT-11b: Headings MUST NOT skip a level, and a list of cards MUST sit
   under an `h2` with each card's name as `h3`.
@@ -110,7 +110,7 @@ remembered in the browser's `localStorage`.
   the home page had 36 `h2` and no `h3`.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #196
 
 - CAT-12: The generator page MUST link to an issue form for reporting a
   problem with that generator, prefilled with its name and latest version,
@@ -397,7 +397,7 @@ index is refused (CON-2).
   only served from `static.cloudflareinsights.com`.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #196
 
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
