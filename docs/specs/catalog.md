@@ -228,7 +228,7 @@ remembered in the browser's `localStorage`.
   keeps its row, which that page links to.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #224
 
 - CAT-23: Every generator MUST have a popularity score
   `round(10·log2(1 + 👍) + 4·log2(1 + stars ÷ n) + 2·log2(1 + pulls))`,
