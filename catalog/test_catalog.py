@@ -447,6 +447,55 @@ class Site(unittest.TestCase):
             self.assertIn(f"https://github.com/{OWNER}/registry/blob/main/docs/{doc}", html)
         self.assertNotIn("No generators listed yet", html)
 
+    def test_home_identity_schema_and_title(self):
+        html = self.page()
+        title = re.search(r"<title>([^<]*)</title>", html).group(1)
+        self.assertTrue(50 <= len(title) <= 60, title)
+        ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
+        types = {node["@type"]: node for node in ld["@graph"]}
+        self.assertEqual(types["WebSite"]["url"], "https://kadet-hub.org/")
+        self.assertEqual(types["Organization"]["sameAs"], [f"https://github.com/{OWNER}"])
+        self.assertEqual(types["WebSite"]["publisher"]["@id"], types["Organization"]["@id"])
+
+    def test_headings_skip_no_level(self):
+        for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator")):
+            levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
+            self.assertEqual(levels[0], 1, parts)
+            for before, after in zip(levels, levels[1:]):
+                self.assertLessEqual(after, before + 1, parts)
+        for parts in ((), ("tags", "helm")):
+            cards = self.page(*parts).split('<ul class="cards')[1]
+            self.assertIn('<h3><a class="stretched"', cards)
+            self.assertNotIn("<h2", cards.split("</ul>")[0])
+
+    def test_no_counter_without_a_goatcounter_code(self):
+        for html in self.pages():
+            self.assertNotIn("count.js", html)
+            self.assertNotIn("goatcounter", html)
+        self.assertIn("The site runs no analytics or tracking.", self.page("privacy"))
+
+    def test_goatcounter_counts_from_the_own_origin(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["HUGO_PARAMS_GOATCOUNTER"] = "demo"
+            try:
+                out = build(INDEX, tmp)
+            finally:
+                del os.environ["HUGO_PARAMS_GOATCOUNTER"]
+            with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
+                html = f.read()
+            self.assertIn('<script data-goatcounter="https://demo.goatcounter.com/count" async src="./count.js"></script>', html)
+            csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
+            self.assertIn("script-src 'self';", csp)
+            self.assertIn("img-src 'self' https://demo.goatcounter.com;", csp)
+            self.assertIn("connect-src https://demo.goatcounter.com;", csp)
+            self.assertIn("licenses/goatcounter.txt", html)
+            with open(os.path.join(out, "privacy", "index.html"), encoding="utf-8") as f:
+                privacy = f.read()
+            self.assertIn("demo.goatcounter.com", privacy)
+            self.assertNotIn("runs no analytics", privacy)
+        with open(os.path.join(HERE, "site", "static", "count.js"), encoding="utf-8") as f:
+            self.assertTrue(f.read().startswith("// GoatCounter: https://www.goatcounter.com\n"))
+
     def test_empty_index_says_so(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = build({"serial": 1, "generators": {}}, tmp)

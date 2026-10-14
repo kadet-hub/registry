@@ -6,6 +6,10 @@ title = "kadet-hub"
 enableRobotsTXT = true
 disableKinds = ["section", "taxonomy", "term", "rss"]
 
+# CAT-25: GoatCounter site code; empty loads no counter.
+[params]
+goatcounter = ""
+
 [sitemap]
 changeFreq = "daily"
 

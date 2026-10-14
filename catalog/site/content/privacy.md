@@ -1,7 +1,7 @@
 ---
 title: Privacy
 layout: prose
-description: How kadet-hub.org handles personal data. The site sets no cookies, loads nothing from other origins and runs no analytics; GitHub Pages hosts it.
+description: How kadet-hub.org handles personal data. The site sets no cookies and loads nothing from other origins; GitHub Pages hosts it.
 ---
 
 *Draft pending legal review.*
@@ -14,7 +14,9 @@ The controller is the operator of kadet-hub: tbd (name), [privacy@kadet-hub.org]
 
 kadet-hub.org is a static site served by GitHub Pages, operated by GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. When you open a page, GitHub receives your IP address and the usual request data and, according to GitHub, logs the IP address for security purposes. kadet-hub has no access to these logs. GitHub transfers data to the United States on the basis of its certification under the EU-US Data Privacy Framework and the EU standard contractual clauses; see [GitHub's privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement). The legal basis is the legitimate interest in operating a secure website (Art. 6(1)(f) GDPR).
 
-The site loads no scripts, styles, fonts or images from other origins, sets no cookies and runs no analytics or tracking.
+The site loads no scripts, styles, fonts or images from other origins and sets no cookies.
+
+{{% analytics %}}
 
 ## Theme setting
 

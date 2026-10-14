@@ -3,7 +3,7 @@
   <div class="card-head">
     <span class="tile hue-{{ .hue }}" aria-hidden="true">{{ with .tags }}<svg class="icon"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ else }}{{ $.monogram }}{{ end }}</span>
     <div>
-      <h2><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></h2>
+      <h3><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></h3>
       <p class="meta-line">{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}no listed version, all yanked{{ end }}</p>
     </div>
   </div>

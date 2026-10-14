@@ -1,5 +1,5 @@
 {{- /* CAT-11: title, description, canonical, Open Graph and JSON-LD. */ -}}
-{{- $title := "kadet-hub: gate-checked Kapitan generators" -}}
+{{- $title := "kadet-hub: gate-checked and attested Kapitan generators" -}}
 {{- $desc := "Find Kapitan generators that passed secret, malware and code scans and a sandboxed compile, published as attested OCI artifacts you pin by digest." -}}
 {{- $g := dict -}}
 {{- with .Params.generator }}{{ $g = index (where site.Data.catalog.generators "name" .) 0 }}{{ end -}}
@@ -30,6 +30,11 @@
 <meta property="og:image:alt" content="kadet-hub: Kapitan generators, scanned and attested">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="alternate" type="application/atom+xml" title="kadet-hub: new generator versions" href="{{ "index.xml" | relURL }}">
+{{- if .IsHome }}
+{{- $org := dict "@type" "Organization" "@id" (print site.BaseURL "#organization") "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL) "sameAs" (slice (printf "https://github.com/%s" site.Data.catalog.owner)) -}}
+{{- $web := dict "@type" "WebSite" "name" site.Title "url" site.BaseURL "description" $desc "publisher" (dict "@id" (print site.BaseURL "#organization")) -}}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@graph" (slice $web $org) }}</script>
+{{- end }}
 {{- with $g }}
 {{- $ld := dict "@context" "https://schema.org" "@type" "SoftwareSourceCode" "name" .name "description" .description "codeRepository" .source_url "url" $.Permalink "programmingLanguage" "Python" "license" (printf "https://spdx.org/licenses/%s.html" .license) -}}
 {{- with .latest }}{{ $ld = merge $ld (dict "version" .version) }}{{ end }}

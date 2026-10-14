@@ -13,6 +13,7 @@
 </dl>
 </section>
 {{ with $gens }}
+<h2 class="visually-hidden">Generators tagged {{ $id }}</h2>
 <ul class="cards tag-cards">{{ range . }}{{ partial "card.html" . }}{{ end }}</ul>
 {{ else }}
 <p class="empty">No generator is tagged {{ $id }} yet. <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request one</a> or <a href="https://github.com/kadet-hub/generator-template">write one</a>.</p>
