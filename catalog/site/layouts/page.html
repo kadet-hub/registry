@@ -9,7 +9,7 @@
   <div>
     <h1>{{ .name }}</h1>
     <p class="lead">{{ .description }}</p>
-    {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/?tags=%s" . | relURL }}"><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }}</a>{{ end }}</p>{{ end }}
+    {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/tags/%s/" . | relURL }}"><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }}</a>{{ end }}</p>{{ end }}
     <dl class="facts">
       <div><dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</dd></div>
       <div><dt>License</dt><dd>{{ .license }}</dd></div>

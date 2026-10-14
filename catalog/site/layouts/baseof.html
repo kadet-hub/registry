@@ -10,12 +10,13 @@
 <script src="{{ "theme.js" | relURL }}"></script>
 <link rel="stylesheet" href="{{ "style.css" | relURL }}">
 <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
+<link rel="apple-touch-icon" href="{{ "apple-touch-icon.png" | relURL }}">
 </head>
 <body>
 {{ partial "icons.html" . }}
 <a class="skip" href="#main">Skip to content</a>
 <header class="site">
-  <a class="brand" href="{{ "/" | relURL }}"><img src="{{ "favicon.svg" | relURL }}" alt="" width="28" height="28">{{ site.Title }}</a>
+  <a class="brand" href="{{ "/" | relURL }}"><img src="{{ "favicon.svg" | relURL }}" alt="kadet-hub logo" width="28" height="28">{{ site.Title }}</a>
   <nav>
     <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/docs/consumers.md">Use</a>
     <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/docs/authors.md">Publish</a>

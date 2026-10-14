@@ -170,11 +170,20 @@ class Site(unittest.TestCase):
         self.assertIn('class="chroma"', html)
         self.assertNotIn("Old readme", self.page("generators", "old"))  # every version yanked
 
-    def test_tags_link_to_the_filtered_home_page(self):
-        self.assertIn('href="../../?tags=helm"', self.page("generators", "demo"))
+    def test_tags_link_to_the_tag_page(self):
+        self.assertIn('href="../../tags/helm/"', self.page("generators", "demo"))
         home = self.page()
-        self.assertIn('href="./?tags=helm"', home)
+        self.assertIn('href="./tags/helm/"', home)
         self.assertIn('data-tag="helm" aria-pressed="false"', home)
+        for html in [*self.pages(), self.page("tags"), self.page("tags", "helm")]:
+            self.assertNotRegex(html, r'href="[^"]*\?tags=')
+
+    def test_images_have_alt_and_touch_icon(self):
+        for html in [*self.pages(), self.page("tags"), self.page("privacy")]:
+            for img in re.findall(r"<img\b[^>]*>", html):
+                self.assertRegex(img, r'alt="[^"]+"', img)
+            self.assertRegex(html, r'<link rel="apple-touch-icon" href="[^"]*apple-touch-icon.png">')
+        self.assertTrue(os.path.exists(os.path.join(self.out, "apple-touch-icon.png")))
 
     def test_copy_buttons_and_wrapping(self):
         html = self.page("generators", "demo")
@@ -209,7 +218,7 @@ class Site(unittest.TestCase):
         page = self.page("tags")
         for tag in enum:
             self.assertIn(f'id="{tag}"', page)
-        self.assertIn('href="../?tags=helm">1 generator tagged helm</a>', page)
+        self.assertIn('href="../tags/helm/">1 generator tagged helm</a>', page)
         self.assertIn("No generator tagged ci yet.", page)
         home = self.page()
         self.assertIn('data-tag="helm" aria-pressed="false" title="Renders a Helm chart or builds on one."><svg class="icon" aria-hidden="true"><use href="#i-tag-helm"/></svg>helm <span class="count">(1)</span>', home)
