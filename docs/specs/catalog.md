@@ -91,6 +91,27 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #45
 
+- CAT-11a: The home page MUST have a title of 50 to 60 characters and
+  MUST carry schema.org `WebSite` and `Organization` as JSON-LD.
+
+  Audit tools such as SEOptimer score a home page title below 50
+  characters as too short and look for an identity schema; the
+  `Organization` names kadet-hub, its logo and the GitHub organization as
+  `sameAs`, without an address or phone number, which the site does not
+  publish.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #196
+
+- CAT-11b: Headings MUST NOT skip a level, and a list of cards MUST sit
+  under an `h2` with each card's name as `h3`.
+
+  Before, every card name was an `h2` directly under the page's `h1`, so
+  the home page had 36 `h2` and no `h3`.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #196
+
 - CAT-12: The generator page MUST link to an issue form for reporting a
   problem with that generator, prefilled with its name and latest version,
   and the home page MUST link to an issue form for requesting a new
@@ -356,6 +377,30 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py`
   - Since: #16
+
+- CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
+  origin of a GoatCounter instance, every page MUST count its view with
+  `count.js` served from the site's own origin, and the CSP MUST allow that
+  origin in `connect-src` and `img-src` and no other origin besides its
+  own. Without the parameter the site MUST load no counter and the privacy
+  page MUST say it runs no analytics.
+
+  GoatCounter counts without cookies. kadet-hub runs its own instance on a
+  server at netcup, so page views reach no third party; the hosted
+  goatcounter.com service would need an account there and was set aside
+  for that reason. The hosted `count.js` would need
+  `script-src https://gc.zgo.at` and break CAT-3, so the site ships a copy
+  of it, which receives no updates by itself: `static/count.js` is
+  `https://gc.zgo.at/count.js` byte for byte, with its ISC license under
+  `static/licenses/`. The script sends the path, title, referrer and
+  screen width with `navigator.sendBeacon`, or an image request where
+  that fails, and reads `skipgc` from `localStorage` to skip the
+  operator's own visits. The privacy page names the instance and what it
+  receives. Cloudflare Web Analytics was considered; its beacon script is
+  only served from `static.cloudflareinsights.com`.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #196
 
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
