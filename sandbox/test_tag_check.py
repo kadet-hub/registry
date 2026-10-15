@@ -1,10 +1,12 @@
+import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from tag_check import check
+from tag_check import check, kinds
 
 
 def tree(files):
@@ -42,6 +44,28 @@ class TagCheck(unittest.TestCase):
         self.assertEqual(findings, [])
         self.assertIn("review: tag security: check it against /tags/#security", lines)
         self.assertIn("review: tag kubernetes is not set, but the generator shows it: compiled/minimal/cm.yaml", lines)
+
+    def test_kinds_of_the_output(self):  # PUB-10
+        with tree({"compiled/minimal/a.yml": "apiVersion: v1\nkind: ConfigMap\n---\napiVersion: gateway.networking.k8s.io/v1\nkind: HTTPRoute\n",
+                   "compiled/complete/a.yml": "apiVersion: v1\nkind: ConfigMap\n",
+                   "compiled/complete/list.json": '{"items": [], "apiVersion": "v1", "kind": "List"}',
+                   "compiled/complete/items.yaml": "- apiVersion: apps/v1\n  kind: Deployment\n",
+                   "compiled/talos/bond.yaml": "apiVersion: v1alpha1\nkind: BondConfig\n",
+                   "compiled/complete/values.yml": "apiVersion: v1\nreplicas: 2\n", "compiled/complete/bad.yml": ": [\n",
+                   "compiled/complete/main.tf.json": '{"resource": {"aws_s3_bucket": {}}}'}) as out:
+            expected = [{"group": "", "version": "v1", "kind": "ConfigMap"}, {"group": "", "version": "v1", "kind": "List"},
+                        {"group": "", "version": "v1alpha1", "kind": "BondConfig"}, {"group": "apps", "version": "v1", "kind": "Deployment"},
+                        {"group": "gateway.networking.k8s.io", "version": "v1", "kind": "HTTPRoute"}]
+            self.assertEqual(kinds(out), expected)
+            result = os.path.join(out, "kinds.json")
+            with open(os.path.join(out, "manifest.yaml"), "w", encoding="utf-8") as f:
+                f.write("tags: [kubernetes]\n")
+            p = subprocess.run([sys.executable, "-I", os.path.join(os.path.dirname(os.path.abspath(__file__)), "tag_check.py"),
+                                "--manifest", os.path.join(out, "manifest.yaml"), "--out", os.path.join(out, "compiled"), "--kinds", result],
+                               capture_output=True, text=True)
+            self.assertEqual(p.returncode, 0, p.stdout)
+            with open(result, encoding="utf-8") as f:
+                self.assertEqual(json.load(f), expected)
 
 
 if __name__ == "__main__":

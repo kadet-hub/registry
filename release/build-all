@@ -2,8 +2,8 @@
 # Build job (PUB-1, PUB-7, PUB-9, CMP-4): fetch every entry's source without
 # checkout, validate and build in the sandbox image without network, then
 # rerun the static checks and the compile gate for versions not yet
-# published and record the run, the krab result and the output diff in
-# meta.json.
+# published and record the run, the krab result, the output diff and the
+# kinds of the output in meta.json.
 #
 # Usage: build-all <out dir>
 # Needs: the sandbox image $SANDBOX_IMAGE, yq, jq, oras, REGISTRY, what
@@ -59,7 +59,7 @@ while IFS= read -r name; do
     "$root/scan/static-scan" "$work/charts-$name" || { echo "PUB-7: $name $version: the chart scan failed"; exit 1; }
   fi
   mkdir -- "$work/out-$name"
-  KRAB_RESULT=$work/krab SCHEMA_RESULT=$work/compatibility.json OUTPUT_DIR=$work/out-$name \
+  KRAB_RESULT=$work/krab SCHEMA_RESULT=$work/compatibility.json KINDS_RESULT=$work/kinds.json OUTPUT_DIR=$work/out-$name \
     "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" | tee "$work/compile.txt" \
     || { echo "CMP-4: $name $version: the compile gate failed"; exit 1; }
   "$root/release/scan-record" "$(jq length -- "$work/exceptions.json")" >"$work/scan.json"
@@ -68,7 +68,8 @@ while IFS= read -r name; do
     || { rm -f -- "$out/$name/output.diff"; echo '{"base": null, "error": "output diff failed"}' >"$work/diff.json"; }
   echo "PUB-9: $name $version: $(cat -- "$work/diff.json")"
   jq -c -S --arg krab "$(cat -- "$work/krab")" --slurpfile scan "$work/scan.json" --slurpfile compat "$work/compatibility.json" \
-    --slurpfile diff "$work/diff.json" '.krab = $krab | .scan = $scan[0] | .compatibility = $compat[0] | .output_diff = $diff[0]' \
+    --slurpfile diff "$work/diff.json" --slurpfile kinds "$work/kinds.json" \
+    '.krab = $krab | .scan = $scan[0] | .compatibility = $compat[0] | .output_diff = $diff[0] | .kinds = $kinds[0]' \
     -- "$meta" >"$work/meta.json"
   cp -- "$work/meta.json" "$meta"
 done < <(jq -r '.[]' -- "$out/names.json")
