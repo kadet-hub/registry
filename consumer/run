@@ -77,8 +77,9 @@ while IFS= read -r dep; do
   mkdir -p -- "$(dirname -- "$out")"
   case $kind in
     oci)
-      [[ -z $(get marketplace) ]] || attested "$source"
-      oras pull -o "$tmp" -- "$source" >/dev/null
+      ref=$(get host)/$(get repo)@$(get digest)  # the tag is checked by plan.py, not fetched
+      [[ -z $(get marketplace) ]] || attested "$ref"
+      oras pull -o "$tmp" -- "$ref" >/dev/null
       python3 -I "$root/consumer/unpack.py" "$tmp" "$out"
       ;;
     helm)

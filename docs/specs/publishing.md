@@ -44,7 +44,7 @@ parameters:
   kapitan:
     dependencies:
       - type: oci
-        source: ghcr.io/kadet-hub/<name>@sha256:<digest>
+        source: ghcr.io/kadet-hub/<name>:<version>@sha256:<digest>
         output_path: lib/<name>
 ```
 

@@ -155,7 +155,7 @@ class Site(unittest.TestCase):
 
     def test_version_page_shows_pinned_entry_and_verification(self):
         html = self.page("generators", "demo")
-        self.assertIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
+        self.assertIn(f"source: ghcr.io/{OWNER}/demo:1.10.0@sha256:{'b' * 64}", html)
         self.assertIn(f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
         self.assertIn(f"https://github.com/{OWNER}/registry/.github/workflows/release.yml@refs/heads/main", html)
         self.assertLess(html.index(">1.10.0"), html.index(">1.2.0"))
@@ -165,7 +165,7 @@ class Site(unittest.TestCase):
         self.assertIn("Yanked: broken", html)
         self.assertIn(f"https://github.com/{OWNER}/registry/security/advisories/GHSA-2345-6789-cfgh", html)
         self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
-        self.assertNotIn(f"source: ghcr.io/{OWNER}/demo@sha256:{'a' * 64}", html)
+        self.assertNotIn(f"sha256:{'a' * 64}\n        output_path", html)
         self.assertNotIn('data-name="old"', self.page())  # CAT-26
 
     def test_owner_without_login_shows_the_user_id(self):

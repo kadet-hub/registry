@@ -1,6 +1,6 @@
-{{/* The inventory entry and verify command of a version as text (CAT-2, CAT-17, CAT-28). dict: name, digest. */}}
+{{/* The inventory entry and verify command of a version as text (CAT-2, CAT-17, CAT-28). dict: name, version, digest. */}}
 {{ $owner := site.Data.catalog.owner }}
 {{ $identity := printf "https://github.com/%s/registry/.github/workflows/release.yml@refs/heads/main" $owner }}
 {{ return dict
-  "entry" (printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/%s@%s\n        output_path: lib/%s" $owner .name .digest .name)
+  "entry" (printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/%s:%s@%s\n        output_path: lib/%s" $owner .name .version .digest .name)
   "verify" (printf "gh attestation verify \\\n  oci://ghcr.io/%s/%s@%s \\\n  --owner %s \\\n  --cert-identity %s" $owner .name .digest $owner $identity) }}

@@ -23,7 +23,8 @@ sys.path.insert(0, os.path.join(HERE, "..", "gate"))  # python -I does not add t
 from check_entry import schema_errors
 
 RELPATH = re.compile(r"^[A-Za-z0-9._/-]+$")
-OCI = re.compile(r"^(?P<host>[a-z0-9.-]+(?::\d+)?)/(?P<repo>[a-z0-9._/-]+)@(?P<digest>sha256:[0-9a-f]{64})$")
+OCI = re.compile(r"^(?P<host>[a-z0-9.-]+(?::\d+)?)/(?P<repo>[a-z0-9._/-]+)"
+                 r"(?::(?P<tag>[A-Za-z0-9_][A-Za-z0-9._-]{0,127}))?@(?P<digest>sha256:[0-9a-f]{64})$")
 NAME = re.compile(r"^[a-z][a-z0-9-]{1,38}$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 VERSION = re.compile(r"^v?\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$")
@@ -57,11 +58,11 @@ def dependencies(inventory, policy, owner):
             if kind == "oci":
                 m = OCI.match(source)
                 if not m:
-                    errors.append("source must be <host>/<repository>@sha256:<digest>")
+                    errors.append("source must be <host>/<repository>[:<tag>]@sha256:<digest>")
                 else:
                     host, repo = m.group("host"), m.group("repo")
                     name = repo[len(owner) + 1:] if host == "ghcr.io" and repo.startswith(owner + "/") else None
-                    dep.update(host=host, repo=repo, digest=m.group("digest"),
+                    dep.update(host=host, repo=repo, tag=m.group("tag"), digest=m.group("digest"),
                                marketplace=name if name is not None and NAME.match(name) else None)
                     if name is not None and dep["marketplace"] is None:
                         errors.append(f"{repo} is not a marketplace generator")
@@ -123,6 +124,10 @@ def check_index(index, policy, deps):
             findings.append(f"CON-2: {dep['source']}: the index does not list this digest for {name}")
             continue
         version, record = records[0]
+        if dep["tag"] and dep["tag"] != version:
+            findings.append(f"CON-2: {dep['source']}: tag {dep['tag']} is not {version}, "
+                            "the version the index lists for this digest")
+            continue
         if record.get("yanked"):
             findings.append(f"CON-2: {name} {version} is yanked: {record['yanked']}")
             continue

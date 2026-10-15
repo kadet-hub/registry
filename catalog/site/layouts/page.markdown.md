@@ -12,7 +12,7 @@
 - Owners: {{ range $i, $o := $g.owners }}{{ if $i }}, {{ end }}{{ with $o.login }}[{{ . }}](https://github.com/{{ . }}){{ else }}{{ $o.id }}{{ end }}{{ end }}
 - Tags: {{ with $g.tags }}{{ delimit . ", " }}{{ else }}none{{ end }}
 - Page: {{ $page.Permalink }}
-{{ $c := partial "commands.html" (dict "name" $g.name "digest" .digest) }}
+{{ $c := partial "commands.html" (dict "name" $g.name "version" .version "digest" .digest) }}
 ## Inventory entry
 
 ```yaml
