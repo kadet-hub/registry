@@ -593,7 +593,7 @@ remembered in the browser's `localStorage`.
   - Since: #157
 
 - CAT-19: A generator page MUST show its sections in one centered column
-  of equal width, in the order README, Versions, and MUST have an "On this
+  of equal width, in the order README, Versions, Badge, and MUST have an "On this
   page" list linking each section that is present, which marks the section
   in view. Versions MUST show the newest listed version expanded, with its
   inventory entry, verify command, details and checks, and state once above
@@ -612,7 +612,48 @@ remembered in the browser's `localStorage`.
   open and only the marking of the section in view is missing.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #56, #79, #111
+  - Since: #56, #79, #111, this change
+
+- CAT-32: Every generator page MUST have a `badge.json` next to its
+  `index.html` in the shields.io endpoint schema, with the label
+  `kadet-hub` and, as message and colour, the latest listed version and
+  `blue`, or `not listed` and `lightgrey` for a generator without a listed
+  version. `sitemap.xml` MUST NOT list it.
+
+  A badge in the README of the source repository tells its visitors that
+  the generator is listed and in which version, and links the page with
+  its checks. The endpoint form was chosen over an image the build renders:
+  shields.io draws the badge from the JSON when the README is viewed, so it
+  follows a new version or a yank with the next catalog build, without a
+  commit in the author's repository, and the site keeps serving only static
+  files. A generator whose versions are all yanked keeps its page (CAT-5,
+  CAT-26), so a badge in a README keeps resolving and says it is no longer
+  listed.
+
+  The schema is the one documented at
+  `https://shields.io/badges/endpoint-badge` (read on 2026-10-15):
+  `schemaVersion` 1, `label` and `message` required, `color` a named
+  colour, `lightgrey` by default. Hugo writes the file as the output
+  format `badge` (`application/json`, plain text), enabled for
+  `/generators/*` next to the Markdown variant (CAT-28). The sitemap names
+  only the HTML URL of each page, as for the variants.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
+- CAT-32a: The page of a generator with a listed version MUST show the
+  Markdown `[![kadet-hub](https://img.shields.io/endpoint?url=<badge.json
+  URL>)](<page URL>)` in the section "Badge" as a snippet with a copy
+  button (CAT-9), and MUST NOT load the badge image.
+
+  The CSP admits images only from the site's own origin (CAT-3, CAT-25); a
+  preview would need `img-src https://img.shields.io` and would send every
+  visitor's address to shields.io. The snippet is text in `<pre><code>`.
+  A generator without a listed version has no section, since its badge
+  reads "not listed". `docs/authors.md` shows the snippet.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
 
 - CAT-20: Each listed generator MUST have one discussion in the
   "Generators" category of the registry's GitHub Discussions, and its card
