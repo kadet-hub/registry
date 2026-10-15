@@ -349,9 +349,9 @@ remembered in the browser's `localStorage`.
 
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
-  its `AGENTS.md`, the tags, the glossary, the gate's policy files, and the
-  Markdown variant (CAT-28) of every generator with a listed version and of
-  every guide.
+  its `AGENTS.md`, the tags, the kinds (CAT-29), the glossary, the gate's
+  policy files, and the Markdown variant (CAT-28) of every generator with a
+  listed version and of every guide.
 
   Coding agents asked to write a generator start there instead of guessing
   the gate's rules from the HTML; agents asked to use one find it in the
@@ -365,13 +365,15 @@ remembered in the browser's `localStorage`.
   "Guides" has one line per guide with its description. "Optional" stays
   last, the proposal's convention for links an agent can skip. The
   proposal does not define `llms-full.txt`, and the site publishes none.
+  The kind pages are not listed one by one: they have no Markdown
+  variant, and `/kinds/` names every kind with its generators.
 
   The description comes from the submitter and is written as text on one
   line: whitespace runs become one space and the control characters of
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, #231
+  - Since: #51, #231, this change
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
@@ -432,6 +434,77 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #55, #232
+
+- CAT-29: The site MUST have a page per Kubernetes kind at
+  `/kinds/<group>/<kind>/` with the cards of every generator whose latest
+  listed version ships a JSON Schema for that kind, and an index of all
+  kinds at `/kinds/`. Both URLs MUST stay stable like those of CAT-5, and
+  `sitemap.xml` MUST list them.
+
+  People look for a generator by what it renders, such as "which
+  generator renders HTTPRoute?", and neither descriptions nor tags name
+  kinds. The index has no field for it: `compatibility` (CAT-15) names
+  software and versions, the scan record (PUB-7) names checks.
+
+  The kinds come from the attested SBOM (PUB-8), which lists every file of
+  the artifact and so every schema a version ships as
+  `schemas/<group>/<kind>_<version>.json` (QA-7). The catalog job already
+  holds the SBOM of every listed version (CAT-14), so no field is added to
+  the metadata and versions published before this change have kinds too.
+  A version without an SBOM, published before #47, has none.
+
+  A shipped schema stands for a rendered kind, because QA-7 makes a
+  rendered document without a schema a review line. Measured on
+  2026-10-15 on the fixtures of kadet-hub/generators at e4891e8: of 237
+  rendered combinations of group, kind and version, 232 had a shipped
+  schema; the other five are kind's `kind.x-k8s.io` Cluster and loki's
+  four `loki.grafana.com` kinds, which ship no schemas. Of 297 shipped
+  schemas, 65 were not rendered by the fixture: 64 Talos config documents
+  of talos and one kind of kserve. A schema an author ships for a kind the
+  generator does not render lists the generator on that kind's page; the
+  reviewer sees the schema in the tree.
+
+  Only files directly under a group directory of `schemas/` count, the
+  directory every generator with schemas names in its manifest; a manifest
+  that names another directory gives no kinds. CRD files under
+  `schemas/<group>/crds/` (QA-12) are not counted, nor is
+  `schemas/terraform/` (QA-8): Terraform resource types are inside the
+  extracts, not in their file names, so Terraform generators have no kind
+  pages. Group, kind and version must match `[a-z0-9]` name patterns, so
+  a file name cannot put a path segment or markup into a page.
+
+  File names carry the kind in lower case, so the pages show `httproute`,
+  not `HTTPRoute`. The group is the directory: `core` for the core group
+  and for Talos documents, whose `apiVersion: v1alpha1` has no group
+  (QA-7). A kind page lists each apiVersion with the generators that ship
+  it and follows CAT-26. It links no upstream API reference, because the
+  group does not tell a built-in kind from a custom resource (Gateway API
+  and the Vertical Pod Autoscaler are `*.k8s.io` CRDs, Talos documents sit
+  under `core`), and the schema sources of `sources.yaml` are not in the
+  index per group.
+
+  The site navigation links `/kinds/`. Title and description stay within
+  CAT-11 for any length of kind and group: the title drops its suffix and
+  then the group, and the description is cut at 160 characters, so a long
+  CRD group such as Crossplane's `insights.azure.upbound.io` cannot stop
+  the deploy (CAT-11d).
+
+  On 2026-10-15 the live `catalog.json` (index serial 40) gave 291 kind
+  pages in 55 groups; five kinds list more than one generator.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
+- CAT-29a: The home page search MUST match the kind names (CAT-29) of
+  each card's latest listed version.
+
+  Search compares in lower case, so "HTTPRoute" finds the generators of
+  every `httproute`, in any group. The search field says so in its
+  placeholder, "Search <n> generators or kinds".
+
+  - Test: `catalog/test_catalog.py` (partial: the search text in the
+    markup; the matching runs in the browser)
+  - Since: this change
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
