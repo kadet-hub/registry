@@ -8,7 +8,9 @@
 > {{ partial "text.html" $g.description }}
 
 - Latest version: {{ .version }}{{ with .published }}, published {{ substr . 0 10 }}{{ end }}
-- Built for: {{ with .compatibility }}{{ range $i, $c := . }}{{ if $i }}, {{ end }}{{ $c.software }} {{ $c.version }}{{ end }} (output validated against these schemas){{ else }}not recorded{{ end }}
+{{ range partial "compat.html" . -}}
+- {{ .label }}: {{ partial "text.html" .text }}
+{{ end -}}
 - Owners: {{ range $i, $o := $g.owners }}{{ if $i }}, {{ end }}{{ with $o.login }}[{{ . }}](https://github.com/{{ . }}){{ else }}{{ $o.id }}{{ end }}{{ end }}
 - Tags: {{ with $g.tags }}{{ delimit . ", " }}{{ else }}none{{ end }}
 - Page: {{ $page.Permalink }}

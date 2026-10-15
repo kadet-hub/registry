@@ -7,7 +7,8 @@
 # Writes compatible or incompatible (CMP-4) to $KRAB_RESULT if set, and the
 # first backend's output to $OUTPUT_DIR if set (SEC-13), and the software and
 # versions its output was validated against to $SCHEMA_RESULT if set (QA-7), and the kinds of that
-# output to $KINDS_RESULT if set (PUB-10). COMPILE_ONLY=1 stops after that compile.
+# output to $KINDS_RESULT if set (PUB-10), and the backends it compiled on, one per line, to
+# $BACKENDS_RESULT if set (PUB-11). COMPILE_ONLY=1 stops after that compile.
 set -euo pipefail
 
 gen=$1
@@ -174,4 +175,5 @@ if ((rc == 0)) && diff -r -x .krab-manifest.json -- "$work/out-${backends[0]}" "
 fi
 echo "CMP-4: krab $krab"
 if [[ -n ${KRAB_RESULT:-} ]]; then echo "$krab" >"$KRAB_RESULT"; fi
+if [[ -n ${BACKENDS_RESULT:-} ]]; then printf '%s\n' "${backends[@]}" >"$BACKENDS_RESULT"; fi
 exit "$status"
