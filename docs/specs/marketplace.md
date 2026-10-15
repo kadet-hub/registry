@@ -151,7 +151,7 @@ cover none of the changed files.
   catches up on anything a skipped push left out.
 
   - Test: manual: the release run after the merge of the pull request that introduced this
-  - Since: #58, this change
+  - Since: #58, #237
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
