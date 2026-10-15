@@ -1,10 +1,12 @@
 """Check the manifest's tags against the manifest and the compiled output (QA-6).
 
-Usage: tag_check.py --manifest FILE --out DIR
+Usage: tag_check.py --manifest FILE --out DIR [--kinds FILE]
 
 kubernetes, helm and terraform need evidence; every other tag is printed
 as a review line. Evidence for a tag the manifest lacks is a review line.
-Prints findings and review lines; exits 1 on any finding.
+--kinds receives the group, version and kind of every document with
+apiVersion and kind, as JSON (PUB-10). Prints findings and review lines;
+exits 1 on any finding.
 """
 
 import argparse
@@ -30,12 +32,22 @@ def k8s_documents(path):
             text = f.read()
         docs = [json.loads(text)] if path.endswith(".json") else list(yaml.safe_load_all(text))
     except (OSError, UnicodeDecodeError, ValueError, yaml.YAMLError):
-        return False
+        return
     for doc in docs:
-        items = doc if isinstance(doc, list) else [doc]
-        if any(isinstance(i, dict) and isinstance(i.get("apiVersion"), str) and isinstance(i.get("kind"), str) for i in items):
-            return True
-    return False
+        for i in doc if isinstance(doc, list) else [doc]:
+            if isinstance(i, dict) and isinstance(i.get("apiVersion"), str) and isinstance(i.get("kind"), str):
+                yield i
+
+
+def kinds(out):
+    """PUB-10: group, version and kind of every document with apiVersion and kind, once each, sorted."""
+    found = set()
+    for rel in files(out):
+        if rel.endswith((".yml", ".yaml", ".json")):
+            for d in k8s_documents(os.path.join(out, rel)):
+                group, _, version = d["apiVersion"].rpartition("/")
+                found.add((group, version, d["kind"]))
+    return [{"group": g, "version": v, "kind": k} for g, v, k in sorted(found)]
 
 
 def evidence(manifest, out):
@@ -43,7 +55,7 @@ def evidence(manifest, out):
     for rel in files(out):
         if "terraform" not in found and rel.endswith((".tf.json", ".tf")):
             found["terraform"] = rel
-        elif "kubernetes" not in found and rel.endswith((".yml", ".yaml", ".json")) and k8s_documents(os.path.join(out, rel)):
+        elif "kubernetes" not in found and rel.endswith((".yml", ".yaml", ".json")) and any(k8s_documents(os.path.join(out, rel))):
             found["kubernetes"] = rel
     if manifest.get("charts"):
         found["helm"] = "charts in the manifest"
@@ -80,10 +92,14 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--manifest", required=True)
     p.add_argument("--out", required=True)
+    p.add_argument("--kinds")
     a = p.parse_args()
     with open(a.manifest, encoding="utf-8") as f:
         manifest = yaml.safe_load(f) or {}
     findings, lines = check(manifest, a.out)
+    if a.kinds:
+        with open(a.kinds, "w", encoding="utf-8") as f:
+            json.dump(kinds(a.out), f)
     if findings or lines:
         print("\n".join(findings + lines))
     return 1 if findings else 0

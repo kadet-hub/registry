@@ -7,6 +7,12 @@
   {{- $title = printf "%s · kadet-hub, a catalog of Kapitan generators" .Title -}}
   {{- with .Params.tag }}{{ $title = printf "%s for Kapitan · kadet-hub" $.Title }}{{ end -}}
   {{- if gt (len $title) 65 }}{{ $title = printf "%s · kadet-hub" .Title }}{{ end -}}
+  {{- with .Params.kindname -}}{{/* CAT-29: the first that fits; the group goes last */}}
+    {{- $title = "" -}}
+    {{- range slice (printf "%s · Kapitan generators · kadet-hub" $.Title) (printf "%s · kadet-hub" $.Title) $.Title (printf "%s · Kapitan generators · kadet-hub" .) (printf "%s · kadet-hub" .) -}}
+      {{- if and (not $title) (le (len .) 65) }}{{ $title = . }}{{ end -}}
+    {{- end -}}
+  {{- end -}}
   {{- $desc = .Description -}}
 {{- end -}}
 {{- with $g -}}

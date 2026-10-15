@@ -1,0 +1,2 @@
+{{- /* Comma-separated links to the generator pages of a list of names (CAT-29). */ -}}
+{{- range $i, $n := . }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/" $n | relURL }}">{{ $n }}</a>{{ end -}}

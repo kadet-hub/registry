@@ -6,8 +6,8 @@
 # Needs: what sandbox/run needs, and yq. Prints findings; exits 1 on any.
 # Writes compatible or incompatible (CMP-4) to $KRAB_RESULT if set, and the
 # first backend's output to $OUTPUT_DIR if set (SEC-13), and the software and
-# versions its output was validated against to $SCHEMA_RESULT if set (QA-7). COMPILE_ONLY=1 stops
-# after that compile.
+# versions its output was validated against to $SCHEMA_RESULT if set (QA-7), and the kinds of that
+# output to $KINDS_RESULT if set (PUB-10). COMPILE_ONLY=1 stops after that compile.
 set -euo pipefail
 
 gen=$1
@@ -67,14 +67,16 @@ sec12() {
     "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
     python -I /base/sandbox/output_check.py --out /out --policy /base/policy/output "${output[@]}" || status=1
 }
-# QA-6: the manifest's tags against the manifest and the output, same isolation.
+# QA-6: the manifest's tags against the manifest and the output, same isolation; PUB-10: its kinds.
+mkdir -- "$work/kinds-result"
 tags() {
   docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
     --mount "type=bind,src=$root,dst=/base,readonly" \
     --mount "type=bind,src=$(realpath -- "$manifest"),dst=/manifest.yaml,readonly" \
     --mount "type=bind,src=$1,dst=/out,readonly" \
+    --mount "type=bind,src=$work/kinds-result,dst=/result" \
     "${SANDBOX_IMAGE:-kadet-hub/sandbox}" \
-    python -I /base/sandbox/tag_check.py --manifest /manifest.yaml --out /out || status=1
+    python -I /base/sandbox/tag_check.py --manifest /manifest.yaml --out /out --kinds /result/kinds.json || status=1
 }
 # QA-7: the output against the generator's own schemas, same isolation.
 schemas=$(yq -r '.schemas // ""' -- "$manifest")
@@ -131,6 +133,7 @@ for backend in "${backends[@]}"; do
     schema_check "$work/out-$backend"
     apiserver_check "$work/out-$backend"
     if [[ -n ${SCHEMA_RESULT:-} ]]; then cp -- "$work/schema-result/result.json" "$SCHEMA_RESULT"; fi
+    if [[ -n ${KINDS_RESULT:-} ]]; then cp -- "$work/kinds-result/kinds.json" "$KINDS_RESULT"; fi
   fi
 done
 

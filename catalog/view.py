@@ -7,8 +7,10 @@ and adds display data from the GitHub API: owner logins and source stars.
 A failed lookup leaves the user ID or no stars; --offline skips the API.
 DIR/<name>.tar is the latest version's artifact layer; its README.md is
 shown on the generator page (CAT-7). DIR/<name>/<version>.spdx.json marks a
-version whose SBOM the site offers (CAT-14); --rekor maps name and version to
-the transparency log index of the verified attestation (CAT-17);
+version whose SBOM the site offers (CAT-14); the schemas it lists give the
+kinds of a latest listed version without a kinds record (CAT-29); --rekor
+maps name and version to the transparency log index of the verified
+attestation (CAT-17);
 --discussions maps name to the URL and 👍 count of its discussion (CAT-20).
 DIR/<name>.html is the generator's public package page; its "Total
 downloads" are the pulls of the popularity score (CAT-23). --previous is the
@@ -32,6 +34,9 @@ GITHUB = re.compile(r"^https://github\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+?)\
 README_MAX = 256 * 1024
 HUES = 8
 DIFF_LINES = 150
+GROUP, VERSION = r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?", r"v[0-9]+(?:(?:alpha|beta)[0-9]+)?"
+SCHEMA = re.compile(rf"^\./schemas/({GROUP})/([a-z0-9]+)_({VERSION})\.json$")  # QA-7 layout
+RENDERED = [re.compile(p) for p in (GROUP, r"[A-Za-z0-9]+", VERSION)]  # group, kind, version of a PUB-10 record
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")  # Cc but tab and newline, Bidi_Control
 
 
@@ -45,6 +50,30 @@ def readme(path):
             return t.extractfile(m).read().decode("utf-8", errors="replace")
     except (OSError, tarfile.TarError):
         return None
+
+
+def schema_kinds(path):
+    """CAT-29: sorted (group, kind, version) of the schemas/<group>/<kind>_<version>.json an SBOM lists."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            files = json.load(f)["files"]
+        names = [f["fileName"] for f in files if isinstance(f, dict) and isinstance(f.get("fileName"), str)]
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+    return sorted({m.groups() for m in map(SCHEMA.match, names) if m and m.group(1) != "terraform"})  # QA-8 extracts
+
+
+def rendered_kinds(record):
+    """CAT-29: sorted (group, kind, version) of a version's kinds record (PUB-10), `core` for no group; None without one."""
+    if not isinstance(record.get("kinds"), list):
+        return None
+    found = set()
+    for k in record["kinds"]:
+        if isinstance(k, dict) and all(isinstance(k.get(f), str) for f in ("group", "kind", "version")):
+            t = (k["group"] or "core", k["kind"], k["version"])
+            if all(p.fullmatch(v) for p, v in zip(RENDERED, t)):
+                found.add(t)
+    return sorted(found)
 
 
 def diff_excerpt(path):
@@ -105,7 +134,7 @@ def semver(v):
 
 
 def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, previous=None, diffs=None):
-    generators = []
+    generators, by_kind = [], {}  # CAT-29: {group: {lower-case kind: entry}}
     for name, versions in sorted(index.get("generators", {}).items()):
         ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
                         rekor=(rekor or {}).get(name, {}).get(v),
@@ -130,6 +159,21 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             data = lookup(f"/user/{uid}")
             owners.append({"id": str(uid), "login": data.get("login") if data else None})
         tar = os.path.join(artifacts, f"{name}.tar") if artifacts and latest else None
+        rendered = rendered_kinds(latest) if latest else None
+        kinds = rendered if rendered is not None else (
+            schema_kinds(os.path.join(sboms, name, f"{latest['version']}.spdx.json")) if sboms and latest else [])
+        for group, kind, version in kinds:
+            e = by_kind.setdefault(group, {}).setdefault(kind.lower(), {"name": kind, "page": False, "rendered": [], "schema": [], "versions": {}})
+            if rendered is None:
+                if name not in e["schema"]:
+                    e["schema"].append(name)
+                continue
+            if not e["rendered"]:
+                e["name"] = kind  # the recorded case over the file name's
+            if name not in e["rendered"]:
+                e["rendered"].append(name)
+            e["versions"].setdefault(version if group == "core" else f"{group}/{version}", []).append(name)
+            e["page"] = len(e["rendered"]) > 1  # CAT-29b
         generators.append({
             "name": name,
             "monogram": name[0].upper(),
@@ -138,6 +182,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             "blob_url": blob_url(shown["source"]),
             "description": shown.get("description", ""),
             "tags": shown.get("tags", []),
+            "kinds": sorted({k for _, k, _ in kinds}),
             "license": shown.get("license"),
             "latest": latest,
             "stars": stars,
@@ -153,7 +198,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
         g["stars_shared"] = n if n > 1 and g["stars"] is not None else None
         up = g["discussion"]["up"] if g["discussion"] else 0
         g["score"] = score(up, int(g["stars"] or 0), max(n, 1), g["pulls"] or 0)
-    return {"owner": owner, "serial": index.get("serial"), "generators": generators}
+    return {"owner": owner, "serial": index.get("serial"), "generators": generators, "kinds": by_kind}
 
 
 def load_rekor(path):

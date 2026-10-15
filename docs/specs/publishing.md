@@ -100,8 +100,9 @@ since the documented package API has no visibility call.
   publication, listing per version: name, version, digest, tree ID,
   description, tags, license, Kapitan range, krab result, output
   capabilities, unparsed outputs, binaries, chart digests, owners, source
-  repository and SHA, the output diff summary (PUB-9), the time it was
-  first published, `yanked` with its reason, and advisories (INC-1).
+  repository and SHA, the output diff summary (PUB-9), the kinds of its
+  fixture output (PUB-10), the time it was first published, `yanked` with
+  its reason, and advisories (INC-1).
 
   The index job reads the versions from the registry tags, each version's
   metadata from its config blob, and accepts only digests with a marketplace
@@ -118,7 +119,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: content and serial; publishing
     by AC-6)
-  - Since: #13, #226
+  - Since: #13, #226, #235
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
@@ -215,6 +216,35 @@ since the documented package API has no visibility call.
   - Test: `release/test_release.py::OutputDiff`, `gate/test_output_diff.py`;
     manual: fork rehearsal (pending)
   - Since: #226
+
+- PUB-10: For every version it publishes, the build job MUST record in
+  `meta.json` as `kinds` the group, version and kind of every document
+  with `apiVersion` and `kind` in the first backend's fixture output, once
+  each, sorted.
+
+  The catalog lists generators by the kinds they render (CAT-29). Until
+  this change no field named them: `compatibility` (CAT-15) names the
+  software of the schemas used, not the kinds. The record is
+  `[{group, version, kind}]` with `group` empty for the core group and
+  for Talos documents, whose `apiVersion: v1alpha1` has no group; kinds
+  keep their case, such as `HTTPRoute`.
+
+  The compile gate writes the list in its QA-6 step, where
+  `sandbox/tag_check.py` already parses that output in the sandbox image
+  without network; `--kinds` writes it, and `gate-compile` copies it to
+  `$KINDS_RESULT` as it copies the QA-7 result to `$SCHEMA_RESULT`.
+  `release/build-all` sets both and merges the list into `meta.json` with
+  the krab result and the scan record. Only the build job sets
+  `$KINDS_RESULT`; the gate prints the same findings as before.
+
+  The kinds are those of the fixture, so a kind the generator can render
+  but its fixture does not is missing. Versions published before this
+  requirement have no record, and none is added later: published versions
+  are not compiled again (CMP-4).
+
+  - Test: `sandbox/test_tag_check.py` (`test_kinds_of_the_output`);
+    `release/build-all` has no unit test, manual: next release run
+  - Since: #235
 
 ## Incident response
 

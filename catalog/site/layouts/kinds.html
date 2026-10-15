@@ -1,0 +1,17 @@
+{{ define "main" }}
+{{/* CAT-29: every kind of the listed generators, by API group. */}}
+<section class="prose-page">
+<h1>Kubernetes kinds</h1>
+<p class="lead">Every Kubernetes kind of the generators' latest listed versions, by API group. "Rendered by" names the generators whose fixture output renders the kind, as the release recorded it. "Schema shipped by" names generators whose latest listed version was published before the release recorded kinds; their kinds come from the JSON Schemas they ship, with the kind in lower case as in the file names. A kind that two or more generators render has its own page. <code>core</code> holds the kinds whose apiVersion has no group.</p>
+{{ range $group, $kinds := site.Data.catalog.kinds }}
+<h2 id="{{ $group }}">{{ $group }}</h2>
+<ul class="kind-list">
+{{ range $key, $k := $kinds }}
+<li>{{ if $k.page }}<a href="{{ printf "/kinds/%s/%s/" $group $key | relURL }}"><code>{{ $k.name }}</code></a>{{ else }}<code>{{ $k.name }}</code>{{ end }}: {{ with $k.rendered }}rendered by {{ partial "generator-links.html" . }}{{ end }}{{ if and $k.rendered $k.schema }}; {{ end }}{{ with $k.schema }}schema shipped by {{ partial "generator-links.html" . }}{{ end }}</li>
+{{ end }}
+</ul>
+{{ else }}
+<p class="empty">No listed version has kinds yet.</p>
+{{ end }}
+</section>
+{{ end }}

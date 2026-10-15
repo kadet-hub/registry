@@ -2,3 +2,9 @@
 {{ range $id, $t := site.Data.tags }}
   {{ $.AddPage (dict "kind" "page" "path" (printf "tags/%s" $id) "title" (printf "%s generators" $t.title) "layout" "tag" "params" (dict "tag" $id) "description" (printf "Kapitan generators for %s: %s" $t.title $t.means)) }}
 {{ end }}
+{{/* A page at /kinds/<group>/<kind>/ for each kind two or more listed generators render (CAT-29b). */}}
+{{ range $group, $kinds := site.Data.catalog.kinds }}
+  {{ range $key, $k := $kinds }}{{ if $k.page }}
+    {{ $.AddPage (dict "kind" "page" "path" (printf "kinds/%s/%s" $group $key) "title" (printf "%s (%s)" $k.name $group) "layout" "kind" "params" (dict "group" $group "kindkey" $key "kindname" $k.name) "description" (truncate 159 "…" (printf "Kapitan generators on kadet-hub that render %s (%s), gate-checked and attested." $k.name $group))) }}
+  {{ end }}{{ end }}
+{{ end }}

@@ -256,6 +256,7 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 /* Tag pages and guides (CAT-18) */
 .crumbs { color: var(--text-muted); font-size: .9rem; margin: 0 0 .5rem; }
 .tag-cards { margin-top: 1.5rem; }
+.kind-list { columns: 16rem; }
 .guide-list { list-style: none; padding: 0; display: grid; gap: 1rem; }
 .guide-list li { padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .guide-list a { font-weight: 700; font-size: 1.1rem; }
