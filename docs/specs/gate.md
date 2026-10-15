@@ -604,6 +604,19 @@ review go into the review comment and do not fail the gate.
   - Test: `gate/test_check_entry.py` (`Entry`, `Manifest`)
   - Since: #8
 
+- QA-5a: The manifest's `description` MUST NOT contain control or
+  bidirectional formatting characters.
+
+  The catalog shows the description on cards and pages, in `llms.txt`
+  and in the Atom feed. A C0 control character such as ESC makes the
+  feed invalid XML, and bidirectional overrides can make a description
+  read differently from what reviewers saw. The set is the one the
+  catalog strips from submitter text (CAT-27), so versions listed before
+  this rule still render; the feed strips them as well (CAT-18).
+
+  - Test: `gate/test_check_entry.py` (`Manifest.test_description_without_control_characters`)
+  - Since: #232
+
 - QA-6: The gate MUST fail when the manifest carries `kubernetes`, `helm` or
   `terraform` without the evidence `policy/tags.yaml` names for it, and
   MUST list every other tag for review.
