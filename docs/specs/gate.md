@@ -201,10 +201,12 @@ which only a maintainer pull request changes (GI-2, REV-1).
   The callers exit non-zero on an uncaught exception (GI-7, CON-1), so a
   finding prints a traceback in place of a finding or blocks a valid
   submission; it does not pass a check. `schema_diff.py` only loses its
-  review lines. `fuzz_plan` skips other shapes,
-  which `kapitan inventory` does not write. `apiserver_check.crd_files` is
-  not fuzzed: importing it needs cryptography, which RISK-8 holds at a
-  version with advisories, and a second lock would report them again.
+  review lines.
+
+  `fuzz_plan` skips other shapes, which `kapitan inventory` does not write.
+  `apiserver_check.crd_files` is not fuzzed: importing it needs
+  cryptography, which RISK-8 holds at a version with advisories, and a
+  second lock would report them again.
 
   The `fuzz` workflow runs code-change mode for 300 seconds on pull
   requests that touch a target's inputs (CI-1) and batch mode for 1800
@@ -213,10 +215,10 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   On GitHub, ClusterFuzzLite keeps corpora, builds and coverage as
   `cifuzz-*` workflow artifacts. It downloads the first unexpired artifact
-  of a name in the repository's artifact list, which holds every run's, a
-  fork pull request's included, and unpacks it without path checks. GI-10 rules that out like a cache, so the
-  job sets `NO_CLUSTERFUZZ_DEPLOYMENT=true`, which replaces the store with
-  a no-op. Every run starts from the seeds in `tests/fuzz/seeds/`, and every
+  of a name from the repository's artifact list and unpacks it without
+  path checks. That list holds the artifacts of every run, fork pull
+  requests included. GI-10 rules this out like a cache, so the job sets
+  `NO_CLUSTERFUZZ_DEPLOYMENT=true`, which replaces the store with a no-op. Every run starts from the seeds in `tests/fuzz/seeds/`, and every
   reproducible crash fails it, including one the pull request did not
   introduce. Without the store ClusterFuzzLite calls no API and clones the
   public repository anonymously, so the workflow has `permissions: {}` and
@@ -225,8 +227,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
   The actions are pinned by commit (GI-6), but the images they run,
   `gcr.io/oss-fuzz-base/clusterfuzzlite-build-fuzzers:v1` and
   `clusterfuzzlite-run-fuzzers:v1`, are tags that Google rebuilds from
-  `google/oss-fuzz`, which the commit does not pin. `.clusterfuzzlite/Dockerfile`
-  pins `base-builder-python` by digest. The job holds no token or secret
+  `google/oss-fuzz`, and the commit does not pin them.
+  `.clusterfuzzlite/Dockerfile` pins `base-builder-python` by digest. The job holds no token or secret
   and nothing reads its result, so a changed image can fail the job or hide
   a crash, nothing more.
 
