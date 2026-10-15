@@ -1,0 +1,17 @@
+{{ define "main" }}
+{{/* CAT-29: every kind with the generators that ship its schema, by API group. */}}
+<section class="prose-page">
+<h1>Kubernetes kinds</h1>
+<p class="lead">Every Kubernetes kind that the latest listed version of a generator ships a JSON Schema for, by API group, with the generators that ship it. The gate validates every rendered document of a kind against its schema. Kind names are in lower case, as in the schema file names; <code>core</code> holds the kinds whose apiVersion has no group.</p>
+{{ range $group, $kinds := site.Data.catalog.kinds }}
+<h2 id="{{ $group }}">{{ $group }}</h2>
+<ul class="kind-list">
+{{ range $kind, $versions := $kinds }}{{ $names := slice }}{{ range $versions }}{{ $names = $names | append . }}{{ end }}
+<li><a href="{{ printf "/kinds/%s/%s/" $group $kind | relURL }}">{{ $kind }}</a>: {{ delimit ($names | uniq | sort) ", " }}</li>
+{{ end }}
+</ul>
+{{ else }}
+<p class="empty">No listed version ships a schema yet.</p>
+{{ end }}
+</section>
+{{ end }}

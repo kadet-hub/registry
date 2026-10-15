@@ -14,7 +14,7 @@ from html import unescape as _unescape
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEO_CHECK = os.path.join(HERE, "seo_check.py")
 sys.path.insert(0, HERE)
-from view import README_MAX, readme, view
+from view import README_MAX, readme, schema_kinds, view
 
 OWNER = "kadet-hub"
 
@@ -74,6 +74,20 @@ parameters:
 """
 
 
+# CAT-29: SBOM file names; only schemas/<group>/<kind>_<version>.json count.
+SBOM_FILES = ["./README.md", "./schemas/sources.yaml", "./schemas/gateway.networking.k8s.io/httproute_v1.json",
+              "./schemas/gateway.networking.k8s.io/httproute_v1beta1.json", "./schemas/core/configmap_v1.json",
+              "./schemas/gateway.networking.k8s.io/crds/httproutes.yaml", "./schemas/terraform/hashicorp_aws_6.68.0.json",
+              "./schemas/terraform/x_v1.json", "./schemas/<script>/x_v1.json", "./schemas/../evil_v1.json",
+              "./schemas/apps/Deployment_v1.json", "./lib/schemas/apps/deployment_v1.json"]
+
+
+def sbom(path, names):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"spdxVersion": "SPDX-2.3", "files": [{"fileName": n} for n in names]}, f)
+
+
 def artifact(path, files):
     with tarfile.open(path, "w") as t:
         for name, text in files.items():
@@ -105,9 +119,8 @@ class Site(unittest.TestCase):
         artifact(os.path.join(arts, "demo.tar"), {"README.md": README, "kapitan-generator.yaml": "name: demo\n"})
         artifact(os.path.join(arts, "old.tar"), {"README.md": "# Old readme\n"})
         sboms = os.path.join(cls.tmp.name, "sboms", "demo")
-        os.makedirs(sboms)
-        with open(os.path.join(sboms, "1.10.0.spdx.json"), "w", encoding="utf-8") as f:
-            f.write('{"spdxVersion": "SPDX-2.3"}')
+        sbom(os.path.join(sboms, "1.10.0.spdx.json"), SBOM_FILES)
+        sbom(os.path.join(cls.tmp.name, "sboms", "plain", "0.2.0.spdx.json"), ["./schemas/core/configmap_v1.json"])
         rekor = os.path.join(cls.tmp.name, "rekor.json")
         with open(rekor, "w", encoding="utf-8") as f:
             json.dump({"demo": {"1.10.0": "3202022821", "1.0.0": "17", "1.2.0": "not-a-number"}}, f)
@@ -315,6 +328,8 @@ class Site(unittest.TestCase):
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
         self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 5)
+        self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not every kind page
+        self.assertNotIn("kinds/core/", text)
 
     def markdown(self, *parts):
         with open(os.path.join(self.out, *parts, "index.md"), encoding="utf-8") as f:
@@ -335,7 +350,7 @@ class Site(unittest.TestCase):
         with open(os.path.join(HERE, "site", "content", "guides", "writing-a-kapitan-generator.md"), encoding="utf-8") as f:
             body = f.read().split("---\n", 2)[2]
         self.assertEqual(self.markdown("guides", "writing-a-kapitan-generator"), f"# Writing a Kapitan generator\n\n{body.strip()}\n")
-        for parts in ((), ("guides",), ("tags", "helm"), ("privacy",)):
+        for parts in ((), ("guides",), ("tags", "helm"), ("privacy",), ("kinds",), ("kinds", "core", "configmap")):
             self.assertFalse(os.path.exists(os.path.join(self.out, *parts, "index.md")), parts)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertNotIn(".md<", f.read())
@@ -559,12 +574,13 @@ class Site(unittest.TestCase):
         self.assertEqual(types["WebSite"]["publisher"]["@id"], types["Organization"]["@id"])
 
     def test_headings_skip_no_level(self):
-        for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator")):
+        for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"),
+                      ("kinds",), ("kinds", "core", "configmap")):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
             for before, after in zip(levels, levels[1:]):
                 self.assertLessEqual(after, before + 1, parts)
-        for parts in ((), ("tags", "helm")):
+        for parts in ((), ("tags", "helm"), ("kinds", "core", "configmap")):
             cards = self.page(*parts).split('<ul class="cards')[1]
             self.assertIn('<p class="card-name"><a class="stretched"', cards)
             self.assertNotRegex(cards.split("</ul>")[0], r"<h[1-6]\b")  # CAT-11b: card names are no headings
@@ -621,10 +637,58 @@ class Site(unittest.TestCase):
     def test_generators_without_a_listed_version_have_no_card(self):
         home, tags = self.page(), self.page("tags")
         self.assertNotIn('data-name="old"', home)
-        self.assertIn('placeholder="Search 2 generators"', home)
+        self.assertIn('placeholder="Search 2 generators or kinds"', home)
         self.assertIn("Yanked: entry removed", self.page("generators", "old"))  # CAT-5: the page stays
         self.assertIn('id="old"', self.page("popularity"))
         self.assertIn("1 generator tagged helm", tags)
+
+    def test_kind_pages(self):  # CAT-29
+        pages = sorted(os.path.relpath(os.path.join(d, n), self.out) for d, _, names in os.walk(os.path.join(self.out, "kinds"))
+                       for n in names)
+        self.assertEqual(pages, ["kinds/core/configmap/index.html", "kinds/gateway.networking.k8s.io/httproute/index.html",
+                                 "kinds/index.html"])
+        route = self.page("kinds", "gateway.networking.k8s.io", "httproute")
+        self.assertIn("<h1>Kapitan generators for <code>httproute</code> in gateway.networking.k8s.io</h1>", route)
+        self.assertIn("<dd><code>gateway.networking.k8s.io/v1</code>: demo</dd>", route)
+        self.assertIn("<dd><code>gateway.networking.k8s.io/v1beta1</code>: demo</dd>", route)
+        cards = route.split('<ul class="cards')[1]
+        self.assertEqual(re.findall(r'data-name="([^"]+)"', cards), ["demo"])
+        self.assertNotRegex(route, r'href="https?://(?!github\.com|kadet-hub\.org)[^"]*kubernetes')  # no derived API reference
+        configmap = self.page("kinds", "core", "configmap")
+        self.assertIn("<dd><code>v1</code>: demo, plain</dd>", configmap)
+        self.assertEqual(re.findall(r'data-name="([^"]+)"', configmap.split('<ul class="cards')[1]), ["demo", "plain"])
+        index = self.page("kinds")
+        self.assertIn('<h2 id="gateway.networking.k8s.io">gateway.networking.k8s.io</h2>', index)
+        self.assertRegex(index, r'<li><a href="[./]*kinds/core/configmap/">configmap</a>: demo, plain</li>')
+        self.assertRegex(index, r'<li><a href="[./]*kinds/gateway\.networking\.k8s\.io/httproute/">httproute</a>: demo</li>')
+        self.assertLess(index.index('id="core"'), index.index('id="gateway.networking.k8s.io"'))
+        self.assertIn('href="./kinds/"', self.page())  # linked from every page
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            sitemap = f.read()
+        for url in ("kinds/", "kinds/core/configmap/", "kinds/gateway.networking.k8s.io/httproute/"):
+            self.assertIn(f"<loc>https://kadet-hub.org/{url}</loc>", sitemap)
+
+    def test_long_kind_names_fit_the_title_and_description_limits(self):  # CAT-29, CAT-11
+        long_group = "a.very.long.group.name.example.com.and.more.example.org"
+        with tempfile.TemporaryDirectory() as tmp:
+            sbom(os.path.join(tmp, "sboms", "g", "1.0.0.spdx.json"),
+                 ["./schemas/insights.azure.upbound.io/applicationinsightsworkbooktemplate_v1beta1.json",
+                  f"./schemas/{long_group}/averyveryverylongkindnamethatgoeson_v1.json"])
+            out = build({"serial": 1, "generators": {"g": {"1.0.0": record("a")}}}, tmp, sboms=os.path.join(tmp, "sboms"))
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+            with open(os.path.join(out, "kinds", "insights.azure.upbound.io", "applicationinsightsworkbooktemplate", "index.html"), encoding="utf-8") as f:
+                azure = f.read()
+            with open(os.path.join(out, "kinds", long_group, "averyveryverylongkindnamethatgoeson", "index.html"), encoding="utf-8") as f:
+                long = f.read()
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+        self.assertIn("<title>applicationinsightsworkbooktemplate (insights.azure.upbound.io)</title>", azure)
+        self.assertIn("<title>averyveryverylongkindnamethatgoeson · kadet-hub</title>", long)  # the group goes last
+        self.assertRegex(long, r'<meta name="description" content="Kapitan generators on kadet-hub that ship a JSON Schema for [^"]*…">')
+
+    def test_search_matches_kind_names(self):  # CAT-29a
+        home = self.page()
+        self.assertRegex(home, r'data-text="demo [^"]* configmap httproute" data-tags="helm" data-name="demo"')
+        self.assertRegex(home, r'data-text="plain [^"]* configmap" data-tags="" data-name="plain"')
 
     def test_feed_stays_valid_xml_with_control_characters(self):  # CAT-18, QA-5a
         with tempfile.TemporaryDirectory() as tmp:
@@ -652,6 +716,29 @@ class View(unittest.TestCase):
             self.assertIsNone(readme(big))
             self.assertIsNone(readme(none))
             self.assertIsNone(readme(os.path.join(tmp, "missing.tar")))
+
+    def test_schema_kinds_from_sbom_file_names(self):  # CAT-29
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "s.spdx.json")
+            sbom(path, SBOM_FILES)
+            self.assertEqual(schema_kinds(path), [("core", "configmap", "v1"), ("gateway.networking.k8s.io", "httproute", "v1"),
+                                                  ("gateway.networking.k8s.io", "httproute", "v1beta1")])
+            for text in ("not json", "[]", '{"files": [1, {"fileName": 2}]}'):
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(text)
+                self.assertEqual(schema_kinds(path), [], text)
+            self.assertEqual(schema_kinds(os.path.join(tmp, "missing.json")), [])
+
+    def test_kinds_of_the_latest_listed_version_only(self):  # CAT-29, CAT-26
+        with tempfile.TemporaryDirectory() as tmp:
+            sbom(os.path.join(tmp, "demo", "1.10.0.spdx.json"), ["./schemas/core/configmap_v1.json", "./schemas/apps/deployment_v1.json"])
+            sbom(os.path.join(tmp, "demo", "1.2.0.spdx.json"), ["./schemas/apps/statefulset_v1.json"])
+            sbom(os.path.join(tmp, "old", "0.1.0.spdx.json"), ["./schemas/apps/daemonset_v1.json"])
+            result = view(INDEX, OWNER, lambda _: None, sboms=tmp)
+        gens = {g["name"]: g for g in result["generators"]}
+        self.assertEqual((gens["demo"]["kinds"], gens["old"]["kinds"]), (["configmap", "deployment"], []))
+        self.assertEqual(result["kinds"], {"apps": {"deployment": {"apps/v1": ["demo"]}}, "core": {"configmap": {"v1": ["demo"]}}})
+        self.assertEqual(view(INDEX, OWNER, lambda _: None)["kinds"], {})  # no SBOMs, no kinds
 
     def test_display_data_from_the_api(self):
         answers = {"/repos/example/demo": {"stargazers_count": 0}, "/user/331675722": {"login": "someone"}}

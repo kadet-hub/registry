@@ -7,7 +7,8 @@ and adds display data from the GitHub API: owner logins and source stars.
 A failed lookup leaves the user ID or no stars; --offline skips the API.
 DIR/<name>.tar is the latest version's artifact layer; its README.md is
 shown on the generator page (CAT-7). DIR/<name>/<version>.spdx.json marks a
-version whose SBOM the site offers (CAT-14); --rekor maps name and version to
+version whose SBOM the site offers (CAT-14), and the schemas it lists give
+the latest listed version's kinds (CAT-29); --rekor maps name and version to
 the transparency log index of the verified attestation (CAT-17);
 --discussions maps name to the URL and 👍 count of its discussion (CAT-20).
 DIR/<name>.html is the generator's public package page; its "Total
@@ -32,6 +33,7 @@ GITHUB = re.compile(r"^https://github\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+?)\
 README_MAX = 256 * 1024
 HUES = 8
 DIFF_LINES = 150
+SCHEMA = re.compile(r"^\./schemas/([a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)/([a-z0-9]+)_(v[0-9]+(?:(?:alpha|beta)[0-9]+)?)\.json$")  # QA-7 layout
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")  # Cc but tab and newline, Bidi_Control
 
 
@@ -45,6 +47,17 @@ def readme(path):
             return t.extractfile(m).read().decode("utf-8", errors="replace")
     except (OSError, tarfile.TarError):
         return None
+
+
+def schema_kinds(path):
+    """CAT-29: sorted (group, kind, version) of the schemas/<group>/<kind>_<version>.json an SBOM lists."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            files = json.load(f)["files"]
+        names = [f["fileName"] for f in files if isinstance(f, dict) and isinstance(f.get("fileName"), str)]
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+    return sorted({m.groups() for m in map(SCHEMA.match, names) if m and m.group(1) != "terraform"})  # QA-8 extracts
 
 
 def diff_excerpt(path):
@@ -105,7 +118,7 @@ def semver(v):
 
 
 def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, previous=None, diffs=None):
-    generators = []
+    generators, by_kind = [], {}  # CAT-29: {group: {kind: {apiVersion: [generator]}}}
     for name, versions in sorted(index.get("generators", {}).items()):
         ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
                         rekor=(rekor or {}).get(name, {}).get(v),
@@ -130,6 +143,9 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             data = lookup(f"/user/{uid}")
             owners.append({"id": str(uid), "login": data.get("login") if data else None})
         tar = os.path.join(artifacts, f"{name}.tar") if artifacts and latest else None
+        kinds = schema_kinds(os.path.join(sboms, name, f"{latest['version']}.spdx.json")) if sboms and latest else []
+        for group, kind, version in kinds:
+            by_kind.setdefault(group, {}).setdefault(kind, {}).setdefault(version if group == "core" else f"{group}/{version}", []).append(name)
         generators.append({
             "name": name,
             "monogram": name[0].upper(),
@@ -138,6 +154,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             "blob_url": blob_url(shown["source"]),
             "description": shown.get("description", ""),
             "tags": shown.get("tags", []),
+            "kinds": sorted({k for _, k, _ in kinds}),
             "license": shown.get("license"),
             "latest": latest,
             "stars": stars,
@@ -153,7 +170,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
         g["stars_shared"] = n if n > 1 and g["stars"] is not None else None
         up = g["discussion"]["up"] if g["discussion"] else 0
         g["score"] = score(up, int(g["stars"] or 0), max(n, 1), g["pulls"] or 0)
-    return {"owner": owner, "serial": index.get("serial"), "generators": generators}
+    return {"owner": owner, "serial": index.get("serial"), "generators": generators, "kinds": by_kind}
 
 
 def load_rekor(path):

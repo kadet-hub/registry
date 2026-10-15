@@ -1,5 +1,5 @@
-{{/* One generator card; used by the home page and the tag pages (CAT-18, CAT-22). */}}
-<li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}" data-tags="{{ delimit .tags " " }}" data-name="{{ .name }}" data-published="{{ with .latest }}{{ .published }}{{ end }}" data-popularity="{{ .score }}">
+{{/* One generator card; used by the home page, the tag and the kind pages (CAT-18, CAT-22, CAT-29); the search text has the kinds (CAT-29a). */}}
+<li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}{{ range .kinds }} {{ . }}{{ end }}" data-tags="{{ delimit .tags " " }}" data-name="{{ .name }}" data-published="{{ with .latest }}{{ .published }}{{ end }}" data-popularity="{{ .score }}">
   <div class="card-head">
     <span class="tile hue-{{ .hue }}" aria-hidden="true">{{ with .tags }}<svg class="icon"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ else }}{{ $.monogram }}{{ end }}</span>
     <div>
