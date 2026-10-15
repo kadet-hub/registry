@@ -323,10 +323,13 @@ since the documented package API has no visibility call.
   versions whose `yanked` was empty there. The first index lists every
   version as added.
 
-  `index-<serial>` tags and release assets are not protected: the
-  repository has no tag ruleset and immutable releases are off (OQ-9). A
-  moved tag or a replaced `index.json` fails verification unless the
-  replacement carries an attestation from the release workflow on `main`.
+  Immutable releases are enabled for the repository (decided 2026-10-15,
+  formerly OQ-9): once a release is published, GitHub keeps its tag from
+  moving and its assets from being replaced or deleted, and adds its own
+  release attestation. `gh release create` uploads to a draft and
+  publishes afterwards, which immutability requires. Independently, a
+  replaced `index.json` fails verification unless it carries an
+  attestation from the release workflow on `main`.
 
   - Test: `release/test_release.py::Index.test_release_notes`; manual: the
     first release run after the merge creates `index-<serial>` and the

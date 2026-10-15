@@ -346,11 +346,6 @@ coverage is named at each:
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
-- OQ-9: A maintainer decides whether to enable immutable releases for the
-  repository. Once a release is published, GitHub would then stop its tag
-  from moving and its assets from being modified or deleted, and add a
-  release attestation (PUB-12). `gh release create` already uploads to a
-  draft and publishes afterwards, which immutability requires.
 
 ## Implementation inventory
 
