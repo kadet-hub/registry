@@ -197,6 +197,37 @@ remembered in the browser's `localStorage`.
     does not cover the forms
   - Since: #45
 
+- CAT-31: The site MUST have a page at `/wanted/` that lists every open
+  issue of the registry with the label `generator-request`, each with its
+  title linked to the issue, its 👍 count and the date of its last
+  activity, most 👍 first and, among equal counts, the oldest issue first.
+  The home page MUST link the page next to "Request a generator".
+
+  The request form (CAT-12) sets the label. Without a list of open
+  requests, an author looking for something to write has to search the
+  tracker, and a visitor with the same wish opens a second issue instead of
+  adding a 👍 to the first. A 👍 on the issue counts as it does on a
+  generator's discussion (CAT-20).
+
+  The catalog job reads the issues at build time with `gh api` from
+  `/repos/<owner>/registry/issues?labels=generator-request&state=open`,
+  leaving out pull requests, with `issues: read`. "Last activity" is the
+  issue's `updated_at`; the page also shows the date the issue was opened,
+  since that breaks ties. The release workflow runs daily, so the list is
+  at most a day old. An offline build reads the list from `CATALOG_WANTED`.
+
+  Titles come from whoever opened the issue. The page shows each title as
+  text through Hugo's escaping, without the control characters of CAT-27
+  (`_partials/text.html`) and without the form's `[request] ` prefix, and
+  shows nothing of the body. The link is built from the issue number.
+
+  Without an open request the page says so and links the form. When the
+  issues cannot be read, the job warns and the page says the list was not
+  read, so a failed lookup does not read as "nothing wanted".
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 - CAT-14: The card MUST show the date of the latest version's scan record
   and the version page the full record with a link to the release run;
   the page MUST offer the version's SBOM for download, taken from its
@@ -404,8 +435,9 @@ remembered in the browser's `localStorage`.
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
   its `AGENTS.md`, the tags, the kinds (CAT-29), the compatibility page
-  (CAT-30), the glossary, the gate's policy files, and the Markdown variant
-  (CAT-28) of every generator with a listed version and of every guide.
+  (CAT-30), the wanted page (CAT-31), the glossary, the gate's policy files,
+  and the Markdown variant (CAT-28) of every generator with a listed version
+  and of every guide.
 
   Coding agents asked to write a generator start there instead of guessing
   the gate's rules from the HTML; agents asked to use one find it in the
@@ -427,7 +459,7 @@ remembered in the browser's `localStorage`.
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, #231, #235, #242
+  - Since: #51, #231, #235, #242, this change
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
