@@ -522,7 +522,8 @@ remembered in the browser's `localStorage`.
   - Since: #55, #232
 
 - CAT-29: The site MUST list at `/kinds/` every Kubernetes kind of each
-  generator's latest listed version, by API group, each with links to its
+  generator's latest listed version, by API group and, for an apiVersion
+  without a group, by version, each with links to its
   generators, labelled "rendered by" for kinds from the version's `kinds`
   record (PUB-10) and "schema shipped by" for kinds read from the SBOM of a
   version without that record.
@@ -556,19 +557,66 @@ remembered in the browser's `localStorage`.
   kind in lower case, so a kind known only from them shows as
   `httproute`. Group, kind and version from either source must match
   `[a-z0-9]` name patterns (`[A-Za-z0-9]` for a recorded kind), so neither
-  can put a path segment or markup into a page. The group is `core` for
-  the core group and for Talos documents, whose `apiVersion: v1alpha1` has
-  no group (QA-7).
+  can put a path segment or markup into a page. QA-7 files the schemas of
+  every apiVersion without a group under `core`, the core group's `v1`
+  as well as Talos machine config's `v1alpha1`, so the index splits that
+  directory by version: `v1` is the section `core`, any other version a
+  section named by the version, such as `v1alpha1`.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #235
+  - Since: #235, this change
+
+- CAT-29c: `/kinds/` MUST list the sections of the groups that the QA-10
+  kube-apiserver serves without CRDs under "Kubernetes built-in APIs" and
+  every other section under "Custom resources and other APIs", and MUST
+  name a section's software there when the index names exactly one for
+  it.
+
+  Bare group names such as `apps`, `batch` or `policy` read like projects
+  of their own, and the `k8s.io` suffix does not mean built in: Gateway
+  API (`gateway.networking.k8s.io`) and the Vertical Pod Autoscaler
+  (`autoscaling.k8s.io`) are CRDs. The built-in set is the one QA-10
+  decides by discovery. The catalog job has no API server, so `BUILTIN`
+  in `catalog/view.py` lists the 22 groups kube-apiserver v1.37.1 serves,
+  with `core` for the core group. A test starts the QA-10 server in the
+  sandbox image and compares its served groups with the list, so a
+  Kubernetes bump in `sandbox/Dockerfile` that adds or removes a group
+  fails gate-selftest until the list follows. Talos's `v1alpha1` is not
+  served and lists among the other APIs, with the note that its
+  apiVersion has no group.
+
+  The index does not map a group to its software: the QA-7 result in a
+  version's `compatibility` record names software, version and source of
+  the schema groups the fixture used, without the group. A section is
+  therefore labelled when each listed generator with kinds in it whose
+  latest listed version names exactly one software other than
+  `Kubernetes`, the source of the built-in schemas, names the same one; a
+  generator that names two or more, such as kubernetes with Gateway API,
+  GKE Managed Certificates and the Vertical Pod Autoscaler, labels none.
+  The label is inferred: a generator that ships schemas of two custom
+  groups but used only one in its fixture would lend that one's software
+  to both. On the index of 2026-10-15 the rule labelled 25 of the 45
+  other sections, each as the `sources.yaml` of kadet-hub/generators at
+  e4891e8 names it; the other 20 belong to generators with two or more
+  CRD sources and show the group alone. Labelling them needs the group in
+  the QA-7 result.
+
+  - Test: `catalog/test_catalog.py`, `sandbox/test_apiserver_check.py`
+  - Since: this change
 
 - CAT-29b: A kind that two or more listed generators render (PUB-10)
-  MUST have a page at `/kinds/<group>/<kind>/` with each apiVersion, the
+  MUST have a page at `/kinds/<section>/<kind>/` with each apiVersion, the
   cards of those generators and the generators that only ship a schema
   for it. No other kind has a page. Such a page MUST keep its URL while
   the kind has two or more such generators, and `sitemap.xml` MUST list
   it.
+
+  The section is that of CAT-29: the group, `core` for `v1` without a
+  group, the version for any other apiVersion without a group. A core
+  kind keeps `/kinds/core/<kind>/`, and a kind of the same name in
+  `v1alpha1` gets `/kinds/v1alpha1/<kind>/`, so the two never share a
+  page. Within a named group a kind is one resource in every version, so
+  its page lists each apiVersion.
 
   The URL takes the kind in lower case, so a page keeps its URL whatever
   case the record has. A page for one generator repeats that generator's
@@ -581,18 +629,16 @@ remembered in the browser's `localStorage`.
   version had a `kinds` record, so the site had the index and no kind
   page.
 
-  A page links no upstream API reference, because the group does not tell
-  a built-in kind from a custom resource (Gateway API and the Vertical Pod
-  Autoscaler are `*.k8s.io` CRDs, Talos documents sit under `core`), and
-  the schema sources of `sources.yaml` are not in the index per group. The
-  site navigation links `/kinds/`. Title and description stay within
+  A page links no upstream API reference, because the schema sources of
+  `sources.yaml` are not in the index per group (CAT-29c). The site
+  navigation links `/kinds/`. Title and description stay within
   CAT-11 for any length of kind and group: the title drops its suffix and
   then the group, and the description is cut at 160 characters, so a long
   CRD group such as Crossplane's `insights.azure.upbound.io` cannot stop
   the deploy (CAT-11d).
 
   - Test: `catalog/test_catalog.py`
-  - Since: #235
+  - Since: #235, this change
 
 - CAT-29a: The home page search MUST match the kind names (CAT-29) of
   each card's latest listed version, from either source.
