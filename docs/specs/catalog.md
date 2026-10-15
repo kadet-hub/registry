@@ -371,7 +371,7 @@ remembered in the browser's `localStorage`.
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, this change
+  - Since: #51, #231
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
@@ -400,7 +400,7 @@ remembered in the browser's `localStorage`.
   variant is its title and its Markdown source.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #231
 
 - CAT-17: Every version on a generator page MUST have a permalink
   (`/generators/<name>/#v<version>`) that opens it, and MUST link the
@@ -529,7 +529,7 @@ index is refused (CON-2).
   written without HTML escaping.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #16, #226, this change
+  - Since: #16, #226, #231
 
 - CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
   origin of a GoatCounter instance, every page MUST count its view with
