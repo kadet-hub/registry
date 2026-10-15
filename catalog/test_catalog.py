@@ -52,6 +52,8 @@ Intro with <script>alert(2)</script> raw HTML and <b>bold</b>.
 
 ## Usage
 
+#### Skipped level
+
 ```yaml
 parameters:
   demo: {}
@@ -451,7 +453,7 @@ class Site(unittest.TestCase):
             with open(path, encoding="utf-8") as f:
                 html = f.read()
             with open(path, "w", encoding="utf-8") as f:
-                f.write(html.replace("</main>", '<h1>Again</h1><img src="x.png" alt=""><a href="../?tags=helm">helm</a></main>'))
+                f.write(html.replace("</main>", '<h1>Again</h1><h4>Deep</h4><img src="x.png" alt=""><a href="../?tags=helm">helm</a></main>'))
             os.makedirs(os.path.join(out, "generators", "renamed"))  # a Hugo alias page is not checked
             with open(os.path.join(out, "generators", "renamed", "index.html"), "w", encoding="utf-8") as f:
                 f.write('<!DOCTYPE html><html><head><title>https://kadet-hub.org/generators/demo/</title>'
@@ -459,9 +461,9 @@ class Site(unittest.TestCase):
             result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout.splitlines(), [
-            "CAT-11b: generators/demo/index.html: h4 follows h2",  # README headings sit one level lower
             "CAT-11: privacy/index.html: 2 h1, not one",
             "CAT-8a: privacy/index.html: internal link with ?tags=: ../?tags=helm",
+            "CAT-11b: privacy/index.html: h4 follows h1",  # the README's skip is clamped (CAT-11e)
             "CAT-11c: privacy/index.html: img x.png has no alt text",
         ])
 
@@ -531,6 +533,12 @@ class Site(unittest.TestCase):
             self.assertNotIn("runs no analytics", privacy)
         with open(os.path.join(HERE, "site", "static", "count.js"), encoding="utf-8") as f:
             self.assertTrue(f.read().startswith("// GoatCounter: https://www.goatcounter.com\n"))
+
+    def test_readme_headings_skip_no_level(self):  # CAT-11e
+        readme = self.readme_html()
+        self.assertIn('<h2 id="readme-demo">Demo</h2>', readme)
+        self.assertIn('<h3 id="readme-usage">Usage</h3>', readme)
+        self.assertIn('<h4 id="readme-skipped-level">Skipped level</h4>', readme)
 
     def test_generators_without_a_listed_version_have_no_card(self):
         home, tags = self.page(), self.page("tags")
