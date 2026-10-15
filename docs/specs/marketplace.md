@@ -346,6 +346,11 @@ coverage is named at each:
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
+- OQ-9: A maintainer decides whether to enable immutable releases for the
+  repository. Once a release is published, GitHub would then stop its tag
+  from moving and its assets from being modified or deleted, and add a
+  release attestation (PUB-12). `gh release create` already uploads to a
+  draft and publishes afterwards, which immutability requires.
 
 ## Implementation inventory
 
@@ -373,13 +378,13 @@ coverage is named at each:
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/{consumer-selftest,catalog-tests,release-tests}.yml` | CI-1: `consumer-selftest`, `catalog-tests`, `release-tests` |
-| `.github/workflows/release.yml` | PUB-1 to PUB-11, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, index and catalog |
-| `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-11: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff` |
+| `.github/workflows/release.yml` | PUB-1 to PUB-12, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, index and catalog |
+| `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-12: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
-| `docs/consumers.md` | CON-2, CON-3 |
+| `docs/consumers.md` | CON-2, CON-3, PUB-12 |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |

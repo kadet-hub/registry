@@ -84,10 +84,13 @@ which only a maintainer pull request changes (GI-2, REV-1).
   hold `packages: write`, `id-token: write` and `attestations: write`; its
   Pages deploy job, bound to the `github-pages` environment, MAY hold
   `pages: write` and `id-token: write` (CAT-1). The Scorecard job MAY
-  hold `id-token: write` (GI-12).
+  hold `id-token: write` (GI-12). Only the release workflow's
+  `github-release` job, bound to the `release` environment, MAY hold
+  `contents: write`, and that job MUST NOT check out or run repository
+  code (PUB-12).
   - Test: none (partial: `release.yml` permissions; the environment's
     branch policy is set with `gh api`)
-  - Since: #13, #233
+  - Since: #13, #233, this change
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
   `^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$`,
