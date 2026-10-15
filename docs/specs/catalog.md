@@ -399,7 +399,7 @@ remembered in the browser's `localStorage`.
   `/llms.txt` link the page; it has no Markdown variant.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #242
 
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
@@ -427,7 +427,7 @@ remembered in the browser's `localStorage`.
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, #231, #235, this change
+  - Since: #51, #231, #235, #242
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
@@ -456,7 +456,7 @@ remembered in the browser's `localStorage`.
   variant is its title and its Markdown source.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #231, this change
+  - Since: #231, #242
 
 - CAT-17: Every version on a generator page MUST have a permalink
   (`/generators/<name>/#v<version>`) that opens it, and MUST link the

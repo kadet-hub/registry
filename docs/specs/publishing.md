@@ -120,7 +120,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: content and serial; publishing
     by AC-6)
-  - Since: #13, #226, #235, this change
+  - Since: #13, #226, #235, #242
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
@@ -276,7 +276,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (`BuildAll`, with a fake
     `gate-compile`); manual: `gate-compile` with `BACKENDS_RESULT` set
-  - Since: this change
+  - Since: #242
 
 ## Incident response
 
