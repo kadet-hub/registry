@@ -564,7 +564,7 @@ remembered in the browser's `localStorage`.
   section named by the version, such as `v1alpha1`.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #235, this change
+  - Since: #235, #247
 
 - CAT-29c: `/kinds/` MUST list the sections of the groups that the QA-10
   kube-apiserver serves without CRDs under "Kubernetes built-in APIs" and
@@ -602,7 +602,7 @@ remembered in the browser's `localStorage`.
   the QA-7 result.
 
   - Test: `catalog/test_catalog.py`, `sandbox/test_apiserver_check.py`
-  - Since: this change
+  - Since: #247
 
 - CAT-29b: A kind that two or more listed generators render (PUB-10)
   MUST have a page at `/kinds/<section>/<kind>/` with each apiVersion, the
@@ -638,7 +638,7 @@ remembered in the browser's `localStorage`.
   the deploy (CAT-11d).
 
   - Test: `catalog/test_catalog.py`
-  - Since: #235, this change
+  - Since: #235, #247
 
 - CAT-29a: The home page search MUST match the kind names (CAT-29) of
   each card's latest listed version, from either source.
