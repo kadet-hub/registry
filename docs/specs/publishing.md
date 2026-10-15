@@ -101,8 +101,9 @@ since the documented package API has no visibility call.
   description, tags, license, Kapitan range, krab result, output
   capabilities, unparsed outputs, binaries, chart digests, owners, source
   repository and SHA, the output diff summary (PUB-9), the kinds of its
-  fixture output (PUB-10), the time it was first published, `yanked` with
-  its reason, and advisories (INC-1).
+  fixture output (PUB-10), the inventory backends its fixture compiled on
+  (PUB-11), the time it was first published, `yanked` with its reason, and
+  advisories (INC-1).
 
   The index job reads the versions from the registry tags, each version's
   metadata from its config blob, and accepts only digests with a marketplace
@@ -119,7 +120,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: content and serial; publishing
     by AC-6)
-  - Since: #13, #226, #235
+  - Since: #13, #226, #235, this change
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
@@ -245,6 +246,37 @@ since the documented package API has no visibility call.
   - Test: `sandbox/test_tag_check.py` (`test_kinds_of_the_output`);
     `release/build-all` has no unit test, manual: next release run
   - Since: #235
+
+- PUB-11: For every version it publishes, the build job MUST record in
+  `meta.json` as `backends` the inventory backends the compile gate
+  compiled the fixture on, in the order it compiled them.
+
+  The compatibility page (CAT-30) states which backends a version was
+  checked on. Until this change only the manifest in the tar named them, as
+  `inventory_backends` with `reclass` as the default, and nothing recorded
+  what the release compiled. The compile gate compiles on every backend
+  (CMP-1) and again with `--cache` on every backend (CMP-5), and any
+  finding fails the build before `meta.json` is written, so each recorded
+  backend passed both. The Kapitan version is in the scan record (PUB-7);
+  the krab version is not recorded.
+
+  `sandbox/gate-compile` writes the backends it compiled on, one per line,
+  to `$BACKENDS_RESULT`, as it writes the krab result to `$KRAB_RESULT`.
+  `release/build-all` sets it and merges the list into `meta.json` with the
+  other results.
+
+  Deriving the backends of published versions was considered. The scan
+  record's `gate` commit tells whether that gate ran CMP-5 (#159): on
+  2026-10-15 it did for 27 of the 35 listed latest versions. The manifest in
+  each tar names the backends. The catalog job would need the registry's
+  history and every version's tar, and its page would depend on how the
+  gate behaved at each commit. Versions published before this requirement
+  therefore have no record, none is added later (CMP-4), and the catalog
+  says "not recorded".
+
+  - Test: `release/test_release.py` (`BuildAll`, with a fake
+    `gate-compile`); manual: `gate-compile` with `BACKENDS_RESULT` set
+  - Since: this change
 
 ## Incident response
 

@@ -347,11 +347,65 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #50, #132
 
+- CAT-30: The site MUST have a page at `/compatibility/` with one row per
+  listed generator (CAT-26) showing, for its latest listed version, the
+  Kapitan range the manifest declares, the Kapitan version the release
+  compiled it with, the inventory backends it compiled on, whether it
+  compiled to the same output with `--cache`, the krab result and what it
+  is built for (CAT-15). The details of every listed version on the
+  generator page and the Markdown variant (CAT-28) MUST show the same facts.
+  A fact the version does not record MUST read "not recorded".
+
+  Before adopting a generator, people ask whether it works with their
+  Kapitan version and inventory backend. The answers were spread over the
+  manifest range, the scan record and the krab line of each version. The
+  page states only what the release recorded for the artifact itself:
+  "checked" means the release build compiled the fixture with that Kapitan
+  version and backend. The declared range has its own column, because
+  CMP-3 only requires it to include the pinned version; no other version in
+  the range is compiled.
+
+  The facts and their sources:
+
+  - Kapitan declared: `kapitan`, the manifest's range (PUB-4).
+  - Kapitan checked: the version in the tool of the scan record's `sandbox`
+    check, which reads `gVisor <release>, Kapitan <version>` (PUB-7).
+  - Backends checked: `backends` (PUB-11).
+  - With --cache: "passed" when `backends` is recorded. CMP-5 runs on every
+    backend, and a finding fails the build before the record is written.
+  - krab: `krab` (CMP-4).
+  - Built for (schema-checked): `compatibility` (CAT-15).
+
+  Versions published before PUB-11 have no `backends` record, so their
+  backends and `--cache` read "not recorded". On 2026-10-15 that held for
+  all 35 listed latest versions; each had a scan record naming Kapitan
+  0.36.3 and the krab result `compatible`. The gate commit in 27 of those scan
+  records already ran CMP-5, but the record does not say on which backends
+  (PUB-11 says why that is not derived).
+
+  The three views take the facts from one partial, `_partials/compat.html`,
+  which returns label, text and HTML of each fact; the table, the version
+  details and the Markdown variant only lay them out, so all three show the
+  same text. In the version details the facts replace the rows Built for,
+  Kapitan and krab. A separate block for the newest version would repeat
+  its expanded entry, which CAT-19 removed.
+
+  The table takes the full page width, with fixed columns, so it wraps
+  instead of scrolling (CAT-9). On screens narrower than 60rem each row is
+  shown as a block with every value after its column name: seven columns
+  in less width break words such as "compatible" in the middle. Columns
+  sized by their content were tried; with `overflow-wrap: anywhere` the
+  browser squeezed the short columns further. The site navigation and
+  `/llms.txt` link the page; it has no Markdown variant.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
-  its `AGENTS.md`, the tags, the kinds (CAT-29), the glossary, the gate's
-  policy files, and the Markdown variant (CAT-28) of every generator with a
-  listed version and of every guide.
+  its `AGENTS.md`, the tags, the kinds (CAT-29), the compatibility page
+  (CAT-30), the glossary, the gate's policy files, and the Markdown variant
+  (CAT-28) of every generator with a listed version and of every guide.
 
   Coding agents asked to write a generator start there instead of guessing
   the gate's rules from the HTML; agents asked to use one find it in the
@@ -373,7 +427,7 @@ remembered in the browser's `localStorage`.
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, #231, #235
+  - Since: #51, #231, #235, this change
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
@@ -390,9 +444,9 @@ remembered in the browser's `localStorage`.
   GitHub Pages site, on 2026-10-15).
 
   The variant of a generator with a listed version has the name, the
-  description as in CAT-16, the latest version and its date, what it is
-  built for (CAT-15), owners, tags, the page's URL, the inventory entry and
-  verify command of that version, and its README. Entry and command come
+  description as in CAT-16, the latest version and its date, its
+  compatibility facts (CAT-30), owners, tags, the page's URL, the inventory
+  entry and verify command of that version, and its README. Entry and command come
   from the partial the page uses, `_partials/commands.html`, so both show
   the same text. The README is the Markdown of `catalog.json` as the
   artifact carries it, not the filtered HTML of CAT-7: raw HTML and links
@@ -402,7 +456,7 @@ remembered in the browser's `localStorage`.
   variant is its title and its Markdown source.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #231
+  - Since: #231, this change
 
 - CAT-17: Every version on a generator page MUST have a permalink
   (`/generators/<name>/#v<version>`) that opens it, and MUST link the
