@@ -60,6 +60,26 @@ class Dependencies(unittest.TestCase):
                 _, findings = self.check(dep)
                 self.assertTrue(any(want in f for f in findings), findings)
 
+    def test_inventory_not_a_mapping_of_targets(self):  # GI-14
+        for inv in ("x", ["t1"], {"t1": {}, None: {}}, {"t1": {}, 2: {}}):
+            with self.subTest(inventory=inv):
+                self.assertEqual(dependencies(inv, POLICY, "kadet-hub"),
+                                 ([], ["CON-1: the inventory is not a mapping of target names to targets"]))
+
+    def test_target_not_a_mapping(self):  # GI-14
+        for target in ("x", ["x"], {"parameters": "x"}, {"parameters": {"kapitan": ["x"]}},
+                       {"parameters": {"kapitan": {"dependencies": "x"}}},
+                       {"parameters": {"kapitan": {"dependencies": ["x"]}}}):
+            with self.subTest(target=target):
+                self.assertEqual(dependencies({"t1": target}, POLICY, "kadet-hub"),
+                                 ([], ["CON-1: t1: parameters.kapitan.dependencies is not a list of mappings"]))
+
+    def test_missing_levels_are_no_dependencies(self):
+        for target in (None, {}, {"parameters": None}, {"parameters": {"kapitan": {"dependencies": None}}}):
+            with self.subTest(target=target):
+                self.assertEqual(dependencies({"t1": target}, POLICY, "kadet-hub"), ([], []))
+        self.assertEqual(dependencies(None, POLICY, "kadet-hub"), ([], []))
+
     def test_conflicting_output_path(self):
         _, findings = self.check(oci(f"ghcr.io/kadet-hub/gen@{DIGEST}"), oci(f"ghcr.io/kadet-hub/other@{DIGEST}"))
         self.assertTrue(any("used by another dependency" in f for f in findings), findings)
