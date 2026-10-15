@@ -298,7 +298,7 @@ cover none of the changed files.
   until the bump. Tracking: bump the lock with the first Kapitan release
   that allows cryptography 50.0.0 or later; upstream PR kapicorp/kapitan#1604.
 
-  - Since: this change
+  - Since: #236
 
 ## Out of scope
 
