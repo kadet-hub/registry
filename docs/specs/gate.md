@@ -363,6 +363,9 @@ review go into the review comment and do not fail the gate.
   to 0.2.0 passed the gate, and the comment showed one file and one hunk,
   the added label; `output.diff` was in the artifact.
 
+  Related: [PUB-9](publishing.md) computes the same diff at release,
+  against the newest listed version that is not yanked, and attests it.
+
   - Test: `gate/test_output_diff.py`; manual: fork rehearsal (2026-10-10)
   - Since: #30
 

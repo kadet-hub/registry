@@ -167,6 +167,30 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`; manual: fork rehearsal (2026-10-11)
   - Since: #47
 
+- CAT-27: Each listed version on the generator page MUST show its output
+  diff summary (PUB-9) against `output_diff.base` and the diff text from
+  its verified attestation, at most 150 lines inline, and MUST offer the
+  attested diff for download at `/generators/<name>/<version>.output.diff`.
+
+  The catalog job verifies the attestation with `gh attestation verify`
+  and the predicate type `https://kadet-hub.org/output-diff/v1`, as it
+  does the SBOM (CAT-14), and keeps the text only when its sha256 equals
+  the record's. A file the previous build published is reused when its
+  sha256 matches, so each attestation is read once (CAT-23).
+
+  The text goes into `<pre><code>` through Hugo's escaping, never through
+  `safeHTML` or Markdown, with control characters removed (Unicode Cc
+  other than tab and newline, and Bidi_Control); long lines wrap (CAT-9).
+  Beyond 150 lines the page says the text is truncated and links the
+  download, which is the attested text unchanged.
+
+  A version without a record was published before PUB-9 and says "No
+  output diff recorded". A record with an error states the error; a
+  record whose text does not verify says so.
+
+  - Test: `catalog/test_catalog.py`; manual: fork rehearsal (pending)
+  - Since: this change
+
 - CAT-21: The generator page MUST link "Request a feature" to a new issue
   in the generator's source repository, prefilled with the generator's
   name in the title and its version and catalog page in the body.
@@ -405,11 +429,11 @@ index is refused (CON-2).
   through Hugo's contextual escaping and MUST NOT load scripts, styles or
   fonts from another origin.
 
-  Description, tags and owners come from submitters; a description with
-  markup is shown as text.
+  Description, tags, owners and the output diff text (CAT-27) come from
+  submitters; a description or diff with markup is shown as text.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #16
+  - Since: #16, this change
 
 - CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
   origin of a GoatCounter instance, every page MUST count its view with
