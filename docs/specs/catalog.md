@@ -515,11 +515,12 @@ index is refused (CON-2).
   - Test: manual: fork rehearsal (2026-10-09)
   - Since: #16
 
-- CAT-2: A version page MUST show the inventory entry with the digest and the
-  CON-2 verification commands; a yanked version MUST show its reason and no
-  inventory entry.
+- CAT-2: A version page MUST show the inventory entry with version and
+  digest, `source: ghcr.io/kadet-hub/<name>:<version>@sha256:<digest>`, and
+  the CON-2 verification commands; a yanked version MUST show its reason and
+  no inventory entry.
   - Test: `catalog/test_catalog.py`
-  - Since: #16
+  - Since: #16, #234
 
 - CAT-3: Every HTML page MUST render every value from the index and the
   GitHub API through Hugo's contextual escaping and MUST NOT load scripts,

@@ -1,3 +1,3 @@
 {{/* CAT-17: the verify command, one flag per line, and the transparency log entry. dict: v, name, id, label. */}}
-{{ partial "snippet.html" (dict "id" .id "label" .label "text" (partial "commands.html" (dict "name" .name "digest" .v.digest)).verify) }}
+{{ partial "snippet.html" (dict "id" .id "label" .label "text" (partial "commands.html" (dict "name" .name "version" .v.version "digest" .v.digest)).verify) }}
 {{ with .v.rekor }}<p class="note">Transparency log: <a href="https://search.sigstore.dev/?logIndex={{ . }}">Rekor entry {{ . }}</a>, in Sigstore's public, append-only log, so the attestation stays checkable independent of this site.</p>{{ end }}

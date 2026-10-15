@@ -34,9 +34,11 @@ class Dependencies(unittest.TestCase):
         return dependencies(inventory(*deps), POLICY, "kadet-hub")
 
     def test_marketplace_artifact(self):
-        deps, findings = self.check(oci(f"ghcr.io/kadet-hub/gen@{DIGEST}"))
-        self.assertEqual(findings, [])
-        self.assertEqual(deps[0]["marketplace"], "gen")
+        for source, tag in ((f"ghcr.io/kadet-hub/gen@{DIGEST}", None), (f"ghcr.io/kadet-hub/gen:1.0.0@{DIGEST}", "1.0.0")):
+            with self.subTest(source=source):
+                deps, findings = self.check(oci(source))
+                self.assertEqual(findings, [])
+                self.assertEqual((deps[0]["marketplace"], deps[0]["tag"]), ("gen", tag))
 
     def test_rejected_dependencies(self):
         cases = [
@@ -87,6 +89,14 @@ class Index(unittest.TestCase):
         self.assertTrue(any("does not list this digest" in f for f in findings), findings)
         _, findings, _ = check_index(index(yanked="broken"), POLICY, self.deps())
         self.assertTrue(any("yanked: broken" in f for f in findings), findings)
+
+    def test_tag_must_be_the_listed_version(self):
+        def findings(tag):
+            deps, _ = dependencies(inventory(oci(f"ghcr.io/kadet-hub/gen:{tag}@{DIGEST}")), POLICY, "kadet-hub")
+            return check_index(index(), POLICY, deps)[1]
+
+        self.assertEqual(findings("1.0.0"), [])
+        self.assertTrue(any("tag 1.0.3 is not 1.0.0" in f for f in findings("1.0.3")), findings("1.0.3"))
 
 
 if __name__ == "__main__":
