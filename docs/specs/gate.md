@@ -180,7 +180,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Test: workflow job `workflow-lint` (partial: pins; zizmor audits the
     permissions); manual: the init step log of the pull request that
     introduced this shows both caches off
-  - Since: #237, this change
+  - Since: #237, #239
 
 ## Static checks
 
