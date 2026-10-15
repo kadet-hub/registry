@@ -1,0 +1,33 @@
+name: codeql
+
+# GI-13: CodeQL for the Python code and the workflows. TRAP and overlay
+# database caching are off: both use the Actions cache (GI-10).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "53 3 * * 1"
+
+permissions: {}
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # upload to code scanning
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        env:
+          CODEQL_OVERLAY_DATABASE_MODE: none
+        with:
+          languages: python, actions
+          trap-caching: false
+
+      - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3

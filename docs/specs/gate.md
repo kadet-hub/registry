@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Gate
 
 Status: Approved
-Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `.github/workflows/{gate,selftest,scheduled,scorecard}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset.json`
+Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset.json`
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -155,6 +155,29 @@ which only a maintainer pull request changes (GI-2, REV-1).
     audits the permissions); manual: the first run on `main` after the
     merge shows a score at the badge URL
   - Since: #233
+
+- GI-13: CodeQL MUST analyze `python` and `actions` on every pull request,
+  every push to `main` and weekly, and MUST upload its results to code
+  scanning.
+
+  Scorecard's SAST check (GI-12) scores the share of recent commits on
+  `main` that a SAST tool checked, so the workflow has no `paths` filter.
+  Fork pull requests run it only after a maintainer approves the run. The
+  `codeql` workflow has `permissions: {}`; its one job holds
+  `contents: read` and `security-events: write` for the upload, and both
+  languages are extracted without a build.
+
+  On GitHub-hosted runners the CodeQL action keeps TRAP caches in the
+  Actions cache by default, and so does overlay analysis, which GitHub
+  enables by feature flag, for its base database. GI-10 rules both out:
+  the init step sets `trap-caching: false` and
+  `CODEQL_OVERLAY_DATABASE_MODE=none`. Dependency caching is off by
+  default outside default setup.
+
+  - Test: workflow job `workflow-lint` (partial: pins; zizmor audits the
+    permissions); manual: the init step log of the pull request that
+    introduced this shows both caches off
+  - Since: #237
 
 ## Static checks
 

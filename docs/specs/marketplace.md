@@ -142,15 +142,16 @@ cover none of the changed files.
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
   Markdown files at the repository root, `renovate.json`, issue and pull
-  request templates, `CODEOWNERS`, `.github/ruleset.json`, and the
-  test-only workflows of CI-1.
+  request templates, `CODEOWNERS`, `.github/ruleset.json`, the test-only
+  workflows of CI-1, and the `scorecard` and `codeql` workflows (GI-12,
+  GI-13).
 
   This list ignores paths instead of listing them, so a new file a release
   job reads still triggers a release; the daily scheduled run (CAT-20)
   catches up on anything a skipped push left out.
 
   - Test: manual: the release run after the merge of the pull request that introduced this
-  - Since: #58
+  - Since: #58, #237
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
@@ -321,6 +322,8 @@ coverage is named at each:
 - GI-7: no sample that makes a gate tool error or time out.
 - GI-12: triggers, publishing and the SARIF upload are reviewed; only a
   run on `main` shows them working.
+- GI-13: triggers and the cache settings are reviewed; the run log shows
+  them.
 - REV-2: the comment is rendered, not asserted.
 - CON-3: documentation content.
 - CAT-5: URL stability.
@@ -384,6 +387,7 @@ coverage is named at each:
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
 | `.github/workflows/scorecard.yml` | GI-12 |
+| `.github/workflows/codeql.yml` | GI-13 |
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
