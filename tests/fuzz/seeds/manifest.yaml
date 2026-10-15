@@ -1,0 +1,16 @@
+name: demo
+description: Demo generator
+tags: [kubernetes, helm]
+license: Apache-2.0
+owners: [1001]
+kapitan: ">=0.36.3,<0.37"
+binaries: ["helm template"]
+charts:
+  - repo: https://charts.example.org
+    name: app
+    version: 1.0.0
+    sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    output_path: charts/app
+inventory_backends: [reclass, omegaconf]
+fixtures: tests/consumer
+schemas: schemas

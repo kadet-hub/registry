@@ -22,6 +22,8 @@ on:
       - .github/workflows/workflows.yml
       - .github/workflows/scorecard.yml
       - .github/workflows/codeql.yml
+      - .github/workflows/fuzz.yml
+      - .clusterfuzzlite/**
   schedule:
     - cron: "17 4 * * *" # CAT-20: refresh the 👍 counts and stars daily
   workflow_dispatch:

@@ -116,11 +116,13 @@ class Files(unittest.TestCase):
     def test_renovate_pin_update_passes(self):
         pins = [{"filename": f, "status": "modified"} for f in
                 ("sandbox/Dockerfile", "scan/requirements.in", "scan/requirements.txt", ".github/workflows/gate.yml",
-                 ".github/actions/setup-oras/action.yml", "sandbox/krab/requirements.txt", "sandbox/gitlab-ci.yml")]
+                 ".github/actions/setup-oras/action.yml", "sandbox/krab/requirements.txt", "sandbox/gitlab-ci.yml",
+                 ".clusterfuzzlite/Dockerfile", ".clusterfuzzlite/requirements.txt")]
         bot = Case(author=check_entry.RENOVATE_BOT, same_repo=True)
         self.assertEqual(bot.files(*pins), ([], ""))
         for extra in ({"filename": "policy/imports.txt", "status": "modified"}, {"filename": "renovate.json", "status": "modified"},
                       {"filename": "gate/run", "status": "modified"}, {"filename": ".github/workflows/x.yml", "status": "added"},
+                      {"filename": ".clusterfuzzlite/build.sh", "status": "modified"},
                       {"filename": "sandbox/Dockerfile", "status": "removed"}):
             self.assertTrue(has(bot.files(*pins, extra)[0], "GI-2"), extra)
         self.assertTrue(has(Case(author=check_entry.RENOVATE_BOT).files(*pins)[0], "GI-2"))

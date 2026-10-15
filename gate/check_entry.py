@@ -69,7 +69,7 @@ def distance(a, b):
 
 
 # GI-2a: files a Renovate pull request may change instead of an entry.
-RENOVATE_PINS = re.compile(r"sandbox/Dockerfile|(sandbox|sandbox/krab|scan)/requirements\.(in|txt)|scan/static-scan"
+RENOVATE_PINS = re.compile(r"(sandbox|\.clusterfuzzlite)/Dockerfile|(sandbox|sandbox/krab|scan|\.clusterfuzzlite)/requirements\.(in|txt)|scan/static-scan"
                            r"|sandbox/gitlab-ci\.yml|\.github/workflows/[^/]+\.yml|\.github/actions/[^/]+/action\.yml")
 
 

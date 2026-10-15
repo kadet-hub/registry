@@ -1,0 +1,12 @@
+source:
+  repo: https://github.com/example/demo.git
+  path: demo
+  tag: demo-v1.1.0
+  sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+owners: [1001]
+exceptions:
+  - rule: semgrep:demo
+    path: demo/main.py
+    sha256: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+yanked:
+  1.0.0: broken
