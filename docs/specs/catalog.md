@@ -424,12 +424,14 @@ remembered in the browser's `localStorage`.
   Tag pages are landing pages for searches such as "Kapitan Kubernetes
   generator"; they reuse the tag definitions and the card markup instead
   of copying them. The feed lists one entry per published version, newest
-  first, linking its permalink (CAT-17). The guides are articles for
+  first, linking its permalink (CAT-17). Titles and summaries in the
+  feed pass through the control-character filter of `llms.txt`, so a
+  description listed before QA-5a cannot make it invalid XML. The guides are articles for
   people deciding whether and how to write or consume a generator; they
   link the reference documents instead of repeating them.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #55
+  - Since: #55, this change
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
