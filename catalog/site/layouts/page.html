@@ -27,6 +27,14 @@
     {{ if hasPrefix .source_url (printf "https://github.com/%s/" $owner) }}{{ $feature = printf "%s/issues/new?%s" .source_url (querify "template" "feature-request.yml" "title" $title "generator" .name "version" $version) }}{{ end }}
     {{ if hasPrefix .source_url "https://gitlab.com/" }}{{ $feature = printf "%s/-/issues/new?%s" .source_url (querify "issue[title]" $title "issue[description]" $body) }}{{ end }}
     <p class="actions small"><a class="button" href="{{ $feature | safeURL }}">Request a feature</a> <a class="button" href="{{ printf "https://github.com/%s/registry/issues/new?%s" $owner (querify $q) | safeURL }}">Report a problem</a></p>
+    {{ with .latest }}
+    {{/* CAT-32a: the Markdown as text; the page does not load the image (CAT-3). */}}
+    <details class="badge-snippet">
+      <summary>Badge</summary>
+      <p>Show the latest listed version in your README. shields.io draws the badge from this page's <a href="badge.json">badge.json</a>, which every catalog build updates; once no version is listed, it reads "not listed".</p>
+      {{ partial "snippet.html" (dict "id" "badge-markdown" "label" "badge Markdown" "text" (printf "[![kadet-hub](https://img.shields.io/endpoint?url=%s)](%s)" (printf "generators/%s/badge.json" $name | absURL) (printf "generators/%s/" $name | absURL))) }}
+    </details>
+    {{ end }}
   </div>
 </header>
 
@@ -36,7 +44,6 @@
   <ol>
     {{ with .readme }}<li><a href="#readme">README</a></li>{{ end }}
     <li><a href="#versions">Versions</a></li>
-    {{ with .latest }}<li><a href="#badge">Badge</a></li>{{ end }}
   </ol>
 </details>
 </nav>
@@ -79,15 +86,6 @@
 </details>
 {{ end }}
 </section>
-
-{{ with .latest }}
-{{/* CAT-32a: the Markdown as text; the page does not load the image (CAT-3). */}}
-<section class="badge-snippet" aria-labelledby="badge">
-<h2 id="badge">Badge</h2>
-<p>Show the latest listed version in your README. shields.io draws the badge from this page's <a href="badge.json">badge.json</a>, which every catalog build updates; once no version is listed, it reads "not listed".</p>
-{{ partial "snippet.html" (dict "id" "badge-markdown" "label" "badge Markdown" "text" (printf "[![kadet-hub](https://img.shields.io/endpoint?url=%s)](%s)" (printf "generators/%s/badge.json" $name | absURL) (printf "generators/%s/" $name | absURL))) }}
-</section>
-{{ end }}
 </article>
 {{ end }}
 {{ end }}

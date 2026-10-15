@@ -148,6 +148,8 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .generator-head .facts dt::after { content: ":"; }
 .generator-head .facts dd { color: var(--text); }
 @media (max-width: 36rem) { .generator-head { flex-direction: column; } }
+.badge-snippet { margin-top: 1rem; font-size: .9rem; }
+.badge-snippet summary { cursor: pointer; color: var(--text-muted); }
 .generator { max-width: 52rem; margin-inline: auto; }
 .generator-body { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
 .toc { margin-bottom: 1.5rem; }
@@ -163,7 +165,7 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 @media (min-width: 78rem) {
   .generator { max-width: none; display: grid; grid-template-columns: 1fr minmax(0, 52rem) 1fr; column-gap: 2rem; }
   .generator > * { grid-column: 2; }
-  .generator > .toc { grid-column: 3; grid-row: 2 / span 3; position: sticky; top: 1.5rem; align-self: start; max-width: 13rem; margin: 0; }
+  .generator > .toc { grid-column: 3; grid-row: 2 / span 2; position: sticky; top: 1.5rem; align-self: start; max-width: 13rem; margin: 0; }
   .toc summary { pointer-events: none; }
   .toc summary::after { content: none; }
 }
@@ -197,8 +199,8 @@ pre { margin: 0; padding: .9rem 1rem; border-radius: 10px; background: var(--bg-
 .image-link::before { content: "▣ "; }
 
 /* Versions */
-.versions, .badge-snippet { margin-top: 2.5rem; }
-.versions > h2, .badge-snippet > h2 { font-size: 1.4rem; }
+.versions { margin-top: 2.5rem; }
+.versions > h2 { font-size: 1.4rem; }
 .version { padding: 0; margin: .75rem 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 details.version > summary { display: flex; align-items: center; gap: .75rem; padding: .9rem 1.25rem; cursor: pointer; list-style: none; color: var(--text-muted); }
 details.version > summary::-webkit-details-marker { display: none; }

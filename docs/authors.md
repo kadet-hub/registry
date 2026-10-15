@@ -347,9 +347,9 @@ malicious is reported as described in [SECURITY.md](../SECURITY.md).
 
 ## Badge
 
-Each generator page has a "Badge" section with the Markdown for a
-[shields.io](https://shields.io) badge that shows the latest listed version
-and links the page:
+Below its buttons, each generator page has a "Badge" disclosure with the
+Markdown for a [shields.io](https://shields.io) badge that shows the latest
+listed version and links the page:
 
 ```markdown
 [![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/<name>/badge.json)](https://kadet-hub.org/generators/<name>/)

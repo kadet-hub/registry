@@ -450,7 +450,7 @@ class Site(unittest.TestCase):
         self.assertLess(html.index('class="toc"'), html.index('class="generator-body"'))  # beside the column, not in it
         start = html.index('id="toc"')
         toc = html[start:html.index("</nav>", start)]
-        links = ["readme", "versions", "badge"]
+        links = ["readme", "versions"]
         self.assertEqual(re.findall(r'href="#([a-z]+)"', toc), links)
         positions = [html.index(f'id="{a}"') for a in links]
         self.assertEqual(positions, sorted(positions))
@@ -569,12 +569,13 @@ class Site(unittest.TestCase):
                 self.assertEqual(json.load(f), {"schemaVersion": 1, "label": "kadet-hub", "message": message, "color": color})
         self.assertFalse(os.path.exists(os.path.join(self.out, "guides", "writing-a-kapitan-generator", "badge.json")))
         html = self.page("generators", "demo")
-        section = html[html.index('<h2 id="badge">'):html.index("</section>", html.index('<h2 id="badge">'))]
+        section = html[html.index('<details class="badge-snippet">'):html.index("</details>", html.index('<details class="badge-snippet">'))]
+        self.assertLess(html.index('<details class="badge-snippet">'), html.index('class="toc"'))  # below the actions, not a section
         code = _unescape(re.search(r'<pre id="badge-markdown"><code>(.*?)</code></pre>', section, re.S).group(1))
         self.assertEqual(code, "[![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/demo/badge.json)]"
                                "(https://kadet-hub.org/generators/demo/)")
         self.assertIn('data-copy="badge-markdown"', section)
-        self.assertNotIn('id="badge"', self.page("generators", "old"))  # no listed version, no section
+        self.assertNotIn("badge-snippet", self.page("generators", "old"))  # no listed version, no snippet
         for page in (html, self.page("generators", "old")):
             self.assertNotRegex(page, r"<img\b[^>]*shields")
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', page).group(1)
