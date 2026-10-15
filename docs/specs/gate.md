@@ -156,7 +156,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
     merge shows a score at the badge URL
   - Since: #233
 
-- GI-13: CodeQL MUST analyze `python` and `actions` on every pull request,
+- GI-13: CodeQL MUST analyze `python`, `actions` and `javascript-typescript`
+  on every pull request,
   every push to `main` and weekly, and MUST upload its results to code
   scanning.
 
@@ -164,8 +165,10 @@ which only a maintainer pull request changes (GI-2, REV-1).
   `main` that a SAST tool checked, so the workflow has no `paths` filter.
   Fork pull requests run it only after a maintainer approves the run. The
   `codeql` workflow has `permissions: {}`; its one job holds
-  `contents: read` and `security-events: write` for the upload, and both
-  languages are extracted without a build.
+  `contents: read` and `security-events: write` for the upload, and all
+  three languages are extracted without a build. `javascript-typescript`
+  covers the catalog's `site.js`, which reads the `?tags=` query, and
+  `theme.js`; the vendored `count.js` is scanned as well.
 
   On GitHub-hosted runners the CodeQL action keeps TRAP caches in the
   Actions cache by default, and so does overlay analysis, which GitHub
@@ -177,7 +180,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Test: workflow job `workflow-lint` (partial: pins; zizmor audits the
     permissions); manual: the init step log of the pull request that
     introduced this shows both caches off
-  - Since: #237
+  - Since: #237, #239
 
 ## Static checks
 

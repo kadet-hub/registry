@@ -27,7 +27,7 @@ jobs:
         env:
           CODEQL_OVERLAY_DATABASE_MODE: none
         with:
-          languages: python, actions
+          languages: python, actions, javascript-typescript
           trap-caching: false
 
       - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
