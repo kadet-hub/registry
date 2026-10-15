@@ -626,6 +626,14 @@ class Site(unittest.TestCase):
         self.assertIn('id="old"', self.page("popularity"))
         self.assertIn("1 generator tagged helm", tags)
 
+    def test_feed_stays_valid_xml_with_control_characters(self):  # CAT-18, QA-5a
+        with tempfile.TemporaryDirectory() as tmp:
+            out = build({"serial": 1, "generators": {"esc": {"1.0.0": record("a", description="Renders \x1b[31mred\u202e text")}}}, tmp)
+            with open(os.path.join(out, "index.xml"), encoding="utf-8") as f:
+                feed = f.read()
+        __import__("xml.etree.ElementTree").etree.ElementTree.fromstring(feed)
+        self.assertIn("<summary>Renders [31mred text</summary>", feed)
+
     def test_empty_index_says_so(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = build({"serial": 1, "generators": {}}, tmp)

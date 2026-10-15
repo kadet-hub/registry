@@ -93,8 +93,8 @@ def entry(tag="v1.0.0", owners=OWNER, sha=SHA):
     return ENTRY.format(tag=tag, sha=sha, owners=owners)
 
 
-def manifest(name="demo", owners=OWNER, kapitan=">=0.36.3,<0.37", binaries=""):
-    return MANIFEST.format(name=name, owners=owners, kapitan=kapitan, binaries=binaries)
+def manifest(name="demo", owners=OWNER, kapitan=">=0.36.3,<0.37", binaries="", description="Demo generator"):
+    return MANIFEST.format(name=name, owners=owners, kapitan=kapitan, binaries=binaries).replace("description: Demo generator", f"description: {description}")
 
 
 def has(findings, prefix):
@@ -205,6 +205,11 @@ class Manifest(unittest.TestCase):
         chart = "charts:\n  - {{repo: https://charts.example.org, name: '{}', version: 1.0.0, sha256: {}, output_path: c}}\n"
         self.assertEqual(self.c.manifest(manifest() + chart.format("demo", "a" * 64)), [])
         self.assertTrue(has(self.c.manifest(manifest() + chart.format("--untardir=/x", "a" * 64)), "QA-5"))
+
+    def test_description_without_control_characters(self):  # QA-5a
+        self.assertEqual(self.c.manifest(manifest(description='"Renders \u00e9t\u00e9 & <b>tags</b>"')), [])
+        for bad in ("\\e[31m", "\\u202e", "\\t"):
+            self.assertTrue(has(self.c.manifest(manifest(description=f'"x{bad}y"')), "QA-5"), bad)
 
     def test_tags_come_from_the_list(self):
         self.assertEqual(self.c.manifest(manifest() + "tags: [helm, kubernetes]\n"), [])

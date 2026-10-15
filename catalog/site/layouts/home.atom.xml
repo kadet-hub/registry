@@ -16,7 +16,7 @@
     <link href="{{ $url }}"/>
     <id>{{ $url }}</id>
     <updated>{{ .v.published }}</updated>
-    <summary>{{ .g.description }}</summary>
+    <summary>{{ partial "text.html" .g.description }}</summary>
   </entry>
 {{- end }}
 </feed>
