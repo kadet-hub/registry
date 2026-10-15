@@ -261,3 +261,49 @@ class OutputDiff(unittest.TestCase):
                      "predicate-type: https://kadet-hub.org/output-diff/v1",
                      "predicate-path: ${{ steps.push.outputs.diff }}"):
             self.assertIn(line, step)
+
+
+# Fakes for release/build-all on top of FAKES: build.py in the sandbox image,
+# the static checks, and a compile gate that passed.
+BUILD_FAKES = {
+    "bin/docker": """#!/usr/bin/env bash
+for a; do [[ $a == type=bind,src=*,dst=/out ]] && out=${a#type=bind,src=} && out=${out%,dst=/out}; done
+mkdir -p -- "$out/demo"
+echo '{"name": "demo", "version": "1.13.0", "krab": null}' >"$out/demo/meta.json"
+echo '["demo"]' >"$out/names.json"
+""",
+    "root/scan/static-scan": "#!/usr/bin/env bash\n",
+    "root/scan/exceptions.py": "",
+    "root/release/scan-record": "#!/usr/bin/env bash\necho '{\"exceptions\": '\"$1\"'}'\n",
+    "root/sandbox/gate-compile": """#!/usr/bin/env bash
+echo compatible >"$KRAB_RESULT"
+echo '[{"software": "Demo", "version": "1.0"}]' >"$SCHEMA_RESULT"
+echo '[{"group": "", "version": "v1", "kind": "Service"}]' >"$KINDS_RESULT"
+if [[ -n ${BACKENDS_RESULT:-} ]]; then printf '%s\\n' reclass-rs omegaconf >"$BACKENDS_RESULT"; fi
+mkdir -p -- "$OUTPUT_DIR/compiled/t"
+echo 'port: 80' >"$OUTPUT_DIR/compiled/t/svc.yml"
+""",
+}
+
+
+class BuildAll(unittest.TestCase):
+    """PUB-7, PUB-9 to PUB-11, CMP-4: release/build-all merges the gate's results into meta.json."""
+
+    setUp = OutputDiff.setUp
+
+    def test_meta_records_the_results_of_the_compile_gate(self):
+        for rel, text in BUILD_FAKES.items():
+            path = os.path.join(self.tmp, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            os.chmod(path, 0o755)
+        out = os.path.join(self.tmp, "out")
+        subprocess.run([os.path.join(self.root, "release", "build-all"), out], env=self.env, check=True, capture_output=True)
+        with open(os.path.join(out, "demo", "meta.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), {
+                "name": "demo", "version": "1.13.0", "krab": "compatible", "scan": {"exceptions": 0},
+                "compatibility": [{"software": "Demo", "version": "1.0"}],
+                "output_diff": {"base": None, "error": "no earlier listed version"},
+                "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
+                "backends": ["reclass-rs", "omegaconf"]})
