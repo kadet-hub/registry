@@ -20,6 +20,8 @@ on:
       - .github/workflows/catalog-tests.yml
       - .github/workflows/release-tests.yml
       - .github/workflows/workflows.yml
+      - .github/workflows/scorecard.yml
+      - .github/workflows/codeql.yml
   schedule:
     - cron: "17 4 * * *" # CAT-20: refresh the 👍 counts and stars daily
   workflow_dispatch:

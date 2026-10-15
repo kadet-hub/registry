@@ -142,15 +142,16 @@ cover none of the changed files.
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
   Markdown files at the repository root, `renovate.json`, issue and pull
-  request templates, `CODEOWNERS`, `.github/ruleset.json`, and the
-  test-only workflows of CI-1.
+  request templates, `CODEOWNERS`, `.github/ruleset.json`, the test-only
+  workflows of CI-1, and the `scorecard` and `codeql` workflows (GI-12,
+  GI-13).
 
   This list ignores paths instead of listing them, so a new file a release
   job reads still triggers a release; the daily scheduled run (CAT-20)
   catches up on anything a skipped push left out.
 
   - Test: manual: the release run after the merge of the pull request that introduced this
-  - Since: #58
+  - Since: #58, #237
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
@@ -274,6 +275,31 @@ cover none of the changed files.
 - RISK-6: a Sigstore outage delays releases (PUB-2).
 - RISK-7: GitHub disables scheduled workflows in public repositories after 60
   days without activity, which silently stops SEC-15 and SEC-16. The maintainer re-enables them from GitHub's notification.
+- RISK-8 (accepted): `sandbox/requirements.txt` pins cryptography 48.0.1,
+  which has three advisories: PYSEC-2026-3552 (CVE-2026-69247, an oracle
+  in PKCS#7 `EnvelopedData` decryption, fixed in 50.0.0), PYSEC-2026-3553
+  (CVE-2026-69249, exponential X.509 path building, fixed in 49.0.0) and
+  PYSEC-2026-3554 (CVE-2026-69248, wildcard DNS names escaping X.509 name
+  constraints, fixed in 49.0.0). Kapitan 0.36.3 requires
+  `cryptography<49`, and so does Kapitan's `master`.
+
+  Each bug needs attacker-supplied input to `pkcs7_decrypt_*` or to the
+  verifier in `cryptography.x509.verification`, and nothing in the image
+  calls either. Kapitan uses cryptography only for the key pairs of its
+  `rsa`, `rsapublic`, `ed25519` and `publickey` ref functions,
+  `sandbox/apiserver_check.py` only to generate the service account key of
+  its throwaway kube-apiserver (QA-10), and no other package in the lock
+  calls the two APIs. SEC-3 does not allow generator code to import
+  cryptography. Generator code that reaches it anyway already runs
+  arbitrary Python in a sandbox without network and with decoy
+  credentials only (SEC-9, SEC-11, CON-1); the bugs give it nothing
+  beyond that.
+
+  Scorecard's Vulnerabilities check (GI-12) reports the three advisories
+  until the bump. Tracking: bump the lock with the first Kapitan release
+  that allows cryptography 50.0.0 or later; upstream PR kapicorp/kapitan#1604.
+
+  - Since: #236
 
 ## Out of scope
 
@@ -296,6 +322,8 @@ coverage is named at each:
 - GI-7: no sample that makes a gate tool error or time out.
 - GI-12: triggers, publishing and the SARIF upload are reviewed; only a
   run on `main` shows them working.
+- GI-13: triggers and the cache settings are reviewed; the run log shows
+  them.
 - REV-2: the comment is rendered, not asserted.
 - CON-3: documentation content.
 - CAT-5: URL stability.
@@ -359,6 +387,7 @@ coverage is named at each:
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
 | `.github/workflows/scorecard.yml` | GI-12 |
+| `.github/workflows/codeql.yml` | GI-13 |
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
