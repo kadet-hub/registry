@@ -274,6 +274,31 @@ cover none of the changed files.
 - RISK-6: a Sigstore outage delays releases (PUB-2).
 - RISK-7: GitHub disables scheduled workflows in public repositories after 60
   days without activity, which silently stops SEC-15 and SEC-16. The maintainer re-enables them from GitHub's notification.
+- RISK-8 (accepted): `sandbox/requirements.txt` pins cryptography 48.0.1,
+  which has three advisories: PYSEC-2026-3552 (CVE-2026-69247, an oracle
+  in PKCS#7 `EnvelopedData` decryption, fixed in 50.0.0), PYSEC-2026-3553
+  (CVE-2026-69249, exponential X.509 path building, fixed in 49.0.0) and
+  PYSEC-2026-3554 (CVE-2026-69248, wildcard DNS names escaping X.509 name
+  constraints, fixed in 49.0.0). Kapitan 0.36.3 requires
+  `cryptography<49`, and so does Kapitan's `master`.
+
+  Each bug needs attacker-supplied input to `pkcs7_decrypt_*` or to the
+  verifier in `cryptography.x509.verification`, and nothing in the image
+  calls either. Kapitan uses cryptography only for the key pairs of its
+  `rsa`, `rsapublic`, `ed25519` and `publickey` ref functions,
+  `sandbox/apiserver_check.py` only to generate the service account key of
+  its throwaway kube-apiserver (QA-10), and no other package in the lock
+  calls the two APIs. SEC-3 does not allow generator code to import
+  cryptography. Generator code that reaches it anyway already runs
+  arbitrary Python in a sandbox without network and with decoy
+  credentials only (SEC-9, SEC-11, CON-1); the bugs give it nothing
+  beyond that.
+
+  Scorecard's Vulnerabilities check (GI-12) reports the three advisories
+  until the bump. Tracking: bump the lock with the first Kapitan release
+  that allows cryptography 50.0.0 or later; upstream PR kapicorp/kapitan#1604.
+
+  - Since: #236
 
 ## Out of scope
 
