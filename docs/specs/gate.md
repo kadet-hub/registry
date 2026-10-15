@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Gate
 
 Status: Approved
-Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `.github/workflows/{gate,selftest,scheduled}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset.json`
+Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `.github/workflows/{gate,selftest,scheduled,scorecard}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset.json`
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -82,10 +82,11 @@ which only a maintainer pull request changes (GI-2, REV-1).
   on `main` and bound to a `release` environment that admits only `main`, MAY
   hold `packages: write`, `id-token: write` and `attestations: write`; its
   Pages deploy job, bound to the `github-pages` environment, MAY hold
-  `pages: write` and `id-token: write` (CAT-1).
+  `pages: write` and `id-token: write` (CAT-1). The Scorecard job MAY
+  hold `id-token: write` (GI-12).
   - Test: none (partial: `release.yml` permissions; the environment's
     branch policy is set with `gh api`)
-  - Since: #13
+  - Since: #13, #233
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
   `^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$`,
@@ -128,6 +129,32 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `workflow-lint`
   - Since: #27
+
+- GI-12: OpenSSF Scorecard MUST run on every push to `main` and weekly,
+  MUST publish its result to the Scorecard API and MUST upload its SARIF
+  to code scanning.
+
+  The published result feeds the badge in `README.md` and replaces the
+  Scorecard team's own weekly scan of the repository. The `scorecard`
+  workflow has `permissions: {}`; its one job holds `contents: read`,
+  `actions: read`, `security-events: write` for the SARIF upload and
+  `id-token: write`, with which the action proves to the API which
+  workflow produced the result. That token names `scorecard.yml`, so it
+  cannot pass the release identity check of PUB-3.
+
+  The API accepts a result only from the default branch, from a workflow
+  without `env` or `defaults` and without workflow-level write
+  permissions, and from a job on a GitHub-hosted Ubuntu runner whose steps
+  all use an action from the API's allowlist, which holds the three this
+  job runs: `actions/checkout`, `ossf/scorecard-action` and
+  `github/codeql-action/upload-sarif`. Otherwise the run fails.
+  scorecard-action supports `push` and `schedule` and calls
+  `workflow_dispatch` experimental, so the workflow has no manual trigger.
+
+  - Test: workflow job `workflow-lint` (partial: pins and caches; zizmor
+    audits the permissions); manual: the first run on `main` after the
+    merge shows a score at the badge URL
+  - Since: #233
 
 ## Static checks
 

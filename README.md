@@ -1,5 +1,7 @@
 # kadet-hub registry
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kadet-hub/registry/badge)](https://scorecard.dev/viewer/?uri=github.com/kadet-hub/registry)
+
 Marketplace for [Kapitan](https://kapitan.dev) generators. Each listed
 version passed a gate of scans, a sandboxed fixture compile and a
 maintainer's review, and is published as an attested OCI artifact under
