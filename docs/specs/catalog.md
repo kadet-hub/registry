@@ -226,7 +226,7 @@ remembered in the browser's `localStorage`.
   read, so a failed lookup does not read as "nothing wanted".
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #245
 
 - CAT-14: The card MUST show the date of the latest version's scan record
   and the version page the full record with a link to the release run;
@@ -459,7 +459,7 @@ remembered in the browser's `localStorage`.
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, #231, #235, #242, this change
+  - Since: #51, #231, #235, #242, #245
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
