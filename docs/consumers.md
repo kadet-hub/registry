@@ -1,9 +1,9 @@
 # Using marketplace generators
 
 A marketplace generator is an OCI artifact `ghcr.io/kadet-hub/<name>`. You
-pin it by digest in your inventory and compile with the reusable consumer
-workflow, which verifies what it fetches and runs Kapitan in the gVisor
-sandbox the gate uses.
+pin it by version and digest in your inventory and compile with the
+reusable consumer workflow, which verifies what it fetches and runs Kapitan
+in the gVisor sandbox the gate uses.
 
 ## Kapitan's `--fetch` is not enough
 
@@ -15,16 +15,24 @@ yourself.
 
 ## Inventory
 
-Take name and digest from the index (see Verifying by hand):
+Copy the entry from the generator's page on the catalog, or take name,
+version and digest from the index (see Verifying by hand):
 
 ```yaml
 parameters:
   kapitan:
     dependencies:
       - type: oci
-        source: ghcr.io/kadet-hub/<name>@sha256:<digest>
+        source: ghcr.io/kadet-hub/<name>:<version>@sha256:<digest>
         output_path: lib/<name>
 ```
+
+The digest decides what is fetched and verified. The tag must be the version
+the index lists for that digest, otherwise the workflow fails; without a tag,
+`ghcr.io/kadet-hub/<name>@sha256:<digest>` still works. Consumer workflow
+commits before kadet-hub/registry#PR reject the tag with `source must be
+<host>/<repository>@sha256:<digest>`, so move your workflow pin to a later
+commit before you add tags.
 
 ## Workflow
 
@@ -69,8 +77,8 @@ It then:
    OCI without digest, helm without exact version, git without commit SHA;
 3. fetches the dependencies outside the sandbox and verifies every
    marketplace artifact: attestation from the marketplace release workflow,
-   listed under its name in an attested index, not yanked, charts with the
-   digest the index records;
+   listed under its name in an attested index with the version its tag
+   names, not yanked, charts with the digest the index records;
 4. compiles in the sandbox without network, with decoy credentials and a
    syscall trace that fails on any program not declared by the generators or
    your policy;
@@ -108,6 +116,25 @@ trace is missing there: undeclared programs and reads of the decoy
 credentials are not detected, and `/out` is not `noexec`. Network
 isolation, the read-only root, decoy values in the output and the output
 rules still apply.
+
+## Updates with Renovate
+
+The preset [kadet-hub/renovate-config](https://github.com/kadet-hub/renovate-config)
+finds tagged marketplace sources in `inventory/**/*.yml` and
+`inventory/**/*.yaml` and opens a pull request per update that changes tag
+and digest together. It does not merge on its own.
+
+```json
+{
+  "extends": ["github>kadet-hub/renovate-config"]
+}
+```
+
+Renovate reads the tags on ghcr.io, not the index, so it can propose a
+version that was yanked after its release. The workflow fails that pull
+request because the index lists the version as yanked. Close it: Renovate
+does not propose a closed version again, and a closed major update skips
+that whole major line.
 
 ## Verifying by hand
 
