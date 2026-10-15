@@ -3,7 +3,9 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from schema_diff import diff
+import tempfile
+
+from schema_diff import diff, sources
 
 
 class SchemaDiff(unittest.TestCase):
@@ -23,6 +25,15 @@ class SchemaDiff(unittest.TestCase):
 
     def test_no_schemas_no_lines(self):
         self.assertEqual(diff({}, {}), [])
+
+    def test_malformed_files_have_no_sources(self):  # GI-14
+        for manifest, src in ((b"- schemas\n", b"core: {}\n"), (b"schemas: s\n", b"- core\n"), (b"schemas: s\n", b"core: \xff\n")):
+            with tempfile.TemporaryDirectory() as tree:
+                os.makedirs(os.path.join(tree, "s"))
+                for rel, data in (("kapitan-generator.yaml", manifest), ("s/sources.yaml", src)):
+                    with open(os.path.join(tree, rel), "wb") as f:
+                        f.write(data)
+                self.assertEqual(sources(tree), {})
 
 
 if __name__ == "__main__":

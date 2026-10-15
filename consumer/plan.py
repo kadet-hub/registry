@@ -36,7 +36,10 @@ def relpath_ok(path):
 
 
 def https_host(url):
-    u = urlsplit(url)
+    try:
+        u = urlsplit(url)
+    except ValueError:
+        return None
     if u.scheme != "https" or not u.hostname or "@" in u.netloc:
         return None
     return u.netloc.lower()

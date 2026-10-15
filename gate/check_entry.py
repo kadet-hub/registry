@@ -122,11 +122,11 @@ def step_entry(a):
     name = ENTRY_PATH.match(path).group(1)
     if os.path.getsize(a.head) > MAX_ENTRY:
         return ["GI-1: entry file too large"]
-    with open(a.head, encoding="utf-8") as f:
-        text = f.read()
     try:
+        with open(a.head, encoding="utf-8") as f:
+            text = f.read()
         entry = yaml.safe_load(text)
-    except yaml.YAMLError as e:
+    except (UnicodeDecodeError, yaml.YAMLError) as e:
         return [f"GI-1: entry is not YAML: {str(e)[:200]}"]
     findings = [f"QA-5: entry: {e}" for e in schema_errors(entry, os.path.join(a.policy, "entry.schema.json"))]
     if findings:
@@ -220,7 +220,7 @@ def step_manifest(a):
     with open(a.manifest, encoding="utf-8") as f:
         try:
             manifest = yaml.safe_load(f)
-        except yaml.YAMLError as e:
+        except (UnicodeDecodeError, yaml.YAMLError) as e:
             return [f"QA-5: manifest is not YAML: {str(e)[:200]}"]
     findings = [f"QA-5: manifest: {e}" for e in schema_errors(manifest, os.path.join(a.policy, "manifest.schema.json"))]
     if findings:

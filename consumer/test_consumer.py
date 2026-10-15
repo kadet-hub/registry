@@ -53,6 +53,7 @@ class Dependencies(unittest.TestCase):
               "submodules": True}, "submodules"),
             ({"type": "http", "source": "http://example.org/x", "output_path": "x"}, "type http is not allowed"),
             ({"type": "https", "source": "https://user@example.org/x", "output_path": "x"}, "https URL"),
+            ({"type": "https", "source": "https://[example.org/x", "output_path": "x"}, "https URL"),  # GI-14
         ]
         for dep, want in cases:
             with self.subTest(want=want):

@@ -147,6 +147,13 @@ class Entry(unittest.TestCase):
         self.assertTrue(has(Case().entry("generators/demo.yaml", entry(sha="main")), "QA-5"))
         self.assertTrue(has(Case().entry("generators/demo.yaml", entry().replace("example/demo.git", "example/demo")), "QA-5"))
 
+    def test_not_utf8_is_a_finding(self):  # GI-14
+        c = Case()
+        c.write("head.yaml", "")
+        with open(c.p("head.yaml"), "wb") as f:
+            f.write(entry().encode() + b"# \xff\n")
+        self.assertTrue(has(c.entry("generators/demo.yaml"), "GI-1: entry is not YAML"))
+
     def test_layout_order(self):
         text = entry().replace("  path: generators/demo\n", "").replace("  sha:", "  path: generators/demo\n  sha:")
         self.assertTrue(has(Case().entry("generators/demo.yaml", text), "REG-7"))
@@ -194,6 +201,14 @@ class Manifest(unittest.TestCase):
 
     def test_valid(self):
         self.assertEqual(self.c.manifest(manifest(binaries='"helm template"')), [])
+
+    def test_not_utf8_is_a_finding(self):  # GI-14
+        self.c.manifest(manifest())
+        with open(self.c.p("gen/kapitan-generator.yaml"), "ab") as f:
+            f.write(b"# \xff\n")
+        a = SimpleNamespace(event=self.c.p("event.json"), entry=self.c.p("entry.json"),
+                            manifest=self.c.p("gen/kapitan-generator.yaml"), policy=POLICY, root_license=None)
+        self.assertTrue(has(check_entry.step_manifest(a), "QA-5: manifest is not YAML"))
 
     def test_failures(self):
         self.assertTrue(has(self.c.manifest(manifest(name="other")), "REG-2"))

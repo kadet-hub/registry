@@ -69,6 +69,16 @@ class SchemaCheck(unittest.TestCase):
         findings, _, _ = self.run_check({}, sources=None)
         self.assertEqual(findings, ["QA-7: schemas/sources.yaml is missing or not YAML"])
 
+    def test_sources_not_a_mapping_or_not_utf8_fails(self):  # GI-14
+        findings, _, _ = self.run_check({}, sources="- core\n")
+        self.assertEqual(findings, ["QA-7: schemas/sources.yaml is missing or not YAML"])
+        with tree({"out/x": ""}) as root:
+            os.makedirs(os.path.join(root, "schemas"))
+            with open(os.path.join(root, "schemas", "sources.yaml"), "wb") as f:
+                f.write(b"core: \xff\n")
+            findings, _, _ = check(os.path.join(root, "schemas"), os.path.join(root, "out"))
+        self.assertEqual(findings, ["QA-7: schemas/sources.yaml is missing or not YAML"])
+
 
 if __name__ == "__main__":
     unittest.main()
