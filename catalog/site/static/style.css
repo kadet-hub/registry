@@ -148,6 +148,8 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .generator-head .facts dt::after { content: ":"; }
 .generator-head .facts dd { color: var(--text); }
 @media (max-width: 36rem) { .generator-head { flex-direction: column; } }
+.badge-snippet { margin-top: 1rem; font-size: .9rem; }
+.badge-snippet summary { cursor: pointer; color: var(--text-muted); }
 .generator { max-width: 52rem; margin-inline: auto; }
 .generator-body { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
 .toc { margin-bottom: 1.5rem; }
