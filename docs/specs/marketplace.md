@@ -132,26 +132,27 @@ cover none of the changed files.
   | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, action `setup-hugo` |
   | `release-tests` | `release-tests.yml` | `release/` |
   | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
+  | `fuzz` | `fuzz.yml` | `.clusterfuzzlite/`, `tests/fuzz/`, `gate/check_entry.py`, `gate/schema_diff.py`, `consumer/plan.py`, `sandbox/schema_check.py`, `sandbox/tag_check.py`, `sandbox/tf_schema.py`, `policy/` (GI-14) |
 
   Every workflow also lists its own file. `workflow_dispatch` runs a job
   regardless of the change.
 
   - Test: manual: the checks of the pull request that introduced this
-  - Since: #58
+  - Since: #58, this change
 
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
   Markdown files at the repository root, `renovate.json`, issue and pull
   request templates, `CODEOWNERS`, `.github/ruleset.json`, the test-only
-  workflows of CI-1, and the `scorecard` and `codeql` workflows (GI-12,
-  GI-13).
+  workflows of CI-1, the `scorecard`, `codeql` and `fuzz` workflows and
+  `.clusterfuzzlite/` (GI-12 to GI-14).
 
   This list ignores paths instead of listing them, so a new file a release
   job reads still triggers a release; the daily scheduled run (CAT-20)
   catches up on anything a skipped push left out.
 
   - Test: manual: the release run after the merge of the pull request that introduced this
-  - Since: #58, #237
+  - Since: #58, #237, this change
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
@@ -325,6 +326,7 @@ coverage is named at each:
   run on `main` shows them working.
 - GI-13: triggers and the cache settings are reviewed; the run log shows
   them.
+- GI-14: a parser added without a fuzz target goes unnoticed.
 - REV-2: the comment is rendered, not asserted.
 - CON-3: documentation content.
 - CAT-5: URL stability.
@@ -389,10 +391,11 @@ coverage is named at each:
 | `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
 | `.github/workflows/scorecard.yml` | GI-12 |
 | `.github/workflows/codeql.yml` | GI-13 |
+| `.github/workflows/fuzz.yml`, `.clusterfuzzlite/`, `tests/fuzz/` | GI-14: build image, atheris lock, targets and seeds |
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
 ClamAV, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
-Hugo) are pinned in
-`sandbox/Dockerfile`, the requirements files, `.github/actions/` and
+Hugo, atheris) are pinned in
+`sandbox/Dockerfile`, `.clusterfuzzlite/Dockerfile`, the requirements files, `.github/actions/` and
 `sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).

@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Gate
 
 Status: Approved
-Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset.json`
+Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `tests/fuzz/`, `.clusterfuzzlite/`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql,fuzz}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset.json`
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -31,8 +31,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Since: #8
 
 - GI-2a: A pull request from Renovate, identified as in REG-5, MAY instead
-  modify only pin files: `sandbox/Dockerfile`, the `requirements.in` and
-  `requirements.txt` under `sandbox/`, `sandbox/krab/` and `scan/`,
+  modify only pin files: the `Dockerfile` under `sandbox/` and
+  `.clusterfuzzlite/`, the `requirements.in` and `requirements.txt` under
+  `sandbox/`, `sandbox/krab/`, `scan/` and `.clusterfuzzlite/`,
   `scan/static-scan`, `sandbox/gitlab-ci.yml`, `.github/workflows/*.yml`
   and `.github/actions/*/action.yml`.
 
@@ -42,7 +43,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   stay maintainer pull requests.
 
   - Test: `gate/test_check_entry.py::Files`
-  - Since: #38
+  - Since: #38, this change
 
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
@@ -181,6 +182,68 @@ which only a maintainer pull request changes (GI-2, REV-1).
     permissions); manual: the init step log of the pull request that
     introduced this shows both caches off
   - Since: #237, #239
+
+- GI-14: The parsers that read submitter files in the gate, and the
+  consumer's dependency check, MUST be fuzzed with atheris through
+  ClusterFuzzLite on every pull request that changes them and weekly.
+
+  Each target in `tests/fuzz/` passes the fuzzer's bytes to the code below
+  as the file it names, and any exception that code does not catch is a
+  finding:
+
+  | Target | Code | Input |
+  |---|---|---|
+  | `fuzz_entry` | `check_entry.step_entry` | `generators/<name>.yaml`, new or a bump, from an owner, a stranger, a maintainer or Renovate |
+  | `fuzz_manifest` | `check_entry.step_manifest`, `schema_diff.sources` | `kapitan-generator.yaml`, for a new entry and a bump |
+  | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | a list of mappings as one target's `parameters.kapitan.dependencies`, including the tag before the digest |
+  | `fuzz_documents` | `tag_check.kinds`, `schema_check.check`, `schema_diff.sources` | a compiled output file, as YAML and as JSON, and `schemas/sources.yaml` |
+
+  The callers exit non-zero on an uncaught exception (GI-7, CON-1), so a
+  finding prints a traceback in place of a finding or blocks a valid
+  submission; it does not pass a check. `schema_diff.py` only loses its
+  review lines. `fuzz_plan` skips other shapes,
+  which `kapitan inventory` does not write. `apiserver_check.crd_files` is
+  not fuzzed: importing it needs cryptography, which RISK-8 holds at a
+  version with advisories, and a second lock would report them again.
+
+  The `fuzz` workflow runs code-change mode for 300 seconds on pull
+  requests that touch a target's inputs (CI-1) and batch mode for 1800
+  seconds on Wednesdays; ClusterFuzzLite splits the time across the
+  targets.
+
+  On GitHub, ClusterFuzzLite keeps corpora, builds and coverage as
+  `cifuzz-*` workflow artifacts. It downloads the first unexpired artifact
+  of a name in the repository's artifact list, which holds every run's, a
+  fork pull request's included, and unpacks it without path checks. GI-10 rules that out like a cache, so the
+  job sets `NO_CLUSTERFUZZ_DEPLOYMENT=true`, which replaces the store with
+  a no-op. Every run starts from the seeds in `tests/fuzz/seeds/`, and every
+  reproducible crash fails it, including one the pull request did not
+  introduce. Without the store ClusterFuzzLite calls no API and clones the
+  public repository anonymously, so the workflow has `permissions: {}` and
+  passes no token.
+
+  The actions are pinned by commit (GI-6), but the images they run,
+  `gcr.io/oss-fuzz-base/clusterfuzzlite-build-fuzzers:v1` and
+  `clusterfuzzlite-run-fuzzers:v1`, are tags that Google rebuilds from
+  `google/oss-fuzz`, which the commit does not pin. `.clusterfuzzlite/Dockerfile`
+  pins `base-builder-python` by digest. The job holds no token or secret
+  and nothing reads its result, so a changed image can fail the job or hide
+  a crash, nothing more.
+
+  `base-builder-python` runs Python 3.11, the sandbox image 3.13. atheris
+  3.0.0 is the newest release with a cp311 wheel; 3.1.0 has only cp312 to
+  cp314 wheels and no sdist, and `renovate.json` holds it back.
+  `.clusterfuzzlite/requirements.txt` is compiled with
+  `sandbox/requirements.txt` as constraints, so the libraries are the
+  gate's versions.
+
+  Scorecard's Fuzzing check (GI-12) scores 10 when the default branch has
+  `.clusterfuzzlite/Dockerfile` with a command, or Python is a prominent
+  language and a `*.py` file has a line with `import atheris`; otherwise 0.
+
+  - Test: workflow job `fuzz` (partial: a parser added without a target
+    goes unnoticed); workflow job `workflow-lint` (pins and caches)
+  - Since: this change
 
 ## Static checks
 
