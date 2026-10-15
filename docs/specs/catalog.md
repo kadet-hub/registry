@@ -160,7 +160,7 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/seo_check.py`; `catalog/test_catalog.py` (`test_seo`,
     `test_seo_check_finds_violations`); release step "Check the built site
     (CAT-11d)" in `.github/workflows/release.yml`
-  - Since: this change
+  - Since: #227
 
 - CAT-12: The generator page MUST link to an issue form for reporting a
   problem with that generator, prefilled with its name and latest version,
