@@ -132,6 +132,49 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #196
 
+- CAT-11e: A README heading MUST be rendered at most one level below the
+  heading before it.
+
+  READMEs come from submitters and may jump from `#` to `###`; rendered
+  as written, that breaks CAT-11b and, through CAT-11d, would block every
+  deploy until the generator publishes a fixed README. The render hook
+  shifts README headings one level down (the page's `h1` is the generator
+  name) and clamps each to one below the previous heading, starting below
+  the `h2` of the table of contents.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #228
+
+- CAT-11d: Every HTML page of the built site MUST pass the checks of CAT-8a
+  and CAT-11 to CAT-11c, in `catalog-tests` on the fixture build and in the
+  release before the site is deployed. A failure MUST stop the deploy, so
+  the previous site stays live.
+
+  Until this change `test_seo` checked 14 listed pages of the fixture
+  build, and the release deployed the real site, with the submitters'
+  READMEs and descriptions, unchecked. `catalog/seo_check.py` walks the
+  built site, prints one finding per line as `CAT-11x: <path>: <message>`
+  and exits 1 on any. In the release's catalog job it runs between the
+  build and the upload of the Pages artifact, so a finding fails the job
+  and the `pages` job does not run.
+
+  Lengths are counted after HTML unescaping, as a browser shows the text.
+  The canonical URL must be the absolute URL of the page itself. A Hugo
+  alias page (a meta refresh to the new URL) is a redirect, not a page,
+  and is not checked; the site has none.
+
+  README headings are rendered one level below the page's own (`#`
+  becomes `h2`), so a README that skips a level, such as `#` followed by
+  `###`, fails CAT-11b. The gate does not check README headings, so such a
+  version stops every catalog deploy until a new version fixes the README
+  or the version is yanked. On 2026-10-15 the 59 pages of the live site's
+  sitemap, 36 generator pages with 35 READMEs, had no finding.
+
+  - Test: `catalog/seo_check.py`; `catalog/test_catalog.py` (`test_seo`,
+    `test_seo_check_finds_violations`); release step "Check the built site
+    (CAT-11d)" in `.github/workflows/release.yml`
+  - Since: #227
+
 - CAT-12: The generator page MUST link to an issue form for reporting a
   problem with that generator, prefilled with its name and latest version,
   and the home page MUST link to an issue form for requesting a new

@@ -1,4 +1,11 @@
-{{- /* README headings sit one level below the page's own (h1 is the generator name). */ -}}
+{{- /* README headings sit one level below the page's own (h1 is the generator name) and
+       at most one below the heading before them (CAT-11e), starting below the h2 of the
+       table of contents. */ -}}
 {{- $l := .Level -}}{{- $id := .Anchor -}}
-{{- if .Page.Params.generator }}{{ $l = add .Level 1 | math.Min 6 | int }}{{ $id = printf "readme-%s" .Anchor }}{{ end -}}
+{{- if .Page.Params.generator }}
+  {{- $prev := .Page.Store.Get "readme-heading" | default 2 -}}
+  {{- $l = add .Level 1 | math.Min (add $prev 1) | math.Min 6 | int -}}
+  {{- .Page.Store.Set "readme-heading" $l -}}
+  {{- $id = printf "readme-%s" .Anchor -}}
+{{- end -}}
 <h{{ $l }} id="{{ $id }}">{{ .Text }}</h{{ $l }}>

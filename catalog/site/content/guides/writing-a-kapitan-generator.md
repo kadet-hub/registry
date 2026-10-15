@@ -65,9 +65,12 @@ Working with a coding agent: point it at the template's
 
 ## Generator contract
 
-This section states what Kapitan 0.36, the version the gate pins, and the
-kadet-hub gate expect from a generator; each gate rule links the
+This section states what Kapitan 0.36.3, the version the gate pins, and
+the kadet-hub gate expect from a generator; each gate rule links the
 requirement that defines it.
+
+Related: [Writing a generator](https://github.com/kapicorp/kapitan/pull/1631)
+on Kapitan's kadet input type page, pending in kapicorp/kapitan#1631.
 
 ### Files
 
@@ -80,7 +83,9 @@ and a license, as described in
 ### Wiring a target
 
 A target fetches the generator into `lib/` and points a kadet compile entry
-at it; the settings live in the inventory:
+at it. Kapitan looks each of `input_paths` up in the search paths, `.` and
+`lib` by default, and the path must be the generator's directory, not a
+`.py` file. The settings live in the inventory:
 
 ```yaml
 parameters:
@@ -109,13 +114,18 @@ covers the digest, its verification and the sandboxed compile.
 ### What `main()` receives
 
 For each path in `input_paths`, Kapitan imports its `__init__.py` and calls
-`main(input_params)`, or `main()` when it takes no argument; a `main()` with
-more than one parameter fails the compile. `input_params` is a copy of the
-entry's `input_params` as the inventory renders them, plus `compile_path`,
-the directory the entry writes to, unless the entry sets it. No key is
-required. Use it to select what one entry renders, as grafana's
+`main(input_params)`, or `main()` when it takes no positional parameter.
+Only positional parameters count; a `main()` with two or more fails the
+compile with `Error compiling <target>: ... main parameters not equal to 1 or 0`.
+`input_params` is a shallow copy of the entry's `input_params` as the
+inventory renders them, plus `compile_path` unless the entry sets it. No
+key is required. Use it to select what one entry renders, as grafana's
 `function: generate_manifests` does, and keep the settings in the
 inventory.
+
+`compile_path` is the directory the entry writes to. During the compile it
+is a temporary `<tmp>/compiled/<target>/<output_path>`, which Kapitan
+copies into `compiled/` after all targets have compiled.
 
 The inventory comes from `kapitan.inputs.kadet`: `inventory()` returns the
 current target's, with attribute access (`inventory().parameters.generators`),
@@ -123,19 +133,29 @@ current target's, with attribute access (`inventory().parameters.generators`),
 targets that publish a topic, which argocd uses for one Application per
 target.
 
-An exception in `main()` fails the target with
+An exception raised in `main()` fails the target with
 `Could not load Kadet module: <directory>` and your exception as the cause,
-so its message should name the inventory key at fault.
+so its message should name the inventory key at fault. Only `main()` is
+wrapped that way: an exception while the module is imported, in
+module-level code or a failing import, fails the target with
+`Error compiling <target>: <message>`, and a module without `main` with
+`Invalid input_type: "kadet"` and the `AttributeError`.
 
 ### What `main()` returns
 
-A `BaseObj` or `BaseModel`. Every key of its `root` is one file below the
-entry's `output_path`, and a `/` in the key creates a directory. The
-entry's `output_type` sets format and extension: `yaml` by default, so the
-key `settings-cm` from step 3 becomes `manifests/settings-cm.yaml`; `auto`
-keeps a `.yaml`, `.yml`, `.json` or `.toml` extension given in the key. A
-list value is written as a multi-document YAML file. A fixture target that
-writes no file fails the gate
+A `BaseObj`, a `BaseModel` or a plain `dict`. Every key of its `root`, or
+of the dict, is one file below the entry's `output_path`, and a `/` in the
+key creates a directory. `None` or an empty object writes nothing; a list
+as the whole return value fails the target with `Invalid input_type`.
+
+The entry's `output_type` sets format and extension. `yaml` (the default),
+`yml`, `json` and `toml` append their name to the key, so the key
+`settings-cm` from step 3 becomes `manifests/settings-cm.yaml`; `plain`
+takes string values and appends nothing; `auto` keeps a `.yaml`, `.yml`,
+`.json` or `.toml` extension given in the key and writes any other key as
+YAML with `.yaml` appended. With YAML output a list value becomes a
+multi-document file, one document per item; JSON writes it as an array.
+A fixture target that writes no file fails the gate
 ([CMP-1](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#compile-gate)).
 
 ### Inventory key and file names
