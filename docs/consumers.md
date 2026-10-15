@@ -120,9 +120,10 @@ rules still apply.
 ## Updates with Renovate
 
 The preset [kadet-hub/renovate-config](https://github.com/kadet-hub/renovate-config)
-finds tagged marketplace sources in `inventory/**/*.yml` and
-`inventory/**/*.yaml` and opens a pull request per update that changes tag
-and digest together. It does not merge on its own.
+finds tagged marketplace sources in `**/inventory/**/*.yml` and
+`**/inventory/**/*.yaml`, so in an `inventory/` directory at the repository
+root or in a nested Kapitan project, and opens a pull request per update
+that changes tag and digest together. It does not merge on its own.
 
 ```json
 {
