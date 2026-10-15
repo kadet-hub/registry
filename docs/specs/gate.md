@@ -43,7 +43,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   stay maintainer pull requests.
 
   - Test: `gate/test_check_entry.py::Files`
-  - Since: #38, this change
+  - Since: #38, #243
 
 - GI-3: Gate jobs MUST run with `permissions: contents: read`, no secrets and
   no `id-token` permission, and MUST pass no runner environment into the
@@ -243,7 +243,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: this change
+  - Since: #243
 
 ## Static checks
 
