@@ -47,7 +47,7 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
   so no source attribution is owed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #229
 
 - LEG-2: `TERMS.md` MUST state the terms under which a generator is listed
   and republished, and the entry pull request MUST link to it.
