@@ -143,7 +143,7 @@ remembered in the browser's `localStorage`.
   the `h2` of the table of contents.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #228
 
 - CAT-11d: Every HTML page of the built site MUST pass the checks of CAT-8a
   and CAT-11 to CAT-11c, in `catalog-tests` on the fixture build and in the
