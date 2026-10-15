@@ -593,7 +593,7 @@ remembered in the browser's `localStorage`.
   - Since: #157
 
 - CAT-19: A generator page MUST show its sections in one centered column
-  of equal width, in the order README, Versions, Badge, and MUST have an "On this
+  of equal width, in the order README, Versions, and MUST have an "On this
   page" list linking each section that is present, which marks the section
   in view. Versions MUST show the newest listed version expanded, with its
   inventory entry, verify command, details and checks, and state once above
@@ -612,7 +612,7 @@ remembered in the browser's `localStorage`.
   open and only the marking of the section in view is missing.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #56, #79, #111, #246
+  - Since: #56, #79, #111
 
 - CAT-32: Every generator page MUST have a `badge.json` next to its
   `index.html` in the shields.io endpoint schema, with the label
@@ -643,17 +643,21 @@ remembered in the browser's `localStorage`.
 
 - CAT-32a: The page of a generator with a listed version MUST show the
   Markdown `[![kadet-hub](https://img.shields.io/endpoint?url=<badge.json
-  URL>)](<page URL>)` in the section "Badge" as a snippet with a copy
-  button (CAT-9), and MUST NOT load the badge image.
+  URL>)](<page URL>)` in a disclosure "Badge" below the page's actions, as
+  a snippet with a copy button (CAT-9), and MUST NOT load the badge image.
 
   The CSP admits images only from the site's own origin (CAT-3, CAT-25); a
   preview would need `img-src https://img.shields.io` and would send every
   visitor's address to shields.io. The snippet is text in `<pre><code>`.
-  A generator without a listed version has no section, since its badge
-  reads "not listed". `docs/authors.md` shows the snippet.
+  A section "Badge" after Versions was tried first: it is too short to
+  reach the part of the viewport where the "On this page" list marks a
+  section (CAT-19), so the list never marked it, and authors are the only
+  readers who need it. A generator without a listed version has no
+  disclosure, since its badge reads "not listed". `docs/authors.md` shows
+  the snippet.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #246
+  - Since: this change
 
 - CAT-20: Each listed generator MUST have one discussion in the
   "Generators" category of the registry's GitHub Discussions, and its card
