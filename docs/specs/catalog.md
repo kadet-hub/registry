@@ -135,7 +135,7 @@ remembered in the browser's `localStorage`.
   gets listed, an `h2` with an `h3` per step.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #196, this change
+  - Since: #196, #230
 
 - CAT-11e: A README heading MUST be rendered at most one level below the
   heading before it.
@@ -264,7 +264,7 @@ remembered in the browser's `localStorage`.
   has keyboard focus, not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73, #81, #92, this change
+  - Since: #73, #81, #92, #230
 
 - CAT-26: A generator without a listed version MUST NOT have a card on the
   home page or a tag page, and MUST NOT be counted there.
