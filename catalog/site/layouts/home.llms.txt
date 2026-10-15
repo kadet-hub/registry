@@ -1,8 +1,11 @@
+{{- /* CAT-16: llmstxt.org format; the generator list follows CAT-26. */ -}}
 # kadet-hub
 
 > kadet-hub is a community catalog of Kapitan generators (kadet Python modules that turn a block of inventory parameters into many output files). Every listed version passed secret, malware and code scans, a compile of its fixture project in a gVisor sandbox without network, tag and schema checks, and a maintainer's review, and is published as an attested OCI artifact at ghcr.io/kadet-hub/<name>, pinned by digest. Offered free of charge, as is, on a best-effort basis.
 
 Writing a generator for the marketplace: start from the template and follow its AGENTS.md. Decide first whether a generator is the right tool (see "When not" in the author guide).
+
+Every generator and guide page has a Markdown variant at index.md next to it; the lists below link them.
 
 ## Writing a generator
 
@@ -25,6 +28,16 @@ Writing a generator for the marketplace: start from the template and follow its 
 - [Consumer guide](https://github.com/kadet-hub/registry/blob/main/docs/consumers.md): inventory entry, consumer workflow, verifying by hand, what a listing covers
 - [Catalog](https://kadet-hub.org/): all generators; each page has the pinned inventory entry and the verify command
 
+## Generators
+
+{{ range where site.Data.catalog.generators "latest" "!=" nil -}}
+- [{{ .name }}]({{ printf "generators/%s/index.md" .name | absURL }}): {{ partial "text.html" .description }}
+{{ end }}
+## Guides
+
+{{ range where site.RegularPages "Section" "guides" -}}
+- [{{ .Title }}]({{ .Permalink }}index.md): {{ .Description }}
+{{ end }}
 ## Optional
 
 - [Tags](https://kadet-hub.org/tags/)
