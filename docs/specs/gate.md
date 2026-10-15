@@ -655,11 +655,13 @@ review go into the review comment and do not fail the gate.
   SEC-12. The other tags describe purpose, which no file shows; the gate
   comment names them as `review:` lines, and the reviewer checks them
   against `/tags/` (CAT-13). Evidence for a tag the manifest does not
-  carry is a `review:` line, not a finding.
+  carry is a `review:` line, not a finding. With `--kinds` the check also
+  writes the group, version and kind of every document with `apiVersion`
+  and `kind`, which the release records (PUB-10).
 
   - Test: `sandbox/test_tag_check.py`; workflow job `gate-selftest`
     (`fail-tag-without-evidence`)
-  - Since: #49
+  - Since: #49, #235
 
 - QA-7: When the manifest names a `schemas` directory, every document with
   `apiVersion` and `kind` in the compiled output for which it holds a
