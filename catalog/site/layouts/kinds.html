@@ -1,16 +1,21 @@
 {{ define "main" }}
-{{/* CAT-29: every kind of the listed generators, by API group. */}}
+{{/* CAT-29: every kind of the listed generators, by section; CAT-29c: built-in APIs first, other sections with their software. */}}
+{{ $c := site.Data.catalog }}
 <section class="prose-page">
 <h1>Kubernetes kinds</h1>
-<p class="lead">Every Kubernetes kind of the generators' latest listed versions, by API group. "Rendered by" names the generators whose fixture output renders the kind, as the release recorded it. "Schema shipped by" names generators whose latest listed version was published before the release recorded kinds; their kinds come from the JSON Schemas they ship, with the kind in lower case as in the file names. A kind that two or more generators render has its own page. <code>core</code> holds the kinds whose apiVersion has no group.</p>
-{{ range $group, $kinds := site.Data.catalog.kinds }}
-<h2 id="{{ $group }}">{{ $group }}</h2>
+<p class="lead">Every Kubernetes kind of the generators' latest listed versions, by API group. "Rendered by" names the generators whose fixture output renders the kind, as the release recorded it. "Schema shipped by" names generators whose latest listed version was published before the release recorded kinds; their kinds come from the JSON Schemas they ship, with the kind in lower case as in the file names. A kind that two or more generators render has its own page. Kubernetes built-in APIs are the groups kube-apiserver serves without CRDs; another group shows its software where the generators' schema records name one. <code>core</code> is the core group, apiVersion <code>v1</code>; a section named by a version, such as <code>v1alpha1</code>, holds kinds whose apiVersion has no group.</p>
+{{ range $block, $title := dict "builtin" "Kubernetes built-in APIs" "custom" "Custom resources and other APIs" }}{{ with index $c.sections $block }}
+<h2 id="{{ $block }}">{{ $title }}</h2>
+{{ range $group := . }}
+<h3 id="{{ $group }}">{{ $group }}{{ if eq $group "core" }} (v1){{ end }}{{ with index $c.software $group }} · {{ . }}{{ end }}</h3>
 <ul class="kind-list">
-{{ range $key, $k := $kinds }}
+{{ range $key, $k := index $c.kinds $group }}
 <li>{{ if $k.page }}<a href="{{ printf "/kinds/%s/%s/" $group $key | relURL }}"><code>{{ $k.name }}</code></a>{{ else }}<code>{{ $k.name }}</code>{{ end }}: {{ with $k.rendered }}rendered by {{ partial "generator-links.html" . }}{{ end }}{{ if and $k.rendered $k.schema }}; {{ end }}{{ with $k.schema }}schema shipped by {{ partial "generator-links.html" . }}{{ end }}</li>
 {{ end }}
 </ul>
-{{ else }}
+{{ end }}
+{{ end }}{{ end }}
+{{ if not $c.kinds }}
 <p class="empty">No listed version has kinds yet.</p>
 {{ end }}
 </section>
