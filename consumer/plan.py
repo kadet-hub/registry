@@ -45,12 +45,27 @@ def https_host(url):
     return u.netloc.lower()
 
 
+def target_dependencies(data):
+    """parameters.kapitan.dependencies of a target; None if a level has the wrong type."""
+    for key in ("parameters", "kapitan", "dependencies"):
+        if not isinstance(data or {}, dict):
+            return None
+        data = (data or {}).get(key)
+    deps = data or []
+    return deps if isinstance(deps, list) and all(isinstance(d, dict) for d in deps) else None
+
+
 def dependencies(inventory, policy, owner):
     """Every dependency of every target, checked and normalized."""
     hosts = policy.get("hosts", {})
     findings, seen = [], {}
+    if not isinstance(inventory or {}, dict) or not all(isinstance(t, str) for t in inventory or {}):
+        return [], ["CON-1: the inventory is not a mapping of target names to targets"]
     for target, data in sorted((inventory or {}).items()):
-        deps = (((data or {}).get("parameters") or {}).get("kapitan") or {}).get("dependencies") or []
+        deps = target_dependencies(data)
+        if deps is None:
+            findings.append(f"CON-1: {target}: parameters.kapitan.dependencies is not a list of mappings")
+            continue
         for d in deps:
             kind, source, out = d.get("type"), str(d.get("source", "")), str(d.get("output_path", ""))
             where = f"{target}: {kind} {source}"

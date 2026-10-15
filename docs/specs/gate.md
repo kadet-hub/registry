@@ -195,7 +195,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   |---|---|---|
   | `fuzz_entry` | `check_entry.step_entry` | `generators/<name>.yaml`, new or a bump, from an owner, a stranger, a maintainer or Renovate |
   | `fuzz_manifest` | `check_entry.step_manifest`, `schema_diff.sources` | `kapitan-generator.yaml`, for a new entry and a bump |
-  | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | a list of mappings as one target's `parameters.kapitan.dependencies`, including the tag before the digest |
+  | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | `kapitan inventory` output, including the tag before the digest |
   | `fuzz_documents` | `tag_check.kinds`, `schema_check.check`, `schema_diff.sources` | a compiled output file, as YAML and as JSON, and `schemas/sources.yaml` |
 
   The callers exit non-zero on an uncaught exception (GI-7, CON-1), so a
@@ -203,7 +203,6 @@ which only a maintainer pull request changes (GI-2, REV-1).
   submission; it does not pass a check. `schema_diff.py` only loses its
   review lines.
 
-  `fuzz_plan` skips other shapes, which `kapitan inventory` does not write.
   `apiserver_check.crd_files` is not fuzzed: importing it needs
   cryptography, which RISK-8 holds at a version with advisories, and a
   second lock would report them again.
@@ -245,7 +244,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: #243
+  - Since: #243, #244
 
 ## Static checks
 

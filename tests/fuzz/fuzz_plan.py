@@ -1,7 +1,6 @@
-"""GI-14: plan.py's dependency and index checks on a fuzzed parameters.kapitan.dependencies.
+"""GI-14: plan.py's dependency and index checks on a fuzzed `kapitan inventory` output.
 
-`kapitan inventory` writes the inventory, so only a YAML list of mappings
-is passed on, as one target's dependencies.
+Kapitan writes the inventory, so input that is not YAML is skipped.
 """
 
 import os
@@ -26,12 +25,10 @@ INDEX = {"serial": 5, "generators": {"gen": {
 
 def TestOneInput(data):
     try:
-        deps = yaml.safe_load(data)
+        inventory = yaml.safe_load(data)
     except yaml.YAMLError:
         return
-    if not isinstance(deps, list) or not all(isinstance(d, dict) for d in deps):
-        return
-    deps, _ = plan.dependencies({"minimal": {"parameters": {"kapitan": {"dependencies": deps}}}}, POLICY, "kadet-hub")
+    deps, _ = plan.dependencies(inventory, POLICY, "kadet-hub")
     plan.check_index(INDEX, POLICY, deps)
 
 
