@@ -13,6 +13,7 @@ Every generator and guide page has a Markdown variant at index.md next to it; th
 - [Generator template](https://github.com/kadet-hub/generator-template): files the gate expects, local ./check script
 - [Author guide](https://github.com/kadet-hub/registry/blob/main/docs/authors.md): when to write a generator and when not, manifest, fixtures, entry pull request, exceptions, new versions
 - [Terms of listing](https://github.com/kadet-hub/registry/blob/main/TERMS.md)
+- [Wanted generators](https://kadet-hub.org/wanted/): open requests for generators nobody has published yet, most 👍 first
 
 ## Gate policy
 

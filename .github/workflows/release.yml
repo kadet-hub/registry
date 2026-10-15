@@ -239,6 +239,7 @@ jobs:
       packages: read # the latest artifacts' READMEs (CAT-7)
       attestations: read # the SBOM and output diff attestations (CAT-14, CAT-27)
       discussions: write # one discussion per generator and its 👍 count (CAT-20)
+      issues: read # the open generator requests (CAT-31)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
