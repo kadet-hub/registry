@@ -46,7 +46,7 @@ KINDS = [{"group": "gateway.networking.k8s.io", "version": "v1", "kind": "HTTPRo
 INDEX = {"serial": 7, "generators": {
     "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]),
              "1.10.0": dict(record("b", description="<script>alert(1)</script>"), scan=SCAN, compatibility=COMPAT, output_diff=OUTPUT_DIFF,
-                           kinds=KINDS),
+                           kinds=KINDS, backends=["reclass-rs", "omegaconf"], krab="compatible"),
              "1.2.0": record("c")},
     "old": {"0.1.0": record("d", yanked="entry removed", tags=())},
 }}
@@ -336,6 +336,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
         self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 5)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
+        self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertNotIn("kinds/gateway", text)
 
     def markdown(self, *parts):
@@ -345,7 +346,7 @@ class Site(unittest.TestCase):
     def test_markdown_variants(self):  # CAT-28
         demo, html = self.markdown("generators", "demo"), self.page("generators", "demo")
         self.assertTrue(demo.startswith("# demo\n\n> <script>alert(1)</script>\n\n- Latest version: 1.10.0, published 2026-10-09\n"))
-        self.assertIn("\n- Built for: External Secrets Operator 2.11.0 (output validated against these schemas)\n", demo)
+        self.assertIn("\n- Built for (schema-checked): External Secrets Operator 2.11.0\n", demo)
         self.assertIn("\n- Page: https://kadet-hub.org/generators/demo/\n", demo)
         for block in ("entry-0", "verify-0"):  # the latest version's entry and command, as on the page
             text = _unescape(re.search(rf'<pre id="{block}"><code>(.*?)</code></pre>', html, re.S).group(1))
@@ -357,7 +358,7 @@ class Site(unittest.TestCase):
         with open(os.path.join(HERE, "site", "content", "guides", "writing-a-kapitan-generator.md"), encoding="utf-8") as f:
             body = f.read().split("---\n", 2)[2]
         self.assertEqual(self.markdown("guides", "writing-a-kapitan-generator"), f"# Writing a Kapitan generator\n\n{body.strip()}\n")
-        for parts in ((), ("guides",), ("tags", "helm"), ("privacy",), ("kinds",)):
+        for parts in ((), ("guides",), ("tags", "helm"), ("privacy",), ("kinds",), ("compatibility",)):
             self.assertFalse(os.path.exists(os.path.join(self.out, *parts, "index.md")), parts)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertNotIn(".md<", f.read())
@@ -367,7 +368,44 @@ class Site(unittest.TestCase):
         html = self.page("generators", "demo")
         self.assertIn('<a href="https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases">External Secrets Operator 2.11.0</a>', html)
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
-        self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", older)
+        self.assertIn("<dt>Built for (schema-checked)</dt><dd>not recorded</dd>", older)
+
+    def test_compatibility_page(self):  # CAT-30, CAT-26, CAT-9
+        page = self.page("compatibility")
+        self.assertEqual(re.findall(r'<tr id="([^"]+)">', page), ["demo", "plain"])  # old has no listed version
+        self.assertIn('<thead><tr><th scope="col">Generator</th><th scope="col">Kapitan declared</th><th scope="col">Kapitan checked</th>'
+                      '<th scope="col">Backends checked</th><th scope="col">With --cache</th><th scope="col">krab</th>'
+                      '<th scope="col">Built for (schema-checked)</th></tr></thead>', page)
+        self.assertIn('<tr id="demo"><th scope="row"><a href="../generators/demo/#v1.10.0">demo</a> 1.10.0</th>'
+                      '<td data-label="Kapitan declared">&gt;=0.36.3,&lt;0.37</td><td data-label="Kapitan checked">0.36.3</td>'
+                      '<td data-label="Backends checked">reclass-rs, omegaconf</td><td data-label="With --cache">passed</td>'
+                      '<td data-label="krab">compatible</td><td data-label="Built for (schema-checked)"><a href="https://github.com/'
+                      'external-secrets/external-secrets/tree/v2.11.0/config/crds/bases">External Secrets Operator 2.11.0</a></td></tr>', page)
+        plain = re.search(r'<tr id="plain">.*?</tr>', page).group(0)  # no scan, backends, krab or compatibility record
+        self.assertEqual(re.findall(r'<td data-label="[^"]+">([^<]*)</td>', plain), [">=0.36.3,<0.37".replace(">", "&gt;").replace("<", "&lt;")]
+                         + ["not recorded"] * 5)
+        self.assertIn('<section class="prose-page prose wide">', page)  # .prose tables wrap
+        with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertRegex(css, r"@media \(max-width: 60rem\) \{[^@]*\.compat tr, \.compat th, \.compat td \{ display: block; \}")
+        self.assertRegex(css, r"\.compat td::before \{ content: attr\(data-label\)")
+        for html in self.pages() + [page]:
+            self.assertRegex(html, r'(?s)<nav>.*<a href="[./]*compatibility/">Compatibility</a>.*</nav>')
+
+    def test_compatibility_facts_are_the_same_on_page_details_and_markdown(self):  # CAT-30, CAT-28
+        def text(h):
+            return _unescape(re.sub(r"<[^>]+>", "", h.replace("<br>", ", ")))
+        facts = [("Kapitan declared", ">=0.36.3,<0.37"), ("Kapitan checked", "0.36.3"), ("Backends checked", "reclass-rs, omegaconf"),
+                 ("With --cache", "passed"), ("krab", "compatible"), ("Built for (schema-checked)", "External Secrets Operator 2.11.0")]
+        row = re.search(r'<tr id="demo">.*?</tr>', self.page("compatibility")).group(0)
+        self.assertEqual([(k, text(v)) for k, v in re.findall(r'<td data-label="([^"]+)">(.*?)</td>', row)], facts)
+        html = self.page("generators", "demo")
+        latest = html[html.index('id="v1.10.0"'):html.index('id="v1.2.0"')]
+        self.assertEqual([(k, text(v)) for k, v in re.findall(r"<dt>([^<]+)</dt><dd>(.*?)</dd>", latest)[:6]], facts)
+        self.assertIn("".join(f"- {k}: {v}\n" for k, v in facts), self.markdown("generators", "demo"))
+        older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
+        for label in ("Kapitan checked", "Backends checked", "With --cache", "krab"):
+            self.assertIn(f"<dt>{label}</dt><dd>not recorded</dd>", older)
 
     def test_tag_pages_feed_og_and_guides(self):
         page = self.page("tags", "helm")
@@ -581,7 +619,8 @@ class Site(unittest.TestCase):
         self.assertEqual(types["WebSite"]["publisher"]["@id"], types["Organization"]["@id"])
 
     def test_headings_skip_no_level(self):
-        for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"), ("kinds",)):
+        for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"), ("kinds",),
+                      ("compatibility",)):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
             for before, after in zip(levels, levels[1:]):

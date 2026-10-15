@@ -1,0 +1,19 @@
+{{/* CAT-30: what a version records about what it was checked with, as {label, text, html} for the
+     compatibility page, the version details and the Markdown variant. Argument: a version record. */}}
+{{ define "_partials/inline/compat-built-for.html" }}{{ range $i, $c := . }}{{ if $i }}<br>{{ end }}<a href="{{ $c.source }}">{{ $c.software }} {{ $c.version }}</a>{{ end }}{{ end }}
+{{ $none := "not recorded" }}
+{{ $checked := $none }}
+{{ with .scan }}{{ range .checks }}{{ if eq .id "sandbox" }}{{ with findRESubmatch `\bKapitan ([0-9][0-9A-Za-z.+-]*)` .tool 1 }}{{ $checked = index . 0 1 }}{{ end }}{{ end }}{{ end }}{{ end }}
+{{ $backends := $none }}{{ $cache := $none }}
+{{ with .backends }}{{ $backends = delimit . ", " }}{{ $cache = "passed" }}{{ end }}
+{{ $built := $none }}{{ $builtHTML := $none }}
+{{ with .compatibility }}
+  {{ $names := slice }}{{ range . }}{{ $names = $names | append (printf "%s %s" .software .version) }}{{ end }}
+  {{ $built = delimit $names ", " }}
+  {{ $builtHTML = partial "inline/compat-built-for.html" . }}
+{{ end }}
+{{ $facts := slice }}
+{{ range slice (slice "Kapitan declared" .kapitan) (slice "Kapitan checked" $checked) (slice "Backends checked" $backends) (slice "With --cache" $cache) (slice "krab" (.krab | default $none)) }}
+  {{ $facts = $facts | append (dict "label" (index . 0) "text" (index . 1) "html" (index . 1)) }}
+{{ end }}
+{{ return ($facts | append (dict "label" "Built for (schema-checked)" "text" $built "html" $builtHTML)) }}

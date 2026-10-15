@@ -1,0 +1,19 @@
+{{ define "main" }}
+{{/* CAT-30: the compatibility facts of every generator's latest listed version. */}}
+<section class="prose-page prose wide">
+<h1>{{ .Title }}</h1>
+{{ .Content }}
+{{ with where site.Data.catalog.generators "latest" "!=" nil }}
+<table class="compat">
+<thead><tr><th scope="col">Generator</th>{{ range partial "compat.html" (index . 0).latest }}<th scope="col">{{ .label }}</th>{{ end }}</tr></thead>
+<tbody>
+{{ range . }}
+<tr id="{{ .name }}"><th scope="row"><a href="{{ printf "/generators/%s/#v%s" .name .latest.version | relURL }}">{{ .name }}</a> {{ .latest.version }}</th>{{ range partial "compat.html" .latest }}<td data-label="{{ .label }}">{{ .html }}</td>{{ end }}</tr>
+{{ end }}
+</tbody>
+</table>
+{{ else }}
+<p class="empty">No generator is listed yet.</p>
+{{ end }}
+</section>
+{{ end }}
