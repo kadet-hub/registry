@@ -86,7 +86,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   hold `id-token: write` (GI-12).
   - Test: none (partial: `release.yml` permissions; the environment's
     branch policy is set with `gh api`)
-  - Since: #13, this change
+  - Since: #13, #233
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
   `^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$`,
@@ -154,7 +154,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Test: workflow job `workflow-lint` (partial: pins and caches; zizmor
     audits the permissions); manual: the first run on `main` after the
     merge shows a score at the badge URL
-  - Since: this change
+  - Since: #233
 
 ## Static checks
 
