@@ -615,7 +615,7 @@ review go into the review comment and do not fail the gate.
   this rule still render; the feed strips them as well (CAT-18).
 
   - Test: `gate/test_check_entry.py` (`Manifest.test_description_without_control_characters`)
-  - Since: this change
+  - Since: #232
 
 - QA-6: The gate MUST fail when the manifest carries `kubernetes`, `helm` or
   `terraform` without the evidence `policy/tags.yaml` names for it, and

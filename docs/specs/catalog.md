@@ -431,7 +431,7 @@ remembered in the browser's `localStorage`.
   link the reference documents instead of repeating them.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #55, this change
+  - Since: #55, #232
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
