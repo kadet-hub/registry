@@ -349,13 +349,58 @@ remembered in the browser's `localStorage`.
 
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
-  its `AGENTS.md`, the tags, the glossary and the gate's policy files.
+  its `AGENTS.md`, the tags, the glossary, the gate's policy files, and the
+  Markdown variant (CAT-28) of every generator with a listed version and of
+  every guide.
 
   Coding agents asked to write a generator start there instead of guessing
-  the gate's rules from the HTML.
+  the gate's rules from the HTML; agents asked to use one find it in the
+  list and read its Markdown variant instead of the page.
+
+  The template `layouts/home.llms.txt` writes the file at build time as an
+  output format of the home page; until this change it was a static file
+  and named no generator. The fixed sections are written out in the
+  template. The section "Generators" has one line `- [<name>](<index.md
+  URL>): <description>` per generator and follows CAT-26; the section
+  "Guides" has one line per guide with its description. "Optional" stays
+  last, the proposal's convention for links an agent can skip. The
+  proposal does not define `llms-full.txt`, and the site publishes none.
+
+  The description comes from the submitter and is written as text on one
+  line: whitespace runs become one space and the control characters of
+  CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51
+  - Since: #51, #231
+
+- CAT-28: Every generator page and every guide MUST have a Markdown variant
+  at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
+  the variants.
+
+  The llmstxt.org proposal puts a page's Markdown at the page's URL with
+  `.md` appended, and at `index.html.md` or `index.md` for a URL without a
+  file name. Hugo's built-in `markdown` output format (`text/markdown`,
+  base name `index`, plain text) is enabled for `/generators/*` and
+  `/guides/*` by a cascade in `hugo.toml`. The sitemap names the canonical
+  HTML URL of each page, and `catalog/seo_check.py` (CAT-11d) reads only
+  `.html` files, so neither sees the variants. GitHub Pages serves `.md` as
+  `text/markdown`, which browsers do not render (checked on llmstxt.org, a
+  GitHub Pages site, on 2026-10-15).
+
+  The variant of a generator with a listed version has the name, the
+  description as in CAT-16, the latest version and its date, what it is
+  built for (CAT-15), owners, tags, the page's URL, the inventory entry and
+  verify command of that version, and its README. Entry and command come
+  from the partial the page uses, `_partials/commands.html`, so both show
+  the same text. The README is the Markdown of `catalog.json` as the
+  artifact carries it, not the filtered HTML of CAT-7: raw HTML and links
+  with any scheme stay in, and a line names the base relative links
+  resolve against. The variant of a generator without a listed version has
+  the name, each version with its yank reason and the page's URL. A guide's
+  variant is its title and its Markdown source.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #231
 
 - CAT-17: Every version on a generator page MUST have a permalink
   (`/generators/<name>/#v<version>`) that opens it, and MUST link the
@@ -474,15 +519,17 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py`
   - Since: #16
 
-- CAT-3: The site MUST render every value from the index and the GitHub API
-  through Hugo's contextual escaping and MUST NOT load scripts, styles or
-  fonts from another origin.
+- CAT-3: Every HTML page MUST render every value from the index and the
+  GitHub API through Hugo's contextual escaping and MUST NOT load scripts,
+  styles or fonts from another origin.
 
   Description, tags, owners and the output diff text (CAT-27) come from
   submitters; a description or diff with markup is shown as text.
+  `/llms.txt` (CAT-16) and the Markdown variants (CAT-28) are plain text,
+  written without HTML escaping.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #16, #226
+  - Since: #16, #226, #231
 
 - CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
   origin of a GoatCounter instance, every page MUST count its view with

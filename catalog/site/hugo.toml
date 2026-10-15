@@ -26,5 +26,18 @@ isPlainText = false
 [mediaTypes."application/atom+xml"]
 suffixes = ["xml"]
 
+# CAT-16: /llms.txt from the catalog data.
+[outputFormats.llms]
+mediaType = "text/plain"
+baseName = "llms"
+isPlainText = true
+
 [outputs]
-home = ["html", "atom"]
+home = ["html", "atom", "llms"]
+
+# CAT-28: a Markdown variant at index.md of every generator and guide page,
+# with Hugo's built-in markdown output format.
+[[cascade]]
+outputs = ["html", "markdown"]
+[cascade.target]
+path = "{/generators/*,/guides/*}"

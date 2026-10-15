@@ -44,8 +44,9 @@ INDEX = {"serial": 7, "generators": {
              "1.2.0": record("c")},
     "old": {"0.1.0": record("d", yanked="entry removed", tags=())},
 }}
-# Site only: a listed generator without scan record or compatibility.
-SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": dict(record("e", tags=()),
+# Site only: a listed generator without scan record or compatibility, its description with line breaks and control characters.
+PLAIN = "Renders a [ConfigMap](x)\r\n## Not a heading\t\x9b31m\u202e*bold*"  # characters XML allows: the feed lists it
+SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": dict(record("e", tags=(), description=PLAIN),
                                                                                     output_diff={"base": None, "error": "no earlier listed version"})}}}
 
 
@@ -302,12 +303,42 @@ class Site(unittest.TestCase):
         self.assertIn("The diff text has no verified attestation.", page)
         self.assertNotIn("output.diff", page)
 
-    def test_llms_txt(self):
+    def test_llms_txt(self):  # CAT-16
         with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
             text = f.read()
         self.assertTrue(text.startswith("# kadet-hub\n\n> "))
         for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
             self.assertIn(link, text)
+        self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-3:], ["Generators", "Guides", "Optional"])
+        self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
+        self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
+        self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
+        self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 5)
+
+    def markdown(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.md"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_markdown_variants(self):  # CAT-28
+        demo, html = self.markdown("generators", "demo"), self.page("generators", "demo")
+        self.assertTrue(demo.startswith("# demo\n\n> <script>alert(1)</script>\n\n- Latest version: 1.10.0, published 2026-10-09\n"))
+        self.assertIn("\n- Built for: External Secrets Operator 2.11.0 (output validated against these schemas)\n", demo)
+        self.assertIn("\n- Page: https://kadet-hub.org/generators/demo/\n", demo)
+        for block in ("entry-0", "verify-0"):  # the latest version's entry and command, as on the page
+            text = _unescape(re.search(rf'<pre id="{block}"><code>(.*?)</code></pre>', html, re.S).group(1))
+            self.assertIn(f"\n```{'yaml' if block == 'entry-0' else 'sh'}\n{text}\n```\n", demo)
+        self.assertIn(f"Relative links in the README resolve against https://github.com/example/demo/blob/{'c' * 40}/.\n\n" + README, demo)
+        self.assertTrue(self.markdown("generators", "plain").startswith("# plain\n\n> Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n"))
+        self.assertEqual(self.markdown("generators", "old"), "# old\n\nNo listed version; every version is yanked:\n\n- 0.1.0: entry removed\n\n"
+                                                             "Page: https://kadet-hub.org/generators/old/\n")
+        with open(os.path.join(HERE, "site", "content", "guides", "writing-a-kapitan-generator.md"), encoding="utf-8") as f:
+            body = f.read().split("---\n", 2)[2]
+        self.assertEqual(self.markdown("guides", "writing-a-kapitan-generator"), f"# Writing a Kapitan generator\n\n{body.strip()}\n")
+        for parts in ((), ("guides",), ("tags", "helm"), ("privacy",)):
+            self.assertFalse(os.path.exists(os.path.join(self.out, *parts, "index.md")), parts)
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            self.assertNotIn(".md<", f.read())
 
     def test_built_for(self):
         self.assertIn('<dt>Built for</dt><dd class="built-for"><span>External Secrets Operator 2.11.0</span></dd>', self.page())

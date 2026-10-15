@@ -1,0 +1,2 @@
+{{/* A submitter value as one line of text, without the control characters of CAT-27 (CAT-16, CAT-28). */}}
+{{ return (. | replaceRE `[\x00-\x08\x0b-\x1f\x7f-\x9f\x{061c}\x{200e}\x{200f}\x{202a}-\x{202e}\x{2066}-\x{2069}]` "" | replaceRE `\s+` " " | strings.TrimSpace) }}
