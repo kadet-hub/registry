@@ -331,7 +331,7 @@ since the documented package API has no visibility call.
   - Test: `release/test_release.py::Index.test_release_notes`; manual: the
     first release run after the merge creates `index-<serial>` and the
     documented verification passes on its assets
-  - Since: this change
+  - Since: #249
 
 ## Incident response
 

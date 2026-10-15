@@ -90,7 +90,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   code (PUB-12).
   - Test: none (partial: `release.yml` permissions; the environment's
     branch policy is set with `gh api`)
-  - Since: #13, #233, this change
+  - Since: #13, #233, #249
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
   `^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$`,
