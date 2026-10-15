@@ -278,6 +278,61 @@ since the documented package API has no visibility call.
     `gate-compile`); manual: `gate-compile` with `BACKENDS_RESULT` set
   - Since: #242
 
+- PUB-12: Every release run that publishes a new index serial MUST create
+  a GitHub release tagged `index-<serial>` at the run's commit, with the
+  assets `index.json`, its Sigstore bundle `index.json.sigstore.json` and
+  its in-toto bundle `index.json.intoto.jsonl`, and with notes that name
+  the serial and the versions added and yanked since the previous serial.
+
+  OpenSSF Scorecard (GI-12) scores Signed-Releases from release assets
+  alone, so the attested index on ghcr.io left the check at "no releases
+  found". At ossf/scorecard 5a3ebf2 (`probes/releasesAreSigned`,
+  `probes/releasesHaveProvenance`, `checks/evaluation/signed_releases.go`)
+  the check reads the five newest releases with assets. A release with an
+  asset ending in `.asc`, `.minisig`, `.sig`, `.sign`, `.sigstore` or
+  `.sigstore.json` scores 8, one with an asset ending in `.intoto.jsonl`
+  scores 10, and the check is the average. It matches names and verifies
+  nothing. The index is the file to release because it is what consumers
+  verify first (CON-2); each artifact it lists keeps its own attestation
+  on ghcr.io.
+
+  The PUB-4 attestation's subject is the OCI manifest digest, which a
+  downloaded `index.json` cannot be checked against. The index job
+  therefore attests `index.json` itself with `subject-path`, SLSA
+  provenance as in PUB-3, after the manifest's attestation and before the
+  `latest` tag. A run that fails there leaves `latest` on the old serial,
+  and the next run publishes the serial again.
+
+  `index.json.sigstore.json` is the bundle `actions/attest` writes for that
+  step. `index.json.intoto.jsonl` is the bundle's DSSE envelope on one
+  line, the in-toto attestation bundle format named after the file it
+  covers. The envelope carries no certificate, so consumers verify with
+  the Sigstore bundle (`docs/consumers.md`).
+
+  A separate job, `github-release`, creates the release after the index
+  job. It runs in the `release` environment with `contents: write` only
+  (GI-8), checks out nothing and runs `gh release create` on the files the
+  index job uploaded. gh creates the release as a draft, uploads the
+  assets, then publishes it, and fails when a published release with the
+  tag exists. A failed job is completed by re-running it while the
+  workflow artifacts exist (one day); a serial whose release is never
+  created stays without one.
+
+  `release/index.py` writes the notes from the previous and the new index:
+  added are versions the previous index does not list, yanked are
+  versions whose `yanked` was empty there. The first index lists every
+  version as added.
+
+  `index-<serial>` tags and release assets are not protected: the
+  repository has no tag ruleset and immutable releases are off (OQ-9). A
+  moved tag or a replaced `index.json` fails verification unless the
+  replacement carries an attestation from the release workflow on `main`.
+
+  - Test: `release/test_release.py::Index.test_release_notes`; manual: the
+    first release run after the merge creates `index-<serial>` and the
+    documented verification passes on its assets
+  - Since: #249
+
 ## Incident response
 
 - INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,

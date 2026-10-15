@@ -150,7 +150,22 @@ gh attestation verify "oci://ghcr.io/kadet-hub/<name>@sha256:<digest>" --owner k
   --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
 ```
 
-Tags such as `1.2.0` are a convenience; organization owners can move them.
+Index serials published since kadet-hub/registry#249 are also GitHub
+releases `index-<serial>` of the registry. The release's `index.json`
+verifies against its Sigstore bundle with the same identity:
+
+```sh
+gh release download index-<serial> --repo kadet-hub/registry --pattern 'index.json*'
+gh attestation verify index.json --bundle index.json.sigstore.json --owner kadet-hub \
+  --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+jq .serial index.json
+```
+
+`index.json.intoto.jsonl` holds the same signed provenance in the in-toto
+bundle format, without the certificate; verify with the Sigstore bundle.
+
+Tags such as `1.2.0` and `index-<serial>` are a convenience; organization
+owners can move them.
 Only the digest, checked against the attested index, identifies what the
 gate scanned.
 
