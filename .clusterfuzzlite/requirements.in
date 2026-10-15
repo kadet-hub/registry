@@ -1,0 +1,5 @@
+atheris==3.0.0
+jsonschema
+packaging
+pyyaml
+regex

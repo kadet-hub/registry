@@ -17,12 +17,15 @@ import yaml
 def sources(tree):
     try:
         with open(os.path.join(tree, "kapitan-generator.yaml"), encoding="utf-8") as f:
-            schemas = (yaml.safe_load(f) or {}).get("schemas")
+            manifest = yaml.safe_load(f)
+        schemas = manifest.get("schemas") if isinstance(manifest, dict) else None
         if not isinstance(schemas, str) or ".." in schemas or schemas.startswith("/"):
             return {}
         with open(os.path.join(tree, schemas, "sources.yaml"), encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-    except (OSError, yaml.YAMLError):
+            data = yaml.safe_load(f)
+    except (OSError, UnicodeDecodeError, yaml.YAMLError):
+        return {}
+    if not isinstance(data, dict):
         return {}
     return {str(g): s for g, s in data.items() if isinstance(s, dict)}
 

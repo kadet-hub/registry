@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+data:
+  key: value
+---
+- apiVersion: example.org/v1
+  kind: Widget

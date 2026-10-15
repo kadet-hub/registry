@@ -52,7 +52,9 @@ def check(schemas, out):
     try:
         with open(os.path.join(schemas, "sources.yaml"), encoding="utf-8") as f:
             sources = yaml.safe_load(f) or {}
-    except (OSError, yaml.YAMLError):
+    except (OSError, UnicodeDecodeError, yaml.YAMLError):
+        sources = None
+    if not isinstance(sources, dict):
         return ["QA-7: schemas/sources.yaml is missing or not YAML"], [], []
     findings, lines, used, cache, missing = [], [], {}, {}, set()
     for rel in files(out):

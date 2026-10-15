@@ -67,6 +67,13 @@
       "allowedVersions": "/^3\\.13-slim$/"
     },
     {
+      "description": "GI-14: base-builder-python runs Python 3.11, and atheris 3.1.0 has no cp311 wheel",
+      "matchPackageNames": [
+        "atheris"
+      ],
+      "allowedVersions": "<3.1"
+    },
+    {
       "description": "Kapitan 0.36.3's omegaconf backend needs ListMergeMode, which later pre-releases removed",
       "matchPackageNames": [
         "omegaconf"
