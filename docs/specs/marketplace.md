@@ -297,7 +297,8 @@ cover none of the changed files.
 
   Scorecard's Vulnerabilities check (GI-12) reports the three advisories
   until the bump. Tracking: bump the lock with the first Kapitan release
-  that allows cryptography 50.0.0 or later; upstream PR kapicorp/kapitan#1604.
+  that allows cryptography 50.0.0 or later; upstream PR kapicorp/kapitan#1632 (supersedes #1604; it raises the cap
+  to <51 and locks 50.0.2).
 
   - Since: #236
 
