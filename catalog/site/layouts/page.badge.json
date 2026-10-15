@@ -1,0 +1,6 @@
+{{- /* CAT-32: shields.io endpoint badge of the latest listed version. */ -}}
+{{- with index (where site.Data.catalog.generators "name" .Params.generator) 0 -}}
+{{- $badge := dict "schemaVersion" 1 "label" "kadet-hub" "message" "not listed" "color" "lightgrey" -}}
+{{- with .latest }}{{ $badge = merge $badge (dict "message" .version "color" "blue") }}{{ end -}}
+{{- $badge | jsonify -}}
+{{- end -}}

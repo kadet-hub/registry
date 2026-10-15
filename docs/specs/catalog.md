@@ -692,6 +692,51 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #56, #79, #111
 
+- CAT-32: Every generator page MUST have a `badge.json` next to its
+  `index.html` in the shields.io endpoint schema, with the label
+  `kadet-hub` and, as message and colour, the latest listed version and
+  `blue`, or `not listed` and `lightgrey` for a generator without a listed
+  version. `sitemap.xml` MUST NOT list it.
+
+  A badge in the README of the source repository tells its visitors that
+  the generator is listed and in which version, and links the page with
+  its checks. The endpoint form was chosen over an image the build renders:
+  shields.io draws the badge from the JSON when the README is viewed, so it
+  follows a new version or a yank with the next catalog build, without a
+  commit in the author's repository, and the site keeps serving only static
+  files. A generator whose versions are all yanked keeps its page (CAT-5,
+  CAT-26), so a badge in a README keeps resolving and says it is no longer
+  listed.
+
+  The schema is the one documented at
+  `https://shields.io/badges/endpoint-badge` (read on 2026-10-15):
+  `schemaVersion` 1, `label` and `message` required, `color` a named
+  colour, `lightgrey` by default. Hugo writes the file as the output
+  format `badge` (`application/json`, plain text), enabled for
+  `/generators/*` next to the Markdown variant (CAT-28). The sitemap names
+  only the HTML URL of each page, as for the variants.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #246
+
+- CAT-32a: The page of a generator with a listed version MUST show the
+  Markdown `[![kadet-hub](https://img.shields.io/endpoint?url=<badge.json
+  URL>)](<page URL>)` in a disclosure "Badge" below the page's actions, as
+  a snippet with a copy button (CAT-9), and MUST NOT load the badge image.
+
+  The CSP admits images only from the site's own origin (CAT-3, CAT-25); a
+  preview would need `img-src https://img.shields.io` and would send every
+  visitor's address to shields.io. The snippet is text in `<pre><code>`.
+  A section "Badge" after Versions was tried first: it is too short to
+  reach the part of the viewport where the "On this page" list marks a
+  section (CAT-19), so the list never marked it, and authors are the only
+  readers who need it. A generator without a listed version has no
+  disclosure, since its badge reads "not listed". `docs/authors.md` shows
+  the snippet.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #246
+
 - CAT-20: Each listed generator MUST have one discussion in the
   "Generators" category of the registry's GitHub Discussions, and its card
   and page MUST show the discussion's 👍 count and link it.

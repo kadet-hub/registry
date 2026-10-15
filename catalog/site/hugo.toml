@@ -32,12 +32,24 @@ mediaType = "text/plain"
 baseName = "llms"
 isPlainText = true
 
+# CAT-32: a shields.io endpoint badge at badge.json of every generator page.
+[outputFormats.badge]
+mediaType = "application/json"
+baseName = "badge"
+isPlainText = true
+notAlternative = true
+
 [outputs]
 home = ["html", "atom", "llms"]
 
 # CAT-28: a Markdown variant at index.md of every generator and guide page,
-# with Hugo's built-in markdown output format.
+# with Hugo's built-in markdown output format; CAT-32: the badge.
 [[cascade]]
 outputs = ["html", "markdown"]
 [cascade.target]
-path = "{/generators/*,/guides/*}"
+path = "/guides/*"
+
+[[cascade]]
+outputs = ["html", "markdown", "badge"]
+[cascade.target]
+path = "/generators/*"

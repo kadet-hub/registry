@@ -344,3 +344,17 @@ without a CRD get a review line.
 To withdraw a version, add it under `yanked` with a reason. The catalog
 then shows the reason instead of the inventory entry. A version that is
 malicious is reported as described in [SECURITY.md](../SECURITY.md).
+
+## Badge
+
+Below its buttons, each generator page has a "Badge" disclosure with the
+Markdown for a [shields.io](https://shields.io) badge that shows the latest
+listed version and links the page:
+
+```markdown
+[![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/<name>/badge.json)](https://kadet-hub.org/generators/<name>/)
+```
+
+shields.io reads `badge.json`, which every catalog build rewrites, so the
+badge follows new versions without a commit in your repository. Once no
+version is listed, it reads "not listed".
