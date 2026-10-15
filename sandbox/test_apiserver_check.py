@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from apiserver_check import check
+from apiserver_check import Server, check, served
 
 
 def tree(files):
@@ -259,6 +259,18 @@ class ApiserverCheck(unittest.TestCase):
             self.assertIn(message, finding)
         self.assertIn("is already in use", findings[1])
         self.assertEqual(lines[1:], ["QA-11: validated against 1 CRDs: 0 custom resources, 0 skipped"])
+
+    def test_catalog_lists_the_served_groups_as_built_in(self):  # CAT-29c
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "catalog"))
+        from view import BUILTIN
+        with tempfile.TemporaryDirectory() as tmp:
+            server = Server(tmp)
+            try:
+                self.assertTrue(server.ready())
+                groups = {group or "core" for group, _ in served(server)[1]}
+            finally:
+                server.stop()
+        self.assertEqual(BUILTIN, groups)
 
     def test_output_without_kubernetes_documents_starts_no_server(self):
         with tree({"compiled/a/main.tf.json": "{}", "compiled/a/values.yml": "replicas: 2\n"}) as out:

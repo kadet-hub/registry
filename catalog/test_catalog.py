@@ -731,7 +731,7 @@ class Site(unittest.TestCase):
     def test_kind_index(self):  # CAT-29, CAT-29b
         self.assertEqual(os.listdir(os.path.join(self.out, "kinds")), ["index.html"])  # one renderer each: no kind page
         index = self.page("kinds")
-        self.assertIn('<h2 id="gateway.networking.k8s.io">gateway.networking.k8s.io</h2>', index)
+        self.assertIn('<h3 id="gateway.networking.k8s.io">gateway.networking.k8s.io', index)
         self.assertLess(index.index('id="core"'), index.index('id="gateway.networking.k8s.io"'))
         self.assertIn('<li><code>ConfigMap</code>: rendered by <a href="../generators/demo/">demo</a>; '
                       'schema shipped by <a href="../generators/plain/">plain</a></li>', index)
@@ -787,6 +787,41 @@ class Site(unittest.TestCase):
                                   "AVeryVeryVeryLongKindNameThatGoesOn · kadet-hub"])  # the group goes last
         self.assertTrue(desc.endswith("…") and len(_unescape(desc)) <= 160, desc)
         for url in ("kinds/", "kinds/gateway.networking.k8s.io/httproute/"):
+            self.assertIn(f"<loc>https://kadet-hub.org/{url}</loc>", sitemap)
+
+    def test_kinds_without_a_group_split_by_version(self):  # CAT-29, CAT-29b, CAT-29c
+        def gen(d, kinds, *software):
+            return {"1.0.0": dict(record(d, tags=()), kinds=[dict(zip(("group", "version", "kind"), k)) for k in kinds],
+                                  compatibility=[{"software": s, "version": "1", "source": "tbd"} for s in software])}
+        index = {"serial": 1, "generators": {
+            "k8s-a": gen("a", [("", "v1", "ConfigMap"), ("apps", "v1", "Deployment"), ("gateway.networking.k8s.io", "v1", "HTTPRoute")],
+                         "Kubernetes", "Gateway API"),
+            "k8s-b": gen("b", [("", "v1", "ConfigMap")], "Kubernetes"),
+            "talos-a": gen("c", [("", "v1alpha1", "ConfigMap"), ("", "v1alpha1", "HostnameConfig"), ("", "v1", "Secret")], "Kubernetes", "Talos"),
+            "talos-b": gen("d", [("", "v1alpha1", "ConfigMap")], "Talos"),
+            "kyv": gen("e", [("kyverno.io", "v1", "ClusterPolicy")], "Kyverno"),
+            "multi": gen("f", [("kyverno.io", "v1", "Policy"), ("cert-manager.io", "v1", "Certificate")], "Kyverno", "cert-manager")}}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = build(index, tmp)
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+            read = lambda *parts: open(os.path.join(out, "kinds", *parts, "index.html"), encoding="utf-8").read()
+            kinds, core, talos = read(), read("core", "configmap"), read("v1alpha1", "configmap")
+            with open(os.path.join(out, "sitemap.xml"), encoding="utf-8") as f:
+                sitemap = f.read()
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+        cards = lambda page: re.findall(r'data-name="([^"]+)"', page.split('<ul class="cards')[1])
+        self.assertEqual((cards(core), cards(talos)), (["k8s-a", "k8s-b"], ["talos-a", "talos-b"]))
+        self.assertIn("<dd><code>v1</code>: k8s-a, k8s-b</dd>", core)
+        self.assertIn("<dd><code>v1alpha1</code>: talos-a, talos-b</dd>", talos)
+        self.assertIn("<dt>API group</dt><dd>none: the apiVersion has no group</dd>", talos)
+        headings = re.findall(r'<h([23]) id="([^"]+)">(.*?)</h[23]>', kinds)
+        self.assertEqual(headings, [
+            ("2", "builtin", "Kubernetes built-in APIs"), ("3", "apps", "apps"), ("3", "core", "core (v1)"),
+            ("2", "custom", "Custom resources and other APIs"), ("3", "cert-manager.io", "cert-manager.io"),
+            ("3", "gateway.networking.k8s.io", "gateway.networking.k8s.io · Gateway API"), ("3", "kyverno.io", "kyverno.io · Kyverno"),
+            ("3", "v1alpha1", "v1alpha1 · Talos")])
+        for url in ("kinds/core/configmap/", "kinds/v1alpha1/configmap/"):
+            self.assertIn(f'href="../{url}"', kinds)
             self.assertIn(f"<loc>https://kadet-hub.org/{url}</loc>", sitemap)
 
     def test_search_matches_kind_names(self):  # CAT-29a

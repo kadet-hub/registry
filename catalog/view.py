@@ -39,6 +39,11 @@ GROUP, VERSION = r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?", r"v[0-9]+(?:(?:alpha|beta)
 SCHEMA = re.compile(rf"^\./schemas/({GROUP})/([a-z0-9]+)_({VERSION})\.json$")  # QA-7 layout
 RENDERED = [re.compile(p) for p in (GROUP, r"[A-Za-z0-9]+", VERSION)]  # group, kind, version of a PUB-10 record
 STAMP = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+# CAT-29c: the groups kube-apiserver v1.37.1 serves without CRDs, as QA-10 discovers them; `core` for the core group.
+BUILTIN = {"core", "admissionregistration.k8s.io", "apiextensions.k8s.io", "apiregistration.k8s.io", "apps", "authentication.k8s.io",
+           "authorization.k8s.io", "autoscaling", "batch", "certificates.k8s.io", "coordination.k8s.io", "discovery.k8s.io",
+           "events.k8s.io", "flowcontrol.apiserver.k8s.io", "networking.k8s.io", "node.k8s.io", "policy", "rbac.authorization.k8s.io",
+           "resource.k8s.io", "scheduling.k8s.io", "storage.k8s.io", "storagemigration.k8s.io"}
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")  # Cc but tab and newline, Bidi_Control
 
 
@@ -136,7 +141,7 @@ def semver(v):
 
 
 def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, previous=None, diffs=None):
-    generators, by_kind = [], {}  # CAT-29: {group: {lower-case kind: entry}}
+    generators, by_kind, named = [], {}, {}  # CAT-29: {section: {lower-case kind: entry}}; CAT-29c: {section: software}
     for name, versions in sorted(index.get("generators", {}).items()):
         ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
                         rekor=(rekor or {}).get(name, {}).get(v),
@@ -164,8 +169,11 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
         rendered = rendered_kinds(latest) if latest else None
         kinds = rendered if rendered is not None else (
             schema_kinds(os.path.join(sboms, name, f"{latest['version']}.spdx.json")) if sboms and latest else [])
+        software = {c["software"] for c in (latest or {}).get("compatibility") or []} - {"Kubernetes"}
         for group, kind, version in kinds:
-            e = by_kind.setdefault(group, {}).setdefault(kind.lower(), {"name": kind, "page": False, "rendered": [], "schema": [], "versions": {}})
+            section = version if group == "core" and version != "v1" else group  # CAT-29: Talos's v1alpha1 is no core kind
+            named.setdefault(section, set()).update(software if len(software) == 1 else ())
+            e = by_kind.setdefault(section, {}).setdefault(kind.lower(), {"name": kind, "page": False, "rendered": [], "schema": [], "versions": {}})
             if rendered is None:
                 if name not in e["schema"]:
                     e["schema"].append(name)
@@ -200,7 +208,10 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
         g["stars_shared"] = n if n > 1 and g["stars"] is not None else None
         up = g["discussion"]["up"] if g["discussion"] else 0
         g["score"] = score(up, int(g["stars"] or 0), max(n, 1), g["pulls"] or 0)
-    return {"owner": owner, "serial": index.get("serial"), "generators": generators, "kinds": by_kind}
+    sections = {"builtin": sorted(s for s in by_kind if s in BUILTIN), "custom": sorted(s for s in by_kind if s not in BUILTIN)}
+    labels = {s: named[s].pop() for s in sections["custom"] if len(named[s]) == 1}
+    return {"owner": owner, "serial": index.get("serial"), "generators": generators, "kinds": by_kind, "sections": sections,
+            "software": labels}
 
 
 def load_rekor(path):

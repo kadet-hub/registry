@@ -7,7 +7,7 @@
 <h1>Kapitan generators that render <code>{{ $k.name }}</code> in {{ $group }}</h1>
 <p class="lead">Each generator below renders {{ $k.name }} in the fixture output of its latest listed version, as the release recorded it.{{ with $k.schema }} Under "Schema shipped by" are generators whose latest listed version was published before the release recorded kinds and ships a JSON Schema for {{ $k.name }}.{{ end }}</p>
 <dl class="details">
-  <dt>API group</dt><dd>{{ if eq $group "core" }}core: the apiVersion has no group{{ else }}<code>{{ $group }}</code>{{ end }}</dd>
+  <dt>API group</dt><dd>{{ if eq $group "core" }}core: the apiVersion has no group{{ else if findRE `^v[0-9]+((alpha|beta)[0-9]+)?$` $group }}none: the apiVersion has no group{{ else }}<code>{{ $group }}</code>{{ end }}</dd>
   {{ range $api, $n := $k.versions }}<dt>apiVersion</dt><dd><code>{{ $api }}</code>: {{ delimit $n ", " }}</dd>{{ end }}
   {{ with $k.schema }}<dt>Schema shipped by</dt><dd>{{ partial "generator-links.html" . }}</dd>{{ end }}
 </dl>
