@@ -1,0 +1,17 @@
+{{/* CAT-27: the output diff against the base version (PUB-9), as escaped text. dict: v (a version record), name. */}}
+{{ with .v.output_diff }}
+{{ if .error }}
+<p class="muted">No output diff{{ with .base }} against <a href="#v{{ . }}">{{ . }}</a>{{ end }}: {{ .error }}.</p>
+{{ else }}
+<p>Fixture output against <a href="#v{{ .base }}">{{ .base }}</a>: {{ .files }} file{{ if ne .files 1 }}s{{ end }}, {{ .hunks }} hunk{{ if ne .hunks 1 }}s{{ end }}.</p>
+{{ with $.v.diff }}
+{{ with .text }}<pre class="diff"><code>{{ . }}</code></pre>{{ end }}
+{{ with .more }}<p class="note">Truncated after 150 lines; {{ . }} more in the download.</p>{{ end }}
+<p><a class="button small-button" href="{{ printf "/generators/%s/%s.output.diff" $.name $.v.version | relURL }}" download><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>Output diff</a></p>
+{{ else }}
+<p class="muted">The diff text has no verified attestation.</p>
+{{ end }}
+{{ end }}
+{{ else }}
+<p class="muted">No output diff recorded: this version was published before the release run recorded one.</p>
+{{ end }}

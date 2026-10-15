@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Build the catalog site from an index (CAT-1 to CAT-23).
+# Build the catalog site from an index (CAT-1 to CAT-27).
 #
 # Usage: build <index.json> <out dir>
 # Needs: OWNER (registry owner), hugo, python3, jq, oras, gh. GH_TOKEN raises
 # the API rate limit; CATALOG_OFFLINE=1 skips the API and the registry and
 # reads artifact layers from $CATALOG_ARTIFACTS/<name>.tar, SBOMs from
-# $CATALOG_SBOMS/<name>/<version>.spdx.json and transparency log indexes
+# $CATALOG_SBOMS/<name>/<version>.spdx.json, output diffs from
+# $CATALOG_DIFFS/<name>/<version>.output.diff and transparency log indexes
 # from $CATALOG_REKOR (JSON {name: {version: index}}) instead. Online, the
 # previous build's published catalog.json supplies README, log index and
-# SBOM of every unchanged digest, so each version is pulled from the
-# registry once (CAT-23); CATALOG_PAGES receives the package pages.
+# SBOM of every unchanged digest, and its output diffs are kept when their
+# sha256 matches the index, so each version is pulled from the registry
+# once (CAT-23); CATALOG_PAGES receives the package pages.
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 index=$(realpath -- "$1")
@@ -23,6 +25,7 @@ mkdir -- "$work/data"
 offline=()
 artifacts=${CATALOG_ARTIFACTS:-$work/artifacts}
 sboms=${CATALOG_SBOMS:-$work/sboms}
+diffs=${CATALOG_DIFFS:-$work/diffs}
 rekor=${CATALOG_REKOR:-$work/rekor.json}
 discussions=${CATALOG_DISCUSSIONS:-$work/discussions.json}
 pages=${CATALOG_PAGES:-$work/pages}
@@ -53,6 +56,7 @@ else
   # CAT-17: every version's Rekor log index, from its verified provenance
   # attestation; a yanked version keeps it while its artifact exists.
   identity=https://github.com/$OWNER/registry/.github/workflows/release.yml@refs/heads/main
+  sha() { sha256sum -- "$1" 2>/dev/null | cut -d' ' -f1; }
   echo '{}' >"$rekor"
   while read -r name version digest yanked; do
     old=$(jq -c --arg n "$name" --arg d "$digest" 'first(.generators[] | select(.name == $n) | .versions[] | select(.digest == $d)) // {}' "$previous")
@@ -65,6 +69,20 @@ else
       jq --arg n "$name" --arg v "$version" --arg i "$logindex" '.[$n][$v] = $i' -- "$rekor" >"$work/rekor.tmp" && mv -- "$work/rekor.tmp" "$rekor"
     fi
     [[ $yanked == listed ]] || continue
+    # CAT-27: the output diff from its verified attestation (PUB-9), kept only
+    # when its sha256 is the index record's.
+    want=$(jq -r --arg n "$name" --arg v "$version" '.generators[$n][$v].output_diff.sha256 // empty' -- "$index")
+    if [[ -n $want ]]; then
+      mkdir -p -- "$diffs/$name"
+      diff=$diffs/$name/$version.output.diff
+      curl -fsSL --max-time 20 "${site}generators/$name/$version.output.diff" -o "$diff" 2>/dev/null || :
+      if [[ $(sha "$diff") != "$want" ]]; then
+        gh attestation verify "oci://ghcr.io/$OWNER/$name@$digest" --owner "$OWNER" --cert-identity "$identity" \
+          --predicate-type https://kadet-hub.org/output-diff/v1 --format json --jq '.[0].verificationResult.statement.predicate' \
+          2>/dev/null | jq -j .diff >"$diff" 2>/dev/null || :
+      fi
+      [[ $(sha "$diff") == "$want" ]] || rm -f -- "$diff"
+    fi
     mkdir -p -- "$sboms/$name"
     sbom=$sboms/$name/$version.spdx.json
     if [[ $(jq -r '.sbom' <<<"$old") == true ]] && curl -fsSL --max-time 20 "${site}generators/$name/$version.spdx.json" -o "$sbom" 2>/dev/null \
@@ -85,13 +103,15 @@ else
   # CAT-20: one discussion per listed generator and its 👍 count.
   "$here/discussions" "$index" >"$discussions" || echo "::warning::discussions not read; the catalog shows no 👍 counts"
 fi
-if [[ -d $sboms ]]; then
-  mkdir -p -- "$work/static/generators"
-  cp -R -- "$sboms/." "$work/static/generators/"
-fi
+for dir in "$sboms" "$diffs"; do
+  if [[ -d $dir ]]; then
+    mkdir -p -- "$work/static/generators"
+    cp -R -- "$dir/." "$work/static/generators/"
+  fi
+done
 cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
 previous_arg=()
 if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --out "$work/data/catalog.json"
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --out "$work/data/catalog.json"
 cp -- "$work/data/catalog.json" "$work/static/catalog.json"  # CAT-23: the next build reuses it
 hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"
