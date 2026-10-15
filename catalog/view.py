@@ -1,6 +1,6 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] [--wanted FILE] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
@@ -17,6 +17,7 @@ downloads" are the pulls of the popularity score (CAT-23). --previous is the
 catalog.json of the last build; its README is used when the latest digest
 is unchanged and no artifact layer was fetched. --diffs DIR/<name>/<version>.output.diff
 is a version's verified output diff; its first lines are shown (CAT-27).
+--wanted is the list of open generator requests (CAT-31).
 """
 
 import argparse
@@ -37,6 +38,7 @@ DIFF_LINES = 150
 GROUP, VERSION = r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?", r"v[0-9]+(?:(?:alpha|beta)[0-9]+)?"
 SCHEMA = re.compile(rf"^\./schemas/({GROUP})/([a-z0-9]+)_({VERSION})\.json$")  # QA-7 layout
 RENDERED = [re.compile(p) for p in (GROUP, r"[A-Za-z0-9]+", VERSION)]  # group, kind, version of a PUB-10 record
+STAMP = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")  # Cc but tab and newline, Bidi_Control
 
 
@@ -221,6 +223,21 @@ def load_discussions(path, owner):
             if isinstance(d, dict) and str(d.get("url", "")).startswith(prefix) and type(d.get("up")) is int}
 
 
+def load_wanted(path):
+    """CAT-31: open generator requests, most 👍 first, then oldest first; None when they were not read."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, TypeError, ValueError):
+        return None
+    if not isinstance(data, list):
+        return None
+    keep = [{k: r[k] for k in ("number", "title", "up", "created", "updated")} for r in data
+            if isinstance(r, dict) and type(r.get("number")) is int and type(r.get("up")) is int and isinstance(r.get("title"), str)
+            and all(isinstance(r.get(k), str) and STAMP.match(r[k]) for k in ("created", "updated"))]
+    return sorted(keep, key=lambda r: (-r["up"], r["created"], r["number"]))
+
+
 def load_previous(path):
     """{(name, latest digest): README} from the last build's catalog.json."""
     try:
@@ -245,12 +262,14 @@ def main():
     p.add_argument("--pages")
     p.add_argument("--previous")
     p.add_argument("--diffs")
+    p.add_argument("--wanted")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
         index = json.load(f)
     result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor),
                   load_discussions(a.discussions, a.owner), a.pages, load_previous(a.previous), a.diffs)
+    result["wanted"] = load_wanted(a.wanted)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0

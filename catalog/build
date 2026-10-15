@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the catalog site from an index (CAT-1 to CAT-27).
+# Build the catalog site from an index (CAT-1 to CAT-31).
 #
 # Usage: build <index.json> <out dir>
 # Needs: OWNER (registry owner), hugo, python3, jq, oras, gh. GH_TOKEN raises
@@ -7,7 +7,8 @@
 # reads artifact layers from $CATALOG_ARTIFACTS/<name>.tar, SBOMs from
 # $CATALOG_SBOMS/<name>/<version>.spdx.json, output diffs from
 # $CATALOG_DIFFS/<name>/<version>.output.diff and transparency log indexes
-# from $CATALOG_REKOR (JSON {name: {version: index}}) instead. Online, the
+# from $CATALOG_REKOR (JSON {name: {version: index}}) and open generator
+# requests from $CATALOG_WANTED (CAT-31) instead. Online, the
 # previous build's published catalog.json supplies README, log index and
 # SBOM of every unchanged digest, and its output diffs are kept when their
 # sha256 matches the index, so each version is pulled from the registry
@@ -28,6 +29,7 @@ sboms=${CATALOG_SBOMS:-$work/sboms}
 diffs=${CATALOG_DIFFS:-$work/diffs}
 rekor=${CATALOG_REKOR:-$work/rekor.json}
 discussions=${CATALOG_DISCUSSIONS:-$work/discussions.json}
+wanted=${CATALOG_WANTED:-$work/wanted.json}
 pages=${CATALOG_PAGES:-$work/pages}
 site=${CATALOG_URL:-https://kadet-hub.org/}
 if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
@@ -102,6 +104,10 @@ else
   done
   # CAT-20: one discussion per listed generator and its 👍 count.
   "$here/discussions" "$index" >"$discussions" || echo "::warning::discussions not read; the catalog shows no 👍 counts"
+  # CAT-31: the open generator requests and their 👍 count; no body.
+  gh api --paginate "repos/$OWNER/registry/issues?labels=generator-request&state=open&per_page=100" \
+    --jq '.[] | select(.pull_request == null) | {number, title, up: .reactions["+1"], created: .created_at, updated: .updated_at}' \
+    | jq -s . >"$wanted" || { rm -f -- "$wanted"; echo "::warning::generator requests not read; the wanted page says so"; }
 fi
 for dir in "$sboms" "$diffs"; do
   if [[ -d $dir ]]; then
@@ -112,6 +118,6 @@ done
 cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
 previous_arg=()
 if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --out "$work/data/catalog.json"
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --out "$work/data/catalog.json"
 cp -- "$work/data/catalog.json" "$work/static/catalog.json"  # CAT-23: the next build reuses it
 hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"
