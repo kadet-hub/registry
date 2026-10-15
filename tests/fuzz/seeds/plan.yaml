@@ -1,17 +1,21 @@
-- type: oci
-  source: ghcr.io/kadet-hub/gen:1.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
-  output_path: lib/gen
-  tls_verify: true
-- type: helm
-  source: https://charts.example.org/
-  chart_name: app
-  version: 1.0.0
-  output_path: charts/app
-- type: git
-  source: https://github.com/example/repo.git
-  ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-  subdir: lib
-  output_path: lib/repo
-- type: https
-  source: https://example.org/file.yaml
-  output_path: lib/file.yaml
+minimal:
+  parameters:
+    kapitan:
+      dependencies:
+        - type: oci
+          source: ghcr.io/kadet-hub/gen:1.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          output_path: lib/gen
+          tls_verify: true
+        - type: helm
+          source: https://charts.example.org/
+          chart_name: app
+          version: 1.0.0
+          output_path: charts/app
+        - type: git
+          source: https://github.com/example/repo.git
+          ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          subdir: lib
+          output_path: lib/repo
+        - type: https
+          source: https://example.org/file.yaml
+          output_path: lib/file.yaml

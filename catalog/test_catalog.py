@@ -55,6 +55,13 @@ PLAIN = "Renders a [ConfigMap](x)\r\n## Not a heading\t\x9b31m\u202e*bold*"  # c
 SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": dict(record("e", tags=(), description=PLAIN),
                                                                                     output_diff={"base": None, "error": "no earlier listed version"})}}}
 
+# CAT-31: open requests as the build writes them, with a body view.py drops and an entry it rejects.
+WANTED = [{"number": 7, "title": "[request] <script>alert(5)</script>\x1b[31m\u202e  cert-manager", "up": 2, "created": "2026-10-03T09:00:00Z",
+           "updated": "2026-10-12T10:00:00Z", "body": "<b>body text</b>"},
+          {"number": 9, "title": "[request] loki", "up": 5, "created": "2026-10-05T09:00:00Z", "updated": "2026-10-06T10:00:00Z"},
+          {"number": 4, "title": "[request] keycloak", "up": 2, "created": "2026-10-01T09:00:00Z", "updated": "2026-10-01T09:00:00Z"},
+          {"number": "8", "title": "not a number", "up": 1, "created": "2026-10-01T09:00:00Z", "updated": "2026-10-01T09:00:00Z"}]
+
 
 README = """# Demo
 
@@ -103,7 +110,7 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -111,7 +118,8 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
     env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"),
                CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"),
                CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"),
-               CATALOG_PAGES=pages or os.path.join(tmp, "none"), CATALOG_DIFFS=diffs or os.path.join(tmp, "none"))
+               CATALOG_PAGES=pages or os.path.join(tmp, "none"), CATALOG_DIFFS=diffs or os.path.join(tmp, "none"),
+               CATALOG_WANTED=wanted or os.path.join(tmp, "none.json"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -143,7 +151,10 @@ class Site(unittest.TestCase):
         os.makedirs(diffs)
         with open(os.path.join(diffs, "1.10.0.output.diff"), "w", encoding="utf-8", newline="") as f:
             f.write(DIFF)
-        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages, os.path.dirname(diffs))
+        wanted = os.path.join(cls.tmp.name, "wanted.json")
+        with open(wanted, "w", encoding="utf-8") as f:
+            json.dump(WANTED, f)
+        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages, os.path.dirname(diffs), wanted)
 
     @classmethod
     def tearDownClass(cls):
@@ -337,6 +348,7 @@ class Site(unittest.TestCase):
         self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 5)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
+        self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
         self.assertNotIn("kinds/gateway", text)
 
     def markdown(self, *parts):
@@ -584,6 +596,35 @@ class Site(unittest.TestCase):
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertNotIn("badge.json", f.read())
 
+    def test_wanted_page(self):  # CAT-31, CAT-3
+        page = self.page("wanted")
+        items = re.findall(rf'<li><a href="https://github.com/{OWNER}/registry/issues/(\d+)">([^<]*)</a>', page)
+        self.assertEqual(items, [("9", "loki"), ("4", "keycloak"), ("7", "&lt;script&gt;alert(5)&lt;/script&gt;[31m cert-manager")])
+        self.assertIn('👍 5 · last activity <time datetime="2026-10-06T10:00:00Z">2026-10-06</time> · opened '
+                      '<time datetime="2026-10-05T09:00:00Z">2026-10-05</time>', page)
+        for gone in ("body text", "not a number", "<script>alert(5)", "\u202e", "\x1b"):
+            self.assertNotIn(gone, page)
+        self.assertIn('<a class="button" href="https://github.com/kadet-hub/registry/issues/new?template=generator-request.yml">Request a generator</a>'
+                      '<a class="button" href="./wanted/">Wanted generators</a>', self.page())
+
+    def test_wanted_page_without_requests(self):  # CAT-31
+        texts = []
+        for wanted in ([], None):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = None
+                if wanted is not None:
+                    path = os.path.join(tmp, "wanted.json")
+                    with open(path, "w", encoding="utf-8") as f:
+                        json.dump(wanted, f)
+                with open(os.path.join(build(INDEX, tmp, wanted=path), "wanted", "index.html"), encoding="utf-8") as f:
+                    texts.append(f.read())
+        empty, unread = texts
+        self.assertIn("No generator request is open.", empty)
+        self.assertIn(f'href="https://github.com/{OWNER}/registry/issues/new?template=generator-request.yml"', empty)
+        self.assertIn("The open requests could not be read when this page was built.", unread)
+        for page in texts:
+            self.assertNotIn("<ol", page)
+
     def test_thumbs_up_from_discussions(self):
         self.assertIn(f'<a href="https://github.com/{OWNER}/registry/discussions/5">👍 3</a> on GitHub Discussions', self.page("generators", "demo"))
         self.assertNotIn("evil.example", self.page("generators", "old"))  # CAT-20: only this registry's discussions
@@ -641,7 +682,7 @@ class Site(unittest.TestCase):
 
     def test_headings_skip_no_level(self):
         for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"), ("kinds",),
-                      ("compatibility",)):
+                      ("compatibility",), ("wanted",)):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
             for before, after in zip(levels, levels[1:]):

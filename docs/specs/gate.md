@@ -84,10 +84,13 @@ which only a maintainer pull request changes (GI-2, REV-1).
   hold `packages: write`, `id-token: write` and `attestations: write`; its
   Pages deploy job, bound to the `github-pages` environment, MAY hold
   `pages: write` and `id-token: write` (CAT-1). The Scorecard job MAY
-  hold `id-token: write` (GI-12).
+  hold `id-token: write` (GI-12). Only the release workflow's
+  `github-release` job, bound to the `release` environment, MAY hold
+  `contents: write`, and that job MUST NOT check out or run repository
+  code (PUB-12).
   - Test: none (partial: `release.yml` permissions; the environment's
     branch policy is set with `gh api`)
-  - Since: #13, #233
+  - Since: #13, #233, #249
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
   `^https://(github|gitlab)\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\.git$`,
@@ -195,7 +198,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   |---|---|---|
   | `fuzz_entry` | `check_entry.step_entry` | `generators/<name>.yaml`, new or a bump, from an owner, a stranger, a maintainer or Renovate |
   | `fuzz_manifest` | `check_entry.step_manifest`, `schema_diff.sources` | `kapitan-generator.yaml`, for a new entry and a bump |
-  | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | a list of mappings as one target's `parameters.kapitan.dependencies`, including the tag before the digest |
+  | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | `kapitan inventory` output, including the tag before the digest |
   | `fuzz_documents` | `tag_check.kinds`, `schema_check.check`, `schema_diff.sources` | a compiled output file, as YAML and as JSON, and `schemas/sources.yaml` |
 
   The callers exit non-zero on an uncaught exception (GI-7, CON-1), so a
@@ -203,7 +206,6 @@ which only a maintainer pull request changes (GI-2, REV-1).
   submission; it does not pass a check. `schema_diff.py` only loses its
   review lines.
 
-  `fuzz_plan` skips other shapes, which `kapitan inventory` does not write.
   `apiserver_check.crd_files` is not fuzzed: importing it needs
   cryptography, which RISK-8 holds at a version with advisories, and a
   second lock would report them again.
@@ -245,7 +247,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: #243
+  - Since: #243, #244
 
 ## Static checks
 

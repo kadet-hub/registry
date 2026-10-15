@@ -1,0 +1,20 @@
+{{ define "main" }}
+{{/* CAT-31: open generator requests; the title is the only text taken from an issue. */}}
+{{ $issues := printf "https://github.com/%s/registry/issues" site.Data.catalog.owner }}
+{{ $wanted := site.Data.catalog.wanted }}
+<section class="prose-page prose">
+<h1>{{ .Title }}</h1>
+{{ .Content }}
+{{ with $wanted }}
+<ol class="wanted">
+{{ range . }}
+<li><a href="{{ $issues }}/{{ .number }}">{{ or (partial "text.html" .title | strings.TrimPrefix "[request] ") (printf "#%v" .number) }}</a><br><span class="note">👍 {{ .up }} · last activity <time datetime="{{ .updated }}">{{ substr .updated 0 10 }}</time> · opened <time datetime="{{ .created }}">{{ substr .created 0 10 }}</time></span></li>
+{{ end }}
+</ol>
+{{ else }}{{ if reflect.IsSlice $wanted }}
+<p class="empty">No generator request is open. <a href="{{ $issues }}/new?template=generator-request.yml">Request a generator</a>.</p>
+{{ else }}
+<p class="empty">The open requests could not be read when this page was built. <a href="{{ $issues }}?q=is%3Aissue+is%3Aopen+label%3Agenerator-request">See them on GitHub</a>.</p>
+{{ end }}{{ end }}
+</section>
+{{ end }}

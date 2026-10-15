@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from index import build
+from index import build, notes
 from sbom import sbom
 from tree import read_dir, read_tar, tree_id, write_tar
 
@@ -101,6 +101,18 @@ class Index(unittest.TestCase):
     def test_deleted_version_that_is_not_yanked_is_dropped(self):
         first = build([version("gen", "1.0.0")], {"gen": {}}, None, NOW)
         self.assertEqual(build([], {"gen": {}}, first, LATER)["generators"], {})
+
+    def test_release_notes(self):
+        first = build([version("gen", "1.0.0")], {"gen": {}}, None, NOW)
+        self.assertEqual(notes(None, first), "Index serial 1.\n\nAdded:\n\n- gen 1.0.0\n")
+        second = build([version("gen", "1.0.0"), version("gen", "1.1.0")], {"gen": {"yanked": {"1.0.0": "broken"}}},
+                       first, LATER)
+        self.assertEqual(notes(first, second), "Index serial 2, changes since serial 1.\n\nAdded:\n\n- gen 1.1.0"
+                                               "\n\nYanked:\n\n- gen 1.0.0: broken\n")
+        third = build([version("gen", "1.0.0"), version("gen", "1.1.0")],
+                      {"gen": {"yanked": {"1.0.0": "broken"}, "advisories": {"1.0.0": ["GHSA-2345-6789-cfgh"]}}},
+                      second, LATER)
+        self.assertEqual(notes(second, third), "Index serial 3, changes since serial 2.\n\nNo version added or yanked.\n")
 
 
 if __name__ == "__main__":

@@ -50,8 +50,10 @@ own.
      `<host>/<repository>[:<tag>]@sha256:<digest>` or that sets
      `insecure`, `tls_verify: false`, `subpath` or `media_type`, a helm
      dependency without an exact `version` or with `helm_path`, a git
-     dependency whose `ref` is not a full commit SHA or with `submodules`, and
-     two dependencies sharing an `output_path`;
+     dependency whose `ref` is not a full commit SHA or with `submodules`,
+     two dependencies sharing an `output_path`, an inventory that is not a
+     mapping of target names to targets, and a target whose
+     `parameters.kapitan.dependencies` is not a list of mappings;
   3. fetch the dependencies outside the sandbox (`oras pull` by digest,
      `helm pull`, `git` at the commit) and verify marketplace artifacts and
      their charts (CON-2);
@@ -74,7 +76,7 @@ own.
   `gh attestation verify` get `<host>/<repository>@sha256:<digest>`.
 
   - Test: `consumer-selftest` (AC-10); `consumer/test_consumer.py`
-  - Since: #15, #234
+  - Since: #15, #234, #244
 
 - CON-1a: The marketplace MUST publish a GitLab CI template that runs the
   same steps with the published sandbox image.
