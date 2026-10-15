@@ -520,7 +520,7 @@ index is refused (CON-2).
   the CON-2 verification commands; a yanked version MUST show its reason and
   no inventory entry.
   - Test: `catalog/test_catalog.py`
-  - Since: #16, this change
+  - Since: #16, #234
 
 - CAT-3: Every HTML page MUST render every value from the index and the
   GitHub API through Hugo's contextual escaping and MUST NOT load scripts,

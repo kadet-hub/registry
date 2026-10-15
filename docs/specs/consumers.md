@@ -74,7 +74,7 @@ own.
   `gh attestation verify` get `<host>/<repository>@sha256:<digest>`.
 
   - Test: `consumer-selftest` (AC-10); `consumer/test_consumer.py`
-  - Since: #15, this change
+  - Since: #15, #234
 
 - CON-1a: The marketplace MUST publish a GitLab CI template that runs the
   same steps with the published sandbox image.
@@ -144,7 +144,7 @@ own.
   it in that pull request.
 
   - Test: `consumer/test_consumer.py`; manual: AC-6 consumer run (2026-10-09)
-  - Since: #15, this change
+  - Since: #15, #234
 
 - CON-3: The consumer documentation MUST state what listing covers and what it
   does not, referring to the threat model.

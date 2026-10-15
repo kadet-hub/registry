@@ -30,7 +30,7 @@ parameters:
 The digest decides what is fetched and verified. The tag must be the version
 the index lists for that digest, otherwise the workflow fails; without a tag,
 `ghcr.io/kadet-hub/<name>@sha256:<digest>` still works. Consumer workflow
-commits before kadet-hub/registry#PR reject the tag with `source must be
+commits before kadet-hub/registry#234 reject the tag with `source must be
 <host>/<repository>@sha256:<digest>`, so move your workflow pin to a later
 commit before you add tags.
 
