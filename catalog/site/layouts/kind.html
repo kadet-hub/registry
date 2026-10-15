@@ -1,18 +1,17 @@
 {{ define "main" }}
-{{/* CAT-29: the generators whose latest listed version ships a schema for this kind. */}}
-{{ $group := .Params.group }}{{ $kind := .Params.kindname }}
-{{ $versions := index site.Data.catalog.kinds $group $kind }}
-{{ $names := slice }}{{ range $versions }}{{ $names = $names | append . }}{{ end }}
-{{ $gens := where (where site.Data.catalog.generators "latest" "!=" nil) "name" "in" $names }}
+{{/* CAT-29b: a kind two or more listed generators render. */}}
+{{ $group := .Params.group }}{{ $k := index site.Data.catalog.kinds $group .Params.kindkey }}
+{{ $gens := where (where site.Data.catalog.generators "latest" "!=" nil) "name" "in" $k.rendered }}
 <section class="prose-page">
-<p class="crumbs"><a href="{{ "/kinds/" | relURL }}">Kinds</a> / {{ $group }} / {{ $kind }}</p>
-<h1>Kapitan generators for <code>{{ $kind }}</code> in {{ $group }}</h1>
-<p class="lead">The latest listed version of each generator below ships a JSON Schema for this kind, and the gate validates every {{ $kind }} its fixture renders against it. Kind names are in lower case, as in the schema file names.</p>
+<p class="crumbs"><a href="{{ "/kinds/" | relURL }}">Kinds</a> / {{ $group }} / {{ $k.name }}</p>
+<h1>Kapitan generators that render <code>{{ $k.name }}</code> in {{ $group }}</h1>
+<p class="lead">Each generator below renders {{ $k.name }} in the fixture output of its latest listed version, as the release recorded it.{{ with $k.schema }} Under "Schema shipped by" are generators whose latest listed version was published before the release recorded kinds and ships a JSON Schema for {{ $k.name }}.{{ end }}</p>
 <dl class="details">
   <dt>API group</dt><dd>{{ if eq $group "core" }}core: the apiVersion has no group{{ else }}<code>{{ $group }}</code>{{ end }}</dd>
-  {{ range $api, $n := $versions }}<dt>apiVersion</dt><dd><code>{{ $api }}</code>: {{ delimit $n ", " }}</dd>{{ end }}
+  {{ range $api, $n := $k.versions }}<dt>apiVersion</dt><dd><code>{{ $api }}</code>: {{ delimit $n ", " }}</dd>{{ end }}
+  {{ with $k.schema }}<dt>Schema shipped by</dt><dd>{{ partial "generator-links.html" . }}</dd>{{ end }}
 </dl>
 </section>
-<h2 class="visually-hidden">Generators that ship {{ $kind }}</h2>
+<h2 class="visually-hidden">Generators that render {{ $k.name }}</h2>
 <ul class="cards tag-cards">{{ range $gens }}{{ partial "card.html" . }}{{ end }}</ul>
 {{ end }}

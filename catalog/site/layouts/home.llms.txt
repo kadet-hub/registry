@@ -27,7 +27,7 @@ Every generator and guide page has a Markdown variant at index.md next to it; th
 
 - [Consumer guide](https://github.com/kadet-hub/registry/blob/main/docs/consumers.md): inventory entry, consumer workflow, verifying by hand, what a listing covers
 - [Catalog](https://kadet-hub.org/): all generators; each page has the pinned inventory entry and the verify command
-- [Kinds](https://kadet-hub.org/kinds/): every Kubernetes kind a listed generator ships a JSON Schema for, with the generators that ship it
+- [Kinds](https://kadet-hub.org/kinds/): every Kubernetes kind of the listed generators by API group, with the generators that render it or ship its schema
 
 ## Generators
 
