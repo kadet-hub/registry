@@ -450,7 +450,7 @@ class Site(unittest.TestCase):
         self.assertLess(html.index('class="toc"'), html.index('class="generator-body"'))  # beside the column, not in it
         start = html.index('id="toc"')
         toc = html[start:html.index("</nav>", start)]
-        links = ["readme", "versions"]
+        links = ["readme", "versions", "badge"]
         self.assertEqual(re.findall(r'href="#([a-z]+)"', toc), links)
         positions = [html.index(f'id="{a}"') for a in links]
         self.assertEqual(positions, sorted(positions))
@@ -562,6 +562,26 @@ class Site(unittest.TestCase):
         self.assertIn("<td>not read</td>", page)  # old: no package page
         self.assertIn('<dt>Popularity</dt><dd><a class="fact-link" href="./popularity/#demo">40</a></dd>', self.page())
         self.assertIn("· 1200 pulls</dd>", self.page("generators", "demo"))
+
+    def test_badge(self):  # CAT-32, CAT-32a
+        for name, message, color in (("demo", "1.10.0", "blue"), ("old", "not listed", "lightgrey")):
+            with open(os.path.join(self.out, "generators", name, "badge.json"), encoding="utf-8") as f:
+                self.assertEqual(json.load(f), {"schemaVersion": 1, "label": "kadet-hub", "message": message, "color": color})
+        self.assertFalse(os.path.exists(os.path.join(self.out, "guides", "writing-a-kapitan-generator", "badge.json")))
+        html = self.page("generators", "demo")
+        section = html[html.index('<h2 id="badge">'):html.index("</section>", html.index('<h2 id="badge">'))]
+        code = _unescape(re.search(r'<pre id="badge-markdown"><code>(.*?)</code></pre>', section, re.S).group(1))
+        self.assertEqual(code, "[![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/demo/badge.json)]"
+                               "(https://kadet-hub.org/generators/demo/)")
+        self.assertIn('data-copy="badge-markdown"', section)
+        self.assertNotIn('id="badge"', self.page("generators", "old"))  # no listed version, no section
+        for page in (html, self.page("generators", "old")):
+            self.assertNotRegex(page, r"<img\b[^>]*shields")
+            csp = re.search(r'Content-Security-Policy" content="([^"]*)"', page).group(1)
+            self.assertEqual(csp, "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://stats.kadet-hub.org; "
+                                  "connect-src https://stats.kadet-hub.org; base-uri 'none'; form-action 'none'")
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            self.assertNotIn("badge.json", f.read())
 
     def test_thumbs_up_from_discussions(self):
         self.assertIn(f'<a href="https://github.com/{OWNER}/registry/discussions/5">👍 3</a> on GitHub Discussions', self.page("generators", "demo"))
