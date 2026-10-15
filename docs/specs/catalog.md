@@ -189,7 +189,7 @@ remembered in the browser's `localStorage`.
   record whose text does not verify says so.
 
   - Test: `catalog/test_catalog.py`; manual: fork rehearsal (pending)
-  - Since: this change
+  - Since: #226
 
 - CAT-21: The generator page MUST link "Request a feature" to a new issue
   in the generator's source repository, prefilled with the generator's
@@ -433,7 +433,7 @@ index is refused (CON-2).
   submitters; a description or diff with markup is shown as text.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #16, this change
+  - Since: #16, #226
 
 - CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
   origin of a GoatCounter instance, every page MUST count its view with

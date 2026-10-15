@@ -71,7 +71,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: reproducibility and tree ID;
     the sign job's comparison by AC-6)
-  - Since: #13, this change
+  - Since: #13, #226
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
   existing `<version>` tag, MUST fail when an existing tag points to a digest
@@ -118,7 +118,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: content and serial; publishing
     by AC-6)
-  - Since: #13, this change
+  - Since: #13, #226
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
@@ -214,7 +214,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py::OutputDiff`, `gate/test_output_diff.py`;
     manual: fork rehearsal (pending)
-  - Since: this change
+  - Since: #226
 
 ## Incident response
 
