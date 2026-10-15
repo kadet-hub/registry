@@ -245,6 +245,10 @@ class Site(unittest.TestCase):
         self.assertIn("localStorage", privacy)
         self.assertIn("Art. 77", privacy)
         self.assertIn("§ 5 DDG", self.page("imprint"))
+        imprint = self.page("imprint")
+        for heading in ("Consumer dispute resolution", "Liability for content", "Liability for links", "Copyright"):  # LEG-1a
+            self.assertIn(f">{heading}</h2>", imprint)
+        self.assertIn("§ 36 VSBG", imprint)
         with open(os.path.join(HERE, "..", "README.md"), encoding="utf-8") as f:
             self.assertIn("not affiliated with or endorsed by\nthe Kapitan project or kapicorp", f.read())
 
