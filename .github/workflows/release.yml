@@ -1,8 +1,8 @@
 name: release
 
-# PUB-1 to PUB-9, CMP-4, CAT-1, CAT-7, CAT-14, CAT-20, CAT-27. Only this workflow holds publishing permissions:
-# its sign, sandbox and index jobs in the release environment, and its pages
-# job in the github-pages environment (GI-8).
+# PUB-1 to PUB-12, CMP-4, CAT-1, CAT-7, CAT-14, CAT-20, CAT-27. Only this workflow holds publishing permissions:
+# its sign, sandbox, index and github-release jobs in the release environment,
+# and its pages job in the github-pages environment (GI-8).
 on:
   push:
     branches: [main]
@@ -190,6 +190,9 @@ jobs:
       packages: write # push and tag on ghcr.io
       id-token: write # Sigstore certificate for the attestation
       attestations: write # store the attestation
+    outputs:
+      publish: ${{ steps.push.outputs.publish }}
+      serial: ${{ steps.push.outputs.serial }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -205,6 +208,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PACKAGES_API: ${{ github.event.repository.owner.type == 'Organization' && 'orgs' || 'users' }}/${{ github.repository_owner }}
           INDEX_OUT: ${{ runner.temp }}/index.json
+          NOTES_OUT: ${{ runner.temp }}/notes.md
         run: release/publish-index
 
       - name: Attest
@@ -213,6 +217,13 @@ jobs:
         with:
           subject-name: ${{ steps.push.outputs.ref }}
           subject-digest: ${{ steps.push.outputs.digest }}
+
+      - name: Attest index.json (PUB-12)
+        id: attest-file
+        if: steps.push.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/index.json
 
       - name: Tag
         if: steps.push.outputs.publish == 'true'
@@ -227,6 +238,49 @@ jobs:
           name: index
           path: ${{ runner.temp }}/index.json
           retention-days: 1
+
+      - name: Release assets (PUB-12)
+        if: steps.push.outputs.publish == 'true'
+        env:
+          BUNDLE: ${{ steps.attest-file.outputs.bundle-path }}
+        run: |
+          dir=$RUNNER_TEMP/github-release
+          mkdir -- "$dir"
+          cp -- "$RUNNER_TEMP/index.json" "$RUNNER_TEMP/notes.md" "$dir/"
+          cp -- "$BUNDLE" "$dir/index.json.sigstore.json"
+          jq -ec .dsseEnvelope "$BUNDLE" >"$dir/index.json.intoto.jsonl"
+
+      - if: steps.push.outputs.publish == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: github-release
+          path: ${{ runner.temp }}/github-release
+          retention-days: 1
+
+  github-release:
+    needs: index
+    # always(): as for catalog below
+    if: always() && needs.index.result == 'success' && needs.index.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write # create the release and its tag (PUB-12)
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: github-release
+          path: github-release
+
+      - name: Create the release
+        working-directory: github-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SERIAL: ${{ needs.index.outputs.serial }}
+        run: >-
+          gh release create --target "$GITHUB_SHA" --title "Index serial $SERIAL" --notes-file notes.md
+          -- "index-$SERIAL" index.json index.json.sigstore.json index.json.intoto.jsonl
 
   catalog:
     needs: index
