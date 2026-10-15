@@ -11,6 +11,7 @@ import urllib.parse
 from html import unescape as _unescape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+SEO_CHECK = os.path.join(HERE, "seo_check.py")
 sys.path.insert(0, HERE)
 from view import README_MAX, readme, view
 
@@ -433,25 +434,36 @@ class Site(unittest.TestCase):
         self.assertNotIn("Thumbs up</dt>", self.page("generators", "old"))
 
     def test_seo(self):
-        for parts in ((), ("generators", "demo"), ("generators", "old"), ("tags",), ("glossary",), ("tags", "helm"), ("tags", "observability"),
-                      ("guides",), ("privacy",), ("imprint",), ("guides", "writing-a-kapitan-generator"), ("guides", "supply-chain-security-for-kapitan-generators"),
-                      ("guides", "checking-custom-resources-against-crds"), ("guides", "ingress-nginx-to-gateway-api")):
-            html = self.page(*parts)
-            title = re.search(r"<title>([^<]*)</title>", html).group(1)
-            desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
-            self.assertTrue(30 <= len(title) <= 65, title)
-            self.assertTrue(50 <= len(__import__("html").unescape(desc)) <= 160, desc)
-            self.assertEqual(html.count("<h1"), 1)
-            self.assertIn(f'<link rel="canonical" href="https://kadet-hub.org/{"/".join(parts) + "/" if parts else ""}">', html)
-        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
-            sitemap = f.read()
-        for name in ("demo", "old"):
-            self.assertIn(f"<loc>https://kadet-hub.org/generators/{name}/</loc>", sitemap)
-        with open(os.path.join(self.out, "robots.txt"), encoding="utf-8") as f:
-            self.assertIn("Sitemap: https://kadet-hub.org/sitemap.xml", f.read())
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, ""))  # CAT-11d: every page
+        self.assertIn('<link rel="canonical" href="https://kadet-hub.org/">', self.page())
         ld = re.search(r'<script type="application/ld\+json">(.*?)</script>', self.page("generators", "demo"), re.S).group(1)
         self.assertNotIn("<", ld)
         self.assertEqual(json.loads(ld)["description"], "<script>alert(1)</script>")
+
+    def test_seo_check_finds_violations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            arts = os.path.join(tmp, "artifacts")
+            os.mkdir(arts)
+            artifact(os.path.join(arts, "demo.tar"), {"README.md": "# Demo\n\n### Skips a level\n"})
+            out = build({"serial": 1, "generators": {"demo": {"1.0.0": record("a")}}}, tmp, arts)
+            path = os.path.join(out, "privacy", "index.html")
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(html.replace("</main>", '<h1>Again</h1><img src="x.png" alt=""><a href="../?tags=helm">helm</a></main>'))
+            os.makedirs(os.path.join(out, "generators", "renamed"))  # a Hugo alias page is not checked
+            with open(os.path.join(out, "generators", "renamed", "index.html"), "w", encoding="utf-8") as f:
+                f.write('<!DOCTYPE html><html><head><title>https://kadet-hub.org/generators/demo/</title>'
+                        '<meta http-equiv="refresh" content="0; url=https://kadet-hub.org/generators/demo/"></head></html>')
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout.splitlines(), [
+            "CAT-11b: generators/demo/index.html: h4 follows h2",  # README headings sit one level lower
+            "CAT-11: privacy/index.html: 2 h1, not one",
+            "CAT-8a: privacy/index.html: internal link with ?tags=: ../?tags=helm",
+            "CAT-11c: privacy/index.html: img x.png has no alt text",
+        ])
 
     def test_home_links_both_guides(self):
         html = self.page()
