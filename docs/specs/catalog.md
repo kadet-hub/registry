@@ -132,6 +132,19 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #196
 
+- CAT-11e: A README heading MUST be rendered at most one level below the
+  heading before it.
+
+  READMEs come from submitters and may jump from `#` to `###`; rendered
+  as written, that breaks CAT-11b and, through CAT-11d, would block every
+  deploy until the generator publishes a fixed README. The render hook
+  shifts README headings one level down (the page's `h1` is the generator
+  name) and clamps each to one below the previous heading, starting below
+  the `h2` of the table of contents.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 - CAT-11d: Every HTML page of the built site MUST pass the checks of CAT-8a
   and CAT-11 to CAT-11c, in `catalog-tests` on the fixture build and in the
   release before the site is deployed. A failure MUST stop the deploy, so
