@@ -373,7 +373,7 @@ remembered in the browser's `localStorage`.
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, #231, this change
+  - Since: #51, #231, #235
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list
@@ -493,7 +493,7 @@ remembered in the browser's `localStorage`.
   pages in 55 groups; five kinds list more than one generator.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #235
 
 - CAT-29a: The home page search MUST match the kind names (CAT-29) of
   each card's latest listed version.
@@ -504,7 +504,7 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py` (partial: the search text in the
     markup; the matching runs in the browser)
-  - Since: this change
+  - Since: #235
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
