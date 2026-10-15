@@ -612,7 +612,7 @@ remembered in the browser's `localStorage`.
   open and only the marking of the section in view is missing.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #56, #79, #111, this change
+  - Since: #56, #79, #111, #246
 
 - CAT-32: Every generator page MUST have a `badge.json` next to its
   `index.html` in the shields.io endpoint schema, with the label
@@ -639,7 +639,7 @@ remembered in the browser's `localStorage`.
   only the HTML URL of each page, as for the variants.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #246
 
 - CAT-32a: The page of a generator with a listed version MUST show the
   Markdown `[![kadet-hub](https://img.shields.io/endpoint?url=<badge.json
@@ -653,7 +653,7 @@ remembered in the browser's `localStorage`.
   reads "not listed". `docs/authors.md` shows the snippet.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #246
 
 - CAT-20: Each listed generator MUST have one discussion in the
   "Generators" category of the registry's GitHub Discussions, and its card
