@@ -244,7 +244,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: #243, this change
+  - Since: #243, #244
 
 ## Static checks
 

@@ -76,7 +76,7 @@ own.
   `gh attestation verify` get `<host>/<repository>@sha256:<digest>`.
 
   - Test: `consumer-selftest` (AC-10); `consumer/test_consumer.py`
-  - Since: #15, #234, this change
+  - Since: #15, #234, #244
 
 - CON-1a: The marketplace MUST publish a GitLab CI template that runs the
   same steps with the published sandbox image.
