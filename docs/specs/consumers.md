@@ -46,8 +46,9 @@ own.
      empty environment, because the inventory backend imports
      `resolvers.py`;
   2. fail on a dependency in the inventory whose type or host the policy does
-     not allow, an `http` dependency, an OCI dependency without a digest or
-     with `insecure`, `tls_verify: false`, `subpath` or `media_type`, a helm
+     not allow, an `http` dependency, an OCI dependency whose source is not
+     `<host>/<repository>[:<tag>]@sha256:<digest>` or that sets
+     `insecure`, `tls_verify: false`, `subpath` or `media_type`, a helm
      dependency without an exact `version` or with `helm_path`, a git
      dependency whose `ref` is not a full commit SHA or with `submodules`, and
      two dependencies sharing an `output_path`;
@@ -69,8 +70,11 @@ own.
   from `oc.env` resolves against the empty environment, so it either fails
   the inventory or names a host the policy has to allow.
 
-  - Test: `consumer-selftest` (AC-10)
-  - Since: #15
+  The tag is optional and never selects what is fetched: `oras pull` and
+  `gh attestation verify` get `<host>/<repository>@sha256:<digest>`.
+
+  - Test: `consumer-selftest` (AC-10); `consumer/test_consumer.py`
+  - Since: #15, this change
 
 - CON-1a: The marketplace MUST publish a GitLab CI template that runs the
   same steps with the published sandbox image.
@@ -120,7 +124,8 @@ own.
   https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main`,
   verify the index the same way, reject an index whose `serial` is lower than
   the policy's `index_serial`, and reject a digest the index does not list
-  under the same name or lists as yanked, and a chart whose digest differs
+  under the same name or lists as yanked, a source whose tag is not the
+  version the index lists for its digest, and a chart whose digest differs
   from the index. The documentation MUST state that Kapitan's `--fetch`
   provides no integrity check.
 
@@ -128,8 +133,18 @@ own.
   `index_serial` in a reviewed commit. Every OCI dependency under
   `ghcr.io/<owner>/` counts as a marketplace artifact.
 
+  oras, `gh attestation verify` and Kapitan ignore a tag next to a digest:
+  `<name>:1.0.3@<digest of 1.0.0>` fetches and verifies 1.0.0. The tag is
+  what reviewers and Renovate read, so a tag that names another version
+  fails.
+
+  The tag lets the Renovate preset `github>kadet-hub/renovate-config`
+  propose updates from the registry tags. Renovate does not read the index,
+  so it can propose a version yanked after its release; this check rejects
+  it in that pull request.
+
   - Test: `consumer/test_consumer.py`; manual: AC-6 consumer run (2026-10-09)
-  - Since: #15
+  - Since: #15, this change
 
 - CON-3: The consumer documentation MUST state what listing covers and what it
   does not, referring to the threat model.
