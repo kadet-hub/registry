@@ -657,7 +657,7 @@ remembered in the browser's `localStorage`.
   the snippet.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #246
 
 - CAT-20: Each listed generator MUST have one discussion in the
   "Generators" category of the registry's GitHub Discussions, and its card
