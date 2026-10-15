@@ -279,7 +279,6 @@ cover none of the changed files.
 
 - Ratings, download counts and install telemetry.
 - Output schema validation (kubeconform and similar).
-- OpenSSF Scorecard.
 - Index expiry (TUF freeze protection); the serial (PUB-4) prevents rollback
   only.
 - Python dependencies beyond Kapitan's own (DEC-10).
@@ -295,6 +294,8 @@ coverage is named at each:
 - REG-1: no sample whose tag points elsewhere; the fork rehearsals passed it.
 - GI-3, GI-4, GI-8: job permissions are reviewed, not tested.
 - GI-7: no sample that makes a gate tool error or time out.
+- GI-12: triggers, publishing and the SARIF upload are reviewed; only a
+  run on `main` shows them working.
 - REV-2: the comment is rendered, not asserted.
 - CON-3: documentation content.
 - CAT-5: URL stability.
@@ -357,6 +358,7 @@ coverage is named at each:
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
+| `.github/workflows/scorecard.yml` | GI-12 |
 | `renovate.json` | REG-7, tool and action pins |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
