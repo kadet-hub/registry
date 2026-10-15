@@ -25,3 +25,31 @@ self-test and the workflow linters on every pull request.
 
 Questions that are neither go to
 [Discussions](https://github.com/kadet-hub/registry/discussions).
+
+## Running the tests
+
+The tests are Python `unittest` suites and shell selftests; CI runs the same
+commands (`.github/workflows/`). On Linux with Python 3 and Hugo (the version
+in `.github/actions/setup-hugo`):
+
+```sh
+python3 -m unittest discover -s catalog      # catalog site, SEO and legal checks
+python3 -m unittest discover -s release      # release build and index
+```
+
+The gate, scanner and consumer tests need the sandbox image, which pins
+Kapitan and the scanners:
+
+```sh
+docker build -t kadet-hub/sandbox sandbox
+docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/gate kadet-hub/sandbox \
+  python -m unittest discover -p 'test_check*.py'
+docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/consumer kadet-hub/sandbox \
+  python -m unittest discover
+tests/selftest            # every gate sample, needs gVisor (runsc)
+tests/consumer-selftest   # the consumer workflow against its samples
+tests/workflow-policy     # pinned actions and permissions
+```
+
+A new requirement or a changed behaviour comes with a test that fails without
+the change, named in the requirement's `Test:` line.
