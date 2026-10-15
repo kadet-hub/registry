@@ -41,4 +41,13 @@
 {{ else }}
 <p class="empty">No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>
 {{ end }}
+<section class="steps prose" aria-labelledby="listing">
+  <h2 id="listing">How a version gets listed</h2>
+  <h3>Scanned</h3>
+  <p>The gate scans the generator's source for leaked secrets, malware patterns and risky code before anything runs. A finding fails the pull request that registers the version.</p>
+  <h3>Compiled in a sandbox</h3>
+  <p>Its fixture targets compile in a gVisor sandbox without network, on every inventory backend it declares and again with Kapitan's cache. The output is validated against the shipped JSON Schemas and dry-run against a throwaway kube-apiserver with the operators' own CRDs.</p>
+  <h3>Reviewed, signed and pinned</h3>
+  <p>A maintainer reviews the gate report. The version is published as an OCI artifact with a Sigstore signature, an SBOM and a transparency log entry, and you pin it by digest in your inventory. <a href="{{ $docs }}consumers.md">How to consume a generator</a>.</p>
+</section>
 {{ end }}

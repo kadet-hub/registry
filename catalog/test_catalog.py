@@ -349,7 +349,7 @@ class Site(unittest.TestCase):
         self.assertIn("<dt>Scanned</dt><dd>not scanned</dd>", self.card("plain"))
         self.assertIn('<p class="meta-line">1.10.0 · <time datetime="2026-10-09T05:34:57Z">2026-10-09</time></p>', self.card("demo"))
 
-    def test_maintainer_links_to_the_profile(self):
+    def test_maintainer_is_text_on_the_card_and_linked_on_the_page(self):
         with tempfile.TemporaryDirectory() as tmp:
             site = os.path.join(tmp, "site")
             shutil.copytree(os.path.join(HERE, "site"), site)
@@ -360,7 +360,10 @@ class Site(unittest.TestCase):
             subprocess.run(["hugo", "--quiet", "--source", site, "--destination", os.path.join(tmp, "out")], check=True)
             with open(os.path.join(tmp, "out", "index.html"), encoding="utf-8") as f:
                 home = f.read()
-        self.assertIn('<dt>Maintainer</dt><dd><a class="fact-link" href="https://github.com/someone">someone</a></dd>', home)
+            with open(os.path.join(tmp, "out", "generators", "demo", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        self.assertIn('<dt>Maintainer</dt><dd>someone</dd>', home)  # CAT-22: linked only on the page
+        self.assertIn('<dt>Owners</dt><dd><a href="https://github.com/someone">someone</a></dd>', page)
 
     def test_request_a_feature_goes_to_the_source_repository(self):
         html = self.page("generators", "demo")
@@ -457,7 +460,8 @@ class Site(unittest.TestCase):
             with open(path, encoding="utf-8") as f:
                 html = f.read()
             with open(path, "w", encoding="utf-8") as f:
-                f.write(html.replace("</main>", '<h1>Again</h1><h4>Deep</h4><img src="x.png" alt=""><a href="../?tags=helm">helm</a></main>'))
+                f.write(html.replace("</main>", '<h1>Again</h1><h4>Deep</h4><img src="x.png" alt=""><a href="../?tags=helm">helm</a>'
+                                        '<h2>Cards</h2><ul class="cards"><li><h3>name</h3></li></ul></main>'))
             os.makedirs(os.path.join(out, "generators", "renamed"))  # a Hugo alias page is not checked
             with open(os.path.join(out, "generators", "renamed", "index.html"), "w", encoding="utf-8") as f:
                 f.write('<!DOCTYPE html><html><head><title>https://kadet-hub.org/generators/demo/</title>'
@@ -469,6 +473,7 @@ class Site(unittest.TestCase):
             "CAT-8a: privacy/index.html: internal link with ?tags=: ../?tags=helm",
             "CAT-11b: privacy/index.html: h4 follows h1",  # the README's skip is clamped (CAT-11e)
             "CAT-11c: privacy/index.html: img x.png has no alt text",
+            "CAT-11b: privacy/index.html: h3 inside a card list",
         ])
 
     def test_home_links_both_guides(self):
@@ -495,8 +500,11 @@ class Site(unittest.TestCase):
                 self.assertLessEqual(after, before + 1, parts)
         for parts in ((), ("tags", "helm")):
             cards = self.page(*parts).split('<ul class="cards')[1]
-            self.assertIn('<h3><a class="stretched"', cards)
-            self.assertNotIn("<h2", cards.split("</ul>")[0])
+            self.assertIn('<p class="card-name"><a class="stretched"', cards)
+            self.assertNotRegex(cards.split("</ul>")[0], r"<h[1-6]\b")  # CAT-11b: card names are no headings
+        home = self.page()
+        self.assertIn('<h2 id="listing">How a version gets listed</h2>', home)
+        self.assertLessEqual(len(re.findall(r"<h[1-6]\b", home)), 8)
 
     def test_no_counter_without_a_goatcounter_code(self):
         with tempfile.TemporaryDirectory() as tmp:

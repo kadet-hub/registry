@@ -123,14 +123,19 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #221
 
-- CAT-11b: Headings MUST NOT skip a level, and a list of cards MUST sit
-  under an `h2` with each card's name as `h3`.
+- CAT-11b: Headings MUST NOT skip a level, a list of cards MUST sit under
+  an `h2`, and a card's name MUST NOT be a heading.
 
-  Before, every card name was an `h2` directly under the page's `h1`, so
-  the home page had 36 `h2` and no `h3`.
+  Card names were first `h2` directly under the page's `h1` (36 `h2`, no
+  `h3`), then `h3` under an `h2`, which gave the home page 37 headings
+  for little text. Guides for listing pages keep headings for the page
+  and its sections, not for every item of a list, and avoid linked
+  headings; the cards are a list, which assistive technology can step
+  through as such. The home page has a short section on how a version
+  gets listed, an `h2` with an `h3` per step.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #196
+  - Since: #196, #230
 
 - CAT-11e: A README heading MUST be rendered at most one level below the
   heading before it.
@@ -238,7 +243,8 @@ remembered in the browser's `localStorage`.
   name as the only card-wide link, below it the latest version and its
   date, the description clamped to three lines, the tags, and labelled
   facts: "Built for" (one software and version per line, or "not
-  recorded"), "Maintainer" (the owners, each linked to their profile), "Popularity"
+  recorded"), "Maintainer" (the owners' logins as text; the generator page links
+  their profiles), "Popularity"
   (the score of CAT-23, linked to its explanation) and "Scanned" (the scan
   date or "not scanned").
 
@@ -253,12 +259,12 @@ remembered in the browser's `localStorage`.
   several products, such as cert-manager with trust-manager, lists each
   on its own line, because a run-on line with separators reads like the
   version line above it and wraps mid-name on narrow cards. The name link
-  stretches over the card and the tag and maintainer links sit above it, the block-link pattern recommended by Heydon
+  stretches over the card and the tag and popularity links sit above it, the block-link pattern recommended by Heydon
   Pickering and Adrian Roselli; the focus ring is drawn when the name link
   has keyboard focus, not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73, #81, #92
+  - Since: #73, #81, #92, #230
 
 - CAT-26: A generator without a listed version MUST NOT have a card on the
   home page or a tag page, and MUST NOT be counted there.

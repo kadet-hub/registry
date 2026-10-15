@@ -22,7 +22,7 @@ class Page(HTMLParser):
         self.title = self.description = self.canonical = self.text = None
         self.redirect = self.touch_icon = False
         self.headings, self.hrefs, self.ld, self.findings = [], [], [], []
-        self.cards = self.items = self.names = 0  # ul depth inside a card list, its cards and h3 names
+        self.cards = 0  # ul depth inside a card list
 
     def handle_starttag(self, tag, attrs):
         a = {k: v or "" for k, v in attrs}
@@ -45,21 +45,15 @@ class Page(HTMLParser):
         elif tag == "img" and not a.get("alt", "").strip():
             self.findings.append(("CAT-11c", f"img {a.get('src', '')} has no alt text"))
         elif tag == "ul" and (self.cards or "cards" in a.get("class", "").split()):
-            if not self.cards:
-                if self.headings[-1:] != [2]:
-                    self.findings.append(("CAT-11b", "card list does not follow an h2"))
-                self.items = self.names = 0
+            if not self.cards and self.headings[-1:] != [2]:
+                self.findings.append(("CAT-11b", "card list does not follow an h2"))
             self.cards += 1
-        elif tag == "li" and self.cards == 1:
-            self.items += 1
         elif tag in HEADINGS:
             level, prev = HEADINGS[tag], (self.headings or [0])[-1]
             if level > prev + 1:
                 self.findings.append(("CAT-11b", f"h{level} follows {f'h{prev}' if prev else 'no heading'}"))
             if self.cards:
-                if level != 3:
-                    self.findings.append(("CAT-11b", f"card name is h{level}, not h3"))
-                self.names += 1
+                self.findings.append(("CAT-11b", f"h{level} inside a card list"))
             self.headings.append(level)
 
     def handle_endtag(self, tag):
@@ -67,8 +61,6 @@ class Page(HTMLParser):
             self.text = None
         elif tag == "ul" and self.cards:
             self.cards -= 1
-            if not self.cards and self.items != self.names:
-                self.findings.append(("CAT-11b", f"card list has {self.items} cards and {self.names} names"))
 
     def handle_data(self, data):
         if self.text == "title":

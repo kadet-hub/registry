@@ -3,7 +3,7 @@
   <div class="card-head">
     <span class="tile hue-{{ .hue }}" aria-hidden="true">{{ with .tags }}<svg class="icon"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ else }}{{ $.monogram }}{{ end }}</span>
     <div>
-      <h3><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></h3>
+      <p class="card-name"><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></p>
       <p class="meta-line">{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ end }}</p>
     </div>
   </div>
@@ -11,7 +11,7 @@
   {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/tags/%s/" . | relURL }}">{{ . }}</a>{{ end }}</p>{{ end }}
   <dl class="facts">
     <div><dt>Built for</dt>{{ with .latest }}{{ with .compatibility }}<dd class="built-for">{{ range . }}<span>{{ .software }} {{ .version }}</span>{{ end }}</dd>{{ else }}<dd>not recorded</dd>{{ end }}{{ else }}<dd>not recorded</dd>{{ end }}</div>
-    <div><dt>{{ if gt (len .owners) 1 }}Maintainers{{ else }}Maintainer{{ end }}</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a class="fact-link" href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
+    <div><dt>{{ if gt (len .owners) 1 }}Maintainers{{ else }}Maintainer{{ end }}</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
     <div><dt>Popularity</dt><dd><a class="fact-link" href="{{ printf "/popularity/#%s" .name | relURL }}">{{ .score }}</a></dd></div>
     <div><dt>Scanned</dt><dd>{{ with .latest }}{{ with .scan }}{{ substr .at 0 10 }}{{ else }}not scanned{{ end }}{{ else }}not scanned{{ end }}</dd></div>
   </dl>
