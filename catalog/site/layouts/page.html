@@ -72,6 +72,8 @@
   {{ partial "details.html" (dict "v" .) }}
   <h3>Checks</h3>
   {{ partial "scan.html" (dict "v" . "name" $name) }}
+  <h3>Output diff</h3>
+  {{ partial "diff.html" (dict "v" . "name" $name) }}
   {{ end }}
 </details>
 {{ end }}

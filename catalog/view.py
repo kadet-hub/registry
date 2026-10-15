@@ -1,6 +1,6 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
@@ -13,7 +13,8 @@ the transparency log index of the verified attestation (CAT-17);
 DIR/<name>.html is the generator's public package page; its "Total
 downloads" are the pulls of the popularity score (CAT-23). --previous is the
 catalog.json of the last build; its README is used when the latest digest
-is unchanged and no artifact layer was fetched.
+is unchanged and no artifact layer was fetched. --diffs DIR/<name>/<version>.output.diff
+is a version's verified output diff; its first lines are shown (CAT-27).
 """
 
 import argparse
@@ -30,6 +31,8 @@ import urllib.request
 GITHUB = re.compile(r"^https://github\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+?)\.git$")
 README_MAX = 256 * 1024
 HUES = 8
+DIFF_LINES = 150
+CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")  # Cc but tab and newline, Bidi_Control
 
 
 def readme(path):
@@ -42,6 +45,18 @@ def readme(path):
             return t.extractfile(m).read().decode("utf-8", errors="replace")
     except (OSError, tarfile.TarError):
         return None
+
+
+def diff_excerpt(path):
+    """The first DIFF_LINES lines of an output diff without control characters, and how many follow, or None."""
+    try:
+        with open(path, encoding="utf-8", errors="replace", newline="") as f:
+            lines = CONTROL.sub("", f.read()).split("\n")
+    except OSError:
+        return None
+    if lines[-1] == "":
+        lines.pop()
+    return {"text": "\n".join(lines[:DIFF_LINES]), "more": max(len(lines) - DIFF_LINES, 0)}
 
 
 def blob_url(source):
@@ -89,11 +104,12 @@ def semver(v):
     return tuple(int(x) for x in v.split("."))
 
 
-def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, previous=None):
+def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, previous=None, diffs=None):
     generators = []
     for name, versions in sorted(index.get("generators", {}).items()):
         ordered = [dict(r, version=v, sbom=bool(sboms) and os.path.isfile(os.path.join(sboms, name, f"{v}.spdx.json")),
-                        rekor=(rekor or {}).get(name, {}).get(v))
+                        rekor=(rekor or {}).get(name, {}).get(v),
+                        diff=diff_excerpt(os.path.join(diffs, name, f"{v}.output.diff")) if diffs else None)
                    for v, r in sorted(versions.items(), key=lambda kv: semver(kv[0]), reverse=True)]
         for r in ordered:  # CAT-15: one entry per software and version, the first source wins
             first = {}
@@ -183,12 +199,13 @@ def main():
     p.add_argument("--discussions")
     p.add_argument("--pages")
     p.add_argument("--previous")
+    p.add_argument("--diffs")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
         index = json.load(f)
     result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor),
-                  load_discussions(a.discussions, a.owner), a.pages, load_previous(a.previous))
+                  load_discussions(a.discussions, a.owner), a.pages, load_previous(a.previous), a.diffs)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0

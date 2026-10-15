@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -32,13 +33,20 @@ COMPAT = [{"software": "External Secrets Operator", "version": "2.11.0", "source
 SCAN = {"at": "2026-10-10T08:00:00Z", "gate": "d" * 40, "run": "https://github.com/kadet-hub/registry/actions/runs/42",
         "exceptions": 1, "checks": [{"id": "secrets", "tool": "gitleaks 8.30.1"}, {"id": "sandbox", "tool": "gVisor 20261005, Kapitan 0.36.3"}]}
 
+# CAT-27: 200 lines with markup and control characters.
+DIFF = ("--- a/compiled/t/cm.yml\n+++ b/compiled/t/cm.yml\n@@ -1 +1,196 @@\n-<script>alert(4)</script>\n"
+        + "".join(f"+line {i}\x1b[31m\u202e\r\n" for i in range(196)))
+OUTPUT_DIFF = {"base": "1.2.0", "files": 1, "hunks": 1, "sha256": hashlib.sha256(DIFF.encode()).hexdigest()}
+
 INDEX = {"serial": 7, "generators": {
-    "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]), "1.10.0": dict(record("b", description="<script>alert(1)</script>"), scan=SCAN, compatibility=COMPAT),
+    "demo": {"1.0.0": record("a", yanked="broken", advisories=["GHSA-2345-6789-cfgh"]),
+             "1.10.0": dict(record("b", description="<script>alert(1)</script>"), scan=SCAN, compatibility=COMPAT, output_diff=OUTPUT_DIFF),
              "1.2.0": record("c")},
     "old": {"0.1.0": record("d", yanked="entry removed", tags=())},
 }}
 # Site only: a listed generator without scan record or compatibility.
-SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": record("e", tags=())}}}
+SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": dict(record("e", tags=()),
+                                                                                    output_diff={"base": None, "error": "no earlier listed version"})}}}
 
 
 README = """# Demo
@@ -74,7 +82,7 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -82,7 +90,7 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
     env = dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_ARTIFACTS=artifacts or os.path.join(tmp, "none"),
                CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"),
                CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"),
-               CATALOG_PAGES=pages or os.path.join(tmp, "none"))
+               CATALOG_PAGES=pages or os.path.join(tmp, "none"), CATALOG_DIFFS=diffs or os.path.join(tmp, "none"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -110,7 +118,11 @@ class Site(unittest.TestCase):
         os.mkdir(pages)
         with open(os.path.join(pages, "demo.html"), "w", encoding="utf-8") as f:
             f.write('<span class="h6">Total downloads</span>\n<h3 title="1215">1.2k</h3>')
-        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages)
+        diffs = os.path.join(cls.tmp.name, "diffs", "demo")
+        os.makedirs(diffs)
+        with open(os.path.join(diffs, "1.10.0.output.diff"), "w", encoding="utf-8", newline="") as f:
+            f.write(DIFF)
+        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages, os.path.dirname(diffs))
 
     @classmethod
     def tearDownClass(cls):
@@ -266,6 +278,29 @@ class Site(unittest.TestCase):
         self.assertIn("No scan record", older)
         self.assertIn("No SBOM attestation for this version.", older)
         self.assertIn("<dt>Scanned</dt><dd>2026-10-10</dd>", self.page())
+
+    def test_output_diff(self):  # CAT-27
+        html = self.page("generators", "demo")
+        latest = html[html.index('id="v1.10.0"'):html.index('id="v1.2.0"')]
+        self.assertIn('Fixture output against <a href="#v1.2.0">1.2.0</a>: 1 file, 1 hunk.', latest)
+        code = re.search(r'<pre class="diff"><code>(.*?)</code></pre>', latest, re.S).group(1)
+        self.assertIn("-&lt;script&gt;alert(4)&lt;/script&gt;", code)  # text, not markup
+        self.assertNotIn("<", code)
+        clean = DIFF.replace("\x1b", "").replace("\u202e", "").replace("\r", "")
+        self.assertEqual(_unescape(code), "\n".join(clean.split("\n")[:150]))  # control characters removed, 150 lines
+        self.assertIn("Truncated after 150 lines; 50 more in the download.", latest)
+        self.assertIn('href="../../generators/demo/1.10.0.output.diff" download', latest)
+        with open(os.path.join(self.out, "generators", "demo", "1.10.0.output.diff"), encoding="utf-8", newline="") as f:
+            self.assertEqual(f.read(), DIFF)  # the attested text unchanged
+        older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
+        self.assertIn("No output diff recorded", older)
+        self.assertIn("No output diff: no earlier listed version.", self.page("generators", "plain"))
+        with tempfile.TemporaryDirectory() as tmp:  # a record without a verified text
+            with open(os.path.join(build({"serial": 1, "generators": {"g": {"1.0.0": dict(record("e"), output_diff=OUTPUT_DIFF)}}}, tmp),
+                                   "generators", "g", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        self.assertIn("The diff text has no verified attestation.", page)
+        self.assertNotIn("output.diff", page)
 
     def test_llms_txt(self):
         with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:

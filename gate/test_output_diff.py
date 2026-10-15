@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -27,11 +29,11 @@ class OutputDiff(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def run_diff(self, log=""):
+    def run_diff(self, log="", extra=()):
         logfile, full = os.path.join(self.tmp.name, "log"), os.path.join(self.tmp.name, "output.diff")
         write(self.tmp.name, "log", log)
         out = subprocess.run([sys.executable, os.path.join(HERE, "output_diff.py"), "--old", self.old, "--new", self.new,
-                              "--compile-log", logfile, "--full", full], capture_output=True, text=True, check=True).stdout
+                              "--compile-log", logfile, "--full", full, *extra], capture_output=True, text=True, check=True).stdout
         with open(full, encoding="utf-8") as f:
             return out, f.read()
 
@@ -53,6 +55,19 @@ class OutputDiff(unittest.TestCase):
         self.assertIn("[cut]", out)
         self.assertIn("more lines in output.diff", out)
         self.assertIn("line 399", full)
+
+    def test_summary_and_cut_for_the_release(self):  # PUB-9
+        write(self.new, "compiled/t/big.yml", "".join(f"é {i}\n" for i in range(400)))
+        summary = os.path.join(self.tmp.name, "summary.json")
+        self.run_diff(extra=("--max-bytes", "1000", "--json", summary))
+        with open(os.path.join(self.tmp.name, "output.diff"), "rb") as f:
+            data = f.read()
+        with open(summary, encoding="utf-8") as f:
+            self.assertEqual(json.load(f), {"files": 3, "hunks": 3, "sha256": hashlib.sha256(data).hexdigest()})
+        self.assertLessEqual(len(data), 1000)
+        kept, mark = data.decode().rsplit("\n", 2)[0], data.decode().splitlines()[-1]
+        self.assertEqual(mark, "... output diff truncated at 1000 bytes")
+        self.assertRegex(kept, r"\n\+é \d+$")  # whole lines only
 
 
 if __name__ == "__main__":

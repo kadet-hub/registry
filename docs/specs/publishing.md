@@ -58,12 +58,20 @@ since the documented package API has no visibility call.
 - PUB-1: The build job MUST build the artifact from the git tree
   `source.sha:source.path` alone, reproducibly (normalized tar, no timestamp
   in the manifest), MUST NOT use files produced by the gate, and MUST NOT
-  hold `id-token` or `packages` permissions. The sign job MUST fail when the
+  hold `id-token` or any write permission. The sign job MUST fail when the
   tree ID of the tar differs from the tree of `source.sha:source.path` read by
   its own fetch.
+
+  The build job holds `packages: read` to tell which versions are
+  published (CMP-4) and to read the latest index for the output diff
+  (PUB-9). Until this change the requirement forbade any `packages`
+  permission while the workflow granted read. The output diff in
+  `meta.json` comes from the build job's own compiles, not from the gate's
+  `output.diff`.
+
   - Test: `release/test_release.py` (partial: reproducibility and tree ID;
     the sign job's comparison by AC-6)
-  - Since: #13
+  - Since: #13, #226
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
   existing `<version>` tag, MUST fail when an existing tag points to a digest
@@ -92,8 +100,8 @@ since the documented package API has no visibility call.
   publication, listing per version: name, version, digest, tree ID,
   description, tags, license, Kapitan range, krab result, output
   capabilities, unparsed outputs, binaries, chart digests, owners, source
-  repository and SHA, the time it was first published, `yanked` with its
-  reason, and advisories (INC-1).
+  repository and SHA, the output diff summary (PUB-9), the time it was
+  first published, `yanked` with its reason, and advisories (INC-1).
 
   The index job reads the versions from the registry tags, each version's
   metadata from its config blob, and accepts only digests with a marketplace
@@ -110,7 +118,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: content and serial; publishing
     by AC-6)
-  - Since: #13
+  - Since: #13, #226
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
@@ -166,6 +174,47 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py::Sbom`; manual: fork rehearsal (2026-10-11)
   - Since: #47
+
+- PUB-9: For every version it publishes, the build job MUST diff the
+  version's fixture output against that of the newest listed version of
+  the same generator that is not yanked, and MUST record the summary in
+  `meta.json` as `output_diff`. The sign job MUST attest the diff for the
+  same digest with the predicate type `https://kadet-hub.org/output-diff/v1`.
+  A missing base and a failed fetch or compile of the base MUST be
+  recorded and MUST NOT fail the release.
+
+  The base is the newest version the latest index lists (PUB-4) that
+  neither the index nor the entry on `main` marks yanked. The build job
+  fetches the base's `source.sha` from its `source.repo` and `source.path`
+  with its charts, and compiles its fixture once in the same sandbox on the
+  first backend with `COMPILE_ONLY`, as `gate/run` does for SEC-13. The new
+  version's side is the output of the compile gate it has just passed.
+  `gate/output_diff.py` compares the two with files that have a SEC-12
+  match first, and cuts the diff after the last whole line within 1 MiB,
+  closing it with a line that names the cut. `release/output-diff` runs
+  these steps.
+
+  The record is `{base, files, hunks, sha256}`: files and hunks count the
+  whole diff, `sha256` is the hash of the attested text. It enters the
+  index with the rest of `meta.json`. When no base is listed, the index
+  cannot be read, the base cannot be fetched or its compile exits non-zero,
+  the record is `{base, error}`, with `base` null when no base was chosen,
+  and no diff is attested. Versions published before this requirement have
+  no record, and none is added later.
+
+  The sign job writes the predicate `{base, files, hunks, sha256, diff}` and
+  attests it with `actions/attest` and `predicate-path`, next to the SBOM
+  of PUB-8. JSON escaping at most sextuples the 1 MiB text, which stays
+  below the 16 MB predicate limit of `actions/attest`.
+
+  The build job reads the latest index without verifying its attestation,
+  as it reads the tags for CMP-4. Whoever can push a forged index can make
+  the diff compare with a wrong base; that base's code still runs only in
+  the sandbox.
+
+  - Test: `release/test_release.py::OutputDiff`, `gate/test_output_diff.py`;
+    manual: fork rehearsal (pending)
+  - Since: #226
 
 ## Incident response
 

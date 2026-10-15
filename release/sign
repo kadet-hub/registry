@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Sign job, before the attestations (PUB-1, PUB-2, PUB-8): compare the built
-# tar with an own fetch of the source, check the existing tags, push by
-# digest and write the SBOM of what was pushed.
+# Sign job, before the attestations (PUB-1, PUB-2, PUB-8, PUB-9): compare the
+# built tar with an own fetch of the source, check the existing tags, push by
+# digest and write the SBOM of what was pushed and the output diff predicate.
 #
 # Usage: sign <name> <built dir>
 # Needs: REGISTRY (ghcr.io/<owner>), IDENTITY (certificate identity),
 # GITHUB_REPOSITORY, GH_TOKEN, oras logged in, the main checkout as working
-# directory. Writes ref, digest, version, sbom and publish=true|false to
-# $GITHUB_OUTPUT.
+# directory. Writes ref, digest, version, sbom, diff (when the build job
+# wrote one) and publish=true|false to $GITHUB_OUTPUT.
 set -euo pipefail
 name=$1 built=$2
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -68,4 +68,8 @@ echo "$name $version: pushed $digest"
 python3 -I "$root/release/sbom.py" --tar "$tar" --meta "$meta" --ref "$ref" --digest "$digest" --out "$built/sbom.spdx.json"
 out "digest=$digest"
 out "sbom=$built/sbom.spdx.json"
+if [[ -f $built/output.diff ]]; then
+  jq -n --rawfile diff "$built/output.diff" --slurpfile meta "$meta" '$meta[0].output_diff + {diff: $diff}' >"$built/output-diff.json"
+  out "diff=$built/output-diff.json"
+fi
 out "publish=true"

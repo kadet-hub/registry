@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Build job (PUB-1, PUB-7, CMP-4): fetch every entry's source without
+# Build job (PUB-1, PUB-7, PUB-9, CMP-4): fetch every entry's source without
 # checkout, validate and build in the sandbox image without network, then
 # rerun the static checks and the compile gate for versions not yet
-# published and record the run and the krab result in meta.json.
+# published and record the run, the krab result and the output diff in
+# meta.json.
 #
 # Usage: build-all <out dir>
 # Needs: the sandbox image $SANDBOX_IMAGE, yq, jq, oras, REGISTRY, what
-# scan/static-scan, sandbox/gate-compile and release/scan-record need, the
-# main checkout. Writes the artifacts and
-# names.json to <out dir>.
+# scan/static-scan, sandbox/gate-compile, release/scan-record and
+# release/output-diff need, the main checkout. Writes the artifacts, their
+# output.diff and names.json to <out dir>.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
@@ -57,10 +58,17 @@ while IFS= read -r name; do
   if [[ -n $(ls -A -- "$work/charts-$name") ]]; then
     "$root/scan/static-scan" "$work/charts-$name" || { echo "PUB-7: $name $version: the chart scan failed"; exit 1; }
   fi
-  KRAB_RESULT=$work/krab SCHEMA_RESULT=$work/compatibility.json "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" \
+  mkdir -- "$work/out-$name"
+  KRAB_RESULT=$work/krab SCHEMA_RESULT=$work/compatibility.json OUTPUT_DIR=$work/out-$name \
+    "$root/sandbox/gate-compile" "$work/src/$name" "$name" "$work/charts-$name" | tee "$work/compile.txt" \
     || { echo "CMP-4: $name $version: the compile gate failed"; exit 1; }
   "$root/release/scan-record" "$(jq length -- "$work/exceptions.json")" >"$work/scan.json"
+  # PUB-9: never fails the release.
+  "$root/release/output-diff" "$name" "$work/out-$name" "$work/compile.txt" "$out/$name" >"$work/diff.json" \
+    || { rm -f -- "$out/$name/output.diff"; echo '{"base": null, "error": "output diff failed"}' >"$work/diff.json"; }
+  echo "PUB-9: $name $version: $(cat -- "$work/diff.json")"
   jq -c -S --arg krab "$(cat -- "$work/krab")" --slurpfile scan "$work/scan.json" --slurpfile compat "$work/compatibility.json" \
-    '.krab = $krab | .scan = $scan[0] | .compatibility = $compat[0]' -- "$meta" >"$work/meta.json"
+    --slurpfile diff "$work/diff.json" '.krab = $krab | .scan = $scan[0] | .compatibility = $compat[0] | .output_diff = $diff[0]' \
+    -- "$meta" >"$work/meta.json"
   cp -- "$work/meta.json" "$meta"
 done < <(jq -r '.[]' -- "$out/names.json")

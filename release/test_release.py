@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -130,3 +131,133 @@ class Sbom(unittest.TestCase):
         self.assertEqual(len({f["SPDXID"] for f in doc["files"]}), 4)
         self.assertEqual(len(doc["relationships"]), 5)
         json.dumps(doc)
+
+
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+REPO = "https://github.com/example/demo.git"
+# Fakes for release/output-diff and release/sign: the registry, git, and the
+# fetch and compile steps the gate's own tests cover.
+FAKES = {
+    "bin/oras": """#!/usr/bin/env bash
+case "$1 $2" in
+  "manifest fetch") [[ -n ${FAKE_INDEX:-} ]] || { echo "$4: not found" >&2; exit 1; }; echo '{"layers": [{"digest": "sha256:1"}]}' ;;
+  "blob fetch") cp -- "$FAKE_INDEX" "$4" ;;
+  "blob push" | "manifest push") ;;
+  *) echo "$*: not found" >&2; exit 1 ;;
+esac
+""",
+    "bin/git": "#!/usr/bin/env bash\nfor a; do if [[ $a == rev-parse ]]; then echo \"$FAKE_TREE\"; fi; done\n",
+    "root/gate/fetch_tree.py": """import os, sys
+a = dict(zip(sys.argv[1::2], sys.argv[2::2]))
+if a["--rev"] == "unreachable":
+    sys.exit(1)
+os.makedirs(a["--out"])
+with open(os.path.join(a["--out"], "rev"), "w") as f:
+    f.write(a["--rev"])
+""",
+    "root/gate/fetch-charts": "#!/usr/bin/env bash\nmkdir -p -- \"$2\"\n",
+    "root/sandbox/gate-compile": """#!/usr/bin/env bash
+rev=$(cat -- "$1/rev")
+[[ $COMPILE_ONLY == 1 && $rev != broken ]] || exit 1
+mkdir -p -- "$OUTPUT_DIR/compiled/t"
+printf 'rev: %s\\nport: 80\\n' "$rev" >"$OUTPUT_DIR/compiled/t/svc.yml"
+""",
+    "root/generators/demo.yaml": f"source:\n  repo: {REPO}\n  path: .\n  tag: v1.13.0\n  sha: {'c' * 40}\nyanked:\n  1.12.0: broken\n",
+}
+
+
+def listed(sha, yanked=None):
+    return {"yanked": yanked, "source": {"repo": REPO, "path": ".", "tag": "v", "sha": sha}}
+
+
+class OutputDiff(unittest.TestCase):
+    """PUB-9: release/output-diff and release/sign with fake tools."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = tmp.name
+        self.root = os.path.join(self.tmp, "root")
+        shutil.copytree(os.path.join(ROOT, "release"), os.path.join(self.root, "release"))
+        os.makedirs(os.path.join(self.root, "gate"))
+        shutil.copy(os.path.join(ROOT, "gate", "output_diff.py"), os.path.join(self.root, "gate"))
+        for rel, text in FAKES.items():
+            path = os.path.join(self.tmp, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            os.chmod(path, 0o755)
+        self.env = dict(os.environ, PATH=os.path.join(self.tmp, "bin") + os.pathsep + os.environ["PATH"],
+                        REGISTRY="ghcr.io/kadet-hub", IDENTITY="x", GITHUB_REPOSITORY="kadet-hub/registry", GH_TOKEN="x")
+
+    def output_diff(self, versions):
+        run = tempfile.mkdtemp(dir=self.tmp)
+        env = dict(self.env)
+        if versions is not None:
+            env["FAKE_INDEX"] = os.path.join(run, "index.json")
+            with open(env["FAKE_INDEX"], "w", encoding="utf-8") as f:
+                json.dump({"serial": 1, "generators": {"demo": versions}}, f)
+        os.makedirs(os.path.join(run, "new", "compiled", "t"))
+        with open(os.path.join(run, "new", "compiled", "t", "svc.yml"), "w", encoding="utf-8") as f:
+            f.write("port: 8080\n")
+        open(os.path.join(run, "compile.txt"), "w").close()
+        p = subprocess.run([os.path.join(self.root, "release", "output-diff"), "demo", os.path.join(run, "new"),
+                            os.path.join(run, "compile.txt"), run], env=env, capture_output=True, text=True, check=True)
+        diff = os.path.join(run, "output.diff")
+        if not os.path.exists(diff):
+            return json.loads(p.stdout), None
+        with open(diff, "rb") as f:
+            return json.loads(p.stdout), f.read()
+
+    def test_diff_against_the_newest_listed_version(self):
+        # 1.12.0 is yanked on main, 1.11.0 in the index; 1.10.0 sorts above 1.9.0.
+        record, diff = self.output_diff({"1.9.0": listed("s9"), "1.10.0": listed("s10"),
+                                         "1.11.0": listed("s11", "broken"), "1.12.0": listed("s12")})
+        self.assertEqual(record, {"base": "1.10.0", "files": 1, "hunks": 1, "sha256": hashlib.sha256(diff).hexdigest()})
+        self.assertIn(b"-rev: s10\n-port: 80\n+port: 8080\n", diff)
+
+    def test_missing_base_and_failures_are_recorded(self):
+        none = {"base": None, "error": "no earlier listed version"}
+        self.assertEqual(self.output_diff(None), (none, None))  # no index yet
+        self.assertEqual(self.output_diff({"1.0.0": listed("s1", "broken")}), (none, None))
+        self.assertEqual(self.output_diff({"1.0.0": listed("unreachable")}), ({"base": "1.0.0", "error": "base not fetched"}, None))
+        self.assertEqual(self.output_diff({"1.0.0": listed("broken")}), ({"base": "1.0.0", "error": "base did not compile"}, None))
+
+    def sign(self, record, diff):
+        built = os.path.join(self.tmp, "built")
+        shutil.rmtree(built, ignore_errors=True)
+        make_tree(os.path.join(built, "src"))
+        files = read_dir(os.path.join(built, "src"))
+        write_tar(files, os.path.join(built, "demo.tar"))
+        meta = {"name": "demo", "version": "1.13.0", "tree": tree_id(files), "license": "MIT", "description": "Demo",
+                "source": {"repo": REPO, "path": ".", "tag": "v1.13.0", "sha": "c" * 40}, "output_diff": record}
+        with open(os.path.join(built, "meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+        if diff is not None:
+            with open(os.path.join(built, "output.diff"), "w", encoding="utf-8") as f:
+                f.write(diff)
+        outputs = os.path.join(self.tmp, "outputs")
+        open(outputs, "w").close()
+        subprocess.run([os.path.join(self.root, "release", "sign"), "demo", built], check=True, capture_output=True,
+                       env=dict(self.env, FAKE_TREE=tree_id(files), GITHUB_OUTPUT=outputs))
+        with open(outputs, encoding="utf-8") as f:
+            return dict(line.rstrip("\n").split("=", 1) for line in f)
+
+    def test_sign_attests_the_diff_with_its_record(self):
+        record = {"base": "1.10.0", "files": 1, "hunks": 1, "sha256": "a" * 64}
+        outputs = self.sign(record, "-port: 80\n+port: 8080\n<script>\n")
+        self.assertEqual(outputs["publish"], "true")
+        with open(outputs["diff"], encoding="utf-8") as f:
+            self.assertEqual(json.load(f), dict(record, diff="-port: 80\n+port: 8080\n<script>\n"))
+        outputs = self.sign({"base": None, "error": "no earlier listed version"}, None)
+        self.assertEqual(outputs["publish"], "true")
+        self.assertNotIn("diff", outputs)
+        with open(os.path.join(ROOT, ".github", "workflows", "release.yml"), encoding="utf-8") as f:
+            workflow = f.read()
+        start = workflow.index("- name: Attest the output diff")
+        step = workflow[start:workflow.index("- name: Tag", start)]
+        for line in ("if: steps.push.outputs.publish == 'true' && steps.push.outputs.diff != ''",
+                     "subject-digest: ${{ steps.push.outputs.digest }}",
+                     "predicate-type: https://kadet-hub.org/output-diff/v1",
+                     "predicate-path: ${{ steps.push.outputs.diff }}"):
+            self.assertIn(line, step)
