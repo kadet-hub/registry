@@ -23,7 +23,9 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
 
   The privacy notice names GitHub Pages as host, its access logs with IP
   addresses, the US transfer under the EU-US Data Privacy Framework, that
-  the site loads nothing from other origins, sets no cookies and writes
+  the site loads no scripts, styles, fonts or images from other origins,
+  what the visitor counter on the operator's own GoatCounter instance
+  receives (catalog spec CAT-25), that the site sets no cookies and writes
   `localStorage` only when the visitor uses the theme toggle, and the
   rights under GDPR Articles 15 to 21. Whether §5 DDG requires an imprint
   for an unpaid project is unsettled; §18 MStV likely requires name and
@@ -31,6 +33,21 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
 
   - Test: `catalog/test_catalog.py`
   - Since: #48
+
+- LEG-1a: The imprint MUST state that the operator does not take part in
+  dispute resolution before a consumer arbitration board, and MUST carry
+  short notices on liability for own content, liability for links and
+  copyright.
+
+  The consumer dispute statement is mandatory only for traders (§ 36
+  VSBG); stating it costs nothing and answers the question before it is
+  asked. The liability and copyright notices follow the common German
+  imprint structure. They do not widen or narrow liability beyond the law
+  and are written for this site, not copied from an imprint generator,
+  so no source attribution is owed.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
 
 - LEG-2: `TERMS.md` MUST state the terms under which a generator is listed
   and republished, and the entry pull request MUST link to it.
