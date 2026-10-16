@@ -1,0 +1,46 @@
+// CAT-35: listing a new generator. Rendered with Graphviz 14.1.4; ./render regenerates listing.svg.
+digraph listing {
+  bgcolor=transparent; nodesep=0.3; ranksep=0.28;
+  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
+  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
+  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
+
+  subgraph cluster_author {
+    label="Author, own repository";
+    template [label="Repository from\ngenerator-template"];
+    scaffold [label="./scaffold, optional:\nfrom upstream CRDs"];
+    check [label="./check: gate scans and\nsandbox compile with docker"];
+    tag [label="Tag a semver"];
+    template -> scaffold -> check -> tag;
+  }
+
+  pr [label="Pull request adds only\ngenerators/<name>.yaml"];
+  tag -> pr;
+
+  subgraph cluster_gate {
+    label="Gate, from main:\lread-only token\l";
+    registration [label="Registration"];
+    source [label="Source and charts\nfetched as data"];
+    scans [label="Static scans"];
+    sandbox [label="Sandbox compile:\ngVisor, no network,\ndecoys"];
+    output [label="Output checks"];
+    diff [label="Output diff against the\napproved version"];
+    registration -> source -> scans -> sandbox -> output -> diff;
+  }
+  pr -> registration;
+
+  red [label="Gate check fails,\nmerge blocked" class="fail" style="rounded,dashed"];
+  registration -> red [label="fails" class="fail" style=dashed];
+  source -> red [label="fails" class="fail" style=dashed];
+  scans -> red [label="fails" class="fail" style=dashed];
+  sandbox -> red [label="fails" class="fail" style=dashed];
+  output -> red [label="fails" class="fail" style=dashed];
+
+  comment [label="Report comment\non every run"];
+  diff -> comment;
+  red -> comment [class="fail" style=dashed];
+  review [label="Maintainer reviews code\nand output diff, approves"];
+  merge [label="Merge, branch up to\ndate with main"];
+  comment -> review [label="gate passed"];
+  review -> merge;
+}

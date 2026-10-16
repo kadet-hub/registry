@@ -1,0 +1,6 @@
+{{- /* CAT-35a: a diagram from assets/diagrams, inline so that style.css colours it: dot's SVG from <svg> on, with title and desc added. */ -}}
+{{- $id := printf "diagram-%s" (.Get "name") -}}
+{{- $svg := (resources.Get (printf "diagrams/%s.svg" (.Get "name"))).Content -}}
+{{- $head := printf `<title id="%s-title">%s</title><desc id="%s-desc">%s</desc>` $id (.Get "title" | htmlEscape) $id (.Get "desc" | htmlEscape) -}}
+{{- $svg = replaceRE `(?s)^.*?(<svg\b[^>]*>)` (printf "${1}%s" (replace $head "$" "$$")) $svg 1 -}}
+<figure class="diagram" role="img" aria-labelledby="{{ $id }}-title" aria-describedby="{{ $id }}-desc">{{ $svg | safeHTML }}</figure>

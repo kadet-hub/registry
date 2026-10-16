@@ -290,3 +290,15 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .permalink { color: var(--text-muted); text-decoration: none; padding: 0 .25rem; opacity: .6; }
 .permalink:hover, .permalink:focus-visible { opacity: 1; color: var(--accent); }
 details.version:target { border-color: var(--accent); }
+/* Process diagrams (CAT-35a): dot's SVG coloured by class; a failure path is --warn, dashed and labelled. */
+.diagram { margin: 1.5rem 0; overflow-x: auto; }
+.diagram svg { display: block; max-width: 100%; height: auto; margin-inline: auto; pointer-events: none; }
+.diagram text { fill: var(--text); }
+.diagram .node path, .diagram .node polygon { fill: var(--surface); stroke: var(--text-muted); }
+.diagram .cluster path, .diagram .cluster polygon { fill: var(--bg-subtle); stroke: var(--border-strong); }
+.diagram .cluster > text { fill: var(--text-muted); }
+.diagram .edge path { stroke: var(--text-muted); }
+.diagram .edge polygon { fill: var(--text-muted); stroke: var(--text-muted); }
+.diagram .fail path, .diagram .fail polygon { stroke: var(--warn); }
+.diagram .edge.fail polygon { fill: var(--warn); }
+.diagram .fail text { fill: var(--warn); }

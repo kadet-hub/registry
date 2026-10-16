@@ -43,6 +43,7 @@
 {{ end }}
 <section class="steps prose" aria-labelledby="listing">
   <h2 id="listing">How a version gets listed</h2>
+  <p><a href="{{ "/guides/how-kadet-hub-works/" | relURL }}">How kadet-hub works</a> follows the whole process with diagrams, from the pull request to your compile.</p>
   <h3>Scanned</h3>
   <p>The gate scans the generator's source for leaked secrets, malware patterns and risky code before anything runs. A finding fails the pull request that registers the version.</p>
   <h3>Compiled in a sandbox</h3>

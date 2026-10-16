@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Render every diagram (CAT-35a): <name>.dot to <name>.svg with Graphviz dot,
+# output unchanged. Update the version in each .dot when dot -V changes.
+set -euo pipefail
+cd -- "$(dirname -- "$0")"
+for f in *.dot; do dot -Tsvg -o "${f%.dot}.svg" "$f"; done
