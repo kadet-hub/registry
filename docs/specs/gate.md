@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Gate
 
 Status: Approved
-Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `tests/fuzz/`, `.clusterfuzzlite/`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql,fuzz}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset.json`
+Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `tests/fuzz/`, `.clusterfuzzlite/`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql,fuzz}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset*.json`
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -88,8 +88,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
   `github-release` job, bound to the `release` environment, MAY hold
   `contents: write`, and that job MUST NOT check out or run repository
   code (PUB-12).
-  - Test: none (partial: `release.yml` permissions; the environment's
-    branch policy is set with `gh api`)
+  - Test: workflow job `workflow-lint` (partial: GI-15 checks the
+    environment binding and its branch policy; which workflow holds the
+    permissions is reviewed)
   - Since: #13, #233, #249
 
 - GI-9: `policy/entry.schema.json` MUST restrict `source.repo` to
@@ -248,6 +249,38 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
   - Since: #243, #244
+
+- GI-15: A job that holds `contents`, `packages`, `id-token`,
+  `attestations` or `pages` write, or reads a secret other than
+  `GITHUB_TOKEN`, MUST name an environment whose deployment branch policy
+  admits only the branch `main`, and MUST NOT be part of a
+  `pull_request_target` workflow. The Scorecard job's `id-token: write` is
+  exempt (GI-12).
+
+  An environment gates jobs, not tokens: a workflow pushed to any branch
+  can request every permission and read every repository secret (boundary
+  5 in [marketplace.md](marketplace.md)). What the policy holds back is the
+  environment's own secrets and its jobs on other refs. GitHub sends a job
+  that names the environment to a runner only when `GITHUB_REF` matches
+  the policy, and only such a job sees the environment's secrets. For
+  `pull_request_target` GitHub evaluates the policy against the default
+  branch since 2025-12-08, so there it admits every pull request.
+
+  The other write permissions stay outside the rule: `discussions` (the
+  catalog job), `issues` (the rescan issues job), `pull-requests` (the
+  gate's comment job, GI-4) and `security-events` (CodeQL, Scorecard).
+  None of them publishes; the comment and CodeQL jobs must run for pull
+  requests; and an environment would not limit their token.
+
+  `tests/workflow-policy` takes each job's permissions, or the workflow's
+  when the job sets none, and its `secrets` references, and reads the
+  deployment branch policies of every environment it names from the API.
+  Anything but exactly the branch `main` fails, and so does a missing
+  environment. An environment policy changed later in the settings goes
+  unnoticed until the next pull request that changes `.github/`.
+
+  - Test: workflow job `workflow-lint` (`tests/workflow-policy`)
+  - Since: this change
 
 ## Static checks
 
@@ -1295,3 +1328,26 @@ code diff and the output diff, not only the verdict.
     link, the krab result, SEC-12 matches, used exceptions and the output
     diff; capability changes are visible only through the SEC-12 lines)
   - Since: #12
+
+- REV-3: Rulesets MUST restrict creating, updating and deleting branches
+  other than `main` to the admin role, and branches under `renovate/` to
+  Renovate and the admin role.
+
+  Branches are pushed by the maintainer, by Renovate (`contents` and
+  `workflows` write on every repository of the organization) and possibly
+  by `kadet-hub-upstream`, whose selected repositories are not readable
+  with a maintainer token. The two rulesets keep Renovate to its prefix
+  and every other actor off all branches: another app, a future
+  collaborator, a deploy key, a workflow token with `contents: write`.
+  That protects the maintainer's own pull request branches, which merge
+  through the admin bypass without a second review, from commits pushed
+  by someone else.
+
+  They do not stop Renovate or the maintainer from pushing a workflow to
+  their own branches (RISK-9). A push ruleset restricting
+  `.github/workflows/` would, but GitHub offers push rulesets only on the
+  Team plan, for private and internal repositories. `main` keeps its own
+  ruleset (REV-1).
+
+  - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset-branches.json` and `.github/ruleset-renovate.json`
+  - Since: this change

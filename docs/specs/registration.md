@@ -109,9 +109,21 @@ fetched tree; this is the layout consumers use.
   week. Vulnerability fixes and the Dependency Dashboard's manual
   checkboxes are not bound to the schedule.
 
+  Renovate proposes a version only once its release is three days old
+  (`minimumReleaseAge`), and `internalChecksFilter: strict` holds back the
+  branch and the pull request until then. Updates whose datasource
+  reports no release timestamp go through at once
+  (`minimumReleaseAgeBehaviour: timestamp-optional`): the entry bumps
+  themselves (git tags), images outside Docker Hub and runner labels.
+  Renovate's default since version 42 would hold them indefinitely.
+  Security updates are not delayed (RISK-11).
+
   - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
-    entries (partial: no CI check)
-  - Since: #6
+    entries (partial: no CI check). On 2026-10-16 the lookup with
+    Renovate 44.161.2 held codeql-action 4.39.0, ruff 0.17.1 and semgrep
+    1.181.0, each released less than three days before, and proposed the
+    argocd and cilium entry bumps.
+  - Since: #6; release age: this change
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
