@@ -285,10 +285,10 @@ cover none of the changed files.
   bypass of the `main` ruleset is in `pull_request` mode, so a merge that
   leaves the ruleset unchanged still goes through a pull request.
 
-  Not mitigated: the maintainer's `gh` CLI holds an OAuth token without
-  expiry and with the `repo` and `workflow` scopes; `repo` is the scope
-  GitHub's API asks for to change an environment. Fine-grained tokens
-  scoped to a task and without Administration would narrow this.
+  Not mitigated: the maintainer works with long-lived command-line
+  credentials that can write repositories and workflows, which is enough
+  to change environments and rulesets. Short-lived, fine-grained
+  credentials scoped to a task would narrow this.
 
 - RISK-2: payloads keyed on consumer inventory values or on detecting the
   sandbox stay inert in the gate. CON-1 bounds them at the consumer.
