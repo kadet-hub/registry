@@ -14,7 +14,7 @@ on:
       - .github/ISSUE_TEMPLATE/**
       - .github/pull_request_template.md
       - .github/CODEOWNERS
-      - .github/ruleset.json
+      - .github/ruleset*.json
       - .github/workflows/selftest.yml
       - .github/workflows/consumer-selftest.yml
       - .github/workflows/catalog-tests.yml
