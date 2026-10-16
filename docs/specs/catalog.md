@@ -228,6 +228,82 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #245
 
+- CAT-33: The site MUST have a page at `/stats/` with a section for the
+  pulls of every generator, one for the versions published and yanked per
+  month, and one for the entry pull requests the gate rejected, by
+  requirement. The page MUST name its data sources and build time, and
+  the footer and `/llms.txt` MUST link it.
+
+  Cards and the popularity page show numbers per generator; nothing showed
+  them across the registry, or how often the gate turns an entry away. Each
+  section is an `h2` with tables (CAT-9, CAT-11b). The page has no Markdown
+  variant (CAT-28). It shows no visitor numbers: the page views stay on the
+  GoatCounter instance of CAT-25, and the build does not read them.
+
+  Pulls are the totals the build already reads for CAT-23, most first; a
+  package page that could not be read shows "not read" and adds nothing to
+  the total. The previous build's `catalog.json` holds one total per
+  generator, that build's, and no series, so the page shows no history.
+
+  A version counts in the month of its `published` time in the index
+  (PUB-4). The index records a yank with its reason and without a time, so
+  a yanked version counts as yanked in the month it was published, and the
+  page says so.
+
+  The catalog job reads every pull request of the registry with one
+  paginated `gh api graphql` query, with `pull-requests: read`: the paths
+  it changes (the first 100) and each comment with its author, body and
+  edit history. The gate keeps one comment per pull request and edits it on
+  every run (REV-2), so the edit history holds one version per run. An entry
+  pull request changes a file `generators/<name>.yaml` and has a gate
+  comment: a comment by `github-actions` that starts with the marker
+  `<!-- kadet-hub-gate -->`; a comment by anyone else with the marker does
+  not count. It is rejected when one version of its comment reads
+  `**gate: failed**`. An offline build reads the pull requests from
+  `CATALOG_GATE`. When they cannot be read, the job warns and the section
+  says the results were not read.
+
+  The comment job writes `New entry; source tree:` or `Code diff since the
+  approved version:` above the report, from the gate's `entry.json`. A pull
+  request with a compare link in one version is an update, one with a
+  source tree a new entry, and any other, such as a removal or a pull
+  request the gate stopped before writing `entry.json`, is "other".
+
+  The gate prints a finding as a line that starts with its requirement ID,
+  such as `CMP-5: output differs with --cache on omegaconf:`, and prints
+  lines of the same form for checks that passed: `QA-6: tag <tag>:
+  <evidence>`, `QA-7`, `QA-8`, `QA-10` and `QA-11: validated against`,
+  `CMP-4: krab <result>` and `SEC-12: declared`. Its section `## Output
+  diff` holds no finding: SEC-13, the QA-7 schema changes and the approved
+  version's compile, which is reported and not judged. A requirement counts
+  for a rejected pull request when a failed version's report has, before
+  `## Output diff`, a line that starts with `GI-`, `REG-`, `SEC-`, `QA-` or
+  `CMP-`, a number, an optional letter and `: `, and is none of those pass
+  lines (`PASSED` in `catalog/view.py`). In #191 that leaves CMP-5 of the
+  six requirement IDs the report names. A gate change that adds a pass line
+  of this form must add it to `PASSED`, or the page counts it as a reason.
+
+  The static scan prints its findings by tool, such as `guarddog:
+  threat-filesystem-destruction: 1` (SEC-2); a failed version without a
+  requirement line counts as "no requirement ID in the report", and tool
+  names are not mapped to requirements. A pull request counts once per
+  requirement, so it can count in several rows.
+
+  The report holds text from the entry and the generator's compile output,
+  so a generator can print a line that reads like a finding. Of a comment,
+  only the verdict, the kind of entry and the IDs that match the pattern
+  reach `catalog.json`, and the page shows them with counts.
+
+  On 2026-10-16 the gate had commented on 97 entry pull requests: 37 new
+  entries, 59 updates and one removal. Their current comments showed one
+  rejected pull request, the edit history three, one of each kind: CMP-5,
+  REG-1 and REG-9, and one failed run named only GuardDog. The 36
+  generators had 11,659 pulls; the 94 versions were all published in
+  2026-10, one of them yanked.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
 - CAT-14: The card MUST show the date of the latest version's scan record
   and the version page the full record with a link to the release run;
   the page MUST offer the version's SBOM for download, taken from its
@@ -435,7 +511,8 @@ remembered in the browser's `localStorage`.
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
   its `AGENTS.md`, the tags, the kinds (CAT-29), the compatibility page
-  (CAT-30), the wanted page (CAT-31), the glossary, the gate's policy files,
+  (CAT-30), the wanted page (CAT-31), the statistics page (CAT-33), the
+  glossary, the gate's policy files,
   and the Markdown variant (CAT-28) of every generator with a listed version
   and of every guide.
 
@@ -459,7 +536,7 @@ remembered in the browser's `localStorage`.
   CAT-27 are removed. Markup in it is kept as typed.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #51, #231, #235, #242, #245
+  - Since: #51, #231, #235, #242, #245, this change
 
 - CAT-28: Every generator page and every guide MUST have a Markdown variant
   at `index.md` next to its `index.html`, and `sitemap.xml` MUST NOT list

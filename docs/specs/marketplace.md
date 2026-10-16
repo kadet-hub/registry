@@ -373,7 +373,7 @@ coverage is named at each:
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/{consumer-selftest,catalog-tests,release-tests}.yml` | CI-1: `consumer-selftest`, `catalog-tests`, `release-tests` |
-| `.github/workflows/release.yml` | PUB-1 to PUB-12, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, index and catalog |
+| `.github/workflows/release.yml` | PUB-1 to PUB-12, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-12: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
@@ -384,7 +384,7 @@ coverage is named at each:
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |
 | `release/scan-record`, `release/sbom.py` | PUB-7, PUB-8 |
-| `catalog/` | CAT-1 to CAT-32a: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC); `static/count.js` from GoatCounter (ISC, CAT-25) |
+| `catalog/` | CAT-1 to CAT-33: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC); `static/count.js` from GoatCounter (ISC, CAT-25) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
