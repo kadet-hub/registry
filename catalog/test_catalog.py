@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -953,6 +954,122 @@ class Site(unittest.TestCase):
             out = build({"serial": 1, "generators": {}}, tmp)
             with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
                 self.assertIn("No generators listed yet", f.read())
+
+
+def built_for(software, version):
+    return {"software": software, "version": version, "source": f"https://example.org/{version}"}
+
+
+# CAT-34: listed versions built for one or two products, an older upstream version, markup in a software name,
+# a yanked and an unrecorded version, a generator without records and one without a listed version.
+EVIL = '<script>alert(9)</script> "Q" & co'
+CM, TM = built_for("cert-manager", "1.21.2"), built_for("trust-manager", "0.25.0")
+MATCH_INDEX = {"serial": 3, "generators": {
+    "certmanager": {"1.0.1": dict(record("a"), compatibility=[CM, TM]), "1.0.0": dict(record("b"), compatibility=[CM, TM, CM]),
+                    "0.9.0": dict(record("c"), compatibility=[built_for("cert-manager", "1.19.4"), built_for(EVIL, "1")]),
+                    "0.8.0": dict(record("d", yanked="broken"), compatibility=[built_for("cert-manager", "1.18.0")]), "0.7.0": record("e")},
+    "kube": {"2.0.0": dict(record("f"), compatibility=[built_for("Kubernetes", "1.37.1"), CM])},
+    "bare": {"1.0.0": record("g")},
+    "gone": {"1.0.0": dict(record("h", yanked="entry removed"), compatibility=[built_for("Gone", "1.0.0")])},
+}}
+
+
+class Match(unittest.TestCase):  # CAT-34
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.out = build(MATCH_INDEX, cls.tmp.name)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    @staticmethod
+    def table(html):
+        """(link, name, built for as text) of every row of the versions table."""
+        start = html.index('<table class="built">')
+        rows = re.findall(r'<tr><th scope="row"><a href="([^"]+)">([^<]+)</a></th><td>(.*?)</td></tr>', html[start:html.index("</table>", start)])
+        return [(href, name, _unescape(re.sub(r"<[^>]+>", "", cell.replace("<br>", ", ")))) for href, name, cell in rows]
+
+    @staticmethod
+    def selector(html):
+        """{software: suggested versions} of the selector, in the order of its options."""
+        form = html[html.index('<form class="match-form" hidden>'):html.index("</form>")]
+        lists = dict(re.findall(r'<datalist id="(match-[0-9]+)">(.*?)</datalist>', form))
+        return {_unescape(s): re.findall(r'<option value="([^"]*)">', lists[i])
+                for i, s in re.findall(r'<option data-list="(match-[0-9]+)">([^<]*)</option>', form)}
+
+    def test_versions_table_without_javascript(self):  # CAT-34
+        html = self.page("generators", "certmanager")
+        self.assertIn('<thead><tr><th scope="col">Version</th><th scope="col">Built for (schema-checked)</th></tr></thead>', html)
+        self.assertEqual(self.table(html), [
+            ("#v1.0.1", "1.0.1", "cert-manager 1.21.2, trust-manager 0.25.0"),
+            ("#v1.0.0", "1.0.0", "cert-manager 1.21.2, trust-manager 0.25.0"),
+            ("#v0.9.0", "0.9.0", f"cert-manager 1.19.4, {EVIL} 1"),
+            ("#v0.7.0", "0.7.0", "not recorded")])  # the yanked 0.8.0 is left out
+        self.assertIn('id="v0.8.0"', html)  # and stays in the list below
+        self.assertLess(html.index('<form class="match-form" hidden>'), html.index('<table class="built">'))  # hidden without JavaScript
+        self.assertLess(html.index('<table class="built">'), html.index('id="v1.0.1"'))
+        bare = self.page("generators", "bare")
+        self.assertEqual(self.table(bare), [("#v1.0.0", "1.0.0", "not recorded")])
+        self.assertNotIn("match-form", bare)  # nothing to select
+        self.assertNotIn('class="built"', self.page("generators", "gone"))
+
+    def test_selector_one_product_at_a_time(self):  # CAT-34a
+        html = self.page("generators", "certmanager")
+        self.assertIn('<label for="match-software">I run</label>', html)
+        self.assertEqual(self.selector(html), {EVIL: ["1"], "cert-manager": ["1.21.2", "1.19.4"], "trust-manager": ["0.25.0"]})
+        self.assertEqual(list(self.selector(html)), [EVIL, "cert-manager", "trust-manager"])
+        self.assertEqual(html.count('<span data-software="cert-manager" data-version="1.21.2">cert-manager 1.21.2</span>'), 2)
+
+    def test_software_names_are_escaped(self):  # CAT-34a, CAT-3
+        escaped = "&lt;script&gt;alert(9)&lt;/script&gt; &#34;Q&#34; &amp; co"
+        for html in (self.page("generators", "certmanager"), self.page("compatibility")):
+            self.assertNotIn("<script>alert(9)", html)
+            self.assertIn(f'<span data-software="{escaped}" data-version="1">{escaped} 1</span>', html)
+            self.assertIn(f'<option data-list="match-0">{escaped}</option>', html)
+        with open(os.path.join(HERE, "site", "static", "site.js"), encoding="utf-8") as f:
+            self.assertNotRegex(f.read(), r"innerHTML|outerHTML|insertAdjacentHTML|document\.write")
+
+    def test_compatibility_page_selector(self):  # CAT-34c, CAT-26
+        html = self.page("compatibility")
+        self.assertLess(html.index('<table class="compat">'), html.index('<h2 id="built-for">'))
+        self.assertLess(html.index('<h2 id="built-for">'), html.index('<table class="built">'))
+        both = "cert-manager 1.21.2, trust-manager 0.25.0"
+        self.assertEqual(self.table(html), [
+            ("../generators/bare/#v1.0.0", "bare 1.0.0", "not recorded"),
+            ("../generators/certmanager/#v1.0.1", "certmanager 1.0.1", both),
+            ("../generators/certmanager/#v1.0.0", "certmanager 1.0.0", both),
+            ("../generators/certmanager/#v0.9.0", "certmanager 0.9.0", f"cert-manager 1.19.4, {EVIL} 1"),
+            ("../generators/certmanager/#v0.7.0", "certmanager 0.7.0", "not recorded"),
+            ("../generators/kube/#v2.0.0", "kube 2.0.0", "Kubernetes 1.37.1, cert-manager 1.21.2")])
+        self.assertEqual(self.selector(html), {EVIL: ["1"], "Kubernetes": ["1.37.1"], "cert-manager": ["1.21.2", "1.19.4"],
+                                               "trust-manager": ["0.25.0"]})
+
+    def test_seo(self):  # CAT-11d over the new markup
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_consumer_docs_lookup(self):  # CAT-34d
+        with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
+            doc = f.read()
+        start = doc.index("\n## Picking a version by what it is built for\n")
+        section = doc[start:doc.index("\n## ", start + 1)]
+        command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq .*?)\n```", section, re.S).group(1)
+        result = subprocess.run(shlex.split(command) + [os.path.join(self.out, "catalog.json")], capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout, f"1.0.1 sha256:{'a' * 64}\n1.0.0 sha256:{'b' * 64}\n")  # not the yanked 0.8.0
+        recipe = json.loads(re.search(r"```json\n(.*?)\n```", section, re.S).group(1))
+        (name, datasource), = recipe["customDatasources"].items()
+        self.assertEqual(datasource["defaultRegistryUrlTemplate"], "https://kadet-hub.org/catalog.json")
+        self.assertEqual([m["datasourceTemplate"] for m in recipe["customManagers"]], [f"custom.{name}"])
+        self.assertIn({"matchDatasources": ["docker"], "matchPackageNames": ["ghcr.io/kadet-hub/certmanager"], "enabled": False},
+                      recipe["packageRules"])
+        self.assertIn("not signed", section)
+        self.assertIn("(specs/consumers.md)", section)  # CON-2
 
 
 class View(unittest.TestCase):
