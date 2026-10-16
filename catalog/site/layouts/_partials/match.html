@@ -1,0 +1,24 @@
+{{/* CAT-34: the listed versions with what each is built for, and the selector site.js runs over them.
+     dict: generators (list), names (true: rows name their generator and link its page, for /compatibility/). */}}
+{{ $names := .names }}
+{{ $software := slice }}
+{{ range .generators }}{{ range .versions }}{{ if not .yanked }}{{ range .compatibility }}{{ $software = $software | append .software }}{{ end }}{{ end }}{{ end }}{{ end }}
+{{ $generators := .generators }}
+{{ with $software | uniq | sort }}
+<form class="match-form" hidden>
+  <label for="match-software">I run</label>
+  <select id="match-software" name="software">{{ range $i, $s := . }}<option data-list="match-{{ $i }}">{{ $s }}</option>{{ end }}</select>
+  <input id="match-version" name="version" list="match-0" placeholder="version" aria-label="Version you run" autocomplete="off" spellcheck="false">
+  {{ range $i, $s := . }}{{ $versions := slice }}{{ range $generators }}{{ range .versions }}{{ if not .yanked }}{{ range .compatibility }}{{ if eq .software $s }}{{ $versions = $versions | append .version }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}
+  <datalist id="match-{{ $i }}">{{ range $versions | uniq }}<option value="{{ . }}"></option>{{ end }}</datalist>{{ end }}
+</form>
+<p class="match-result" role="status"></p>
+{{ end }}
+<table class="built">
+<thead><tr><th scope="col">Version</th><th scope="col">Built for (schema-checked)</th></tr></thead>
+<tbody>
+{{ range .generators }}{{ $g := .name }}{{ range .versions }}{{ if not .yanked }}
+<tr><th scope="row"><a href="{{ if $names }}{{ printf "/generators/%s/#v%s" $g .version | relURL }}{{ else }}#v{{ .version }}{{ end }}">{{ if $names }}{{ $g }} {{ end }}{{ .version }}</a></th><td>{{ range $i, $c := .compatibility }}{{ if $i }}<br>{{ end }}<span data-software="{{ $c.software }}" data-version="{{ $c.version }}">{{ $c.software }} {{ $c.version }}</span>{{ else }}not recorded{{ end }}</td></tr>
+{{ end }}{{ end }}{{ end }}
+</tbody>
+</table>
