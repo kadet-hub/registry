@@ -6,6 +6,7 @@ on:
     paths:
       - catalog/**
       - policy/tags.yaml
+      - docs/consumers.md # CAT-34d: the tests run its jq example
       - .github/actions/setup-hugo/**
       - .github/workflows/catalog-tests.yml
   workflow_dispatch:

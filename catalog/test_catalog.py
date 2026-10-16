@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -9,6 +10,7 @@ import tarfile
 import tempfile
 import unittest
 import urllib.parse
+import xml.etree.ElementTree as ET
 from html import unescape as _unescape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -387,7 +389,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 5)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 6)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -478,10 +480,32 @@ class Site(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.out, "og.png")))
         guides = self.page("guides")
         for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators",
-                     "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api"):
+                     "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api", "how-kadet-hub-works"):
             self.assertIn(f"guides/{slug}/", guides)
             self.page("guides", slug)
         self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
+
+    def test_how_kadet_hub_works(self):  # CAT-35, CAT-35a, CAT-28, CAT-11b
+        html = self.page("guides", "how-kadet-hub-works")
+        main = html[html.index("<main"):html.index("</main>")]
+        figures = re.findall(r'<figure class="diagram" role="img" aria-labelledby="diagram-([a-z]+)-title" aria-describedby="diagram-\1-desc">'
+                             r'<svg\b[^>]*>\s*<title id="diagram-\1-title">[^<]+</title><desc id="diagram-\1-desc">[^<]+</desc>', main)
+        self.assertEqual(figures, ["overview", "listing", "release", "consuming", "upstream", "withdraw"])
+        for name in figures[1:]:  # every process: its diagram, then its steps
+            after = main.split(f'aria-labelledby="diagram-{name}-title"')[1].split("</figure>", 1)[1]
+            self.assertTrue(after.lstrip().startswith("<ol>"), name)
+        self.assertNotRegex(main, r"<style\b| style=|<\?xml|<!DOCTYPE")
+        table = main[main.index("<table>"):main.index("</table>")]
+        self.assertIn(">REG-1 to REG-6, REG-8</a>", table)
+        text = re.sub(r"<[^>]+>", " ", main.replace(table, ""))  # requirement IDs only in the stage table
+        self.assertNotRegex(text, r"\b(?:GI|REG|SEC|QA|CMP|PUB|CON|CAT|UPD|INC|DEC)-\d")
+        md = self.markdown("guides", "how-kadet-hub-works")
+        self.assertTrue(md.startswith("# How kadet-hub works\n\nA generator lives in its author's repository."))
+        self.assertRegex(md, r"\n## Listing a new generator\n+1\. The author creates a repository from\n")
+        for gone in ("{{", "<svg", "<figure", 'name="'):
+            self.assertNotIn(gone, md)
+        listing = self.page()[self.page().index('<h2 id="listing">'):]
+        self.assertIn('<a href="./guides/how-kadet-hub-works/">How kadet-hub works</a>', listing.split("<h3>")[0])
 
     def test_version_permalinks_and_transparency_log(self):
         html = self.page("generators", "demo")
@@ -772,7 +796,7 @@ class Site(unittest.TestCase):
 
     def test_headings_skip_no_level(self):
         for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"), ("kinds",),
-                      ("compatibility",), ("wanted",), ("stats",)):
+                      ("compatibility",), ("wanted",), ("stats",), ("guides", "how-kadet-hub-works")):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
             for before, after in zip(levels, levels[1:]):
@@ -953,6 +977,164 @@ class Site(unittest.TestCase):
             out = build({"serial": 1, "generators": {}}, tmp)
             with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
                 self.assertIn("No generators listed yet", f.read())
+
+
+DIAGRAMS = os.path.join(HERE, "site", "assets", "diagrams")
+
+
+def svg_findings(text):
+    """CAT-35a: what the CSP blocks in an inline SVG, or what loads another document."""
+    found = []
+    for el in ET.fromstring(text).iter():
+        tag = el.tag.rsplit("}", 1)[-1]
+        if tag in ("style", "script"):
+            found.append(f"<{tag}>")
+        for attr, value in el.attrib.items():
+            attr = attr.rsplit("}", 1)[-1]
+            if attr == "style" or attr.startswith("on") or (attr == "href" and not value.startswith("#")):
+                found.append(f"{tag} {attr}={value}")
+    return found
+
+
+class Diagrams(unittest.TestCase):
+    def test_diagram_svgs(self):  # CAT-35a
+        names = sorted(f.removesuffix(".dot") for f in os.listdir(DIAGRAMS) if f.endswith(".dot"))
+        self.assertEqual(names, ["consuming", "listing", "overview", "release", "upstream", "withdraw"])
+        self.assertEqual(names, sorted(f.removesuffix(".svg") for f in os.listdir(DIAGRAMS) if f.endswith(".svg")))
+        for name in names:
+            with open(os.path.join(DIAGRAMS, f"{name}.svg"), encoding="utf-8") as f:
+                svg = f.read()
+            with open(os.path.join(DIAGRAMS, f"{name}.dot"), encoding="utf-8") as f:
+                dot = f.read()
+            self.assertEqual(svg_findings(svg), [], name)
+            version = re.search(r"Generated by graphviz version (\S+)", svg).group(1)
+            self.assertIn(f"Rendered with Graphviz {version};", dot, name)
+            self.assertLessEqual(float(re.search(r'<svg width="([\d.]+)pt"', svg).group(1)), 340, name)  # readable at 360 px
+            fails = re.findall(r'<g id="[^"]+" class="(?:node|edge) fail">.*?</g>', svg, re.S)
+            for group in fails:
+                self.assertIn('stroke-dasharray="', group, name)  # never colour alone
+            if fails:
+                self.assertIn(">fails</text>", svg, name)
+        for bad in ("<style>text { fill: red }</style>", '<g style="fill: red"/>', "<script>alert(1)</script>", '<g onload="alert(1)"/>',
+                    '<a xlink:href="https://example.org/x"/>', '<image href="//example.org/x.png"/>'):
+            svg = f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">{bad}</svg>'
+            self.assertNotEqual(svg_findings(svg), [], bad)
+        self.assertEqual(svg_findings('<svg xmlns="http://www.w3.org/2000/svg"><use href="#i-x"/></svg>'), [])
+
+def built_for(software, version):
+    return {"software": software, "version": version, "source": f"https://example.org/{version}"}
+
+
+# CAT-34: listed versions built for one or two products, an older upstream version, markup in a software name,
+# a yanked and an unrecorded version, a generator without records and one without a listed version.
+EVIL = '<script>alert(9)</script> "Q" & co'
+CM, TM = built_for("cert-manager", "1.21.2"), built_for("trust-manager", "0.25.0")
+MATCH_INDEX = {"serial": 3, "generators": {
+    "certmanager": {"1.0.1": dict(record("a"), compatibility=[CM, TM]), "1.0.0": dict(record("b"), compatibility=[CM, TM, CM]),
+                    "0.9.0": dict(record("c"), compatibility=[built_for("cert-manager", "1.19.4"), built_for(EVIL, "1")]),
+                    "0.8.0": dict(record("d", yanked="broken"), compatibility=[built_for("cert-manager", "1.18.0")]), "0.7.0": record("e")},
+    "kube": {"2.0.0": dict(record("f"), compatibility=[built_for("Kubernetes", "1.37.1"), CM])},
+    "bare": {"1.0.0": record("g")},
+    "gone": {"1.0.0": dict(record("h", yanked="entry removed"), compatibility=[built_for("Gone", "1.0.0")])},
+}}
+
+
+class Match(unittest.TestCase):  # CAT-34
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.out = build(MATCH_INDEX, cls.tmp.name)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    @staticmethod
+    def table(html):
+        """(link, name, built for as text) of every row of the versions table."""
+        start = html.index('<table class="built">')
+        rows = re.findall(r'<tr><th scope="row"><a href="([^"]+)">([^<]+)</a></th><td>(.*?)</td></tr>', html[start:html.index("</table>", start)])
+        return [(href, name, _unescape(re.sub(r"<[^>]+>", "", cell.replace("<br>", ", ")))) for href, name, cell in rows]
+
+    @staticmethod
+    def selector(html):
+        """{software: suggested versions} of the selector, in the order of its options."""
+        form = html[html.index('<form class="match-form" hidden>'):html.index("</form>")]
+        lists = dict(re.findall(r'<datalist id="(match-[0-9]+)">(.*?)</datalist>', form))
+        return {_unescape(s): re.findall(r'<option value="([^"]*)">', lists[i])
+                for i, s in re.findall(r'<option data-list="(match-[0-9]+)">([^<]*)</option>', form)}
+
+    def test_versions_table_without_javascript(self):  # CAT-34
+        html = self.page("generators", "certmanager")
+        self.assertIn('<thead><tr><th scope="col">Version</th><th scope="col">Built for (schema-checked)</th></tr></thead>', html)
+        self.assertEqual(self.table(html), [
+            ("#v1.0.1", "1.0.1", "cert-manager 1.21.2, trust-manager 0.25.0"),
+            ("#v1.0.0", "1.0.0", "cert-manager 1.21.2, trust-manager 0.25.0"),
+            ("#v0.9.0", "0.9.0", f"cert-manager 1.19.4, {EVIL} 1"),
+            ("#v0.7.0", "0.7.0", "not recorded")])  # the yanked 0.8.0 is left out
+        self.assertIn('id="v0.8.0"', html)  # and stays in the list below
+        self.assertLess(html.index('<form class="match-form" hidden>'), html.index('<table class="built">'))  # hidden without JavaScript
+        self.assertLess(html.index('<table class="built">'), html.index('id="v1.0.1"'))
+        bare = self.page("generators", "bare")
+        self.assertEqual(self.table(bare), [("#v1.0.0", "1.0.0", "not recorded")])
+        self.assertNotIn("match-form", bare)  # nothing to select
+        self.assertNotIn('class="built"', self.page("generators", "gone"))
+
+    def test_selector_one_product_at_a_time(self):  # CAT-34a
+        html = self.page("generators", "certmanager")
+        self.assertIn('<label for="match-software">I run</label>', html)
+        self.assertEqual(self.selector(html), {EVIL: ["1"], "cert-manager": ["1.21.2", "1.19.4"], "trust-manager": ["0.25.0"]})
+        self.assertEqual(list(self.selector(html)), [EVIL, "cert-manager", "trust-manager"])
+        self.assertEqual(html.count('<span data-software="cert-manager" data-version="1.21.2">cert-manager 1.21.2</span>'), 2)
+
+    def test_software_names_are_escaped(self):  # CAT-34a, CAT-3
+        escaped = "&lt;script&gt;alert(9)&lt;/script&gt; &#34;Q&#34; &amp; co"
+        for html in (self.page("generators", "certmanager"), self.page("compatibility")):
+            self.assertNotIn("<script>alert(9)", html)
+            self.assertIn(f'<span data-software="{escaped}" data-version="1">{escaped} 1</span>', html)
+            self.assertIn(f'<option data-list="match-0">{escaped}</option>', html)
+        with open(os.path.join(HERE, "site", "static", "site.js"), encoding="utf-8") as f:
+            self.assertNotRegex(f.read(), r"innerHTML|outerHTML|insertAdjacentHTML|document\.write")
+
+    def test_compatibility_page_selector(self):  # CAT-34c, CAT-26
+        html = self.page("compatibility")
+        self.assertLess(html.index('<table class="compat">'), html.index('<h2 id="built-for">'))
+        self.assertLess(html.index('<h2 id="built-for">'), html.index('<table class="built">'))
+        both = "cert-manager 1.21.2, trust-manager 0.25.0"
+        self.assertEqual(self.table(html), [
+            ("../generators/bare/#v1.0.0", "bare 1.0.0", "not recorded"),
+            ("../generators/certmanager/#v1.0.1", "certmanager 1.0.1", both),
+            ("../generators/certmanager/#v1.0.0", "certmanager 1.0.0", both),
+            ("../generators/certmanager/#v0.9.0", "certmanager 0.9.0", f"cert-manager 1.19.4, {EVIL} 1"),
+            ("../generators/certmanager/#v0.7.0", "certmanager 0.7.0", "not recorded"),
+            ("../generators/kube/#v2.0.0", "kube 2.0.0", "Kubernetes 1.37.1, cert-manager 1.21.2")])
+        self.assertEqual(self.selector(html), {EVIL: ["1"], "Kubernetes": ["1.37.1"], "cert-manager": ["1.21.2", "1.19.4"],
+                                               "trust-manager": ["0.25.0"]})
+
+    def test_seo(self):  # CAT-11d over the new markup
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_consumer_docs_lookup(self):  # CAT-34d
+        with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
+            doc = f.read()
+        start = doc.index("\n## Picking a version by what it is built for\n")
+        section = doc[start:doc.index("\n## ", start + 1)]
+        command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq .*?)\n```", section, re.S).group(1)
+        result = subprocess.run(shlex.split(command) + [os.path.join(self.out, "catalog.json")], capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout, f"1.0.1 sha256:{'a' * 64}\n1.0.0 sha256:{'b' * 64}\n")  # not the yanked 0.8.0
+        recipe = json.loads(re.search(r"```json\n(.*?)\n```", section, re.S).group(1))
+        (name, datasource), = recipe["customDatasources"].items()
+        self.assertEqual(datasource["defaultRegistryUrlTemplate"], "https://kadet-hub.org/catalog.json")
+        self.assertEqual([m["datasourceTemplate"] for m in recipe["customManagers"]], [f"custom.{name}"])
+        self.assertIn({"matchDatasources": ["docker"], "matchPackageNames": ["ghcr.io/kadet-hub/certmanager"], "enabled": False},
+                      recipe["packageRules"])
+        self.assertIn("not signed", section)
+        self.assertIn("(specs/consumers.md)", section)  # CON-2
 
 
 class View(unittest.TestCase):

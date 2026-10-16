@@ -12,6 +12,10 @@
 {{ end }}
 </tbody>
 </table>
+{{/* CAT-34c: every listed version, with the selector of the generator pages. */}}
+<h2 id="built-for">Which version is built for the software you run</h2>
+<p>Every listed version of every generator, with what its output was schema-checked against. Choose the software and type the version you run to see the versions built for exactly that version.</p>
+{{ partial "match.html" (dict "generators" . "names" true) }}
 {{ else }}
 <p class="empty">No generator is listed yet.</p>
 {{ end }}

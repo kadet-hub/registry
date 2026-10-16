@@ -458,12 +458,12 @@ coverage is named at each:
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
-| `docs/consumers.md` | CON-2, CON-3, PUB-12 |
+| `docs/consumers.md` | CON-2, CON-3, PUB-12, CAT-34d |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |
 | `release/scan-record`, `release/sbom.py` | PUB-7, PUB-8 |
-| `catalog/` | CAT-1 to CAT-33: Hugo site, `build` script, `test_catalog.py`; icons from lucide-static 1.55.0 (ISC); `static/count.js` from GoatCounter (ISC, CAT-25) |
+| `catalog/` | CAT-1 to CAT-35: Hugo site, `build` script, `test_catalog.py`, Graphviz diagrams in `site/assets/diagrams/`; icons from lucide-static 1.55.0 (ISC); `static/count.js` from GoatCounter (ISC, CAT-25) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |

@@ -214,6 +214,15 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
 .pill.warn { background: var(--warn-bg); color: var(--warn); }
 .warning { color: var(--warn); font-weight: 600; }
+/* CAT-34: listed versions with what they are built for, and the selector over them. */
+.match-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1.25rem 0 .5rem; }
+.match-form select, .match-form input { min-height: 44px; max-width: 100%; padding: 0 .7rem; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }
+.match-form input { width: 10rem; }
+.match-result:empty { display: none; }
+.built { width: 100%; table-layout: fixed; border-collapse: collapse; margin: .75rem 0 1.5rem; font-size: .9rem; background: var(--surface); }
+.built th, .built td { padding: .5rem .7rem; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+.built thead th { background: var(--bg-subtle); }
+.built th:first-child { width: 40%; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
@@ -281,3 +290,15 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .permalink { color: var(--text-muted); text-decoration: none; padding: 0 .25rem; opacity: .6; }
 .permalink:hover, .permalink:focus-visible { opacity: 1; color: var(--accent); }
 details.version:target { border-color: var(--accent); }
+/* Process diagrams (CAT-35a): dot's SVG coloured by class; a failure path is --warn, dashed and labelled. */
+.diagram { margin: 1.5rem 0; overflow-x: auto; }
+.diagram svg { display: block; max-width: 100%; height: auto; margin-inline: auto; pointer-events: none; }
+.diagram text { fill: var(--text); }
+.diagram .node path, .diagram .node polygon { fill: var(--surface); stroke: var(--text-muted); }
+.diagram .cluster path, .diagram .cluster polygon { fill: var(--bg-subtle); stroke: var(--border-strong); }
+.diagram .cluster > text { fill: var(--text-muted); }
+.diagram .edge path { stroke: var(--text-muted); }
+.diagram .edge polygon { fill: var(--text-muted); stroke: var(--text-muted); }
+.diagram .fail path, .diagram .fail polygon { stroke: var(--warn); }
+.diagram .edge.fail polygon { fill: var(--warn); }
+.diagram .fail text { fill: var(--warn); }

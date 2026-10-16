@@ -2,7 +2,7 @@
 {{ $owner := site.Data.catalog.owner }}
 {{ $page := . }}
 {{ range where site.Data.catalog.generators "name" .Params.generator }}
-{{ $name := .name }}{{ $shared := .stars_shared }}
+{{ $name := .name }}{{ $shared := .stars_shared }}{{ $gen := . }}
 <article class="generator">
 <header class="generator-head">
   <span class="monogram large hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
@@ -63,6 +63,7 @@
 <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk, and review the compiled output before you apply it. <a href="https://github.com/{{ $owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
 <p class="note">This catalog was built from index serial {{ site.Data.catalog.serial }}. Set <code>index_serial: {{ site.Data.catalog.serial }}</code> in <code>.kapitan-sandbox.yaml</code> and the consumer workflow refuses any older index, so a rolled-back index cannot bring back a yanked version.</p>
 <p class="note">Checks find known patterns; they do not prove a generator safe. <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#what-a-listing-covers">What a listing covers</a></p>
+{{ partial "match.html" (dict "generators" (slice $gen) "names" false) }}
 {{ end }}
 {{ range $i, $v := .versions }}
 <details class="version{{ if .yanked }} yanked{{ end }}" id="v{{ .version }}"{{ if eq $i 0 }} open{{ end }}>

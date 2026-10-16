@@ -1,0 +1,33 @@
+// CAT-35: using a generator. Rendered with Graphviz 14.1.4; ./render regenerates consuming.svg.
+digraph consuming {
+  bgcolor=transparent; nodesep=0.3; ranksep=0.28;
+  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
+  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
+  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
+
+  renovate [label="Renovate preset:\nnew tag and digest"];
+  entry [label="Inventory pins\nname:version@sha256:…"];
+  renovate -> entry [label="pull request"];
+  ci [label="Consumer CI calls\nconsumer.yml by commit"];
+  entry -> ci;
+
+  subgraph cluster_workflow {
+    label="consumer.yml";
+    inventory [label="1 kapitan inventory\nin the sandbox"];
+    deps [label="2 Dependencies against\nthe policy and the index"];
+    fetch [label="3 Verify attestation,\nfetch by digest"];
+    compile [label="4 Compile in the\nsandbox, output rules"];
+    upload [label="5 Upload the\ncompiled output"];
+    inventory -> deps -> fetch -> compile -> upload;
+  }
+  ci -> inventory;
+
+  failed [label="CI fails" class="fail" style="rounded,dashed"];
+  inventory -> failed [label="fails" class="fail" style=dashed];
+  deps -> failed [label="fails" class="fail" style=dashed];
+  fetch -> failed [label="fails" class="fail" style=dashed];
+  compile -> failed [label="fails" class="fail" style=dashed];
+
+  apply [label="Review the output,\nthen apply"];
+  upload -> apply;
+}
