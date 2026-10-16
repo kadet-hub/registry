@@ -533,7 +533,7 @@ silently.
   list below.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #254
 
 - CAT-34a: Above the table, the page MUST offer a selector "I run
   <software> <version>" that shows only the listed versions whose record
@@ -562,7 +562,7 @@ silently.
   - Test: `catalog/test_catalog.py` (partial: markup, options and data
     attributes; the matching runs in the browser); manual: browser run at
     375px and desktop width, light and dark (2026-10-16)
-  - Since: this change
+  - Since: #254
 
 - CAT-34b: When no listed version is built for exactly the selected
   version, the selector MUST say "No listed version is built for <software>
@@ -584,7 +584,7 @@ silently.
   version.
 
   - Test: manual: browser run (2026-10-16)
-  - Since: this change
+  - Since: #254
 
 - CAT-34c: `/compatibility/` MUST have the same table and selector over
   every listed version of every listed generator (CAT-26).
@@ -598,7 +598,7 @@ silently.
 
   - Test: `catalog/test_catalog.py` (partial: as CAT-34a); manual: browser
     run (2026-10-16)
-  - Since: this change
+  - Since: #254
 
 - CAT-34d: `docs/consumers.md` MUST document the fields of `catalog.json`
   that hold what a version is built for, with a jq example and a Renovate
@@ -629,7 +629,7 @@ silently.
 
   - Test: `catalog/test_catalog.py`; manual: Renovate dry run of the recipe
     against the live `catalog.json` (2026-10-16)
-  - Since: this change
+  - Since: #254
 
 Related: CAT-15, CAT-30, CON-2.
 
