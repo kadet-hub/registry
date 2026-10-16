@@ -208,8 +208,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
   review lines.
 
   `apiserver_check.crd_files` is not fuzzed: importing it needs
-  cryptography, which RISK-8 holds at a version with advisories, and a
-  second lock would report them again.
+  cryptography, which `.clusterfuzzlite/requirements.txt` does not
+  install.
 
   The `fuzz` workflow runs code-change mode for 300 seconds on pull
   requests that touch a target's inputs (CI-1) and batch mode for 1800
@@ -281,6 +281,34 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `workflow-lint` (`tests/workflow-policy`)
   - Since: #259
+
+- GI-16: A lock under `sandbox/` or `scan/` MAY lift a dependency's
+  version constraint only to reach a release that fixes a published
+  advisory. The override goes into `overrides.txt` next to the lock, as a
+  lower bound on the fixed release with a comment that names the upstream
+  constraint, and its `uv pip compile` header names the file with
+  `--override`. The override is removed once upstream allows the fixed
+  release.
+
+  Kapitan 0.36.3 requires `cryptography<49`; the gate overrides it to
+  50.0.0 or later (PYSEC-2026-3552, -3553, -3554; upstream PR
+  kapicorp/kapitan#1632). semgrep 1.180.0 pins `mcp==1.29.0`; the scan
+  overrides it to 1.30.0 or later and below 2 (GHSA-84m7-p3x7-pcfv).
+  Kapitan uses cryptography only for the key pairs of its `rsa`,
+  `rsapublic`, `ed25519` and `publickey` ref functions, and those
+  generate and load keys with 50.0.2. semgrep imports `mcp` at startup
+  but starts a server only for `semgrep mcp`, which the scan does not
+  run.
+
+  Both images install with `pip --no-deps`, so pip does not reject the
+  lifted constraint. Renovate's `pip-compile` manager reruns the header
+  command and accepts `--override`. Nothing tests the upstream packages
+  against the overridden version beyond the gate's own selftests.
+
+  - Test: workflow job `gate-selftest` (Kapitan renders and semgrep scans
+    with the overridden versions); Scorecard's Vulnerabilities check
+    (GI-12)
+  - Since: tbd
 
 ## Static checks
 
