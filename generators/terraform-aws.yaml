@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: terraform-aws
-  tag: terraform-aws-v0.1.1
-  sha: 90a1da0e1a83651901e7ad2e7d53ad45d0076416
+  tag: terraform-aws-v0.1.2
+  sha: cdc32e4e9d85508d8e058deb5b5efb22c826e27c
 owners: [3042152]
