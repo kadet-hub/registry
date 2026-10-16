@@ -123,7 +123,7 @@ fetched tree; this is the layout consumers use.
     Renovate 44.161.2 held codeql-action 4.39.0, ruff 0.17.1 and semgrep
     1.181.0, each released less than three days before, and proposed the
     argocd and cilium entry bumps.
-  - Since: #6; release age: this change
+  - Since: #6; release age: #259
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.

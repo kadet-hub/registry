@@ -280,7 +280,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   unnoticed until the next pull request that changes `.github/`.
 
   - Test: workflow job `workflow-lint` (`tests/workflow-policy`)
-  - Since: this change
+  - Since: #259
 
 ## Static checks
 
@@ -1350,4 +1350,4 @@ code diff and the output diff, not only the verdict.
   ruleset (REV-1).
 
   - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset-branches.json` and `.github/ruleset-renovate.json`
-  - Since: this change
+  - Since: #259
