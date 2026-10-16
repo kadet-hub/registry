@@ -1,0 +1,77 @@
+{{ define "main" }}
+{{/* CAT-33: counts only; of the gate comments, the verdict, the kind of entry and requirement IDs. No visitor numbers (CAT-25). */}}
+{{ $s := site.Data.catalog.stats }}
+{{ $registry := printf "https://github.com/%s/registry" site.Data.catalog.owner }}
+<section class="prose-page prose">
+<h1>{{ .Title }}</h1>
+{{ .Content }}
+<p>Built <time datetime="{{ now.UTC.Format "2006-01-02T15:04:05Z" }}">{{ now.UTC.Format "2006-01-02 15:04 UTC" }}</time> from index serial {{ site.Data.catalog.serial }}, the generators' package pages on GitHub and the gate's comments on the <a href="{{ $registry }}/pulls">registry's pull requests</a>.</p>
+
+<h2 id="pulls">Pulls per generator</h2>
+{{ with $s.pulls }}
+<p>The "Total downloads" GitHub shows on each generator's package page, automated pulls included.</p>
+<table>
+<thead><tr><th scope="col">Generator</th><th scope="col">Pulls</th></tr></thead>
+<tbody>
+{{ range . }}
+<tr><th scope="row"><a href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></th><td>{{ if eq .pulls nil }}not read{{ else }}{{ .pulls }}{{ end }}</td></tr>
+{{ end }}
+</tbody>
+<tfoot><tr><th scope="row">All generators</th><td>{{ $s.pulls_total }}</td></tr></tfoot>
+</table>
+{{ else }}
+<p class="empty">No generator is published yet.</p>
+{{ end }}
+
+<h2 id="versions">Versions per month</h2>
+{{ with $s.months }}
+<p>The index records when a version was published, not when it was yanked, so a yanked version counts in the month it was published.</p>
+<table>
+<thead><tr><th scope="col">Month</th><th scope="col">Versions published</th><th scope="col">Of these yanked</th></tr></thead>
+<tbody>
+{{ range . }}
+<tr><th scope="row">{{ .month }}</th><td>{{ .published }}</td><td>{{ .yanked }}</td></tr>
+{{ end }}
+</tbody>
+</table>
+{{ else }}
+<p class="empty">No version is published yet.</p>
+{{ end }}
+
+<h2 id="gate">Gate rejections</h2>
+{{ with $s.gate }}{{ $g := . }}
+{{ if $g.prs.all }}
+<p>Pull requests that change an entry in generators/; one counts as rejected when at least one gate run on it failed.</p>
+<table>
+<thead><tr><th scope="col">Entry pull requests</th><th scope="col">With a gate result</th><th scope="col">Rejected at least once</th></tr></thead>
+<tbody>
+<tr><th scope="row">New entries</th><td>{{ $g.prs.new }}</td><td>{{ $g.rejected.new }}</td></tr>
+<tr><th scope="row">Updates</th><td>{{ $g.prs.update }}</td><td>{{ $g.rejected.update }}</td></tr>
+<tr><th scope="row">Other, such as removals</th><td>{{ $g.prs.other }}</td><td>{{ $g.rejected.other }}</td></tr>
+<tr><th scope="row">All</th><td>{{ $g.prs.all }}</td><td>{{ $g.rejected.all }}</td></tr>
+</tbody>
+</table>
+{{ if $g.rejected.all }}
+<p>Rejected pull requests by the requirement of a finding in a failed run, as the <a href="{{ $registry }}/blob/main/docs/specs/marketplace.md">specification</a> numbers them; a pull request counts once per requirement.</p>
+<table>
+<thead><tr><th scope="col">Requirement</th><th scope="col">Rejected pull requests</th></tr></thead>
+<tbody>
+{{ range $g.requirements }}
+<tr><th scope="row">{{ .id }}</th><td>{{ .prs }}</td></tr>
+{{ end }}
+{{ with $g.none }}
+<tr><th scope="row">No requirement ID in the report</th><td>{{ . }}</td></tr>
+{{ end }}
+</tbody>
+</table>
+{{ else }}
+<p class="empty">The gate rejected no entry pull request.</p>
+{{ end }}
+{{ else }}
+<p class="empty">No entry pull request has a gate result yet.</p>
+{{ end }}
+{{ else }}
+<p class="empty">The gate results could not be read when this page was built.</p>
+{{ end }}
+</section>
+{{ end }}

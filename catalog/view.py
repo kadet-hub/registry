@@ -1,6 +1,6 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] [--wanted FILE] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] [--wanted FILE] [--gate FILE] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
@@ -18,6 +18,8 @@ catalog.json of the last build; its README is used when the latest digest
 is unchanged and no artifact layer was fetched. --diffs DIR/<name>/<version>.output.diff
 is a version's verified output diff; its first lines are shown (CAT-27).
 --wanted is the list of open generator requests (CAT-31).
+--gate is the registry's pull requests with their changed paths and comments;
+only counts and requirement IDs are kept (CAT-33).
 """
 
 import argparse
@@ -249,6 +251,73 @@ def load_wanted(path):
     return sorted(keep, key=lambda r: (-r["up"], r["created"], r["number"]))
 
 
+ENTRY = re.compile(r"^generators/[^/]+\.yaml$")
+FINDING = re.compile(r"((?:GI|REG|SEC|QA|CMP)-[0-9]+[a-z]?): ")
+# CAT-33: lines of the finding form that the gate prints for checks that passed.
+PASSED = re.compile(r"QA-6: tag [a-z]+: (?!no )|QA-(?:7|8|10|11): validated against |CMP-4: krab |SEC-12: declared ")
+
+
+def findings(report):
+    """CAT-33: requirement IDs of the finding lines in a gate report, before its section "## Output diff"."""
+    ids = set()
+    for line in report.split("\n"):
+        if line == "## Output diff":
+            break
+        m = FINDING.match(line)
+        if m and not PASSED.match(line):
+            ids.add(m.group(1))
+    return ids
+
+
+def load_gate(path):
+    """CAT-33: entry pull requests and the requirements of their failed gate runs; None when they were not read."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, TypeError, ValueError):
+        return None
+    if not isinstance(data, list):
+        return None
+    kinds = ("new", "update", "other", "all")
+    prs, rejected, by_id, none = dict.fromkeys(kinds, 0), dict.fromkeys(kinds, 0), {}, 0
+    for pr in data:
+        if not isinstance(pr, dict) or not any(isinstance(f, str) and ENTRY.match(f) for f in pr.get("files") or []):
+            continue
+        runs = [v.partition("\n```") for c in pr.get("comments") or [] if isinstance(c, dict) and c.get("author") == "github-actions"
+                for v in c.get("versions") or [] if isinstance(v, str) and v.startswith("<!-- kadet-hub-gate -->\n")]
+        if not runs:
+            continue
+        kind = ("update" if any("\nCode diff since the approved version: " in h for h, _, _ in runs) else
+                "new" if any("\nNew entry; source tree: " in h for h, _, _ in runs) else "other")
+        failed = [findings(r) for h, _, r in runs if "\n**gate: failed**" in h]
+        prs[kind] += 1
+        prs["all"] += 1
+        if failed:
+            rejected[kind] += 1
+            rejected["all"] += 1
+            none += not all(failed)
+            for i in set().union(*failed):
+                by_id[i] = by_id.get(i, 0) + 1
+    natural = lambda kv: (-kv[1], re.sub(r"[0-9]+", lambda m: m.group().zfill(3), kv[0]))  # most first, QA-6 before QA-10
+    return {"prs": prs, "rejected": rejected, "none": none,
+            "requirements": [{"id": i, "prs": n} for i, n in sorted(by_id.items(), key=natural)]}
+
+
+def stats(generators, gate):
+    """CAT-33: pulls per generator, versions per month of their publication and how many of them are yanked, gate results."""
+    months = {}
+    for g in generators:
+        for r in g["versions"]:
+            if isinstance(r.get("published"), str) and STAMP.match(r["published"]):
+                m = months.setdefault(r["published"][:7], {"month": r["published"][:7], "published": 0, "yanked": 0})
+                m["published"] += 1
+                m["yanked"] += bool(r.get("yanked"))
+    pulls = [{"name": g["name"], "pulls": g["pulls"]} for g in generators]
+    return {"pulls": sorted(pulls, key=lambda p: (p["pulls"] is None, -(p["pulls"] or 0), p["name"])),
+            "pulls_total": sum(p["pulls"] or 0 for p in pulls),
+            "months": [months[m] for m in sorted(months, reverse=True)], "gate": gate}
+
+
 def load_previous(path):
     """{(name, latest digest): README} from the last build's catalog.json."""
     try:
@@ -274,6 +343,7 @@ def main():
     p.add_argument("--previous")
     p.add_argument("--diffs")
     p.add_argument("--wanted")
+    p.add_argument("--gate")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
@@ -281,6 +351,7 @@ def main():
     result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor),
                   load_discussions(a.discussions, a.owner), a.pages, load_previous(a.previous), a.diffs)
     result["wanted"] = load_wanted(a.wanted)
+    result["stats"] = stats(result["generators"], load_gate(a.gate))
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0

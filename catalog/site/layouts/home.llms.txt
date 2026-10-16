@@ -44,5 +44,6 @@ Every generator and guide page has a Markdown variant at index.md next to it; th
 ## Optional
 
 - [Tags](https://kadet-hub.org/tags/)
+- [Statistics](https://kadet-hub.org/stats/): pulls per generator, versions published and yanked per month, entry pull requests the gate rejected by requirement
 - [Glossary](https://kadet-hub.org/glossary/)
 - [Kapitan documentation](https://kapitan.dev/)
