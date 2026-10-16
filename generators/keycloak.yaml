@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: keycloak
-  tag: keycloak-v1.0.2
-  sha: e4891e8fd85ca0a19ebf361e8b54fd6473fd8a2f
+  tag: keycloak-v1.0.3
+  sha: cdce4e91961d7eebbe43e96d2f89b720a59efe4f
 owners: [3042152]
