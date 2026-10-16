@@ -136,7 +136,7 @@ remembered in the browser's `localStorage`.
   CAT-35 for the whole process.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #196, #230
+  - Since: #196, #230, #257
 
 - CAT-11e: A README heading MUST be rendered at most one level below the
   heading before it.
@@ -567,7 +567,7 @@ remembered in the browser's `localStorage`.
   rendered; the diagrams of CAT-35a render as nothing there.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #231, #242
+  - Since: #231, #242, #257
 
 - CAT-17: Every version on a generator page MUST have a permalink
   (`/generators/<name>/#v<version>`) that opens it, and MUST link the
@@ -765,7 +765,7 @@ remembered in the browser's `localStorage`.
   links the IDs for those who follow up.
 
   - Test: `catalog/test_catalog.py` (`test_how_kadet_hub_works`)
-  - Since: this change
+  - Since: #257
 
 - CAT-35a: Every diagram MUST be an SVG under
   `catalog/site/assets/diagrams/` rendered by Graphviz `dot` from the
@@ -813,7 +813,7 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`test_how_kadet_hub_works`,
     `test_diagram_svgs`); `test_seo` checks the page (CAT-11d); manual:
     the page in Chromium at 375 px and 1280 px, light and dark
-  - Since: this change
+  - Since: #257
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
