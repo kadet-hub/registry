@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GI-6 and GI-10 on the workflows, actions and sandbox image.
+# GI-6, GI-10 and GI-15 on the workflows, actions and sandbox image.
 #
 # Usage: tests/workflow-policy [<repository root>]
 # Prints violations; exits 1 on any.
@@ -30,5 +30,40 @@ done < <(grep -nE '^ADD[[:space:]]+[^-]*https?://' sandbox/Dockerfile || true)
 while IFS= read -r line; do
   fail "GI-10: cache: $line"
 done < <(grep -rnE 'actions/cache|^[[:space:]]+cache(-dependency-path)?:' .github || true)
+
+# GI-15: a job holding contents, packages, id-token, attestations or pages
+# write, or a secret other than GITHUB_TOKEN, names an environment that admits
+# only main and is not part of a pull_request_target workflow. The Scorecard
+# job's id-token is GI-12's. Needs gh, yq and jq.
+# shellcheck disable=SC2016 # $w, $j, ... are jq variables
+jobs='. as $w | ($w.on | if type == "object" then keys elif type == "array" then . else [.] end) as $events
+  | (.jobs // {}) | to_entries[] | .key as $job | .value as $j
+  | ($j.permissions // $w.permissions // {}) as $p
+  | ([if ($p | type) == "string" then ($p | select(. == "write-all"))
+      else ($p | to_entries[] | select(.value == "write" and (.key | IN("contents", "packages", "id-token", "attestations", "pages"))) | .key + ": write") end]
+    + [$j | .. | strings | match("secrets *(\\.|\\[) *[\"'\'']?([A-Za-z0-9_-]+)"; "g") | .captures[1].string | select(. != "GITHUB_TOKEN") | "secrets." + .]
+    + [$j.secrets | strings | "secrets: " + .])
+  | map(select($f + ":" + $job != "scorecard.yml:analysis" or . != "id-token: write")) | unique
+  | select(length > 0)
+  | [$f, $job, ($j.environment | if type == "object" then .name else . end // ""), join(", "),
+     (if $events | index("pull_request_target") then "pull_request_target" else "" end)] | join("\u001f")'
+repo=${GITHUB_REPOSITORY:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}
+declare -A policy=()
+while IFS=$'\x1f' read -r file job env why event; do
+  if [[ -n $event ]]; then
+    fail "GI-15: $file job $job holds $why in a $event workflow"
+  elif [[ -z $env ]]; then
+    fail "GI-15: $file job $job holds $why without an environment"
+  else
+    if [[ ! -v policy[$env] ]]; then
+      policy[$env]=$(gh api "repos/$repo/environments/$env/deployment-branch-policies" \
+        --jq '[.branch_policies[] | .type + " " + .name] | join(", ")') || policy[$env]="unknown branches"
+    fi
+    [[ ${policy[$env]} == "branch main" ]] \
+      || fail "GI-15: $file job $job holds $why in environment $env, which admits ${policy[$env]:-every branch}, not only main"
+  fi
+done < <(for f in .github/workflows/*.yml .github/workflows/*.yaml; do
+  [[ -e $f ]] && yq -o json "$f" | jq -r --arg f "${f##*/}" "$jobs"
+done)
 
 exit "$status"
