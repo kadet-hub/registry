@@ -1,0 +1,44 @@
+// CAT-35: publishing a release. Rendered with Graphviz 14.1.4; ./render regenerates release.svg.
+digraph release {
+  bgcolor=transparent; nodesep=0.3; ranksep=0.28;
+  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
+  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
+  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
+
+  trigger [label="Push to main, daily run\nor manual dispatch"];
+
+  subgraph cluster_build {
+    label="build job:\lread only\l";
+    fetch [label="Fetch every entry by SHA,\nno checkout"];
+    tar [label="Rebuild the tree as a\nreproducible tar"];
+    recheck [label="New versions: rerun scans\nand sandbox compile"];
+    record [label="Record scan, output diff,\nkinds and backends"];
+    fetch -> tar -> recheck -> record;
+  }
+  trigger -> fetch;
+
+  subgraph cluster_sign {
+    label="sign job: release\lenvironment\l";
+    compare [label="Fetch again, compare\nthe git tree with the tar"];
+    push [label="Push to ghcr.io by digest"];
+    attest [label="Attest provenance, SBOM\nand output diff"];
+    vtag [label="Set the version tag,\nnever moved"];
+    compare -> push -> attest -> vtag;
+  }
+  record -> compare;
+
+  stop [label="Release fails,\nnothing published" class="fail" style="rounded,dashed"];
+  recheck -> stop [label="fails" class="fail" style=dashed];
+  compare -> stop [label="fails" class="fail" style=dashed];
+
+  index [label="Index with the next\nserial, attested"];
+  ghrelease [label="GitHub release\nindex-<serial>"];
+  vtag -> index -> ghrelease;
+
+  catalog [label="Catalog built\nfrom the index"];
+  check [label="Every page checked"];
+  pages [label="Deploy to\nkadet-hub.org"];
+  index -> catalog -> check -> pages;
+  old [label="Previous site\nstays live" class="fail" style="rounded,dashed"];
+  check -> old [label="fails" class="fail" style=dashed];
+}

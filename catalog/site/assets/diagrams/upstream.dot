@@ -1,0 +1,31 @@
+// CAT-35: keeping generators current. Rendered with Graphviz 14.1.4; ./render regenerates upstream.svg.
+digraph upstream {
+  bgcolor=transparent; nodesep=0.3; ranksep=0.28;
+  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
+  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
+  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
+
+  newer [label="kadet-hub/generators,\nevery Monday: newer stable\nupstream release?"];
+  reproduce [label="Regenerating at the pinned\nrelease reproduces the files?"];
+  regenerate [label="Regenerate schemas\nand CRDs"];
+  check [label="./check"];
+  update [label="Update pull request,\nversion unchanged"];
+  issue [label="Issue for\na person"];
+  reviewer [label="Reviewer sets version\nand CHANGELOG, tags"];
+  newer -> reproduce [label="yes"];
+  reproduce -> regenerate [label="yes"];
+  reproduce -> issue [label="no"];
+  regenerate -> check;
+  check -> update [label="passes"];
+  check -> issue [label="fails" class="fail" style=dashed];
+  update -> reviewer;
+
+  author [label="Any author pushes\na newer tag"];
+  renovate [label="Renovate in the registry:\nbump pull request"];
+  gate [label="Gate and maintainer\nreview, then release"];
+  consumers [label="Renovate pull requests\nin consumer repositories"];
+  {rank=same; reviewer; author}
+  reviewer -> renovate;
+  author -> renovate;
+  renovate -> gate -> consumers;
+}

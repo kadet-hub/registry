@@ -1,0 +1,27 @@
+// CAT-35: overview. Rendered with Graphviz 14.1.4; ./render regenerates overview.svg.
+digraph overview {
+  bgcolor=transparent; nodesep=0.2; ranksep=0.28;
+  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
+  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
+  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
+
+  author [label="Author repository:\nmanifest, fixtures, tag"];
+  pr [label="Pull request to\nkadet-hub/registry"];
+  gate [label="Gate: scans and\nsandbox compile"];
+  review [label="Maintainer review\nand merge"];
+  release [label="Release on main:\nrebuild, recheck, sign"];
+  ghcr [label="ghcr.io: attested artifact\nand index; kadet-hub.org"];
+  consumer [label="Consumer CI: verify,\ncompile in a sandbox"];
+
+  author -> pr [label="new entry"];
+  pr -> gate -> review -> release -> ghcr -> consumer;
+
+  renovate [label="Renovate"];
+  rescan [label="Daily rescan"];
+  author -> renovate [label="newer tag"];
+  renovate -> pr [label="bump"];
+  review -> rescan [style=invis];
+  rescan -> pr [label="issue, then\nyank by a\nmaintainer"];
+  {rank=same; gate; renovate}
+  {rank=same; release; rescan}
+}

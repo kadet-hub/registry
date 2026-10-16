@@ -1,0 +1,30 @@
+// CAT-35: withdrawing a version. Rendered with Graphviz 14.1.4; ./render regenerates withdraw.svg.
+digraph withdraw {
+  bgcolor=transparent; nodesep=0.2; ranksep=0.28;
+  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
+  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
+  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
+
+  signal [label="Report through\nSECURITY.md, or a rescan\nor tag drift issue"];
+  owner [label="Owner withdraws\na version"];
+  confirm [label="Maintainer confirms\nit malicious?"];
+  ownerpr [label="Owner PR: yanked\nwith reason"];
+  signal -> confirm;
+  owner -> ownerpr;
+  {rank=same; confirm; ownerpr}
+
+  closed [label="Fixed or\nclosed"];
+  maintainer [label="Draft advisory, then\nmaintainer PR: yanked\nwith reason, advisory"];
+  confirm -> closed [label="no"];
+  confirm -> maintainer [label="yes"];
+
+  yanked [label="Merge and release:\nindex marks it yanked"];
+  maintainer -> yanked;
+  ownerpr -> yanked;
+  effect [label="Catalog shows the reason,\nconsumer.yml rejects it"];
+  delete [label="Delete the artifact,\nrerun the release"];
+  publish [label="Publish the advisory;\nindex keeps the record"];
+  yanked -> effect;
+  effect -> delete [label="if malicious"];
+  delete -> publish;
+}

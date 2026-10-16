@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 import unittest
 import urllib.parse
+import xml.etree.ElementTree as ET
 from html import unescape as _unescape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -387,7 +388,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 5)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 6)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -478,10 +479,32 @@ class Site(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.out, "og.png")))
         guides = self.page("guides")
         for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators",
-                     "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api"):
+                     "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api", "how-kadet-hub-works"):
             self.assertIn(f"guides/{slug}/", guides)
             self.page("guides", slug)
         self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
+
+    def test_how_kadet_hub_works(self):  # CAT-35, CAT-35a, CAT-28, CAT-11b
+        html = self.page("guides", "how-kadet-hub-works")
+        main = html[html.index("<main"):html.index("</main>")]
+        figures = re.findall(r'<figure class="diagram" role="img" aria-labelledby="diagram-([a-z]+)-title" aria-describedby="diagram-\1-desc">'
+                             r'<svg\b[^>]*>\s*<title id="diagram-\1-title">[^<]+</title><desc id="diagram-\1-desc">[^<]+</desc>', main)
+        self.assertEqual(figures, ["overview", "listing", "release", "consuming", "upstream", "withdraw"])
+        for name in figures[1:]:  # every process: its diagram, then its steps
+            after = main.split(f'aria-labelledby="diagram-{name}-title"')[1].split("</figure>", 1)[1]
+            self.assertTrue(after.lstrip().startswith("<ol>"), name)
+        self.assertNotRegex(main, r"<style\b| style=|<\?xml|<!DOCTYPE")
+        table = main[main.index("<table>"):main.index("</table>")]
+        self.assertIn(">REG-1 to REG-6, REG-8</a>", table)
+        text = re.sub(r"<[^>]+>", " ", main.replace(table, ""))  # requirement IDs only in the stage table
+        self.assertNotRegex(text, r"\b(?:GI|REG|SEC|QA|CMP|PUB|CON|CAT|UPD|INC|DEC)-\d")
+        md = self.markdown("guides", "how-kadet-hub-works")
+        self.assertTrue(md.startswith("# How kadet-hub works\n\nA generator lives in its author's repository."))
+        self.assertRegex(md, r"\n## Listing a new generator\n+1\. The author creates a repository from\n")
+        for gone in ("{{", "<svg", "<figure", 'name="'):
+            self.assertNotIn(gone, md)
+        listing = self.page()[self.page().index('<h2 id="listing">'):]
+        self.assertIn('<a href="./guides/how-kadet-hub-works/">How kadet-hub works</a>', listing.split("<h3>")[0])
 
     def test_version_permalinks_and_transparency_log(self):
         html = self.page("generators", "demo")
@@ -772,7 +795,7 @@ class Site(unittest.TestCase):
 
     def test_headings_skip_no_level(self):
         for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"), ("kinds",),
-                      ("compatibility",), ("wanted",), ("stats",)):
+                      ("compatibility",), ("wanted",), ("stats",), ("guides", "how-kadet-hub-works")):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
             for before, after in zip(levels, levels[1:]):
@@ -953,6 +976,49 @@ class Site(unittest.TestCase):
             out = build({"serial": 1, "generators": {}}, tmp)
             with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
                 self.assertIn("No generators listed yet", f.read())
+
+
+DIAGRAMS = os.path.join(HERE, "site", "assets", "diagrams")
+
+
+def svg_findings(text):
+    """CAT-35a: what the CSP blocks in an inline SVG, or what loads another document."""
+    found = []
+    for el in ET.fromstring(text).iter():
+        tag = el.tag.rsplit("}", 1)[-1]
+        if tag in ("style", "script"):
+            found.append(f"<{tag}>")
+        for attr, value in el.attrib.items():
+            attr = attr.rsplit("}", 1)[-1]
+            if attr == "style" or attr.startswith("on") or (attr == "href" and not value.startswith("#")):
+                found.append(f"{tag} {attr}={value}")
+    return found
+
+
+class Diagrams(unittest.TestCase):
+    def test_diagram_svgs(self):  # CAT-35a
+        names = sorted(f.removesuffix(".dot") for f in os.listdir(DIAGRAMS) if f.endswith(".dot"))
+        self.assertEqual(names, ["consuming", "listing", "overview", "release", "upstream", "withdraw"])
+        self.assertEqual(names, sorted(f.removesuffix(".svg") for f in os.listdir(DIAGRAMS) if f.endswith(".svg")))
+        for name in names:
+            with open(os.path.join(DIAGRAMS, f"{name}.svg"), encoding="utf-8") as f:
+                svg = f.read()
+            with open(os.path.join(DIAGRAMS, f"{name}.dot"), encoding="utf-8") as f:
+                dot = f.read()
+            self.assertEqual(svg_findings(svg), [], name)
+            version = re.search(r"Generated by graphviz version (\S+)", svg).group(1)
+            self.assertIn(f"Rendered with Graphviz {version};", dot, name)
+            self.assertLessEqual(float(re.search(r'<svg width="([\d.]+)pt"', svg).group(1)), 340, name)  # readable at 360 px
+            fails = re.findall(r'<g id="[^"]+" class="(?:node|edge) fail">.*?</g>', svg, re.S)
+            for group in fails:
+                self.assertIn('stroke-dasharray="', group, name)  # never colour alone
+            if fails:
+                self.assertIn(">fails</text>", svg, name)
+        for bad in ("<style>text { fill: red }</style>", '<g style="fill: red"/>', "<script>alert(1)</script>", '<g onload="alert(1)"/>',
+                    '<a xlink:href="https://example.org/x"/>', '<image href="//example.org/x.png"/>'):
+            svg = f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">{bad}</svg>'
+            self.assertNotEqual(svg_findings(svg), [], bad)
+        self.assertEqual(svg_findings('<svg xmlns="http://www.w3.org/2000/svg"><use href="#i-x"/></svg>'), [])
 
 
 class View(unittest.TestCase):
