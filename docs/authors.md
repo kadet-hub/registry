@@ -54,6 +54,20 @@ generator is the wrong tool:
   project; the marketplace is for generators other projects can use with
   their own inventory.
 
+## Designing a section
+
+One entry, one intent. A section renders every object that belongs to one
+intent and wires their references itself, so users never repeat a name to
+keep two objects consistent. Contradicting keys fail the compile, naming
+the entry. There is one way to express a thing; objects with their own
+lifecycle or owner stay separate entries.
+
+For example, one `rbac` entry of the `kubernetes` generator is a role with
+its bindings: the ClusterRole and a RoleBinding in each listed namespace
+share the entry's name, instead of a `roles` and a `role_bindings` entry
+whose `roleRef` repeats it. A Kyverno policy and its PolicyException stay
+apart, because exceptions are scoped and owned separately.
+
 ## Patching a Helm chart instead of wrapping it
 
 The marketplace lists no generic `helm` generator that renders a chart
