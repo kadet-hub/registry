@@ -132,7 +132,8 @@ remembered in the browser's `localStorage`.
   and its sections, not for every item of a list, and avoid linked
   headings; the cards are a list, which assistive technology can step
   through as such. The home page has a short section on how a version
-  gets listed, an `h2` with an `h3` per step.
+  gets listed, an `h2` with an `h3` per step, which links the guide of
+  CAT-35 for the whole process.
 
   - Test: `catalog/test_catalog.py`
   - Since: #196, #230
@@ -562,7 +563,8 @@ remembered in the browser's `localStorage`.
   with any scheme stay in, and a line names the base relative links
   resolve against. The variant of a generator without a listed version has
   the name, each version with its yank reason and the page's URL. A guide's
-  variant is its title and its Markdown source.
+  variant is its title and its Markdown source with its shortcodes
+  rendered; the diagrams of CAT-35a render as nothing there.
 
   - Test: `catalog/test_catalog.py`
   - Since: #231, #242
@@ -746,6 +748,72 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #157
+
+- CAT-35: The guide "How kadet-hub works" at `/guides/how-kadet-hub-works/`
+  MUST show the overview and the processes of listing, release,
+  consumption, upstream update and withdrawal each as a diagram followed by
+  a numbered list that states the same steps without it. Requirement IDs
+  MUST appear only in the table of gate stages, linked to their spec
+  section.
+
+  The home page section of CAT-11b, the author and consumer guides and the
+  incident runbook each describe one area. How the areas hand over (a tag
+  becomes a Renovate bump, the bump runs the gate, the merge starts a
+  release, the release a consumer pull request) was written down nowhere
+  in one place. Readers of the catalog are not expected to know the
+  requirement IDs, so the text names checks instead and the stage table
+  links the IDs for those who follow up.
+
+  - Test: `catalog/test_catalog.py` (`test_how_kadet_hub_works`)
+  - Since: this change
+
+- CAT-35a: Every diagram MUST be an SVG under
+  `catalog/site/assets/diagrams/` rendered by Graphviz `dot` from the
+  `.dot` file next to it, inlined into the page in a `<figure role="img">`
+  named by a `<title>` and described by a `<desc>` in the SVG, and MUST
+  contain no `<style>` element, `style` attribute, `<script>` element,
+  event handler attribute or `href` to another document.
+
+  The CSP (`style-src 'self'`) blocks a `<style>` element and a `style`
+  attribute inside an inline SVG; presentation attributes and the rules
+  of `style.css` for SVG classes apply. Inline, the diagrams take their
+  colours from the tokens and follow both the system scheme and the
+  toggle; an SVG loaded through `<img>` sees neither `style.css` nor
+  `data-theme`. Graphviz writes presentation attributes only, turns
+  `style=dashed` into `stroke-dasharray`, and passes a node's or edge's
+  `class` through to its `<g>`; checked with Graphviz 14.1.4. Mermaid
+  renders in the browser and would add a script; Hugo's GoAT sets `style`
+  on its text elements (checked with Hugo 0.167.0); mermaid-cli and D2
+  were not checked. A hand-written SVG would need a manual relayout on
+  every process change.
+
+  The SVG is committed as `dot` writes it, so neither CI nor the release
+  needs Graphviz; `render` in the same directory regenerates every SVG,
+  and each `.dot` names the Graphviz version that rendered it. CI does
+  not re-render and compare: the runner image has no Graphviz, and another
+  version changes the output without a change to the source (Graphviz
+  16.1.0 moves coordinates in every one of the six SVGs). The test checks the constraints
+  above on every committed SVG, which also catches a hand edit or another
+  tool's output.
+
+  Lines and arrowheads take `--text-muted`, text `--text`; a failure path
+  takes `--warn`, is dashed and labelled "fails", so colour never carries
+  the meaning alone. `pointer-events: none` keeps the `<title>` that
+  `dot` writes for every node and edge from showing as a tooltip. Every
+  diagram runs top to bottom and is at most 340 pt wide, so at a 360 px
+  viewport it shrinks to the 328 px column with 12 pt labels at about
+  12 px, and the page does not scroll sideways; the figure would scroll
+  inside itself if a diagram outgrew the column. On wide screens a diagram
+  keeps its natural size, at most 453 px wide.
+
+  The shortcode `diagram` has a Markdown template that writes nothing, and
+  the guide's Markdown variant renders shortcodes, so the variant (CAT-28)
+  holds the text without the figures.
+
+  - Test: `catalog/test_catalog.py` (`test_how_kadet_hub_works`,
+    `test_diagram_svgs`); `test_seo` checks the page (CAT-11d); manual:
+    the page in Chromium at 375 px and 1280 px, light and dark
+  - Since: this change
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
