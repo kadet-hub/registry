@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: cilium
-  tag: cilium-v1.0.2
-  sha: e4891e8fd85ca0a19ebf361e8b54fd6473fd8a2f
+  tag: cilium-v1.0.3
+  sha: ae0254b7569cb5022440d777b0953790c5696293
 owners: [3042152]
