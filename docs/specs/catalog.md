@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Catalog
 
 Status: Approved
-Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`
+Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`, `docs/consumers.md` (CAT-34d)
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -507,6 +507,131 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`
   - Since: #242
+
+People choose a generator version by the upstream release they run: "I run
+cert-manager 1.19, which certmanager version do I use?". The answer is in
+each version's `compatibility` record (CAT-15), but finding it meant opening
+every version and comparing records by hand. Artifact Hub added the app
+version to its version list for the same request
+([artifacthub/hub#4373](https://github.com/artifacthub/hub/issues/4373)).
+The site therefore shows the record of every listed version in one table and
+offers a selector over it; tools read the same records from `catalog.json`.
+
+On the index of 2026-10-16 no generator had two listed versions built for
+different versions of the same software. For most typed versions the honest
+answer is therefore "none", and the selector says so instead of guessing
+silently.
+
+- CAT-34: Every generator page with a listed version MUST have, under
+  Versions, a table of its listed versions with a column "Built for
+  (schema-checked)" that names each software and version of the version's
+  record, one per line, or "not recorded".
+
+  The table is plain HTML, so without JavaScript it is the answer, read row
+  by row. Each version links its permalink (CAT-17). Yanked versions are
+  left out, since none of them can be picked; their entries stay in the
+  list below.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
+
+- CAT-34a: Above the table, the page MUST offer a selector "I run
+  <software> <version>" that shows only the listed versions whose record
+  names exactly that software and version.
+
+  The software list holds every software a listed version's record names,
+  once and sorted. A generator built for several products, such as
+  cert-manager with trust-manager, is matched for one product at a time.
+  The version is typed, with the recorded versions of the selected software
+  as suggestions, because the version a visitor runs is often one that no
+  generator version was built for. Typed and recorded versions compare as
+  text after trimming whitespace and one leading `v` before a digit, so
+  `v1.21.2` matches `1.21.2`.
+
+  Kubernetes is listed only for generators whose records name it, which are
+  those that ship core schemas. The kube-apiserver version QA-10 checks
+  against is not recorded per version, so the selector cannot answer the
+  Kubernetes question for other generators.
+
+  The selector is progressive enhancement in `site.js`, which the CSP
+  allows (`script-src 'self'`). Without JavaScript the form stays hidden and
+  the table lists every listed version. The script reads software and
+  version from data attributes and writes its result with `textContent`, so
+  it builds no markup from data (CAT-3).
+
+  - Test: `catalog/test_catalog.py` (partial: markup, options and data
+    attributes; the matching runs in the browser); manual: browser run at
+    375px and desktop width, light and dark (2026-10-16)
+  - Since: this change
+
+- CAT-34b: When no listed version is built for exactly the selected
+  version, the selector MUST say "No listed version is built for <software>
+  <version>" and show the listed versions built for the nearest newer
+  recorded version of that software, labelled as not checked against the
+  selected version.
+
+  Nearest newer is a guess about upstream compatibility, not a check: the
+  schemas of cert-manager 1.21.2 can accept output that a 1.19 operator
+  ignores. The result is styled as a warning and names the version it was
+  not checked against.
+
+  Two versions compare by their dot-separated numbers when both are digits
+  and dots after the leading `v` is removed; a missing part counts as 0, so
+  1.21.2 is newer than 1.21. A recorded version such as Linkerd's
+  `edge-26.6.3` or Thanos's `main@1b6edfb` only matches exactly and is
+  never the nearest newer one. When no recorded version is newer, or the
+  typed version is not digits and dots, the selector says so and shows no
+  version.
+
+  - Test: manual: browser run (2026-10-16)
+  - Since: this change
+
+- CAT-34c: `/compatibility/` MUST have the same table and selector over
+  every listed version of every listed generator (CAT-26).
+
+  The table follows the CAT-30 table under its own `h2`, with one row per
+  listed version, named `<generator> <version>` and linked to its
+  permalink, by generator name and newest version first. CAT-34a and
+  CAT-34b apply to all rows at once: the nearest newer version is the
+  nearest one any generator records, so a generator whose records name only
+  older versions shows nothing there. Its own page answers for it alone.
+
+  - Test: `catalog/test_catalog.py` (partial: as CAT-34a); manual: browser
+    run (2026-10-16)
+  - Since: this change
+
+- CAT-34d: `docs/consumers.md` MUST document the fields of `catalog.json`
+  that hold what a version is built for, with a jq example and a Renovate
+  custom datasource recipe that filter them, and MUST state that
+  `catalog.json` is unsigned and that the consumer workflow still verifies
+  the digest (CON-2).
+
+  Agents and Renovate need the lookup without parsing a page. The fields are
+  `generators[].versions[]` with `version`, `digest`, `yanked` and
+  `compatibility[]` (`software`, `version`, `source`). The signed
+  `index.json` carries the same records, since `release/index.py` copies
+  every `meta.json` key, but reading it takes an OCI fetch and an
+  attestation check that a Renovate custom datasource cannot do.
+
+  `catalog.json` is the site's view model (CAT-23), served by GitHub Pages
+  without a signature. It is acceptable input because Renovate only
+  proposes: the consumer workflow checks the digest against the attested
+  index and fails a pull request whose digest is not listed or is yanked.
+  The recipe returns `releases[].digest`, which Renovate's custom datasource
+  hands on as the new digest for the regex manager's `currentDigest`, and
+  disables the preset's docker lookup for that generator, so the two do not
+  propose competing updates.
+
+  A test runs the documented jq example against the fixture build's
+  `catalog.json` and parses the recipe, so `catalog-tests`, which also runs
+  on changes to `docs/consumers.md`, fails when either drifts from the
+  fields.
+
+  - Test: `catalog/test_catalog.py`; manual: Renovate dry run of the recipe
+    against the live `catalog.json` (2026-10-16)
+  - Since: this change
+
+Related: CAT-15, CAT-30, CON-2.
 
 - CAT-16: The site MUST publish `/llms.txt` in the llmstxt.org format, naming
   the marketplace's purpose and linking the author guide, the template and
