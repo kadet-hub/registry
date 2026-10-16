@@ -1,7 +1,7 @@
 name: workflows
 
-# GI-6, GI-10, GI-11 on pull requests that change workflows, actions or the
-# sandbox image's downloads.
+# GI-6, GI-10, GI-11, GI-15 on pull requests that change workflows, actions
+# or the sandbox image's downloads.
 on:
   pull_request:
     paths:
@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # GI-15: the deployment branch policies of the environments
 
 jobs:
   workflow-lint:
@@ -22,7 +23,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Pins and caches
+      - name: Pins, caches and environments
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: tests/workflow-policy
 
       - name: Install actionlint and zizmor

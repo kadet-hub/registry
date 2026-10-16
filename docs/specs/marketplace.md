@@ -25,8 +25,11 @@ sandbox.
 
 Attackers: a hostile submitter, a hostile later maintainer of a benign
 generator, a hostile chart repository, a pull request against the
-marketplace's own CI, an attacker between registry and consumer, and a
-compromised marketplace maintainer account.
+marketplace's own CI, an attacker between registry and consumer, a
+compromised marketplace maintainer account, a compromised action, tool or
+Python dependency that a bump pull request brings in, a compromised
+upstream source of schemas and CRDs, and a compromised GitHub App
+(Renovate, `kadet-hub-upstream`) that can push branches.
 
 The design does not claim to be uncompromisable. It aims at three properties:
 no single bypassed check ships malicious code, damage at the consumer is
@@ -45,6 +48,22 @@ Trust boundaries, from outside in:
 4. Publishing credentials exist only in the release workflow on `main` (GI-8).
    Consumers trust a digest only together with that workflow's attestation
    (PUB-3, CON-2).
+5. The `release` environment gates jobs, not tokens. A workflow pushed to
+   any branch of `registry` can request `packages: write`,
+   `id-token: write` and `attestations: write`; GitHub caps the
+   `permissions` key only for pull requests from forks. Its attestations
+   name its own file and branch and fail the identity check of PUB-3 and
+   CON-2, so the signing identity stays bound to `release.yml` on `main`;
+   GHCR tags do not (RISK-5, RISK-9). An environment does keep its own
+   secrets from such a workflow (GI-15).
+
+Generator files are parsed outside gVisor by the static scanners
+(gitleaks, semgrep, ruff, GuardDog), git and yq on the runner host, in the
+gate and in the release build job. A bug in one of them yields the runner,
+not the signing identity: the gate job holds read permissions only and no
+cache, and the sign job checks the artifact's tree against its own fetch
+(PUB-1). The other fields of `meta.json` and the output diff are claims of
+the build job (RISK-10).
 
 ## Decisions
 
@@ -143,9 +162,9 @@ cover none of the changed files.
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
   Markdown files at the repository root, `renovate.json`, issue and pull
-  request templates, `CODEOWNERS`, `.github/ruleset.json`, the test-only
-  workflows of CI-1, the `scorecard`, `codeql` and `fuzz` workflows and
-  `.clusterfuzzlite/` (GI-12 to GI-14).
+  request templates, `CODEOWNERS`, the rulesets `.github/ruleset*.json`,
+  the test-only workflows of CI-1, the `scorecard`, `codeql` and `fuzz`
+  workflows and `.clusterfuzzlite/` (GI-12 to GI-14).
 
   This list ignores paths instead of listing them, so a new file a release
   job reads still triggers a release; the daily scheduled run (CAT-20)
@@ -262,8 +281,15 @@ cover none of the changed files.
 
 - RISK-1 (accepted, DEC-13): one maintainer account controls rulesets, policy
   and the release workflow; its compromise defeats every gate and produces
-  correctly attested artifacts. Mitigation: hardware-key 2FA, no long-lived
-  admin tokens.
+  correctly attested artifacts. Mitigation: hardware-key 2FA. The admin
+  bypass of the `main` ruleset is in `pull_request` mode, so a merge that
+  leaves the ruleset unchanged still goes through a pull request.
+
+  Not mitigated: the maintainer works with long-lived command-line
+  credentials that can write repositories and workflows, which is enough
+  to change environments and rulesets. Short-lived, fine-grained
+  credentials scoped to a task would narrow this.
+
 - RISK-2: payloads keyed on consumer inventory values or on detecting the
   sandbox stay inert in the gate. CON-1 bounds them at the consumer.
 - RISK-3: output that is harmful only in the consumer's context, or within a
@@ -271,8 +297,18 @@ cover none of the changed files.
   before applying it (CON-3).
 - RISK-4: consumers using Kapitan's `--fetch` instead of CON-1 get no
   integrity check and no sandbox.
-- RISK-5: GHCR tags are mutable by organization owners; only consumers who
-  pin digests and verify (CON-2) are protected.
+- RISK-5: GHCR tags are mutable by organization owners and by any workflow
+  run in `registry` whose token holds `packages: write`, on any branch
+  (boundary 5). Moving a tag cannot make an unattested or renamed artifact
+  pass CON-2, and the index takes name and version from the signed config,
+  so a re-tagged yanked digest stays yanked.
+
+  Re-pointing `index:latest` or `sandbox:<tree>` to an older attested
+  digest remains possible. Consumers whose `index_serial` is at or below
+  the older index's serial accept it and miss the yanks published since,
+  and the next release counts its serial on from the moved tag. Whether
+  such a token can also delete package versions has not been tested.
+
 - RISK-6: a Sigstore outage delays releases (PUB-2).
 - RISK-7: GitHub disables scheduled workflows in public repositories after 60
   days without activity, which silently stops SEC-15 and SEC-16. The maintainer re-enables them from GitHub's notification.
@@ -303,6 +339,47 @@ cover none of the changed files.
 
   - Since: #236
 
+- RISK-9: Renovate, hosted by Mend, holds `contents`, `workflows`,
+  `checks`, `statuses`, `pull_requests` and `issues` write on every
+  repository of the organization. A compromise of the app pushes branches
+  whose workflows get the permissions of boundary 5 and read every
+  repository secret that is not bound to an environment.
+
+  `registry` has no repository or environment secrets, and REV-3 keeps
+  Renovate to `renovate/` branches. `generators` has no Renovate
+  configuration, and its rulesets admit Renovate to no branch. A workflow
+  on a `renovate/` branch still gets the permissions of boundary 5: the
+  rule that would stop it, a push ruleset restricting `.github/workflows/`,
+  is available only on the Team plan for private and internal
+  repositories.
+
+  Pending: the `kadet-hub-upstream` App key in `generators` is a repository
+  secret, readable by a workflow on any branch there. Moving it into an
+  environment that admits only `main`, and rotating it, is open.
+
+- RISK-10: an exploit of a host-side parser in the release build job forges
+  the scan record, krab result, compatibility, kinds, backends and output
+  diff that the sign job attests. The artifact's code is still checked by
+  tree (PUB-1).
+
+- RISK-11: a malicious release of an action, tool, Kapitan or krab reaches
+  a bump pull request once it is three days old (REG-7) and then needs one
+  approval by the single maintainer (GI-2a, REV-1). Inside the published
+  sandbox image a malicious Kapitan writes every consumer's compiled
+  output; CON-1b bounds it to the capabilities the consumer accepts.
+
+  The delay does not cover a moved tag. When an action's existing tag is
+  force-pushed to a new commit, the digest update ages from the tag's
+  original release and is proposed at once; the reviewer sees a new
+  digest under an unchanged version. Updates without a release timestamp
+  are not delayed either: entry bumps (git tags), images outside Docker
+  Hub and runner labels.
+
+- RISK-12: the release build fetches every entry's source on every run
+  (`release/build-all`). An author who deletes the pinned commit or the
+  repository stops releases, and with them yank publication, until the
+  entry is removed.
+
 ## Out of scope
 
 - Ratings, download counts and install telemetry.
@@ -320,7 +397,9 @@ These requirements have no check that fails on a violation; the partial
 coverage is named at each:
 
 - REG-1: no sample whose tag points elsewhere; the fork rehearsals passed it.
-- GI-3, GI-4, GI-8: job permissions are reviewed, not tested.
+- GI-3, GI-4: job permissions are reviewed, not tested.
+- GI-8: which workflow holds the permissions is reviewed; the environment
+  binding is tested (GI-15).
 - GI-7: no sample that makes a gate tool error or time out.
 - GI-12: triggers, publishing and the SARIF upload are reviewed; only a
   run on `main` shows them working.
@@ -388,7 +467,8 @@ coverage is named at each:
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
-| `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11 |
+| `.github/ruleset-branches.json`, `.github/ruleset-renovate.json` | REV-3; applied with `gh api` |
+| `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11, GI-15 |
 | `.github/workflows/scorecard.yml` | GI-12 |
 | `.github/workflows/codeql.yml` | GI-13 |
 | `.github/workflows/fuzz.yml`, `.clusterfuzzlite/`, `tests/fuzz/` | GI-14: build image, atheris lock, targets and seeds |
