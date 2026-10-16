@@ -52,7 +52,7 @@ INDEX = {"serial": 7, "generators": {
 }}
 # Site only: a listed generator without scan record or compatibility, its description with line breaks and control characters.
 PLAIN = "Renders a [ConfigMap](x)\r\n## Not a heading\t\x9b31m\u202e*bold*"  # characters XML allows: the feed lists it
-SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": dict(record("e", tags=(), description=PLAIN),
+SITE_INDEX = {**INDEX, "generators": {**INDEX["generators"], "plain": {"0.2.0": dict(record("e", tags=(), description=PLAIN), published="2026-09-30T23:59:59Z",
                                                                                     output_diff={"base": None, "error": "no earlier listed version"})}}}
 
 # CAT-31: open requests as the build writes them, with a body view.py drops and an entry it rejects.
@@ -61,6 +61,45 @@ WANTED = [{"number": 7, "title": "[request] <script>alert(5)</script>\x1b[31m\u2
           {"number": 9, "title": "[request] loki", "up": 5, "created": "2026-10-05T09:00:00Z", "updated": "2026-10-06T10:00:00Z"},
           {"number": 4, "title": "[request] keycloak", "up": 2, "created": "2026-10-01T09:00:00Z", "updated": "2026-10-01T09:00:00Z"},
           {"number": "8", "title": "not a number", "up": 1, "created": "2026-10-01T09:00:00Z", "updated": "2026-10-01T09:00:00Z"}]
+
+
+
+def gate_comment(verdict, kind, report):
+    """CAT-33: a version of the gate comment as the comment job writes it (REV-2)."""
+    head = {"new": [f"New entry; source tree: https://github.com/example/demo/tree/{'c' * 40}", ""],
+            "update": [f"Code diff since the approved version: https://github.com/example/demo/compare/{'a' * 40}...{'c' * 40}", ""]}
+    return "\n".join(["<!-- kadet-hub-gate -->", f"**gate: {verdict}** ([run](https://github.com/{OWNER}/registry/actions/runs/1))", ""]
+                     + head.get(kind, []) + ["````", report, "````"])
+
+
+# CAT-33: lines of the finding form the gate prints when the checks pass.
+PASSING = ("## Registration\n## Sandbox compile\n### backend reclass-rs\nQA-6: tag kubernetes: compiled/t/cm.yml\nreview: REG-3: demo is one edit away from deno\n"
+           "QA-7: validated against Calico 3.33.0\nQA-10: validated against kube-apiserver v1.37.1: 1 built-in documents, 0 skipped\n"
+           "SEC-12: declared admission: a ValidatingWebhookConfiguration\n### krab\nCMP-4: krab compatible\n## Output diff\n"
+           "SEC-13: output diff against the approved version: 1 files, 1 hunks")
+# CAT-33: pull requests as the build writes them, with comments and pull requests view.py does not count.
+GATE = [
+    {"number": 1, "files": ["generators/demo.yaml"], "comments": [{"author": "github-actions", "versions": [
+        gate_comment("passed", "new", PASSING),
+        gate_comment("failed", "new", "## Static checks\nguarddog: threat-filesystem-destruction: 1\n" + PASSING),
+        gate_comment("failed", None, "REG-1: tag v1.0.0 resolves to nothing, entry pins " + "c" * 40)]}]},
+    {"number": 2, "files": ["generators/demo.yaml"], "comments": [
+        {"author": "renovate", "versions": ["looks good"]},
+        {"author": "github-actions", "versions": [gate_comment("failed", "update", (
+            "REG-1: tag v1.1.0 resolves to nothing, entry pins " + "c" * 40 + "\nSEC-3: <script>alert(6)</script>\nXSS-1: no gate requirement\n"
+            "QA-6: tag helm: no chart in the manifest and no helm template in binaries\nQA-10: compiled/t/d.yml: Deployment d: unknown field\n"
+            + PASSING.replace("CMP-4", "CMP-5: output differs with --cache on omegaconf:\nCMP-4")
+            + "\nSEC-13: the approved version's compile reported, not judged:\nQA-11: compiled/t/x.yml: X x: rejected"))]}]},
+    {"number": 3, "files": ["generators/old.yaml"], "comments": [{"author": "github-actions", "versions": [
+        gate_comment("failed", None, "## Registration\nREG-9: removing old must add it to policy/reserved-names.txt")]}]},
+    {"number": 4, "files": ["catalog/view.py", "generators/README.md"], "comments": [{"author": "github-actions", "versions": [
+        gate_comment("failed", None, "GI-2: one entry per pull request")]}]},
+    {"number": 5, "files": ["generators/evil.yaml"], "comments": [{"author": "mallory", "versions": [gate_comment("failed", "new", "SEC-9: forged")]}]},
+    {"number": 6, "files": ["generators/plain.yaml"], "comments": [{"author": "github-actions", "versions": [
+        gate_comment("passed", "update", PASSING), "<!-- kadet-hub-gate --> no newline"]}]},
+    {"number": 7, "files": ["generators/plain.yaml"], "comments": []},
+    "x", {"number": 8}, {"number": 9, "files": "generators/a.yaml", "comments": "x"},
+]
 
 
 README = """# Demo
@@ -110,7 +149,7 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -119,7 +158,7 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
                CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"),
                CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"),
                CATALOG_PAGES=pages or os.path.join(tmp, "none"), CATALOG_DIFFS=diffs or os.path.join(tmp, "none"),
-               CATALOG_WANTED=wanted or os.path.join(tmp, "none.json"))
+               CATALOG_WANTED=wanted or os.path.join(tmp, "none.json"), CATALOG_GATE=gate or os.path.join(tmp, "none.json"))
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -154,7 +193,10 @@ class Site(unittest.TestCase):
         wanted = os.path.join(cls.tmp.name, "wanted.json")
         with open(wanted, "w", encoding="utf-8") as f:
             json.dump(WANTED, f)
-        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages, os.path.dirname(diffs), wanted)
+        gate = os.path.join(cls.tmp.name, "gate.json")
+        with open(gate, "w", encoding="utf-8") as f:
+            json.dump(GATE, f)
+        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages, os.path.dirname(diffs), wanted, gate)
 
     @classmethod
     def tearDownClass(cls):
@@ -349,6 +391,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
+        self.assertIn("\n- [Statistics](https://kadet-hub.org/stats/): ", text)  # CAT-33
         self.assertNotIn("kinds/gateway", text)
 
     def markdown(self, *parts):
@@ -625,6 +668,53 @@ class Site(unittest.TestCase):
         for page in texts:
             self.assertNotIn("<ol", page)
 
+    def rows(self, page, section):
+        """The rows of the tables in a section of a page, each as its cell texts."""
+        part = page.split(f'<h2 id="{section}">')[1].split("<h2")[0]
+        return [re.findall(r"<t[hd][^>]*>(?:<a [^>]*>)?([^<]*)", row) for row in re.findall(r"<tr>(.*?)</tr>", part)]
+
+    def test_stats_page(self):  # CAT-33, CAT-3, CAT-25
+        page = self.page("stats")
+        self.assertRegex(page, r'<p>Built <time datetime="\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ">\d{4}-\d\d-\d\d \d\d:\d\d UTC</time> '
+                               r"from index serial 7, the generators' package pages on GitHub and the gate's comments")
+        self.assertEqual(self.rows(page, "pulls"), [["Generator", "Pulls"], ["demo", "1200"], ["old", "not read"], ["plain", "not read"],
+                                                    ["All generators", "1200"]])
+        self.assertIn('<a href="../generators/old/">old</a>', page)
+        self.assertEqual(self.rows(page, "versions"), [["Month", "Versions published", "Of these yanked"], ["2026-10", "4", "2"], ["2026-09", "1", "0"]])
+        self.assertEqual(self.rows(page, "gate"), [
+            ["Entry pull requests", "With a gate result", "Rejected at least once"],
+            ["New entries", "1", "1"], ["Updates", "2", "1"], ["Other, such as removals", "1", "1"], ["All", "4", "3"],
+            ["Requirement", "Rejected pull requests"],
+            ["REG-1", "2"], ["CMP-5", "1"], ["QA-6", "1"], ["QA-10", "1"], ["REG-9", "1"], ["SEC-3", "1"], ["No requirement ID in the report", "1"]])
+        with open(os.path.join(self.out, "catalog.json"), encoding="utf-8") as f:
+            published = f.read()
+        for gone in ("alert(6)", "XSS-1", "SEC-9", "GI-2", "QA-11", "guarddog", "mallory", "looks good"):  # CAT-3: IDs and counts only
+            self.assertNotIn(gone, page)
+            self.assertNotIn(gone, published)
+        self.assertNotIn("goatcounter.com/api", page)
+        self.assertIn('<a href="./stats/">Statistics</a>', self.page())
+
+    def test_stats_page_without_data(self):  # CAT-33
+        texts = []
+        for gate in (None, [], [GATE[5]]):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = None
+                if gate is not None:
+                    path = os.path.join(tmp, "gate.json")
+                    with open(path, "w", encoding="utf-8") as f:
+                        json.dump(gate, f)
+                with open(os.path.join(build({"serial": 1, "generators": {}}, tmp, gate=path), "stats", "index.html"), encoding="utf-8") as f:
+                    texts.append(f.read())
+        unread, empty, passed = texts
+        self.assertIn("The gate results could not be read when this page was built.", unread)
+        self.assertIn("No entry pull request has a gate result yet.", empty)
+        self.assertIn("The gate rejected no entry pull request.", passed)
+        self.assertIn("<tr><th scope=\"row\">All</th><td>1</td><td>0</td></tr>", passed)
+        for page in texts:
+            self.assertIn("No generator is published yet.", page)
+            self.assertIn("No version is published yet.", page)
+            self.assertNotIn("<th scope=\"col\">Requirement</th>", page)
+
     def test_thumbs_up_from_discussions(self):
         self.assertIn(f'<a href="https://github.com/{OWNER}/registry/discussions/5">👍 3</a> on GitHub Discussions', self.page("generators", "demo"))
         self.assertNotIn("evil.example", self.page("generators", "old"))  # CAT-20: only this registry's discussions
@@ -682,7 +772,7 @@ class Site(unittest.TestCase):
 
     def test_headings_skip_no_level(self):
         for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"), ("kinds",),
-                      ("compatibility",), ("wanted",)):
+                      ("compatibility",), ("wanted",), ("stats",)):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
             for before, after in zip(levels, levels[1:]):
