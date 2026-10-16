@@ -137,6 +137,80 @@ request because the index lists the version as yanked. Close it: Renovate
 does not propose a closed version again, and a closed major update skips
 that whole major line.
 
+## Picking a version by what it is built for
+
+Each version records the software and versions whose schemas its compiled
+output was checked against. On the catalog, the generator page lists them
+for every listed version, and the compatibility page for every listed
+version of every generator. Both have a selector "I run <software>
+<version>". When no listed version is built for exactly your version, it
+shows the versions built for the nearest newer one and says that they were
+not checked against yours.
+
+Tools read the same records from `https://kadet-hub.org/catalog.json`, the
+data the catalog is built from:
+
+- `generators[].name`: the generator.
+- `generators[].versions[]`: every version, newest first, with `version`,
+  `digest`, `yanked` (the reason, or `null` while listed) and
+  `compatibility`, a list of `software`, `version` and the schema `source`.
+  Versions published before the record existed have no `compatibility`;
+  the catalog shows them as "not recorded".
+
+The listed certmanager versions built for cert-manager 1.21.2, one
+`<version> <digest>` line each, newest first:
+
+```sh
+curl -fsSL https://kadet-hub.org/catalog.json | jq -r --arg name certmanager --arg software cert-manager --arg version 1.21.2 '
+  .generators[] | select(.name == $name) | .versions[]
+  | select(.yanked == null and any(.compatibility[]?; .software == $software and .version == $version))
+  | "\(.version) \(.digest)"'
+```
+
+To have Renovate propose only versions built for your upstream line,
+replace the preset's lookup for that generator with a custom datasource that
+filters `catalog.json`. This configuration proposes certmanager versions
+built for cert-manager 1.21.x:
+
+```json
+{
+  "extends": ["github>kadet-hub/renovate-config"],
+  "customDatasources": {
+    "kadet-hub-certmanager": {
+      "defaultRegistryUrlTemplate": "https://kadet-hub.org/catalog.json",
+      "transformTemplates": [
+        "{\"releases\": [generators[name = 'certmanager'].versions[$not(yanked) and compatibility[software = 'cert-manager' and $contains(version, /^1\\.21\\./)]].{\"version\": version, \"digest\": digest}]}"
+      ]
+    }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["**/inventory/**/*.yml", "**/inventory/**/*.yaml"],
+      "matchStrings": ["source:\\s*[\"']?(?<depName>ghcr\\.io/kadet-hub/certmanager):(?<currentValue>[0-9.]+)@(?<currentDigest>sha256:[0-9a-f]{64})"],
+      "datasourceTemplate": "custom.kadet-hub-certmanager",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {"matchDatasources": ["docker"], "matchPackageNames": ["ghcr.io/kadet-hub/certmanager"], "enabled": false}
+  ]
+}
+```
+
+The package rule turns off the preset's lookup on ghcr.io for certmanager,
+so only the filtered datasource proposes updates. Renovate takes the new
+digest from `releases[].digest`, so a pull request changes tag and digest
+together, as the preset's do. When you move to another cert-manager line,
+change the filter.
+
+`catalog.json` is not signed. GitHub Pages serves it, and whoever can change
+the site or its domain can change it. That is acceptable for proposals: the
+consumer workflow still verifies the digest against the attested index and
+fails when the index does not list it or lists it as yanked (CON-2 in the
+[spec](specs/consumers.md)). Do not fetch what `catalog.json` names without
+that check; the signed records are in `index.json` (see Verifying by hand).
+
 ## Verifying by hand
 
 ```sh

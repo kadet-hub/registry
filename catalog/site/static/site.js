@@ -1,4 +1,4 @@
-// Theme toggle, copy buttons, and the home page's search, tag filter and
+// Theme toggle, copy buttons, the version selector (CAT-34), and the home page's search, tag filter and
 // sort (CAT-8 to CAT-10). No markup is built from data.
 const root = document.documentElement;
 const announce = (text) => { document.getElementById("announce").textContent = text; };
@@ -68,6 +68,58 @@ for (const button of document.querySelectorAll("button.copy")) {
       announce("Copy failed; select the text instead");
     }
   });
+}
+
+// CAT-34: "I run <software> <version>" over the versions table; rows are shown or hidden, the result is text.
+const match = document.querySelector(".match-form");
+if (match) {
+  const { software, version } = match.elements;
+  const result = document.querySelector(".match-result");
+  const rows = [...document.querySelectorAll(".built tbody tr")];
+  const trim = (v) => v.trim().replace(/^v(?=[0-9])/, "");
+  const numbers = (v) => (/^[0-9]+(\.[0-9]+)*$/.test(trim(v)) ? trim(v).split(".").map(Number) : null);
+  const compare = (a, b) => {
+    for (let i = 0; i < Math.max(a.length, b.length); i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) - (b[i] || 0);
+    return 0;
+  };
+  const builtFor = (row) => [...row.querySelectorAll("[data-software]")].filter((e) => e.dataset.software === software.value).map((e) => e.dataset.version);
+  const names = (shown) => {
+    const n = shown.map((r) => r.querySelector("th").textContent);
+    return n.length > 1 ? n.slice(0, -1).join(", ") + " and " + n[n.length - 1] : n[0];
+  };
+
+  function apply() {
+    version.setAttribute("list", software.selectedOptions[0].dataset.list);
+    const typed = version.value.trim();
+    const run = `${software.value} ${typed}`;
+    const exact = rows.filter((r) => builtFor(r).some((v) => trim(v) === trim(typed)));
+    let shown = exact;
+    let text = `Built for ${run}: ${names(exact)}.`;
+    if (!typed) {
+      shown = rows;
+      text = "";
+    } else if (!exact.length) {
+      const own = numbers(typed);
+      const newer = own && [...new Set(rows.flatMap(builtFor))].filter((v) => numbers(v) && compare(numbers(v), own) > 0)
+        .sort((a, b) => compare(numbers(a), numbers(b)))[0];
+      text = `No listed version is built for ${run}. `;
+      if (newer) {
+        shown = rows.filter((r) => builtFor(r).includes(newer));
+        text += `Shown instead: the versions built for the nearest newer ${software.value} version, ${newer} (${names(shown)}). They were not checked against ${run}.`;
+      } else {
+        text += own ? `None is built for a newer ${software.value} version either.` : "Only versions of digits and dots, such as 1.21.2, are compared to find a newer one.";
+      }
+    }
+    for (const r of rows) r.hidden = !shown.includes(r);
+    result.textContent = text;
+    result.classList.toggle("warning", typed !== "" && !exact.length);
+  }
+
+  match.hidden = false;
+  match.addEventListener("submit", (e) => e.preventDefault());
+  software.addEventListener("change", apply);
+  version.addEventListener("input", apply);
+  apply();
 }
 
 // Home page
