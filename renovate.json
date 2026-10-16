@@ -8,6 +8,9 @@
   "timezone": "Europe/Berlin",
   "schedule": ["* 0-5 * * 1"],
   "automerge": false,
+  "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
+  "internalChecksFilter": "strict",
   "rebaseWhen": "behind-base-branch",
   "pip-compile": {
     "managerFilePatterns": [
