@@ -940,6 +940,27 @@ Related: CAT-15, CAT-30, CON-2.
     the page in Chromium at 375 px and 1280 px, light and dark
   - Since: #257
 
+- CAT-36: The site MUST have a blog at `/blog/` that lists every post
+  under `catalog/site/content/blog/`, newest first with its date, and an
+  Atom feed of the posts at `/blog/index.xml`. Each post MUST show its
+  date and have a Markdown variant (CAT-28).
+
+  Posts live on the site's own domain, so links to them count for
+  kadet-hub.org and the SEO check (CAT-11d), sitemap and Markdown
+  variants cover them without another build or deploy. A subdomain would
+  need its own DNS record and deploy, and search engines rank it largely
+  apart from the main site. A cross-post elsewhere sets its canonical URL
+  to the post here.
+
+  The release feed at `/index.xml` (CAT-18) stays limited to published
+  versions, so its subscribers get no posts; the blog and its posts
+  announce the blog feed in their `<head>`. A post is a Markdown page with
+  `layout: prose` and a `date`, and comes in through a maintainer pull
+  request like a guide.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #271
+
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
   page" list linking each section that is present, which marks the section

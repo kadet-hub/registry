@@ -1,0 +1,9 @@
+{{ define "main" }}
+<section class="prose-page">
+<h1>Blog</h1>
+<p class="lead">{{ .Description }} <a href="{{ "blog/index.xml" | relURL }}">Atom feed</a>.</p>
+<ul class="guide-list">
+{{ range (where site.RegularPages "Section" "blog").ByDate.Reverse }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a> <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2 January 2006" }}</time><p>{{ .Description }}</p></li>{{ end }}
+</ul>
+</section>
+{{ end }}

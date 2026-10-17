@@ -36,6 +36,9 @@
 <meta property="og:image:alt" content="kadet-hub: Kapitan generators, scanned and attested">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="alternate" type="application/atom+xml" title="kadet-hub: new generator versions" href="{{ "index.xml" | relURL }}">
+{{- if or (eq .Section "blog") (eq .Layout "blog") }}
+<link rel="alternate" type="application/atom+xml" title="kadet-hub blog" href="{{ "blog/index.xml" | relURL }}">
+{{- end }}
 {{- if .IsHome }}
 {{- $org := dict "@type" "Organization" "@id" (print site.BaseURL "#organization") "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL) "sameAs" (slice (printf "https://github.com/%s" site.Data.catalog.owner)) -}}
 {{- $web := dict "@type" "WebSite" "name" site.Title "url" site.BaseURL "description" $desc "publisher" (dict "@id" (print site.BaseURL "#organization")) -}}

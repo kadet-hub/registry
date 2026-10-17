@@ -50,6 +50,11 @@ outputs = ["html", "markdown"]
 path = "/guides/*"
 
 [[cascade]]
+outputs = ["html", "markdown"]
+[cascade.target]
+path = "/blog/*"
+
+[[cascade]]
 outputs = ["html", "markdown", "badge"]
 [cascade.target]
 path = "/generators/*"
