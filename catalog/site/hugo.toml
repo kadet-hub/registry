@@ -51,8 +51,18 @@ path = "/guides/*"
 
 [[cascade]]
 outputs = ["html", "markdown"]
+layout = "post"
 [cascade.target]
 path = "/blog/*"
+
+# CAT-36a: related posts share topics.
+[related]
+includeNewer = true
+threshold = 1
+toLower = true
+[[related.indices]]
+name = "topics"
+weight = 100
 
 [[cascade]]
 outputs = ["html", "markdown", "badge"]

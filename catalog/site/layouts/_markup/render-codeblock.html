@@ -1,0 +1,7 @@
+{{- /* CAT-36a: code blocks in blog posts get a copy button; elsewhere Hugo's default. */ -}}
+{{- $r := transform.HighlightCodeBlock . -}}
+{{- if eq .Page.Section "blog" -}}
+<div class="snippet"><div id="code-{{ .Ordinal }}">{{ $r.Wrapped }}</div><button type="button" class="copy icon-button" data-copy="code-{{ .Ordinal }}" aria-label="Copy code block {{ add .Ordinal 1 }}" hidden><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></div>
+{{- else -}}
+{{ $r.Wrapped }}
+{{- end -}}

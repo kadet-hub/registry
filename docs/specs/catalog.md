@@ -949,8 +949,10 @@ Related: CAT-15, CAT-30, CON-2.
   kadet-hub.org and the SEO check (CAT-11d), sitemap and Markdown
   variants cover them without another build or deploy. A subdomain would
   need its own DNS record and deploy, and search engines rank it largely
-  apart from the main site. A cross-post elsewhere sets its canonical URL
-  to the post here.
+  apart from the main site. A post appears here first; elsewhere it goes
+  as an excerpt with a link, or as a copy that the other site keeps out of
+  its index, which Google recommends since 2023 instead of a cross-domain
+  canonical.
 
   The release feed at `/index.xml` (CAT-18) stays limited to published
   versions, so its subscribers get no posts; the blog and its posts
@@ -960,6 +962,46 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py`
   - Since: #271
+
+- CAT-36a: A post page MUST show a byline (author, publication date, an
+  update date only when `lastmod` is later, reading time), the post's
+  description as a lead, a contents list when the post has 800 words or
+  more, a link on every heading, a copy button on every code block, links
+  to discuss and edit the post, up to three related posts by shared
+  `topics`, and the next older and newer post. The page MUST carry
+  `BlogPosting` JSON-LD with headline, description, image, publication and
+  update dates, and the maintainers as an `Organization` author, and
+  `og:type` `article`. Body text MUST be 18 px with lines of at most 68
+  characters; code blocks scroll sideways instead of wrapping.
+
+  The choices follow published guidance rather than taste. Google asks
+  for a visible, labelled date that matches `datePublished` and
+  `dateModified`, a byline that leads to the author, and recommends
+  `headline`, `image`, the dates and `author` for Article structured data
+  ([publication dates](https://developers.google.com/search/docs/appearance/publication-dates),
+  [Article](https://developers.google.com/search/docs/appearance/structured-data/article)).
+  Readers scan: in Nielsen's study 79 % scanned, and concise, scannable
+  text measured 124 % more usable
+  ([NN/g](https://www.nngroup.com/articles/how-users-read-on-the-web/)),
+  hence the lead, the contents list and the anchors. WCAG 1.4.8 sets lines
+  of at most 80 characters and line height of at least 1.5. The author is
+  the maintainers as an organization because the site names no person
+  (the imprint is `tbd`).
+
+  The update date comes from `lastmod` in the front matter, not from git,
+  so a typo fix does not make a post look new. A post dated in the future
+  stays out of the build until the daily release run (04:17 UTC, the
+  schedule CAT-20 added to `release.yml`) on or after
+  that date, which schedules posts without another mechanism. Topics are
+  front matter only; there are no topic pages, since `/tags/` belongs to
+  the generator tags (CAT-18). A per-post Open Graph image, a newsletter
+  and comments were left out: the first has no measured effect, the
+  others need third-party code the CSP does not allow.
+
+  Related: CAT-36, CAT-11d.
+
+  - Test: `catalog/test_catalog.py` (`test_blog_post_page`)
+  - Since: #272
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
