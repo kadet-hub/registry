@@ -274,6 +274,15 @@ class OutputDiff(unittest.TestCase):
                      "predicate-path: ${{ steps.push.outputs.diff }}"):
             self.assertIn(line, step)
 
+    def test_oci_attestations_are_pushed_to_the_registry(self):  # PUB-3a
+        with open(os.path.join(ROOT, ".github", "workflows", "release.yml"), encoding="utf-8") as f:
+            steps = f.read().split("uses: actions/attest@")[1:]
+        oci = [s.split("\n      - ", 1)[0] for s in steps if "subject-digest:" in s.split("\n      - ", 1)[0]]
+        self.assertEqual(len(oci), 5)  # artifact provenance, SBOM, output diff, sandbox image, index manifest
+        for step in oci:
+            self.assertIn("push-to-registry: true", step)
+            self.assertIn("create-storage-record: false", step)
+
 
 # Fakes for release/build-all on top of FAKES: build.py in the sandbox image,
 # the static checks, and a compile gate that passed.
