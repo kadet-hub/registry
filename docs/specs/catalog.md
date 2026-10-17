@@ -119,7 +119,7 @@ remembered in the browser's `localStorage`.
   Gateway API", "kapitan generator vs helm chart vs kustomize".
 
   - Test: `catalog/test_catalog.py`
-  - Since: #196, tbd
+  - Since: #196, #274
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
