@@ -508,7 +508,7 @@ class Site(unittest.TestCase):
         self.assertIn('<meta property="og:type" content="article">', post)
         ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', post, re.S)]
         self.assertEqual([(b["@type"], b["datePublished"], b["author"]["@type"]) for b in ld], [("BlogPosting", "2026-10-17T00:00:00Z", "Organization")])
-        self.assertIn('<h2 id="what-a-version-goes-through">What a version goes through <a class="anchor" href="#what-a-version-goes-through"', post)
+        self.assertIn('<h2 id="what-a-version-goes-through">What a version goes through <a class="anchor" href="#what-a-version-goes-through" aria-label="Link to What a version goes through"></a></h2>', post)  # "#" only from CSS
         self.assertIn('/registry/blob/main/catalog/site/content/blog/kapitan-generators-as-supply-chain-artifacts.md">Edit this post</a>', post)
         self.assertNotIn('class="anchor"', self.page("guides", "writing-a-kapitan-generator"))
         self.assertIn('<meta property="og:type" content="website">', self.page("blog"))

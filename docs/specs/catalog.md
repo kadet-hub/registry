@@ -996,6 +996,10 @@ Related: CAT-15, CAT-30, CON-2.
   the maintainers as an organization because the site names no person
   (the imprint is `tbd`).
 
+  The heading link carries no text; CSS draws its "#". Medium's import
+  copies text, so a "#" in the markup ended up after every imported
+  heading (checked 2026-10-17).
+
   The update date comes from `lastmod` in the front matter, not from git,
   so a typo fix does not make a post look new. A post dated in the future
   stays out of the build until the daily release run (04:17 UTC, the
@@ -1009,7 +1013,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: CAT-36, CAT-11d.
 
   - Test: `catalog/test_catalog.py` (`test_blog_post_page`)
-  - Since: #272
+  - Since: #272, #278
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this

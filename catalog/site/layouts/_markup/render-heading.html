@@ -9,7 +9,7 @@
   {{- $id = printf "readme-%s" .Anchor -}}
 {{- end -}}
 {{- if eq .Page.Section "blog" }}{{/* CAT-36a: a link to the section */}}
-<h{{ $l }} id="{{ $id }}">{{ .Text }} <a class="anchor" href="#{{ $id }}" aria-label="Link to {{ .PlainText }}">#</a></h{{ $l }}>
+<h{{ $l }} id="{{ $id }}">{{ .Text }} <a class="anchor" href="#{{ $id }}" aria-label="Link to {{ .PlainText }}"></a></h{{ $l }}>
 {{- else }}
 <h{{ $l }} id="{{ $id }}">{{ .Text }}</h{{ $l }}>
 {{- end }}
