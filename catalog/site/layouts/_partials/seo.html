@@ -25,7 +25,7 @@
 <title>{{ $title }}</title>
 <meta name="description" content="{{ $desc }}">
 <link rel="canonical" href="{{ .Permalink }}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{{ if and (eq .Section "blog") (eq .Kind "page") }}article{{ else }}website{{ end }}">
 <meta property="og:site_name" content="{{ site.Title }}">
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ $desc }}">
@@ -43,6 +43,10 @@
 {{- $org := dict "@type" "Organization" "@id" (print site.BaseURL "#organization") "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL) "sameAs" (slice (printf "https://github.com/%s" site.Data.catalog.owner)) -}}
 {{- $web := dict "@type" "WebSite" "name" site.Title "url" site.BaseURL "description" $desc "publisher" (dict "@id" (print site.BaseURL "#organization")) -}}
 <script type="application/ld+json">{{ dict "@context" "https://schema.org" "@graph" (slice $web $org) }}</script>
+{{- end }}
+{{- if and (eq .Section "blog") (eq .Kind "page") }}{{/* CAT-36a */}}
+{{- $org := dict "@type" "Organization" "name" "kadet-hub maintainers" "url" (printf "https://github.com/%s" site.Data.catalog.owner) -}}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "BlogPosting" "headline" .Title "description" .Description "url" .Permalink "mainEntityOfPage" .Permalink "image" ("og.png" | absURL) "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") "author" $org "publisher" (dict "@type" "Organization" "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL)) }}</script>
 {{- end }}
 {{- with $g }}
 {{- $ld := dict "@context" "https://schema.org" "@type" "SoftwareSourceCode" "name" .name "description" .description "codeRepository" .source_url "url" $.Permalink "programmingLanguage" "Python" "license" (printf "https://spdx.org/licenses/%s.html" .license) -}}

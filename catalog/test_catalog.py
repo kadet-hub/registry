@@ -497,11 +497,49 @@ class Site(unittest.TestCase):
         self.assertTrue(self.markdown("blog", slug).startswith("# Kapitan generators as supply-chain artifacts\n\nKapitan's kadet"))
         with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
             feed = __import__("xml.dom.minidom").dom.minidom.parseString(f.read())
-        self.assertEqual([e.getElementsByTagName("id")[0].firstChild.data for e in feed.getElementsByTagName("entry")],
-                         [f"https://kadet-hub.org/blog/{slug}/"])
+        self.assertIn(f"https://kadet-hub.org/blog/{slug}/", [e.getElementsByTagName("id")[0].firstChild.data for e in feed.getElementsByTagName("entry")])
         with open(os.path.join(self.out, "index.xml"), encoding="utf-8") as f:
             self.assertNotIn("/blog/", f.read())  # the release feed stays as it is
         self.assertIn('href="../blog/"', self.page("guides"))
+
+    def test_blog_post_page(self):  # CAT-36a
+        post = self.page("blog", "kapitan-generators-as-supply-chain-artifacts")
+        self.assertRegex(post, r'<p class="byline">By <a href="https://github.com/[^"]+">kadet-hub maintainers</a> · Published <time datetime="2026-10-17">17 October 2026</time> · \d+ min read</p>')
+        self.assertIn('<meta property="og:type" content="article">', post)
+        ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', post, re.S)]
+        self.assertEqual([(b["@type"], b["datePublished"], b["author"]["@type"]) for b in ld], [("BlogPosting", "2026-10-17T00:00:00Z", "Organization")])
+        self.assertIn('<h2 id="what-a-version-goes-through">What a version goes through <a class="anchor" href="#what-a-version-goes-through"', post)
+        self.assertIn('/registry/blob/main/catalog/site/content/blog/kapitan-generators-as-supply-chain-artifacts.md">Edit this post</a>', post)
+        self.assertNotIn('class="anchor"', self.page("guides", "writing-a-kapitan-generator"))
+        self.assertIn('<meta property="og:type" content="website">', self.page("blog"))
+        with tempfile.TemporaryDirectory() as tmp:  # a second, longer post with code: copy button, contents, pager, related
+            site = os.path.join(tmp, "site")
+            shutil.copytree(os.path.join(HERE, "site"), site)
+            body = "\n\n".join(f"## Part {i}\n\n" + "word " * 150 for i in range(6))
+            with open(os.path.join(site, "content", "blog", "second.md"), "w", encoding="utf-8") as f:
+                f.write("---\ntitle: A second post on the gate\ndate: 2026-10-16\nlastmod: 2026-10-18\ntopics: [gate]\n"
+                        "description: A second post for the test of the post page, with code and enough words for contents.\n---\n\n"
+                        f"{body}\n\n```bash\necho hi\n```\n")
+            os.makedirs(os.path.join(site, "data"))
+            shutil.copy(os.path.join(HERE, "..", "policy", "tags.yaml"), os.path.join(site, "data", "tags.yaml"))
+            with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
+                json.dump(view(INDEX, OWNER, lambda _: None), f)
+            subprocess.run(["hugo", "--quiet", "--source", site, "--destination", os.path.join(tmp, "out")], check=True)
+            with open(os.path.join(tmp, "out", "blog", "second", "index.html"), encoding="utf-8") as f:
+                second = f.read()
+            with open(os.path.join(tmp, "out", "blog", "kapitan-generators-as-supply-chain-artifacts", "index.html"), encoding="utf-8") as f:
+                first = f.read()
+            with open(os.path.join(tmp, "out", "guides", "writing-a-kapitan-generator", "index.html"), encoding="utf-8") as f:
+                guide = f.read()
+        self.assertIn('· Updated <time datetime="2026-10-18">18 October 2026</time>', second)
+        self.assertIn('<summary><h2 id="toc">On this page</h2></summary>', second)
+        self.assertNotIn('id="toc"', first)  # under 800 words
+        self.assertRegex(second, r'<div class="snippet"><div id="code-0"><div class="highlight"><pre[^>]*><code class="language-bash"')
+        self.assertIn('data-copy="code-0"', second)
+        self.assertNotIn('class="snippet"><div id="code-', guide)
+        self.assertIn('<a rel="next" href="../../blog/kapitan-generators-as-supply-chain-artifacts/">Newer: Kapitan generators', second)
+        self.assertIn('<a rel="prev" href="../../blog/second/">Older: A second post on the gate</a>', first)
+        self.assertIn('<h2 id="related">Related posts</h2>', first)  # shares the topic gate
 
     def test_how_kadet_hub_works(self):  # CAT-35, CAT-35a, CAT-28, CAT-11b
         html = self.page("guides", "how-kadet-hub-works")

@@ -1,7 +1,7 @@
 ---
 title: Kapitan generators as supply-chain artifacts
-layout: prose
 date: 2026-10-17
+topics: [supply chain, gate, kapitan]
 description: Why kadet-hub gate-checks Kapitan generators before listing them, what the sandboxed compile and API server dry runs caught, and how to use them.
 ---
 

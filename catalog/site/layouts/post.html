@@ -1,0 +1,28 @@
+{{ define "main" }}
+{{- /* CAT-36a: a blog post. */ -}}
+<article class="prose-page prose post">
+<h1>{{ .Title }}</h1>
+<p class="byline">By <a href="https://github.com/{{ site.Data.catalog.owner }}">kadet-hub maintainers</a> · Published <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2 January 2006" }}</time>
+{{- if gt .Lastmod .Date }} · Updated <time datetime="{{ .Lastmod.Format "2006-01-02" }}">{{ .Lastmod.Format "2 January 2006" }}</time>{{ end }} · {{ .ReadingTime }} min read</p>
+<p class="lead">{{ .Description }}</p>
+{{ if ge .WordCount 800 }}<nav class="toc" aria-labelledby="toc">
+<details open>
+  <summary><h2 id="toc">On this page</h2></summary>
+  {{ .TableOfContents }}
+</details>
+</nav>{{ end }}
+{{ .Content }}
+<footer class="post-foot">
+<p><a href="https://github.com/{{ site.Data.catalog.owner }}/registry/discussions">Discuss on GitHub</a> · <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/catalog/site/content/{{ .File.Path }}">Edit this post</a> · <a href="{{ "blog/index.xml" | relURL }}">Atom feed</a></p>
+{{ $related := where (site.RegularPages.Related .) "Section" "blog" | first 3 }}
+{{ with $related }}<h2 id="related">Related posts</h2>
+<ul class="guide-list">{{ range . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p></li>{{ end }}</ul>{{ end }}
+{{ $posts := (where site.RegularPages "Section" "blog").ByDate }}
+<nav class="pager" aria-label="Older and newer posts">
+{{- /* Pages.Next is the page before the given one in the collection, Pages.Prev the one after. */}}
+{{ with $posts.Next . }}<a rel="prev" href="{{ .RelPermalink }}">Older: {{ .Title }}</a>{{ end }}
+{{ with $posts.Prev . }}<a rel="next" href="{{ .RelPermalink }}">Newer: {{ .Title }}</a>{{ end }}
+</nav>
+</footer>
+</article>
+{{ end }}
