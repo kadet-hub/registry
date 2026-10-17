@@ -115,7 +115,7 @@ since the documented package API has no visibility call.
   versions.
 
   - Test: `release/test_release.py` (`test_oci_attestations_are_pushed_to_the_registry`); manual: `cosign verify-attestation` on the first version published after the change
-  - Since: tbd
+  - Since: #275
 
 - PUB-4: The release workflow MUST publish an attested index as
   `ghcr.io/kadet-hub/index` with a `serial` that increases with every
