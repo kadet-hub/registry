@@ -259,6 +259,8 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .post .toc ul { margin: .6rem 0 0; padding: 0; list-style: none; border-left: 2px solid var(--border); }
 .post .toc ul ul { border-left: 0; padding-left: .9rem; }
 .post .anchor { color: var(--text-muted); text-decoration: none; font-weight: 400; opacity: 0; }
+/* The "#" is drawn by CSS, so copies of the text (Medium's import, reader views) do not pick it up. */
+.post .anchor::after { content: "#"; }
 .post :is(h2, h3):hover .anchor, .post .anchor:focus { opacity: 1; }
 .post-foot { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 1rem; }
 .pager { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
