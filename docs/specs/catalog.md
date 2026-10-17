@@ -1001,7 +1001,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: CAT-36, CAT-11d.
 
   - Test: `catalog/test_catalog.py` (`test_blog_post_page`)
-  - Since: tbd
+  - Since: #272
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
