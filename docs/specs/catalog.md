@@ -959,7 +959,7 @@ Related: CAT-15, CAT-30, CON-2.
   request like a guide.
 
   - Test: `catalog/test_catalog.py`
-  - Since: tbd
+  - Since: #271
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
