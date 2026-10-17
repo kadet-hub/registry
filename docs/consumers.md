@@ -13,6 +13,25 @@ credentials and network access. `kapitan compile --fetch` therefore gives no
 integrity check and no sandbox. Use the workflow below, or perform its steps
 yourself.
 
+For a local compile, install Kapitan the way the sandbox does:
+
+```sh
+uv tool install --with omegaconf==2.4.0.dev4 'kapitan[omegaconf,reclass-rs]==0.36.3'
+```
+
+omegaconf 2.4.0 removed `ListMergeMode`, so without the pin the OmegaConf
+backend fails with `ImportError: cannot import name 'ListMergeMode'`
+(kapicorp/kapitan#1621). The `omegaconf` and `reclass-rs` extras do not
+install `oras`, which Kapitan's `oci` dependencies need;
+`kapitan compile --fetch` then stops with `The 'oras' package is required
+for OCI dependencies`. Rather than adding the `oci` extra, fetch by digest
+after verifying (see Verifying by hand) and compile without `--fetch`:
+
+```sh
+oras pull -o "$tmp" "ghcr.io/kadet-hub/<name>@sha256:<digest>"
+mkdir -p lib/<name> && tar -xf "$tmp/<name>.tar" -C lib/<name> --no-same-owner
+```
+
 ## Inventory
 
 Copy the entry from the generator's page on the catalog, or take name,
@@ -50,7 +69,8 @@ jobs:
 ```
 
 Pin the workflow by commit SHA; the scripts and the sandbox image it uses
-belong to that commit. The compiled output is uploaded as the artifact
+belong to that commit. The workflow compiles the Kapitan project at the
+repository root; a project in a subdirectory needs its own repository. The compiled output is uploaded as the artifact
 `compiled`. Review it before you apply it.
 
 The workflow reads the policy `.kapitan-sandbox.yaml` at the repository root
@@ -233,6 +253,21 @@ gh release download index-<serial> --repo kadet-hub/registry --pattern 'index.js
 gh attestation verify index.json --bundle index.json.sigstore.json --owner kadet-hub \
   --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
 jq .serial index.json
+```
+
+`gh attestation verify` prints its result only on a terminal; in a script
+or CI it is silent and only the exit status tells pass from fail. Add
+`--format json` to see what was verified. Without `--predicate-type` it
+checks the SLSA provenance only. Versions published since
+kadet-hub/registry#47 also carry an SBOM, and those since #226 that follow
+an earlier listed version an output diff:
+
+```sh
+for type in https://spdx.dev/Document/v2.3 https://kadet-hub.org/output-diff/v1; do
+  gh attestation verify "oci://ghcr.io/kadet-hub/<name>@sha256:<digest>" --owner kadet-hub \
+    --predicate-type "$type" \
+    --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+done
 ```
 
 `index.json.intoto.jsonl` holds the same signed provenance in the in-toto
