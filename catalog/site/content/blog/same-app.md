@@ -1,6 +1,6 @@
 ---
 title: The same app in Helm, Kustomize and Kapitan
-date: 2026-10-24
+date: 2026-11-03
 topics: [kapitan, helm, kustomize, comparison]
 description: One app, two environments, three tools, matching manifests. Where Kapitan saves work and where Helm and Kustomize stay ahead, checked by a script.
 ---

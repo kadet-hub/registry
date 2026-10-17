@@ -517,7 +517,7 @@ class Site(unittest.TestCase):
             shutil.copytree(os.path.join(HERE, "site"), site)
             body = "\n\n".join(f"## Part {i}\n\n" + "word " * 150 for i in range(6))
             with open(os.path.join(site, "content", "blog", "second.md"), "w", encoding="utf-8") as f:
-                f.write("---\ntitle: A second post on the gate\ndate: 2026-10-16\nlastmod: 2026-10-18\ntopics: [gate]\n"
+                f.write("---\ntitle: A second post on the gate\ndate: 2000-01-01\nlastmod: 2000-01-03\ntopics: [gate]\n"
                         "description: A second post for the test of the post page, with code and enough words for contents.\n---\n\n"
                         f"{body}\n\n```bash\necho hi\n```\n")
             os.makedirs(os.path.join(site, "data"))
@@ -531,14 +531,15 @@ class Site(unittest.TestCase):
                 first = f.read()
             with open(os.path.join(tmp, "out", "guides", "writing-a-kapitan-generator", "index.html"), encoding="utf-8") as f:
                 guide = f.read()
-        self.assertIn('· Updated <time datetime="2026-10-18">18 October 2026</time>', second)
+        self.assertIn('· Updated <time datetime="2000-01-03">3 January 2000</time>', second)
         self.assertIn('<summary><h2 id="toc">On this page</h2></summary>', second)
         self.assertNotIn('id="toc"', first)  # under 800 words
         self.assertRegex(second, r'<div class="snippet"><div id="code-0"><div class="highlight"><pre[^>]*><code class="language-bash"')
         self.assertIn('data-copy="code-0"', second)
         self.assertNotIn('class="snippet"><div id="code-', guide)
-        self.assertIn('<a rel="next" href="../../blog/kapitan-generators-as-supply-chain-artifacts/">Newer: Kapitan generators', second)
-        self.assertIn('<a rel="prev" href="../../blog/second/">Older: A second post on the gate</a>', first)
+        self.assertIn('<a rel="next" href="../../blog/', second)  # the oldest post has a newer one
+        self.assertNotIn('rel="prev"', second.split('class="pager"')[1])
+        self.assertIn('rel="prev"', first.split('class="pager"')[1])
         self.assertIn('<h2 id="related">Related posts</h2>', first)  # shares the topic gate
 
     def test_how_kadet_hub_works(self):  # CAT-35, CAT-35a, CAT-28, CAT-11b

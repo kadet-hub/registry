@@ -1,6 +1,6 @@
 ---
 title: Catch bad manifests with a server-side dry run in CI
-date: 2026-10-31
+date: 2026-10-20
 topics: [ci, validation, crds, gate]
 description: A copy-paste GitHub Actions job that starts etcd and kube-apiserver, installs your CRDs and dry-runs every manifest in a few seconds.
 ---
