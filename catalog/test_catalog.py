@@ -844,6 +844,10 @@ class Site(unittest.TestCase):
         html = self.page()
         title = re.search(r"<title>([^<]*)</title>", html).group(1)
         self.assertTrue(50 <= len(title) <= 60, title)
+        self.assertIn("Kubernetes", title)  # CAT-11a: "kapitan" alone is ambiguous in search
+        self.assertRegex(self.page(), r"<h1>Kapitan generators for Kubernetes and Terraform")
+        for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan generator vs Helm")):
+            self.assertIn(f"<h1>{start}", self.page("guides", slug))
         ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
         types = {node["@type"]: node for node in ld["@graph"]}
         self.assertEqual(types["WebSite"]["url"], "https://kadet-hub.org/")

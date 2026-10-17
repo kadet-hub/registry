@@ -110,8 +110,16 @@ remembered in the browser's `localStorage`.
   `sameAs`, without an address or phone number, which the site does not
   publish.
 
+  Titles, the home page's `h1` and its description name Kapitan together
+  with Kubernetes or Terraform. On its own, "kapitan" completes in search
+  suggestions to a restaurant and a border crossing, and "kadet" to a car
+  (checked 2026-10-17 with Google's and DuckDuckGo's suggestion endpoints);
+  "kapitan kubernetes" and "kapitan generator" are unambiguous. Guide
+  titles lead with the term searched for: "migrate ingress-nginx to
+  Gateway API", "kapitan generator vs helm chart vs kustomize".
+
   - Test: `catalog/test_catalog.py`
-  - Since: #196
+  - Since: #196, #274
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.

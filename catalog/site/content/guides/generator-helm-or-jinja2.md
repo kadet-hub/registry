@@ -1,5 +1,5 @@
 ---
-title: Generator, Helm chart or jinja2?
+title: Kapitan generator vs Helm chart vs Kustomize
 layout: prose
 description: Choosing between a Kapitan kadet generator, the helm input, jinja2 templates and Kustomize, with concrete cases for each and the trade-offs.
 ---
