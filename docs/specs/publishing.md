@@ -95,6 +95,28 @@ since the documented package API has no visibility call.
   - Test: manual: AC-6
   - Since: #13
 
+- PUB-3a: Every attestation whose subject is an OCI digest (the
+  artifact's provenance, SBOM and output diff, the sandbox image and the
+  index manifest) MUST also be pushed to ghcr.io as an OCI referrer of
+  that digest.
+
+  Without it the attestations live only in GitHub's attestation store.
+  `gh attestation verify` finds them there, but `cosign
+  verify-attestation` looks for referrers in the registry and fails with
+  `no matching attestations`; `oras discover` listed none (checked
+  2026-10-17 on kubernetes 1.2.0). `actions/attest` pushes the bundle with
+  `push-to-registry: true`. `create-storage-record` stays off, since it
+  needs `artifact-metadata: write` and records nothing a consumer checks.
+  Versions published before this change keep their attestations in the
+  attestation store only.
+
+  The referrers are untagged manifests in the same package. The index
+  reads versions from semver tags only (PUB-4), so they are not taken for
+  versions.
+
+  - Test: `release/test_release.py` (`test_oci_attestations_are_pushed_to_the_registry`); manual: `cosign verify-attestation` on the first version published after the change
+  - Since: tbd
+
 - PUB-4: The release workflow MUST publish an attested index as
   `ghcr.io/kadet-hub/index` with a `serial` that increases with every
   publication, listing per version: name, version, digest, tree ID,
