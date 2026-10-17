@@ -113,6 +113,8 @@ jobs:
         with:
           subject-name: ${{ steps.push.outputs.ref }}
           subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true # PUB-3a
+          create-storage-record: false # needs artifact-metadata: write
 
       - name: Attest the SBOM
         if: steps.push.outputs.publish == 'true'
@@ -120,6 +122,8 @@ jobs:
         with:
           subject-name: ${{ steps.push.outputs.ref }}
           subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true # PUB-3a
+          create-storage-record: false # needs artifact-metadata: write
           sbom-path: ${{ steps.push.outputs.sbom }}
 
       - name: Attest the output diff
@@ -128,6 +132,8 @@ jobs:
         with:
           subject-name: ${{ steps.push.outputs.ref }}
           subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true # PUB-3a
+          create-storage-record: false # needs artifact-metadata: write
           predicate-type: https://kadet-hub.org/output-diff/v1
           predicate-path: ${{ steps.push.outputs.diff }}
 
@@ -170,6 +176,8 @@ jobs:
         with:
           subject-name: ${{ steps.push.outputs.ref }}
           subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true # PUB-3a
+          create-storage-record: false # needs artifact-metadata: write
 
       - name: Tag
         if: steps.push.outputs.publish == 'true'
@@ -217,6 +225,8 @@ jobs:
         with:
           subject-name: ${{ steps.push.outputs.ref }}
           subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true # PUB-3a
+          create-storage-record: false # needs artifact-metadata: write
 
       - name: Attest index.json (PUB-12)
         id: attest-file
