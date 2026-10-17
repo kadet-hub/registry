@@ -31,7 +31,8 @@ The project pins the Kapitan version the kadet-hub sandbox uses, with uv:
 name = "first-platform"
 version = "0.1.0"
 requires-python = ">=3.11,<3.13"
-dependencies = ["kapitan[omegaconf,reclass-rs]==0.36.3"]
+# omegaconf 2.4.0 breaks the OmegaConf backend of Kapitan 0.36.3 (kapicorp/kapitan#1621).
+dependencies = ["kapitan[omegaconf,reclass-rs]==0.36.3", "omegaconf==2.4.0.dev4"]
 
 [tool.uv]
 package = false

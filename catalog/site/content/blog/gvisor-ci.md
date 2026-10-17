@@ -61,7 +61,9 @@ same scripts inside `runsc --rootless --network=none run`, in an OCI bundle
 whose root filesystem is `python:3.13-slim` exported read-only, with no host
 mounts.
 
-`--network=none` gives the sandbox no interfaces:
+With `--network=none` the sandbox has no interfaces. In this rootless
+bundle setup the network namespace from `runsc spec` already cuts it off,
+so the flag matters most where the namespace is shared:
 
     name lookup blocked: DNS blocked
     raw-IP connect reached network, result: OSError [Errno 101] Network is unreachable
@@ -175,9 +177,19 @@ are pinned by commit SHA, `permissions` is empty, and there are no caches.
               curl -fsSLo runsc.tar.zstd \
                 "https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/x86_64/gvisor.tar.zstd"
               echo "${GVISOR_SHA512}  runsc.tar.zstd" | sha512sum -c -
-              sudo tar --zstd -xf runsc.tar.zstd -C /usr/local/bin runsc
+              # runsc starts its sidecars from gvisor-bin/ next to it: unpack everything
+              sudo tar --zstd -xf runsc.tar.zstd -C /usr/local/bin
+          - name: Allow unprivileged user namespaces
+            # ubuntu-24.04 restricts them with AppArmor; rootless runsc fails
+            # with "fork/exec /proc/self/exe: permission denied" otherwise
+            run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           - name: Run contributor code sandboxed
             run: runsc --rootless --network=none --ignore-cgroups do python3 -I pr-code.py
+
+The example repository runs this setup weekly on `ubuntu-24.04`. Its first
+run failed without the `sysctl` step: Ubuntu 24.04 lets AppArmor restrict
+unprivileged user namespaces, and rootless `runsc` needs them. The step only
+changes the throwaway runner.
 
 The gate itself goes further, running under Docker with the `runsc-trace`
 runtime so it can judge the syscall trace, which needs daemon configuration
