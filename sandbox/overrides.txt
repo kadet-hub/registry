@@ -1,0 +1,2 @@
+# GI-16: kapicorp/kapitan#1632 raises Kapitan's cap of <49.
+cryptography>=50.0.0

@@ -1,0 +1,2 @@
+# GI-16: semgrep pins mcp==1.29.0.
+mcp>=1.30.0,<2
