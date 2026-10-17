@@ -485,6 +485,24 @@ class Site(unittest.TestCase):
             self.page("guides", slug)
         self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
 
+    def test_blog(self):  # CAT-36
+        slug = "kapitan-generators-as-supply-chain-artifacts"
+        blog = self.page("blog")
+        self.assertIn(f'<a href="../blog/{slug}/">Kapitan generators as supply-chain artifacts</a> <time datetime="2026-10-17">', blog)
+        self.assertIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog" href="../blog/index.xml">', blog)
+        post = self.page("blog", slug)
+        self.assertIn('<time datetime="2026-10-17">17 October 2026</time>', post)
+        self.assertIn('<a href="../../guides/checking-custom-resources-against-crds/">', post)  # internal, so no rel=nofollow
+        self.assertNotIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog"', self.page("guides"))
+        self.assertTrue(self.markdown("blog", slug).startswith("# Kapitan generators as supply-chain artifacts\n\nKapitan's kadet"))
+        with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
+            feed = __import__("xml.dom.minidom").dom.minidom.parseString(f.read())
+        self.assertEqual([e.getElementsByTagName("id")[0].firstChild.data for e in feed.getElementsByTagName("entry")],
+                         [f"https://kadet-hub.org/blog/{slug}/"])
+        with open(os.path.join(self.out, "index.xml"), encoding="utf-8") as f:
+            self.assertNotIn("/blog/", f.read())  # the release feed stays as it is
+        self.assertIn('href="../blog/"', self.page("guides"))
+
     def test_how_kadet_hub_works(self):  # CAT-35, CAT-35a, CAT-28, CAT-11b
         html = self.page("guides", "how-kadet-hub-works")
         main = html[html.index("<main"):html.index("</main>")]
@@ -796,7 +814,8 @@ class Site(unittest.TestCase):
 
     def test_headings_skip_no_level(self):
         for parts in ((), ("generators", "demo"), ("tags", "helm"), ("tags",), ("guides", "writing-a-kapitan-generator"), ("kinds",),
-                      ("compatibility",), ("wanted",), ("stats",), ("guides", "how-kadet-hub-works")):
+                      ("compatibility",), ("wanted",), ("stats",), ("guides", "how-kadet-hub-works"), ("blog",),
+                      ("blog", "kapitan-generators-as-supply-chain-artifacts")):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
             for before, after in zip(levels, levels[1:]):

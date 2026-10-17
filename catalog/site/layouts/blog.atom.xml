@@ -1,0 +1,21 @@
+{{- /* CAT-36: one entry per blog post, newest first. */ -}}
+{{- $posts := (where site.RegularPages "Section" "blog").ByDate.Reverse -}}
+{{ printf "<?xml version=\"1.0\" encoding=\"utf-8\"?>" | safeHTML }}
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>kadet-hub blog</title>
+  <link rel="self" href="{{ "blog/index.xml" | absURL }}"/>
+  <link rel="alternate" href="{{ .Permalink }}"/>
+  <id>{{ .Permalink }}</id>
+  <updated>{{ with index $posts 0 }}{{ .Lastmod.UTC.Format "2006-01-02T15:04:05Z" }}{{ else }}{{ now.UTC.Format "2006-01-02T15:04:05Z" }}{{ end }}</updated>
+  <author><name>kadet-hub</name></author>
+{{- range $posts }}
+  <entry>
+    <title>{{ .Title }}</title>
+    <link href="{{ .Permalink }}"/>
+    <id>{{ .Permalink }}</id>
+    <published>{{ .Date.UTC.Format "2006-01-02T15:04:05Z" }}</published>
+    <updated>{{ .Lastmod.UTC.Format "2006-01-02T15:04:05Z" }}</updated>
+    <summary>{{ .Description }}</summary>
+  </entry>
+{{- end }}
+</feed>
