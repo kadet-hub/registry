@@ -1,5 +1,5 @@
 ---
-title: ingress-nginx to Gateway API with Kapitan
+title: Migrate ingress-nginx to Gateway API with Kapitan
 layout: prose
 description: Moving Kapitan targets from ingress-nginx Ingresses to Gateway API routes, side by side, with the annotation mapping and the defaults that differ.
 ---
