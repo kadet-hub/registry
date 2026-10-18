@@ -116,10 +116,15 @@ remembered in the browser's `localStorage`.
   (checked 2026-10-17 with Google's and DuckDuckGo's suggestion endpoints);
   "kapitan kubernetes" and "kapitan generator" are unambiguous. Guide
   titles lead with the term searched for: "migrate ingress-nginx to
-  Gateway API", "kapitan generator vs helm chart vs kustomize".
+  Gateway API", "kapitan generator vs helm chart vs kustomize", "Bitnami
+  chart alternatives".
+
+  The Bitnami guide is one page with a section per chart rather than a
+  page per chart: near-identical pages per search term are doorway pages
+  under Google's spam policies.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #196, #274
+  - Since: #196, #274, #279
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.

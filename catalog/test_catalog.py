@@ -390,7 +390,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 6)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 7)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -481,7 +481,8 @@ class Site(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.out, "og.png")))
         guides = self.page("guides")
         for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators",
-                     "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api", "how-kadet-hub-works"):
+                     "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api", "how-kadet-hub-works",
+                     "bitnami-chart-alternatives"):
             self.assertIn(f"guides/{slug}/", guides)
             self.page("guides", slug)
         self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
@@ -848,7 +849,8 @@ class Site(unittest.TestCase):
         self.assertTrue(50 <= len(title) <= 60, title)
         self.assertIn("Kubernetes", title)  # CAT-11a: "kapitan" alone is ambiguous in search
         self.assertRegex(self.page(), r"<h1>Kapitan generators for Kubernetes and Terraform")
-        for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan generator vs Helm")):
+        for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan generator vs Helm"),
+                            ("bitnami-chart-alternatives", "Bitnami chart alternatives")):
             self.assertIn(f"<h1>{start}", self.page("guides", slug))
         ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
         types = {node["@type"]: node for node in ld["@graph"]}
