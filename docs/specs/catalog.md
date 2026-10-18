@@ -124,7 +124,7 @@ remembered in the browser's `localStorage`.
   under Google's spam policies.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #196, #274, tbd
+  - Since: #196, #274, #279
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
