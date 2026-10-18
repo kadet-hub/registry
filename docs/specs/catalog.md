@@ -1020,6 +1020,26 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_blog_post_page`)
   - Since: #272, #278
 
+- CAT-36b: For every week from Monday 12 October 2026 in which at least
+  one version was published and is not yanked, the blog MUST have a post
+  dated the following Monday at `/blog/releases-<monday>/`, with one line
+  per generator: its versions of that week, "new" when its first version
+  is among them, and links to the generator page and to the CHANGELOG at
+  the source commit of the newest of them.
+
+  The post is generated at build time from the index, through the content
+  adapter, so no one writes or commits it, and it enters the blog feed and
+  the outreach pipeline like a written post. A week's post is dated after
+  the week ends; Hugo leaves future-dated pages out, so a post appears
+  complete with the first daily build on that Monday and never changes
+  after outreach has copied it. Article posts are dated on Tuesdays and
+  do not share the day. Grouping by generator keeps a week of upstream
+  bumps to one line each. The week of 5 October, when the first 30
+  versions were imported, has no post; the launch post covers it.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #280
+
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
   page" list linking each section that is present, which marks the section

@@ -8,3 +8,24 @@
     {{ $.AddPage (dict "kind" "page" "path" (printf "kinds/%s/%s" $group $key) "title" (printf "%s (%s)" $k.name $group) "layout" "kind" "params" (dict "group" $group "kindkey" $key "kindname" $k.name) "description" (truncate 159 "…" (printf "Kapitan generators on kadet-hub that render %s (%s), gate-checked and attested." $k.name $group))) }}
   {{ end }}{{ end }}
 {{ end }}
+{{/* CAT-36b: a blog post per week with published versions, dated the Monday after; Hugo leaves it out until then. */}}
+{{ range site.Data.catalog.releases }}
+  {{ $mon := time .monday }}{{ $sun := time .sunday }}
+  {{ $span := printf "%s to %s" ($mon.Format "2 January") ($sun.Format "2 January 2006") }}
+  {{ if eq $mon.Month $sun.Month }}{{ $span = printf "%s to %s" ($mon.Format "2") ($sun.Format "2 January 2006") }}{{ end }}
+  {{ $names := slice }}{{ $rows := slice }}
+  {{ range .generators }}
+    {{ $names = $names | append .name }}
+    {{ $rows = $rows | append (printf "| [%s](/generators/%s/)%s | %s | [CHANGELOG](%s) |" .name .name (cond .new " (new)" "") (delimit .versions ", ") .changelog) }}
+  {{ end }}
+  {{ $body := printf `Versions published on kadet-hub from %s, each through the gate and signed. The generator page shows each version's output diff against the version before it, its SBOM and the command that verifies it.
+
+| Generator | Versions | Changes |
+|---|---|---|
+%s
+` $span (delimit $rows "\n") }}
+  {{ $.AddPage (dict "kind" "page" "path" (printf "blog/releases-%s" .monday) "title" (printf "Kapitan generator releases, %s" $span)
+      "dates" (dict "date" (time .date)) "content" (dict "mediaType" "text/markdown" "value" $body)
+      "params" (dict "topics" (slice "releases" "generators"))
+      "description" (truncate 159 "…" (printf "New Kapitan generator versions on kadet-hub from %s: %s." $span (delimit $names ", ")))) }}
+{{ end }}

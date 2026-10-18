@@ -9,6 +9,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import unittest.mock
 import urllib.parse
 import xml.etree.ElementTree as ET
 from html import unescape as _unescape
@@ -16,7 +17,7 @@ from html import unescape as _unescape
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEO_CHECK = os.path.join(HERE, "seo_check.py")
 sys.path.insert(0, HERE)
-from view import README_MAX, readme, schema_kinds, view
+from view import README_MAX, readme, releases, schema_kinds, view
 
 OWNER = "kadet-hub"
 
@@ -1257,6 +1258,43 @@ class View(unittest.TestCase):
         self.assertEqual(gens["old"]["stars_shared"], 2)  # all yanked: not counted, but its repo's stars are shared
         g = view(index, OWNER, lambda _: None)["generators"][0]
         self.assertIsNone(g["stars_shared"])  # no stars, no label
+
+
+class ReleaseDigest(unittest.TestCase):  # CAT-36b
+    INDEX = {"serial": 9, "generators": {
+        "demo": {"1.0.0": dict(record("a"), published="2026-10-09T05:00:00Z"),  # the import week: no post
+                 "1.1.0": dict(record("b"), published="2026-10-13T08:00:00Z"),
+                 "1.2.0": dict(record("c"), published="2026-10-18T23:59:59Z"),
+                 "1.3.0": dict(record("d", yanked="broken"), published="2026-10-14T08:00:00Z")},
+        "plain": {"0.1.0": dict(record("e"), published="2026-10-26T00:00:00Z"),  # first version: new
+                  "0.2.0": dict(record("f"), published="2099-01-05T00:00:00Z")}}}
+
+    def test_weeks(self):
+        weeks = releases(self.INDEX)
+        self.assertEqual([(w["monday"], w["date"]) for w in weeks],
+                         [("2026-10-12", "2026-10-19"), ("2026-10-26", "2026-11-02"), ("2099-01-05", "2099-01-12")])
+        demo = weeks[0]["generators"]
+        self.assertEqual([(g["name"], g["versions"], g["new"]) for g in demo], [("demo", ["1.1.0", "1.2.0"], False)])
+        self.assertTrue(demo[0]["changelog"].endswith("/CHANGELOG.md"))
+        self.assertEqual([(g["name"], g["new"]) for g in weeks[1]["generators"]], [("plain", True)])
+
+    def test_posts(self):
+        with tempfile.TemporaryDirectory() as tmp, unittest.mock.patch.dict(os.environ, {"HUGO_BUILDFUTURE": "true"}):
+            out = build(self.INDEX, tmp)
+            with open(os.path.join(out, "blog", "releases-2026-10-12", "index.md"), encoding="utf-8") as f:
+                md = f.read()
+            with open(os.path.join(out, "blog", "releases-2026-10-26", "index.html"), encoding="utf-8") as f:
+                html = f.read()
+        self.assertTrue(md.startswith("# Kapitan generator releases, 12 to 18 October 2026\n"), md)
+        self.assertIn("\n| [demo](/generators/demo/) | 1.1.0, 1.2.0 | [CHANGELOG](", md)
+        self.assertNotIn("1.3.0", md)
+        self.assertIn("<title>Kapitan generator releases, 26 October to 1 November 2026", html)
+        self.assertIn('<time datetime="2026-11-02">', html)
+        self.assertIn("plain</a> (new)", html)
+        with tempfile.TemporaryDirectory() as tmp:
+            out = build(self.INDEX, tmp)
+            self.assertFalse(os.path.exists(os.path.join(out, "blog", "releases-2099-01-05")))  # future-dated: left out
+            self.assertFalse(os.path.exists(os.path.join(out, "blog", "releases-2026-10-05")))
 
 
 class Discussions(unittest.TestCase):

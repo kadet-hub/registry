@@ -23,6 +23,7 @@ only counts and requirement IDs are kept (CAT-33).
 """
 
 import argparse
+import datetime
 import hashlib
 import html
 import json
@@ -213,7 +214,31 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
     sections = {"builtin": sorted(s for s in by_kind if s in BUILTIN), "custom": sorted(s for s in by_kind if s not in BUILTIN)}
     labels = {s: named[s].pop() for s in sections["custom"] if len(named[s]) == 1}
     return {"owner": owner, "serial": index.get("serial"), "generators": generators, "kinds": by_kind, "sections": sections,
-            "software": labels}
+            "software": labels, "releases": releases(index)}
+
+
+FIRST_WEEK = datetime.date(2026, 10, 12)
+
+
+def releases(index):
+    """CAT-36b: per week from FIRST_WEEK, each generator's listed versions published that week."""
+    weeks = {}
+    for name, versions in sorted(index.get("generators", {}).items()):
+        dated = sorted((r["published"], v, r) for v, r in versions.items()
+                       if isinstance(r.get("published"), str) and STAMP.match(r["published"]))
+        first = dated[0][0] if dated else None
+        for published, v, r in dated:
+            day = datetime.date.fromisoformat(published[:10])
+            monday = day - datetime.timedelta(days=day.weekday())
+            if monday < FIRST_WEEK or r.get("yanked"):
+                continue
+            g = weeks.setdefault(monday, {}).setdefault(name, {"name": name, "versions": [], "new": False})
+            g["versions"].append(v)
+            g["new"] |= published == first
+            g["changelog"] = blob_url(r["source"]) + "CHANGELOG.md"
+    return [{"monday": m.isoformat(), "date": (m + datetime.timedelta(days=7)).isoformat(),
+             "sunday": (m + datetime.timedelta(days=6)).isoformat(), "generators": list(gs.values())}
+            for m, gs in sorted(weeks.items())]
 
 
 def load_rekor(path):
