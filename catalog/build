@@ -48,7 +48,8 @@ else
   }
   fetch generators.yml
   for page in "$here"/site/content/recipes/*.md; do fetch "recipes/$(basename -- "$page" .md).yml"; done
-  for g in $(sed -nE 's|^ *output_path: lib/([a-z0-9-]+)$|\1|p' -- "$recipes/inventory/classes/generators.yml"); do fetch "recipes/lib/$g.yml"; done
+  # The compile and operator classes the recipe classes include; mutate, used by operator classes, has no compile class.
+  for c in $(sed -nE 's/^ *- recipes\.(lib|operators)\.([a-z0-9-]+)$/\1\/\2/p' -- "$recipes"/inventory/classes/recipes/*.yml | sort -u); do fetch "recipes/$c.yml"; done
   # CAT-7: the layer of each generator's latest version that is not yanked, by digest.
   # CAT-23: what the previous build published, to reuse for unchanged digests.
   previous=$work/previous.json

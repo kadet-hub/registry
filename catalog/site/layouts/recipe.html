@@ -17,6 +17,14 @@
 <p><code>{{ $l.path }}</code></p>
 {{ partial "snippet.html" (dict "id" (printf "lib-%d" $i) "label" $l.path "text" $l.text) }}
 {{ end }}
+{{ with $r.operators }}
+<h2>Operator classes</h2>
+<p>Each installs an operator from the project's Helm chart, pinned by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>; where the chart's values cannot set a change, the <a href="{{ "/generators/mutate/" | relURL }}">mutate</a> generator patches the rendered chart.</p>
+{{ range $i, $o := . }}
+<p><code>{{ $o.path }}</code></p>
+{{ partial "snippet.html" (dict "id" (printf "operator-%d" $i) "label" $o.path "text" $o.text) }}
+{{ end }}
+{{ end }}
 <h2>Generator pins</h2>
 <p>The entries of <code>inventory/classes/generators.yml</code> for these generators, pinned by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>.</p>
 {{ partial "snippet.html" (dict "id" "pins" "label" "generator pins" "text" $r.pins) }}

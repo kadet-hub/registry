@@ -159,22 +159,35 @@ def artifact(path, files):
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
 RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"], "valkey": [],
                      "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": [], "mysql": [], "mongodb": []}
+# The operator classes and whether each runs mutate, which has a pin and no compile class.
+RECIPE_OPERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cert-manager", "cloudnative-pg", "keycloak"], "kafka": ["strimzi"],
+                    "rabbitmq": ["cert-manager"]}
+OPERATOR_MUTATES = {"cloudnative-pg": True, "cert-manager": False, "keycloak": False, "strimzi": True}
 
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
     os.makedirs(os.path.join(root, "recipes", "lib"), exist_ok=True)
-    pins = sorted({g for gs in RECIPE_GENERATORS.values() for g in gs} | {"kubernetes"})
+    os.makedirs(os.path.join(root, "recipes", "operators"), exist_ok=True)
+    pins = sorted({g for gs in RECIPE_GENERATORS.values() for g in gs} | {"kubernetes", "mutate"})
     with open(os.path.join(root, "generators.yml"), "w", encoding="utf-8") as f:
         f.write("# pins\nparameters:\n  kapitan:\n    dependencies:\n" + "".join(
             f"      - type: oci\n        source: ghcr.io/{OWNER}/{g}:1.0.0@sha256:{'e' * 64}\n        output_path: lib/{g}\n" for g in pins))
     for g in pins:
+        if g == "mutate":
+            continue
         with open(os.path.join(root, "recipes", "lib", f"{g}.yml"), "w", encoding="utf-8") as f:
             f.write(f"# Compiles {g}.\nparameters:\n  kapitan:\n    compile:\n      - {{input_type: kadet, input_paths: [lib/{g}], output_path: {g}/}}\n")
+    for o, mutates in OPERATOR_MUTATES.items():
+        with open(os.path.join(root, "recipes", "operators", f"{o}.yml"), "w", encoding="utf-8") as f:
+            f.write(f"# Installs {o}.\nclasses:\n  - recipes.lib.kubernetes\nparameters:\n  kapitan:\n    compile:\n"
+                    f"      - {{input_type: helm, input_paths: [charts/{o}], output_path: operators/{o}}}\n"
+                    + (f"      - {{input_type: kadet, input_paths: [lib/mutate], output_path: operators/{o}, output_type: plain}}\n" if mutates else ""))
     for name, gens in RECIPE_GENERATORS.items():
         with open(os.path.join(root, "recipes", f"{name}.yml"), "w", encoding="utf-8") as f:
             f.write(f"# {name} <script>alert(7)</script> in place of\n# a Bitnami chart.\nclasses:\n"
-                    + "".join(f"  - recipes.lib.{g}\n" for g in ["kubernetes"] + gens) + f"\nparameters:\n  {name}: {{a: <b>}}\n")
+                    + "".join(f"  - recipes.lib.{g}\n" for g in ["kubernetes"] + gens)
+                    + "".join(f"  - recipes.operators.{o}\n" for o in RECIPE_OPERATORS.get(name, [])) + f"\nparameters:\n  {name}: {{a: <b>}}\n")
 
 
 def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False):
@@ -566,15 +579,23 @@ class Site(unittest.TestCase):
         self.assertNotIn("<script>alert(7)", page)
         self.assertIn("<li>Replaces the Bitnami charts: <code>keycloak</code></li>", page)
         self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/cloudnative-pg/">cloudnative-pg</a>, '
-                      '<a href="../../generators/certmanager/">certmanager</a>, <a href="../../generators/keycloak/">keycloak</a></li>', page)
+                      '<a href="../../generators/certmanager/">certmanager</a>, <a href="../../generators/keycloak/">keycloak</a>, '
+                      '<a href="../../generators/mutate/">mutate</a></li>', page)
         self.assertIn("<li>Operators: Keycloak Operator, CloudNativePG, cert-manager</li>", page)
         with open(os.path.join(self.tmp.name, "recipes", "inventory", "classes", "recipes", "keycloak.yml"), encoding="utf-8") as f:
             cls = f.read()
         self.assertIn(f'<pre id="class"><code>{cls.replace("<", "&lt;").replace(">", "&gt;")}</code></pre>', page)
         pins = _unescape(re.search(r'<pre id="pins"><code>(.*?)</code></pre>', page, re.S).group(1))
-        self.assertEqual(re.findall(r"output_path: lib/(\S+)", pins), ["certmanager", "cloudnative-pg", "keycloak", "kubernetes"])
+        self.assertEqual(re.findall(r"output_path: lib/(\S+)", pins), ["certmanager", "cloudnative-pg", "keycloak", "kubernetes", "mutate"])
         self.assertNotIn("strimzi", pins)
         self.assertIn('<pre id="lib-3"><code># Compiles keycloak.', page)
+        self.assertIn('<h2>Operator classes</h2>', page)
+        self.assertIn('<p><code>inventory/classes/recipes/operators/keycloak.yml</code></p>', page)
+        self.assertIn('<pre id="operator-2"><code># Installs keycloak.', page)
+        rabbitmq = self.page("recipes", "rabbitmq")  # cert-manager's class runs no mutate
+        self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', rabbitmq)
+        self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/rabbitmq/">rabbitmq</a></li>', rabbitmq)
+        self.assertNotIn("Operator classes", self.page("recipes", "valkey"))
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
         self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
@@ -583,6 +604,7 @@ class Site(unittest.TestCase):
         self.assertTrue(md.startswith("# Keycloak on Kubernetes without Bitnami, with Kapitan\n\n> keycloak <script>"))
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
         self.assertIn("\n## inventory/classes/recipes/lib/strimzi.yml\n", self.markdown("recipes", "kafka"))
+        self.assertIn("\n## inventory/classes/recipes/operators/strimzi.yml\n\n```yaml\n# Installs strimzi.", self.markdown("recipes", "kafka"))
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
         for name in RECIPE_GENERATORS:
@@ -591,13 +613,14 @@ class Site(unittest.TestCase):
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
 
     def test_recipe_file_missing_fails_the_build(self):  # CAT-37a
-        with tempfile.TemporaryDirectory() as tmp:
-            recipes = os.path.join(tmp, "recipes")
-            recipe_classes(os.path.join(recipes, "inventory", "classes"))
-            os.remove(os.path.join(recipes, "inventory", "classes", "recipes", "lib", "strimzi.yml"))
-            with self.assertRaises(subprocess.CalledProcessError) as failed:
-                build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
-            self.assertIn("strimzi", failed.exception.stderr)  # CAT-1: Hugo's error is printed
+        for missing in ("lib", "operators"):
+            with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
+                recipes = os.path.join(tmp, "recipes")
+                recipe_classes(os.path.join(recipes, "inventory", "classes"))
+                os.remove(os.path.join(recipes, "inventory", "classes", "recipes", missing, "strimzi.yml"))
+                with self.assertRaises(subprocess.CalledProcessError) as failed:
+                    build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
+                self.assertIn(f"recipes/{missing}/strimzi.yml missing", failed.exception.stderr)  # CAT-1: Hugo's error is printed
 
     def test_blog(self):  # CAT-36
         slug = "kapitan-generators-as-supply-chain-artifacts"
