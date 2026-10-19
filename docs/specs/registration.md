@@ -153,7 +153,7 @@ fetched tree; this is the layout consumers use.
     1.181.0, each released less than three days before, and proposed the
     argocd and cilium entry bumps. Checksums: lookup with tool pins set
     one release back; `checksum-pins` workflow.
-  - Since: #6; release age: #259; checksums: this change
+  - Since: #6; release age: #259; checksums: #292
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
