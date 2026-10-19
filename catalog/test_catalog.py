@@ -595,6 +595,7 @@ class Site(unittest.TestCase):
         blog = self.page("blog")
         self.assertIn(f'<a href="../blog/{slug}/">Kapitan generators as supply-chain artifacts</a> <time datetime="2026-10-17">', blog)
         self.assertIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog" href="../blog/index.xml">', blog)
+        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("blog", "first-platform"))  # CAT-11a
         post = self.page("blog", slug)
         self.assertIn('<time datetime="2026-10-17">17 October 2026</time>', post)
         self.assertIn('<a href="../../guides/checking-custom-resources-against-crds/">', post)  # internal, so no rel=nofollow

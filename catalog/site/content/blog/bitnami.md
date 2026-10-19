@@ -2,7 +2,7 @@
 title: "Bitnami Helm alternatives: render manifests yourself"
 date: 2026-10-27
 topics: [helm, bitnami, generators]
-description: Bitnami's free charts and images no longer get updates. Options for PostgreSQL, from the upstream operator chart to a verified generator.
+description: "Bitnami PostgreSQL chart alternatives, now that the free charts and images get no updates: from the upstream operator chart to a verified Kapitan generator."
 ---
 
 If you installed PostgreSQL, Redis or nginx from a Bitnami chart, the
@@ -169,8 +169,8 @@ kubeconform -strict -summary \
 The schemas are closed, so a value carried over from Bitnami habits fails.
 Adding `replicaCount: 2` under `spec` gives
 "additional properties 'replicaCount' not allowed". A schema check is not
-the operator's admission webhook; [Checking custom resources against their
-CRDs](/guides/checking-custom-resources-against-crds/) covers what it
+the operator's admission webhook; [Validate Kubernetes custom resources
+against their CRDs](/guides/checking-custom-resources-against-crds/) covers what it
 misses.
 
 ## Trade-offs
