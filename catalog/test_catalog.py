@@ -848,7 +848,10 @@ class Site(unittest.TestCase):
         title = re.search(r"<title>([^<]*)</title>", html).group(1)
         self.assertTrue(50 <= len(title) <= 60, title)
         self.assertIn("Kubernetes", title)  # CAT-11a: "kapitan" alone is ambiguous in search
-        self.assertRegex(self.page(), r"<h1>Kapitan generators for Kubernetes and Terraform")
+        self.assertRegex(self.page(), r"<h1>Kapitan generators for Kubernetes and Terraform[^<]*Helm alternative</h1>")
+        self.assertIn("Helm alternative", title)  # CAT-11f
+        desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
+        self.assertTrue("Helm" in desc and "Kustomize" in desc, desc)
         for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan generator vs Helm"),
                             ("bitnami-chart-alternatives", "Bitnami chart alternatives")):
             self.assertIn(f"<h1>{start}", self.page("guides", slug))

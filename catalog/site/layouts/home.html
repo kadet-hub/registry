@@ -3,7 +3,7 @@
 {{/* CAT-26: only generators with a listed version get a card. */}}
 {{ $gens := where site.Data.catalog.generators "latest" "!=" nil }}
 <section class="hero">
-  <h1>Kapitan generators for Kubernetes and Terraform, signed and gate-checked</h1>
+  <h1>Kapitan generators for Kubernetes and Terraform: a signed, gate-checked Helm alternative</h1>
   <p class="lead">Every listed version of these Kapitan generators is gate-checked: it passed secret, malware and code scans, a fixture compile in a gVisor sandbox without network and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.</p>
   <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a><a class="button" href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request a generator</a><a class="button" href="{{ "/wanted/" | relURL }}">Wanted generators</a></p>
 </section>

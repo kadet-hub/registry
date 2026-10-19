@@ -1,6 +1,6 @@
 {{- /* CAT-11: title, description, canonical, Open Graph and JSON-LD. */ -}}
-{{- $title := "Signed Kapitan generators for Kubernetes · kadet-hub" -}}
-{{- $desc := "Free Kapitan generators that render Kubernetes manifests and Terraform from your inventory, scanned, sandboxed and published as signed OCI artifacts." -}}
+{{- $title := "Kapitan generators, a Helm alternative for Kubernetes" -}}
+{{- $desc := "A Helm and Kustomize alternative: Kapitan generators render Kubernetes manifests and Terraform from your inventory, scanned, sandboxed and signed." -}}
 {{- $g := dict -}}
 {{- with .Params.generator }}{{ $g = index (where site.Data.catalog.generators "name" .) 0 }}{{ end -}}
 {{- if and (not .IsHome) (not .Params.generator) -}}
