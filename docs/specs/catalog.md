@@ -169,12 +169,14 @@ remembered in the browser's `localStorage`.
   | helm vs argocd, kustomize vs helm vs argocd | same guide |
   | gvisor vs docker | no page yet |
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
+  | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
+  | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
 
   "kapicorp" is not a target: the people who search it know Kapitan
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297
+  - Since: #284, #287, #288, #290, #291, #297, #298
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.

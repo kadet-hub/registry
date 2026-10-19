@@ -455,7 +455,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 11)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 12)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -548,7 +548,8 @@ class Site(unittest.TestCase):
         guides = self.page("guides")
         for slug in ("writing-a-kapitan-generator", "generator-helm-or-jinja2", "supply-chain-security-for-kapitan-generators",
                      "checking-custom-resources-against-crds", "ingress-nginx-to-gateway-api", "how-kadet-hub-works",
-                     "bitnami-chart-alternatives", "helm-alternatives-for-kubernetes", "talos-machine-config", "helm-vs-terraform", "argocd-vs-flux"):
+                     "bitnami-chart-alternatives", "helm-alternatives-for-kubernetes", "talos-machine-config", "helm-vs-terraform", "argocd-vs-flux",
+                     "patch-helm-chart"):
             self.assertIn(f"guides/{slug}/", guides)
             self.page("guides", slug)
         self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
@@ -970,7 +971,8 @@ class Site(unittest.TestCase):
                             ("helm-alternatives-for-kubernetes", "Helm alternatives for Kubernetes"),
                             ("talos-machine-config", "Talos machine config"),
                             ("helm-vs-terraform", "Helm vs Terraform for Kubernetes"),
-                            ("argocd-vs-flux", "Argo CD vs Flux")):
+                            ("argocd-vs-flux", "Argo CD vs Flux"),
+                            ("patch-helm-chart", "Patch a Helm chart")):
             self.assertIn(f"<h1>{start}", self.page("guides", slug))
         ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
         types = {node["@type"]: node for node in ld["@graph"]}
