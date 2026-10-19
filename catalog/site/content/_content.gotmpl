@@ -26,6 +26,6 @@
 ` $span (delimit $rows "\n") }}
   {{ $.AddPage (dict "kind" "page" "path" (printf "blog/releases-%s" .monday) "title" (printf "Kapitan generator releases, %s" $span)
       "dates" (dict "date" (time .date)) "content" (dict "mediaType" "text/markdown" "value" $body)
-      "params" (dict "topics" (slice "releases" "generators"))
+      "params" (dict "topics" (slice "releases" "generators") "release" .monday)
       "description" (truncate 159 "…" (printf "New Kapitan generator versions on kadet-hub from %s: %s." $span (delimit $names ", ")))) }}
 {{ end }}

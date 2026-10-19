@@ -788,12 +788,12 @@ class Site(unittest.TestCase):
             prev = os.path.join(tmp, "catalog.json")
             digest = INDEX["generators"]["demo"]["1.10.0"]["digest"]
             with open(prev, "w", encoding="utf-8") as f:
-                json.dump({"generators": [{"name": "demo", "latest": {"digest": digest}, "readme": "# Kept"},
+                json.dump({"generators": [{"name": "demo", "latest": {"digest": digest}, "readme": "# Kept", "changelog": {"1.10.0": "- kept", "1.2.0": 1}},
                                           {"name": "big", "latest": {"digest": "sha256:x"}, "readme": "x" * (README_MAX + 1)}]}, f)
             previous = load_previous(prev)
-        self.assertEqual(previous, {("demo", digest): "# Kept"})  # oversized README dropped
+        self.assertEqual(previous, {("demo", digest): {"readme": "# Kept", "changelog": {"1.10.0": "- kept"}}})  # oversized README dropped
         g = view(INDEX, OWNER, lambda _: None, previous=previous)["generators"][0]
-        self.assertEqual(g["readme"], "# Kept")
+        self.assertEqual((g["readme"], g["changelog"]), ("# Kept", {"1.10.0": "- kept"}))  # CAT-36b
         moved = {"generators": dict(INDEX["generators"], demo=dict(INDEX["generators"]["demo"], **{"1.11.0": record("f")}))}
         self.assertIsNone(view(moved, OWNER, lambda _: None, previous=previous)["generators"][0]["readme"])  # new digest
         with open(os.path.join(self.out, "catalog.json"), encoding="utf-8") as f:
@@ -1406,6 +1406,75 @@ class ReleaseDigest(unittest.TestCase):  # CAT-36b
             out = build(self.INDEX, tmp)
             self.assertFalse(os.path.exists(os.path.join(out, "blog", "releases-2099-01-05")))  # future-dated: left out
             self.assertFalse(os.path.exists(os.path.join(out, "blog", "releases-2026-10-05")))
+        self.assertNotIn("## demo", md)  # no artifact layer: the line only
+        self.assertNotIn("Full changelog", md)
+
+    # The CHANGELOG.md of demo's latest listed version, 1.2.0: sections of other versions, markup and control characters.
+    CHANGELOG = ("# Changelog\n\n## [1.3.0] - 2026-10-14\n\n- yanked entry\n\n## 1.2.0-rc.1\n\n- rc entry\n\n## 11.2.0\n\n- other entry\n\n"
+                 "## [1.2.0] - 2026-10-18\n\n### Fixed\n\n- fix <script>alert(8)</script>\x1b\u202e one, see [docs](docs/x.md),"
+                 " [site](https://example.org/y) and [above](#fixed)\n- ## nested\n\nUnderlined\n---\n\n{{< nope >}}\n\n"
+                 "## v1.1.0\n\n```yaml\n## not a heading\n```\n" + "".join(f"- change {i}\n" for i in range(20))
+                 + "\n## [1.0.0] - 2026-10-09\n\n- import entry\n")
+
+    def test_sections(self):
+        from view import changelog_sections as sections
+        found = sections(self.CHANGELOG, ["1.3.0", "1.2.0", "1.1.0", "1.0.0"])
+        self.assertTrue(found["1.2.0"].startswith("#### Fixed\n\n- fix <script>alert(8)</script> one,"), found["1.2.0"])
+        self.assertNotIn("rc entry", found["1.2.0"])
+        self.assertNotIn("other entry", found["1.2.0"])
+        self.assertIn("\n## not a heading\n", found["1.1.0"])  # inside a fence: kept, no heading
+        self.assertEqual(found["1.0.0"], "- import entry")
+        with tempfile.TemporaryDirectory() as tmp:  # no CHANGELOG.md in the layer
+            artifact(os.path.join(tmp, "a.tar"), {"./README.md": "# Plain\n"})
+            self.assertEqual(sections(readme(os.path.join(tmp, "a.tar"), "CHANGELOG.md"), ["1.0.0"]), {})
+        g = releases(self.INDEX, {"demo": sections("## 1.0.0\n\n- other version", ["1.0.0"])})[0]["generators"][0]
+        self.assertEqual((g["entries"], g["cut"]), ([], False))  # no section for the week's versions: the line only
+
+    def test_excerpt_is_capped(self):
+        from view import changelog_sections as sections
+        found = sections(self.CHANGELOG, ["1.2.0", "1.1.0"])
+        g = releases(self.INDEX, {"demo": found})[0]["generators"][0]
+        self.assertEqual([e["version"] for e in g["entries"]], ["1.2.0", "1.1.0"])  # newest first
+        self.assertTrue(g["cut"])
+        self.assertEqual(sum(e["text"].count("\n") + 1 for e in g["entries"]), 15)
+        g = releases(self.INDEX, {"demo": {"1.1.0": "- one\n```\ncode"}})[0]["generators"][0]
+        self.assertEqual((g["entries"], g["cut"]), ([{"version": "1.1.0", "text": "- one\n```\ncode\n```"}], False))
+
+    def test_changelog_in_posts(self):
+        with tempfile.TemporaryDirectory() as tmp, unittest.mock.patch.dict(os.environ, {"HUGO_BUILDFUTURE": "true"}):
+            os.makedirs(os.path.join(tmp, "artifacts"))
+            artifact(os.path.join(tmp, "artifacts", "demo.tar"), {"./README.md": "# Demo\n", "./CHANGELOG.md": self.CHANGELOG})
+            with open(os.path.join(tmp, "artifacts", "plain.tar"), "w", encoding="utf-8") as f:
+                f.write("not a tar")  # unreadable layer
+            out = build(self.INDEX, tmp, artifacts=os.path.join(tmp, "artifacts"))
+            post = os.path.join(out, "blog", "releases-2026-10-12")
+            with open(os.path.join(post, "index.md"), encoding="utf-8") as f:
+                md = f.read()
+            with open(os.path.join(post, "index.html"), encoding="utf-8") as f:
+                html = f.read()
+            with open(os.path.join(out, "blog", "releases-2026-10-26", "index.md"), encoding="utf-8") as f:
+                plain = f.read()
+            seo = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+        self.assertEqual(seo.returncode, 0, seo.stdout)  # CAT-11b: headings do not skip a level
+        self.assertIn("| [demo](/generators/demo/) | 1.1.0, 1.2.0 | [CHANGELOG](", md)  # the line stays
+        self.assertIn("\n## demo\n\n### demo 1.2.0\n\n#### Fixed\n\n- fix <script>alert(8)</script> one,", md)
+        self.assertIn("\n### demo 1.1.0\n\n```yaml\n## not a heading\n```\n- change 0\n", md)
+        self.assertIn(f"\n[Full changelog](https://github.com/example/demo/blob/{'c' * 40}/CHANGELOG.md)\n", md)
+        for text in ("yanked entry", "rc entry", "other entry", "import entry", "change 19", "\x1b", "\u202e"):
+            self.assertNotIn(text, md)
+            self.assertNotIn(text, html)
+        self.assertNotIn("<script>alert", html)
+        self.assertIn('<a href="https://example.org/y" rel="nofollow ugc noopener">site</a>', html)
+        self.assertIn(f'<a href="https://github.com/example/demo/blob/{"c" * 40}/docs/x.md" rel="nofollow ugc noopener">docs</a>', html)
+        self.assertIn(f'href="https://github.com/example/demo/blob/{"c" * 40}/CHANGELOG.md#fixed" rel="nofollow ugc noopener">above</a>', html)
+        self.assertIn("{{&lt; nope &gt;}}", html)  # no shortcode call
+        levels = [int(n) for n in re.findall(r"<h([1-6])", html[html.index('id="changes-demo"') - 8:html.index('class="post-foot"')])]
+        self.assertEqual(levels[:2], [2, 3])
+        self.assertTrue(all(n >= 4 for n in levels[2:] if n != 3), levels)
+        self.assertIn('id="changes-demo-1.2.0-fixed"', html)
+        self.assertIn(">Full changelog</a>", html)
+        self.assertNotIn("## plain", plain)  # unreadable layer: the line only
+        self.assertIn("| [plain](/generators/plain/) (new) | 0.1.0 | [CHANGELOG](", plain)
 
 
 class Discussions(unittest.TestCase):

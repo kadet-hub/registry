@@ -1065,20 +1065,53 @@ Related: CAT-15, CAT-30, CON-2.
   dated the following Monday at `/blog/releases-<monday>/`, with one line
   per generator: its versions of that week, "new" when its first version
   is among them, and links to the generator page and to the CHANGELOG at
-  the source commit of the newest of them.
+  the source commit of the newest of them. Below the lines, the post MUST
+  show each generator's CHANGELOG sections of that week's versions, at most
+  15 lines per generator, ending with a "Full changelog" link to that
+  CHANGELOG when lines were cut.
 
   The post is generated at build time from the index, through the content
   adapter, so no one writes or commits it, and it enters the blog feed and
   the outreach pipeline like a written post. A week's post is dated after
   the week ends; Hugo leaves future-dated pages out, so a post appears
-  complete with the first daily build on that Monday and never changes
-  after outreach has copied it. Article posts are dated on Tuesdays and
-  do not share the day. Grouping by generator keeps a week of upstream
-  bumps to one line each. The week of 5 October, when the first 30
-  versions were imported, has no post; the launch post covers it.
+  complete with the first daily build on that Monday. Article posts are
+  dated on Tuesdays and do not share the day. Grouping by generator keeps
+  a week of upstream bumps to one line each. The week of 5 October, when
+  the first 30 versions were imported, has no post; the launch post covers
+  it.
 
-  - Test: `catalog/test_catalog.py`
-  - Since: #280
+  The sections come from the CHANGELOG.md in the artifact layer of the
+  generator's latest listed version, which the catalog job pulls for the
+  README (CAT-7) and which holds the earlier entries too. A version's
+  section starts at a heading that names the version as QA-1 matches it,
+  so 1.2.0 matches neither 1.2.0-rc.1 nor 11.2.0, and ends at the next
+  heading of the same or a higher level; lines inside fenced code are not
+  headings. `catalog.json` keeps the sections next to the README, and a
+  build that reuses the README of an unchanged digest reuses them, so each
+  layer is still pulled once (CAT-23). The 15 lines count over the week's
+  versions, newest first; a cut inside a fenced code block closes the
+  fence. A generator without CHANGELOG.md, without a section for the
+  week's versions or whose layer was not read keeps its line only.
+
+  Since the text is the latest version's, a later version that edits an
+  older entry changes a published post, and the post of 12 October changed
+  when the sections were added. Generated posts have no `lastmod`, so
+  neither shows an update date (CAT-36a).
+
+  The text is the generator author's, reviewed with the tree like the
+  README, and is rendered like it: the control characters of CAT-27 are
+  removed, raw HTML is omitted, the shortcode delimiters `{{<` and `{{%`
+  are escaped so the text cannot call a shortcode, links and images
+  resolve relative targets against the source commit, and every link
+  carries `rel="nofollow ugc"`. A section's headings sit at least one level
+  below the post's `h3` for the version and at most one level below the
+  heading before them (CAT-11b), including headings nested in lists or
+  written with underlines. The Markdown variant (CAT-28) carries the same
+  text with the same heading levels where they are written with `#`, and
+  keeps raw HTML as CAT-28 does for the README.
+
+  - Test: `catalog/test_catalog.py` (`ReleaseDigest`)
+  - Since: #280, #289
 
 - CAT-37: The site MUST have a page at `/recipes/<name>/` for every recipe
   of kadet-hub/examples and an index of them at `/recipes/`. A recipe page

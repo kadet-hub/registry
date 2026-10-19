@@ -6,7 +6,8 @@ Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
 A failed lookup leaves the user ID or no stars; --offline skips the API.
 DIR/<name>.tar is the latest version's artifact layer; its README.md is
-shown on the generator page (CAT-7). DIR/<name>/<version>.spdx.json marks a
+shown on the generator page (CAT-7), its CHANGELOG.md sections in the
+weekly digest (CAT-36b). DIR/<name>/<version>.spdx.json marks a
 version whose SBOM the site offers (CAT-14); the schemas it lists give the
 kinds of a latest listed version without a kinds record (CAT-29); --rekor
 maps name and version to the transparency log index of the verified
@@ -14,7 +15,7 @@ attestation (CAT-17);
 --discussions maps name to the URL and 👍 count of its discussion (CAT-20).
 DIR/<name>.html is the generator's public package page; its "Total
 downloads" are the pulls of the popularity score (CAT-23). --previous is the
-catalog.json of the last build; its README is used when the latest digest
+catalog.json of the last build; its README and CHANGELOG sections are used when the latest digest
 is unchanged and no artifact layer was fetched. --diffs DIR/<name>/<version>.output.diff
 is a version's verified output diff; its first lines are shown (CAT-27).
 --wanted is the list of open generator requests (CAT-31).
@@ -50,16 +51,43 @@ BUILTIN = {"core", "admissionregistration.k8s.io", "apiextensions.k8s.io", "apir
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")  # Cc but tab and newline, Bidi_Control
 
 
-def readme(path):
-    """README.md at the root of the artifact layer, or None."""
+def readme(path, name="README.md"):
+    """README.md (or another file) at the root of the artifact layer, or None."""
     try:
         with tarfile.open(path) as t:
-            m = next((m for m in t.getmembers() if m.isfile() and m.name.removeprefix("./") == "README.md"), None)
+            m = next((m for m in t.getmembers() if m.isfile() and m.name.removeprefix("./") == name), None)
             if m is None or m.size > README_MAX:
                 return None
             return t.extractfile(m).read().decode("utf-8", errors="replace")
     except (OSError, tarfile.TarError):
         return None
+
+
+ATX = re.compile(r"^ {0,3}(#{1,6})(?=[ \t]|$)")
+FENCE = re.compile(r"^\s*(?:```|~~~)")
+CHANGELOG_LINES = 15
+
+
+def changelog_sections(text, versions):
+    """CAT-36b: {version: its CHANGELOG section} without control characters, sub-headings from h4 down."""
+    found, current = {}, None
+    fence = False
+    for line in CONTROL.sub("", text or "").split("\n"):
+        h = None if fence else ATX.match(line)
+        fence ^= bool(FENCE.match(line))
+        if h and current and len(h.group(1)) <= current[1]:
+            current = None
+        if h and current is None:
+            current = next(((v, len(h.group(1))) for v in versions if v not in found  # QA-1's match
+                            and re.search(rf"(?<![\w.])v?{re.escape(v)}(?![\w.-])", line)), None)
+            if current:
+                found[current[0]] = []
+            continue
+        if h:
+            line = "#" * min(6, 3 + len(h.group(1)) - current[1]) + line[h.end():]
+        if current:
+            found[current[0]].append(line)
+    return {v: "\n".join(lines).strip("\n") for v, lines in found.items() if "".join(lines).strip()}
 
 
 def schema_kinds(path):
@@ -169,6 +197,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             data = lookup(f"/user/{uid}")
             owners.append({"id": str(uid), "login": data.get("login") if data else None})
         tar = os.path.join(artifacts, f"{name}.tar") if artifacts and latest else None
+        kept = (previous or {}).get((name, (latest or {}).get("digest")), {})
         rendered = rendered_kinds(latest) if latest else None
         kinds = rendered if rendered is not None else (
             schema_kinds(os.path.join(sboms, name, f"{latest['version']}.spdx.json")) if sboms and latest else [])
@@ -191,7 +220,9 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             "name": name,
             "monogram": name[0].upper(),
             "hue": int(hashlib.sha256(name.encode()).hexdigest(), 16) % HUES,
-            "readme": readme(tar) if tar and os.path.isfile(tar) else (previous or {}).get((name, (latest or {}).get("digest"))),
+            "readme": readme(tar) if tar and os.path.isfile(tar) else kept.get("readme"),
+            "changelog": changelog_sections(readme(tar, "CHANGELOG.md"), [r["version"] for r in ordered if not r.get("yanked")])
+                         if tar and os.path.isfile(tar) else kept.get("changelog"),  # CAT-36b
             "blob_url": blob_url(shown["source"]),
             "description": shown.get("description", ""),
             "tags": shown.get("tags", []),
@@ -214,14 +245,33 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
     sections = {"builtin": sorted(s for s in by_kind if s in BUILTIN), "custom": sorted(s for s in by_kind if s not in BUILTIN)}
     labels = {s: named[s].pop() for s in sections["custom"] if len(named[s]) == 1}
     return {"owner": owner, "serial": index.get("serial"), "generators": generators, "kinds": by_kind, "sections": sections,
-            "software": labels, "releases": releases(index)}
+            "software": labels, "releases": releases(index, {g["name"]: g["changelog"] or {} for g in generators})}
 
 
 FIRST_WEEK = datetime.date(2026, 10, 12)
 
 
-def releases(index):
-    """CAT-36b: per week from FIRST_WEEK, each generator's listed versions published that week."""
+def excerpt(g, found):
+    """CAT-36b: the CHANGELOG sections of g's versions, newest first, CHANGELOG_LINES lines in all."""
+    g["entries"], g["cut"], left = [], False, CHANGELOG_LINES
+    for v in reversed(g["versions"]):
+        if not found.get(v):
+            continue
+        if left <= 0:
+            g["cut"] = True
+            break
+        lines = found[v].split("\n")
+        g["cut"] |= len(lines) > left
+        lines = lines[:left]
+        left -= len(lines)
+        fences = [m.group() for m in map(FENCE.match, lines) if m]
+        if len(fences) % 2:  # cut inside a fenced code block: close it
+            lines.append(fences[-1])
+        g["entries"].append({"version": v, "text": "\n".join(lines)})
+
+
+def releases(index, changelogs=None):
+    """CAT-36b: per week from FIRST_WEEK, each generator's listed versions published that week, with their CHANGELOG sections."""
     weeks = {}
     for name, versions in sorted(index.get("generators", {}).items()):
         dated = sorted((r["published"], v, r) for v, r in versions.items()
@@ -235,7 +285,11 @@ def releases(index):
             g = weeks.setdefault(monday, {}).setdefault(name, {"name": name, "versions": [], "new": False})
             g["versions"].append(v)
             g["new"] |= published == first
-            g["changelog"] = blob_url(r["source"]) + "CHANGELOG.md"
+            g["blob_url"] = blob_url(r["source"])
+            g["changelog"] = g["blob_url"] + "CHANGELOG.md"
+    for gs in weeks.values():
+        for g in gs.values():
+            excerpt(g, (changelogs or {}).get(g["name"], {}))
     return [{"monday": m.isoformat(), "date": (m + datetime.timedelta(days=7)).isoformat(),
              "sunday": (m + datetime.timedelta(days=6)).isoformat(), "generators": list(gs.values())}
             for m, gs in sorted(weeks.items())]
@@ -344,13 +398,16 @@ def stats(generators, gate):
 
 
 def load_previous(path):
-    """{(name, latest digest): README} from the last build's catalog.json."""
+    """{(name, latest digest): {"readme": README, "changelog": CHANGELOG sections}} from the last build's catalog.json."""
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
     except (OSError, TypeError, ValueError):
         return {}
-    return {(g["name"], g["latest"]["digest"]): g["readme"] for g in data.get("generators", [])
+    return {(g["name"], g["latest"]["digest"]): {
+                "readme": g["readme"],
+                "changelog": {v: t for v, t in g["changelog"].items() if isinstance(t, str)} if isinstance(g.get("changelog"), dict) else None}
+            for g in data.get("generators", [])
             if isinstance(g, dict) and isinstance(g.get("latest"), dict) and isinstance(g.get("readme"), str)
             and len(g["readme"].encode()) <= README_MAX}
 

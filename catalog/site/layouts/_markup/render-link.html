@@ -1,13 +1,17 @@
 {{- /* CAT-7: README links. http(s) and mailto stay, fragments stay, relative
-links point into the source tree at source.sha, any other scheme is dropped. */ -}}
+links point into the source tree at source.sha, any other scheme is dropped.
+CAT-36b: CHANGELOG sections likewise, every link nofollow ugc. */ -}}
 {{- $u := urls.Parse .Destination -}}
 {{- $base := "" -}}
 {{- with .Page.Params.generator }}{{ with index (where site.Data.catalog.generators "name" .) 0 }}{{ $base = .blob_url }}{{ end }}{{ end -}}
+{{- $cl := .Page.Store.Get "changelog" | default "" -}}
+{{- with $cl }}{{ $base = . }}{{ end -}}
 {{- $href := "" -}}
 {{- if in (slice "http" "https" "mailto") $u.Scheme -}}{{ $href = .Destination }}
+{{- else if and (eq $u.Scheme "") (strings.HasPrefix .Destination "#") $cl -}}{{ $href = printf "%sCHANGELOG.md%s" $base .Destination }}
 {{- else if and (eq $u.Scheme "") (strings.HasPrefix .Destination "#") -}}{{ $href = cond (ne $base "") (printf "#readme-%s" (strings.TrimPrefix "#" .Destination)) .Destination }}
 {{- else if and (eq $u.Scheme "") (ne $u.Host "") -}}{{ $href = "" }}
 {{- else if eq $u.Scheme "" -}}{{ $href = cond (ne $base "") (printf "%s%s" $base (strings.TrimPrefix "/" (strings.TrimPrefix "./" .Destination))) .Destination }}
 {{- end -}}
-{{- if $href -}}<a href="{{ $href }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if ne $u.Scheme "" }} rel="nofollow noopener"{{ end }}>{{ .Text }}</a>
+{{- if $href -}}<a href="{{ $href }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if $cl }} rel="nofollow ugc noopener"{{ else if ne $u.Scheme "" }} rel="nofollow noopener"{{ end }}>{{ .Text }}</a>
 {{- else -}}{{ .Text }}{{- end -}}
