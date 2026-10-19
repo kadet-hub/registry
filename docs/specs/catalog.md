@@ -1078,7 +1078,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: EX-5, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: tbd
+  - Since: #283
 
 - CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
   is missing.
@@ -1105,7 +1105,7 @@ Related: CAT-15, CAT-30, CON-2.
   (GI-10).
 
   - Test: `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`)
-  - Since: tbd
+  - Since: #283
 
 - CAT-37b: Every recipe page MUST have a Markdown variant (CAT-28) with
   the same facts and files, `/llms.txt` (CAT-16) MUST list it in a section
@@ -1113,7 +1113,7 @@ Related: CAT-15, CAT-30, CON-2.
   every chart it names that has one.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`, `test_llms_txt`)
-  - Since: tbd
+  - Since: #283
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
