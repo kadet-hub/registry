@@ -102,7 +102,7 @@ terms:
       the custom resources whose CRDs the generator ships, because JSON Schemas miss checks only the server runs,
       such as CEL rules.
     url: /guides/checking-custom-resources-against-crds/
-    label: Checking custom resources against their CRDs
+    label: Validate Kubernetes custom resources against their CRDs
   - id: output-capability
     name: Output capability
     text: >-

@@ -443,7 +443,7 @@ class Site(unittest.TestCase):
         for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
-        self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): A Kapitan", text)  # CAT-37b
+        self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
         self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS))
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -595,6 +595,7 @@ class Site(unittest.TestCase):
         blog = self.page("blog")
         self.assertIn(f'<a href="../blog/{slug}/">Kapitan generators as supply-chain artifacts</a> <time datetime="2026-10-17">', blog)
         self.assertIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog" href="../blog/index.xml">', blog)
+        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("blog", "first-platform"))  # CAT-11a
         post = self.page("blog", slug)
         self.assertIn('<time datetime="2026-10-17">17 October 2026</time>', post)
         self.assertIn('<a href="../../guides/checking-custom-resources-against-crds/">', post)  # internal, so no rel=nofollow

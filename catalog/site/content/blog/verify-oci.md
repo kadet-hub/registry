@@ -1,5 +1,5 @@
 ---
-title: Verify a signed OCI artifact with cosign and gh
+title: cosign verify-attestation vs gh attestation verify
 date: 2026-11-10
 topics: [supply chain, sigstore, verification]
 description: Verify SLSA provenance attestations on OCI artifacts with gh and cosign, using kadet-hub's signed index, real digests and the failures that matter.

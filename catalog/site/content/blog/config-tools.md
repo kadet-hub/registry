@@ -1,8 +1,8 @@
 ---
-title: Kapitan vs Tanka vs cdk8s for Kubernetes config
+title: cdk8s vs Tanka vs Kapitan for Kubernetes config
 date: 2026-11-24
 topics: [kapitan, helm, comparison, jsonnet]
-description: One app built with Tanka, cdk8s and Kapitan to identical manifests, with measured size, install and render time, type safety, GitOps and activity.
+description: "Kubernetes configuration management tools: one app built with Tanka, cdk8s and Kapitan to identical manifests, with size, speed, type safety and GitOps."
 ---
 
 Pick cdk8s if your team writes TypeScript and wants the compiler to reject a

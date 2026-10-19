@@ -1,7 +1,7 @@
 ---
 title: Migrate ingress-nginx to Gateway API with Kapitan
 layout: prose
-description: Moving Kapitan targets from ingress-nginx Ingresses to Gateway API routes, side by side, with the annotation mapping and the defaults that differ.
+description: ingress-nginx is retired. Moving Kapitan targets from Ingresses to Gateway API routes, side by side, with the annotation mapping and the defaults that differ.
 ---
 
 ingress-nginx is retired: best-effort maintenance ended in March 2026, and
@@ -105,4 +105,4 @@ SecurityPolicy.
 Compile, then validate the routes against the Gateway API [CRDs](/glossary/#crd) before
 anything reaches a cluster. [Server-side dry runs](/glossary/#server-side-dry-run) catch what the JSON
 Schemas do not; see
-[Checking custom resources against their CRDs](/guides/checking-custom-resources-against-crds/).
+[Validate Kubernetes custom resources against their CRDs](/guides/checking-custom-resources-against-crds/).

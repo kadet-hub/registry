@@ -1,5 +1,5 @@
 ---
-title: Checking custom resources against their CRDs
+title: Validate Kubernetes custom resources against their CRDs
 layout: prose
 description: Why JSON Schema checks miss rejected custom resources, how a throwaway kube-apiserver dry run catches them, and what to do when upstream ships no CRD YAML.
 ---

@@ -1,5 +1,5 @@
 ---
-title: A first platform from four kadet-hub generators
+title: "Kapitan on Kubernetes: a first platform from four generators"
 date: 2026-10-17
 topics: [kapitan, generators, verification]
 description: Two Kapitan targets from four verified kadet-hub generators, from an empty directory to 23 schema-valid manifests and a CI workflow.
