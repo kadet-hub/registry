@@ -41,6 +41,11 @@ Every generator and guide page has a Markdown variant at index.md next to it; th
 {{ range where site.RegularPages "Section" "guides" -}}
 - [{{ .Title }}]({{ .Permalink }}index.md): {{ .Description }}
 {{ end }}
+## Recipes
+
+{{ range where site.RegularPages "Section" "recipes" -}}
+- [{{ .Title }}]({{ .Permalink }}index.md): {{ .Description }}
+{{ end }}
 ## Optional
 
 - [Tags](https://kadet-hub.org/tags/)

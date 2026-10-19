@@ -49,6 +49,13 @@ outputs = ["html", "markdown"]
 [cascade.target]
 path = "/guides/*"
 
+# CAT-37b: recipes like guides.
+[[cascade]]
+outputs = ["html", "markdown"]
+layout = "recipe"
+[cascade.target]
+path = "/recipes/*"
+
 [[cascade]]
 outputs = ["html", "markdown"]
 layout = "post"

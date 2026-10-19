@@ -1,0 +1,9 @@
+{{ define "main" }}{{/* CAT-37 */}}
+<section class="prose-page">
+<h1>{{ .Title }}</h1>
+<p class="lead">{{ .Description }} The classes are read from <a href="https://github.com/{{ site.Data.catalog.owner }}/examples/tree/main/recipes">kadet-hub/examples</a> when the site is built.</p>
+<ul class="guide-list">
+{{ range where site.RegularPages "Section" "recipes" }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p></li>{{ end }}
+</ul>
+</section>
+{{ end }}
