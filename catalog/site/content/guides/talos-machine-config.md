@@ -1,5 +1,5 @@
 ---
-title: Talos machine config from a Kapitan inventory
+title: Talos machine config for Kubernetes from a Kapitan inventory
 layout: prose
 description: Talos machine configs for every node from one Kapitan inventory, checked with talosctl validate in CI, compared with talosctl gen config and config patches.
 ---
