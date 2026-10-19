@@ -33,14 +33,14 @@ kadet-hub-compile:
     REGISTRY_REF: $[[ inputs.ref ]]
     OWNER: $[[ inputs.owner ]]
     SANDBOX_TRACE: "0"
-    # renovate: datasource=github-releases depName=oras-project/oras
-    ORAS_VERSION: 1.3.4
+    # renovate: datasource=github-release-attachments depName=oras-project/oras
+    ORAS_VERSION: v1.3.4
     ORAS_SHA256: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
     # renovate: datasource=github-releases depName=helm/helm
     HELM_VERSION: v4.3.0
     HELM_SHA256: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
-    # renovate: datasource=github-releases depName=cli/cli
-    GH_VERSION: 2.102.0
+    # renovate: datasource=github-release-attachments depName=cli/cli
+    GH_VERSION: v2.102.0
     GH_SHA256: bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386
   script:
     - '[ -n "$GH_TOKEN" ] || { echo "CON-1a: set the CI variable GH_TOKEN"; exit 1; }'
@@ -50,12 +50,12 @@ kadet-hub-compile:
     - |
       set -eu
       fetch() { curl -fsSLo "$KADET_HUB/$1" "$2"; echo "$3  $KADET_HUB/$1" | sha256sum -c -; }
-      fetch oras.tgz "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" "$ORAS_SHA256"
+      fetch oras.tgz "https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}/oras_${ORAS_VERSION#v}_linux_amd64.tar.gz" "$ORAS_SHA256"
       fetch helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" "$HELM_SHA256"
-      fetch gh.tgz "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" "$GH_SHA256"
+      fetch gh.tgz "https://github.com/cli/cli/releases/download/${GH_VERSION}/gh_${GH_VERSION#v}_linux_amd64.tar.gz" "$GH_SHA256"
       tar -xzf "$KADET_HUB/oras.tgz" -C "$KADET_HUB/bin" oras
       tar -xzf "$KADET_HUB/helm.tgz" -C "$KADET_HUB/bin" --strip-components=1 linux-amd64/helm
-      tar -xzf "$KADET_HUB/gh.tgz" -C "$KADET_HUB/bin" --strip-components=2 "gh_${GH_VERSION}_linux_amd64/bin/gh"
+      tar -xzf "$KADET_HUB/gh.tgz" -C "$KADET_HUB/bin" --strip-components=2 "gh_${GH_VERSION#v}_linux_amd64/bin/gh"
       git init -q "$KADET_HUB/registry"
       git -C "$KADET_HUB/registry" fetch -q --depth=1 https://github.com/$OWNER/registry.git "$REGISTRY_REF"
       git -C "$KADET_HUB/registry" -c advice.detachedHead=false checkout -q FETCH_HEAD

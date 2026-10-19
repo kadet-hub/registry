@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# REG-7: compares the checksums Renovate cannot update with the publisher's
+# checksum file and prints the line to paste for each that differs.
+#
+# Usage: tests/checksum-pins [<repository root>]
+# Exits 1 on a difference or a checksum file that cannot be read.
+set -euo pipefail
+root=${1:-$(cd -- "$(dirname -- "$0")/.." && pwd)}
+cd -- "$root"
+status=0
+
+# value <file> <name>: the value of NAME: or ARG NAME= in file.
+value() { sed -nE "s/^[[:space:]]*(ARG )?$2[=:] ?\"?([^\"[:space:]]+)\"?\$/\\2/p" -- "$1"; }
+
+# check <file> <name> <checksum file URL> <asset name>
+check() {
+  local pinned sum line
+  pinned=$(value "$1" "$2")
+  sum=$(curl -fsSL "$3" | awk -v f="$4" '$2 == f || $2 == "*" f { print $1 }') \
+    || { echo "REG-7: cannot download $3"; exit 1; }
+  if [[ -z $sum ]]; then
+    echo "REG-7: $4 is not listed in $3"; status=1
+  elif [[ $sum != "$pinned" ]]; then
+    line=$(grep -nE "^[[:space:]]*(ARG )?$2[=:]" -- "$1")
+    echo "REG-7: $1:${line%%:*}: $2 differs from $3; set this line:"
+    echo "${line#*:}" | sed -E "s/[0-9a-f]{64,128}/$sum/"
+    status=1
+  fi
+}
+
+for f in sandbox/Dockerfile sandbox/gitlab-ci.yml; do
+  v=$(value "$f" HELM_VERSION)
+  check "$f" HELM_SHA256 "https://get.helm.sh/helm-$v-linux-amd64.tar.gz.sha256sum" "helm-$v-linux-amd64.tar.gz"
+done
+f=.github/actions/setup-gvisor/action.yml
+check "$f" GVISOR_SHA512 "https://storage.googleapis.com/gvisor/releases/release/$(value "$f" GVISOR_RELEASE)/x86_64/gvisor.tar.zstd.sha512" gvisor.tar.zstd
+
+exit "$status"

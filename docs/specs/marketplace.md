@@ -151,6 +151,7 @@ cover none of the changed files.
   | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, action `setup-hugo` |
   | `release-tests` | `release-tests.yml` | `release/` |
   | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
+  | `checksum-pins` | `checksum-pins.yml` | `sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`, `tests/checksum-pins`, action `setup-gvisor`; pull requests from `renovate/` branches only (REG-7) |
   | `fuzz` | `fuzz.yml` | `.clusterfuzzlite/`, `tests/fuzz/`, `gate/check_entry.py`, `gate/schema_diff.py`, `consumer/plan.py`, `sandbox/schema_check.py`, `sandbox/tag_check.py`, `sandbox/tf_schema.py`, `policy/` (GI-14) |
 
   Every workflow also lists its own file. `workflow_dispatch` runs a job
@@ -451,6 +452,7 @@ coverage is named at each:
 | `.github/workflows/codeql.yml` | GI-13 |
 | `.github/workflows/fuzz.yml`, `.clusterfuzzlite/`, `tests/fuzz/` | GI-14: build image, atheris lock, targets and seeds |
 | `renovate.json` | REG-7, tool and action pins |
+| `.github/workflows/checksum-pins.yml`, `tests/checksum-pins` | REG-7: checksums Renovate cannot update |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
 ClamAV, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,

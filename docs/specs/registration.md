@@ -96,13 +96,42 @@ fetched tree; this is the layout consumers use.
   A regex manager in `renovate.json` reads `repo`, `path`, `tag` and `sha`
   in this order, so the entry schema fixes the order. Tags are compared
   within their prefix: `argocd-v1.4.0` only moves to a newer `argocd-v*`.
-  Renovate also bumps the tool pins; versions pinned together with a
-  checksum (helm, gitleaks, gVisor) fail CI until the maintainer updates
-  the checksum on the Renovate branch. `omegaconf` stays at `2.4.0.dev4`:
+  `omegaconf` stays at `2.4.0.dev4`:
   Kapitan 0.36.3's omegaconf backend needs `ListMergeMode`, which later
   pre-releases removed. Runners stay on `ubuntu-24.04`: the scanner
   locks are for its Python, and actionlint 1.7.12 does not know newer
   labels.
+
+  Renovate also bumps the tool pins and, where the source allows it, the
+  checksum in the same pull request. Each pin uses one of three
+  mechanisms:
+
+  - Release asset: oras, gh, actionlint, zizmor, Hugo, gitleaks, conftest,
+    krab and etcd are GitHub release assets. Their comment names
+    `datasource=github-release-attachments`, which hashes the matching
+    asset of the new release. The pinned value MUST be the exact release
+    tag, because the datasource looks the release up by it; URLs that need
+    the bare number strip the `v` with `${X#v}`, which BuildKit also
+    expands in `ADD`. The sha256 MUST be that of the downloaded file, not
+    of a file inside it, or Renovate keeps the old hash without an error.
+  - Image: kube-apiserver comes from the Kubernetes project's image on
+    registry.k8s.io, Terraform from `hashicorp/terraform` on Docker Hub
+    (verified publisher HashiCorp), both pinned as `tag@sha256:digest`.
+    `sandbox/Dockerfile` copies kube-apiserver with `COPY --from`, which
+    Renovate's dockerfile manager updates; `tf-schema-verify` copies
+    terraform out with `docker create` and `docker cp`. Both binaries are
+    identical to the dl.k8s.io and releases.hashicorp.com downloads.
+  - Check: helm (`sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`) and gVisor
+    have neither a release asset nor an image published by the project.
+    Renovate bumps the version only. On pull requests from `renovate/`
+    branches the `checksum-pins` workflow runs `tests/checksum-pins` with
+    `contents: read` and no secrets; it compares each checksum with the
+    publisher's checksum file (helm `.sha256sum`, gVisor `.sha512`) and
+    fails with the line to paste.
+
+  The release-asset comments have their own match string: `github-releases`
+  also returns digests, a commit SHA, which it would write into a
+  `_SHA256` field.
 
   Renovate opens pull requests on Mondays before 06:00 Europe/Berlin
   (`schedule`, cron syntax), so they wait as one batch at the start of the
@@ -122,8 +151,9 @@ fetched tree; this is the layout consumers use.
     entries (partial: no CI check). On 2026-10-16 the lookup with
     Renovate 44.161.2 held codeql-action 4.39.0, ruff 0.17.1 and semgrep
     1.181.0, each released less than three days before, and proposed the
-    argocd and cilium entry bumps.
-  - Since: #6; release age: #259
+    argocd and cilium entry bumps. Checksums: lookup with tool pins set
+    one release back; `checksum-pins` workflow.
+  - Since: #6; release age: #259; checksums: #292
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.

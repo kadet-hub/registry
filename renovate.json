@@ -34,7 +34,7 @@
       "versioningTemplate": "regex:^(?<compatibility>.*?)v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     },
     {
-      "description": "Tool versions marked with a renovate comment; checksums next to them are updated by hand",
+      "description": "REG-7: tool versions marked with a renovate comment; release-asset and image pins carry their checksum along",
       "customType": "regex",
       "managerFilePatterns": [
         "/^sandbox/Dockerfile$/",
@@ -43,7 +43,9 @@
         "/^sandbox/gitlab-ci\\.yml$/"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?"
+        "# renovate: datasource=(?<datasource>github-releases) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?",
+        "# renovate: datasource=(?<datasource>github-release-attachments) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?\\n\\s*(?:ARG )?[A-Z_]+_SHA(?:256|512)[=:] ?\"?(?<currentDigest>[0-9a-f]{64,128})\"?",
+        "# renovate: datasource=(?<datasource>docker) depName=(?<depName>\\S+)\\n\\s*[A-Z_]+[=:] ?\"?\\S+?:(?<currentValue>[^@\"\\s:]+)@(?<currentDigest>sha256:[0-9a-f]{64})\"?"
       ]
     },
     {
@@ -100,18 +102,6 @@
       ],
       "extractVersion": "^release-(?<version>\\d+)\\.\\d+$",
       "versioning": "loose"
-    },
-    {
-      "description": "these tools are pinned without the v prefix",
-      "matchDepNames": [
-        "gitleaks/gitleaks",
-        "open-policy-agent/conftest",
-        "kapicorp/krab",
-        "rhysd/actionlint",
-        "zizmorcore/zizmor",
-        "cli/cli"
-      ],
-      "extractVersion": "^v(?<version>.+)$"
     },
     {
       "description": "Every entry bump is its own pull request for review (DEC-3)",

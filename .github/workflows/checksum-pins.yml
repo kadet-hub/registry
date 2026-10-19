@@ -1,0 +1,26 @@
+name: checksum-pins
+
+# REG-7: Renovate bumps helm and gVisor without their checksum; this names
+# the checksum the publisher lists.
+on:
+  pull_request:
+    paths:
+      - sandbox/Dockerfile
+      - sandbox/gitlab-ci.yml
+      - .github/actions/setup-gvisor/action.yml
+      - .github/workflows/checksum-pins.yml
+      - tests/checksum-pins
+
+permissions:
+  contents: read
+
+jobs:
+  checksum-pins:
+    if: startsWith(github.head_ref, 'renovate/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: tests/checksum-pins
