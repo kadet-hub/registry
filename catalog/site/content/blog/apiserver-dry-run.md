@@ -5,7 +5,7 @@ topics: [ci, validation, crds, gate]
 description: A copy-paste GitHub Actions job that starts etcd and kube-apiserver, installs your CRDs and dry-runs every manifest in a few seconds.
 ---
 
-Most repositories that ship Kubernetes manifests, Helm charts or CRDs check
+Most repositories that ship Kubernetes manifests, Helm charts or [CRDs](/glossary/#crd) check
 them in CI with kubeconform or another JSON Schema validator. That catches
 wrong types, missing required fields and, with `-strict`, unknown fields. It
 does not catch everything the API server checks, and the gap shows up on the
@@ -57,7 +57,7 @@ The two HTTPRoute rules are cross-field constraints written in CEL under
 `x-kubernetes-validations`. The generated JSON Schema still contains them,
 but a JSON Schema validator ignores keywords it does not know. The `v1` schemas of the Gateway API standard
 channel alone carry 166 of them, and many operator CRDs use them the same
-way. For the built-in kinds, much of the server's validation lives in Go
+way. For the [built-in kinds](/glossary/#kind), much of the server's validation lives in Go
 code that the published OpenAPI schema does not describe, such as name
 formats and selector matching.
 
@@ -134,7 +134,7 @@ certificate that kubectl then trusts with `--certificate-authority`.
 Without `--allow-privileged` the server rejects every privileged
 container with `Forbidden: disallowed by cluster policy`.
 
-The disabled admission plugins look up other objects. A dry run persists
+The disabled admission plugins look up other objects. A [dry run](/glossary/#server-side-dry-run) persists
 nothing, so a Pod's namespace, service account or priority class never
 exists, and these plugins would reject documents that are fine in a real
 deployment. With the `ServiceAccount` plugin on, even a Pod that names no
@@ -197,7 +197,7 @@ Service` on its backend and a `PathPrefix /` match nobody wrote.
 
 ## In kadet-hub
 
-The kadet-hub gate runs this check on every generator version before it is
+The kadet-hub [gate](/glossary/#gate) runs this check on every [generator](/glossary/#generator) version before it is
 listed: the same pinned kube-apiserver v1.37.1 and etcd v3.7.2, the
 generator's shipped CRDs, and every rendered document. [How kadet-hub
 works](/guides/how-kadet-hub-works/) describes the gate as a whole.

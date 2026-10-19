@@ -1316,6 +1316,35 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py`
   - Since: #45
 
+- CAT-13a: Every glossary entry MUST have a lowercase, hyphenated `id`
+  that is unique on the page and stays stable once published, and the
+  glossary MUST carry schema.org `DefinedTermSet` JSON-LD with one
+  `DefinedTerm` per entry. Every entry MUST be linked from at least one
+  other page of the site.
+
+  The glossary defines Kapitan and its concepts first (inventory, class,
+  target, interpolation, ref, kadet), then kadet-hub's own (generator,
+  recipe, kind, custom resource and CRD, gate, server-side dry run, output
+  capability, output diff, krab), then the supply chain (OCI artifact,
+  digest, SBOM, provenance, attestation, index, yanked). A Kapitan concept
+  links its page in the Kapitan documentation. Entries live in the front
+  matter of `content/glossary.md`, so the list and the JSON-LD come from
+  the same text; each `DefinedTerm` has the entry's name, its definition
+  as plain text and its URL with the anchor.
+
+  Guides, recipe pages and posts link the first use of a term in body
+  text to `/glossary/#<id>`, not in headings, code or existing link
+  text, and only where the word has the glossary's meaning: "kind" in
+  "kind cluster" is the tool, not a Kubernetes kind. The glossary's title
+  and description follow CAT-11 and CAT-11a and name Kapitan with
+  Kubernetes; which terms the description names is a choice, not
+  measured search volume.
+
+  Related: CAT-11, CAT-11a, CAT-37.
+
+  - Test: `catalog/test_catalog.py` (`test_glossary`)
+  - Since: #286
+
 - CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none
   - Since: #16

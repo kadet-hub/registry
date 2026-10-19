@@ -6,13 +6,13 @@ description: Kustomize, Pulumi, cdk8s, Tanka and Kapitan as Helm alternatives fo
 
 Most comparisons of Helm alternatives list features. This one starts from
 output: the same two-service app in two environments, rendered with Helm,
-Kustomize, Pulumi, cdk8s, Tanka and Kapitan, and a check in CI that fails
+Kustomize, Pulumi, cdk8s, Tanka and [Kapitan](/glossary/#kapitan), and a check in CI that fails
 unless every tool produces the same objects. The code is in
 [kadet-hub/examples](https://github.com/kadet-hub/examples):
 [`same-app`](https://github.com/kadet-hub/examples/tree/main/same-app) for
 Helm, Kustomize and Pulumi,
 [`config-tools`](https://github.com/kadet-hub/examples/tree/main/config-tools)
-for Tanka and cdk8s, both against the same Kapitan inventory.
+for Tanka and cdk8s, both against the same Kapitan [inventory](/glossary/#inventory).
 
 ## The app
 
@@ -34,7 +34,7 @@ dropped.
 | Pulumi | TypeScript, Python, Go, C#, Java, YAML | stack config and code | yes, in code | any cloud resource; Kubernetes YAML only in render mode | yes, with state and previews |
 | cdk8s | TypeScript, Python, Go, Java | code | yes, in code | Kubernetes | no, writes files |
 | Tanka | Jsonnet | Jsonnet objects | yes, through late binding | Kubernetes | yes, `tk apply` and `tk diff` |
-| Kapitan | YAML inventory, generators in Python | classes and targets | yes, `${...}` interpolation across the inventory | any file: Kubernetes, Terraform, docs | no, writes files |
+| Kapitan | YAML inventory, generators in Python | classes and targets | yes, `${...}` [interpolation](/glossary/#interpolation) across the inventory | any file: Kubernetes, Terraform, docs | no, writes files |
 
 The derived-value column is tested, not read from documentation: changing
 only the web Service port made Helm and Kustomize render a stale `:80` in
@@ -64,7 +64,7 @@ mode, `renderYamlToDirectory`, which the example uses. Three facts from
 running it:
 
 - The provider marks it "BETA FEATURE". It still tries the kubeconfig's
-  cluster to tell namespaced custom resources from cluster-scoped ones, and
+  cluster to tell namespaced [custom resources](/glossary/#crd) from cluster-scoped ones, and
   continues without one. Secrets are written to the YAML in plaintext.
 - Rendering still needs a stack and state; the example uses the local file
   backend in a temporary directory, so no Pulumi Cloud account is involved.
@@ -81,7 +81,7 @@ Kubernetes workloads together, and you accept state as the source of truth.
 
 ## cdk8s and Tanka
 
-cdk8s generates typed classes for every Kubernetes kind, so a misspelt field
+cdk8s generates typed classes for every Kubernetes [kind](/glossary/#kind), so a misspelt field
 fails the TypeScript compiler before anything renders; Tanka and Kapitan
 rendered the same typo without an error and silently dropped a
 PodDisruptionBudget. Tanka is the smallest and fastest toolchain here, about
@@ -92,8 +92,8 @@ have the measurements.
 
 ## Kapitan
 
-Kapitan keeps values in a YAML inventory of classes and targets and
-renders them through generators, so the code that turns values into objects
+Kapitan keeps values in a YAML inventory of [classes](/glossary/#class) and [targets](/glossary/#target) and
+renders them through [generators](/glossary/#generator), so the code that turns values into objects
 is someone else's maintained, versioned artifact rather than templates in
 your repository. One inventory drives Kubernetes manifests, Terraform and any
 other file, and `${...}` lets any target reference a value from another

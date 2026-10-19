@@ -4,9 +4,9 @@ layout: prose
 description: Why JSON Schema checks miss rejected custom resources, how a throwaway kube-apiserver dry run catches them, and what to do when upstream ships no CRD YAML.
 ---
 
-A rendered manifest can be valid YAML, match the JSON Schema of its kind
+A rendered manifest can be valid YAML, match the JSON Schema of its [kind](/glossary/#kind)
 and still be rejected by the cluster. For built-in kinds that gap is small.
-For custom resources it is wide, because a CustomResourceDefinition carries
+For [custom resources](/glossary/#crd) it is wide, because a CustomResourceDefinition carries
 more than a schema.
 
 ## What a JSON Schema check misses
@@ -46,7 +46,7 @@ The procedure:
 Two details matter. Admission plugins that look objects up, such as
 `ServiceAccount`, `Priority` and `RuntimeClass`, reject documents that
 refer to objects the same output would create, so they are switched off.
-And a CRD with a conversion webhook has no webhook to call; the dry run
+And a CRD with a conversion webhook has no webhook to call; the [dry run](/glossary/#server-side-dry-run)
 still converts to the storage version, so the check installs it with
 conversion `None`.
 
@@ -58,7 +58,7 @@ answer with `kubectl apply --dry-run=server -f compiled/`.
 
 The [gate](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate)
 validates every listed version in three layers: the JSON Schemas the
-generator ships (QA-7), a dry run of built-in kinds (QA-10), and a dry run
+[generator](/glossary/#generator) ships (QA-7), a dry run of built-in kinds (QA-10), and a dry run
 of every custom resource whose CRD the generator ships (QA-11). The CRDs
 live in `schemas/<group>/crds/<plural>.yaml`, one per file, as the
 upstream file byte for byte, or as compact JSON when the upstream file

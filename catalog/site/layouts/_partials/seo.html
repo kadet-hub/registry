@@ -49,6 +49,11 @@
 {{- $org := dict "@type" "Organization" "name" "kadet-hub maintainers" "url" (printf "https://github.com/%s" site.Data.catalog.owner) -}}
 <script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "BlogPosting" "headline" .Title "description" .Description "url" .Permalink "mainEntityOfPage" .Permalink "image" ("og.png" | absURL) "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") "author" $org "publisher" (dict "@type" "Organization" "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL)) }}</script>
 {{- end }}
+{{- with .Params.terms }}{{/* CAT-13a */}}
+{{- $terms := slice -}}
+{{- range . }}{{ $terms = $terms | append (dict "@type" "DefinedTerm" "name" .name "description" (.text | markdownify | plainify | htmlUnescape) "url" (printf "%s#%s" $.Permalink .id)) }}{{ end -}}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "DefinedTermSet" "name" $.Title "url" $.Permalink "hasDefinedTerm" $terms }}</script>
+{{- end }}
 {{- with $g }}
 {{- $ld := dict "@context" "https://schema.org" "@type" "SoftwareSourceCode" "name" .name "description" .description "codeRepository" .source_url "url" $.Permalink "programmingLanguage" "Python" "license" (printf "https://spdx.org/licenses/%s.html" .license) -}}
 {{- with .latest }}{{ $ld = merge $ld (dict "version" .version) }}{{ end }}

@@ -7,8 +7,8 @@ description: One app built with Tanka, cdk8s and Kapitan to identical manifests,
 
 Pick cdk8s if your team writes TypeScript and wants the compiler to reject a
 bad value before anything renders. Pick Tanka if you want a small, fast,
-Kubernetes-only toolchain and accept Jsonnet as the language. Pick Kapitan if
-one inventory has to drive Kubernetes and Terraform and you would rather keep
+Kubernetes-only toolchain and accept Jsonnet as the language. Pick [Kapitan](/glossary/#kapitan) if
+one [inventory](/glossary/#inventory) has to drive Kubernetes and Terraform and you would rather keep
 values in YAML than maintain template code. All three rendered the same app to
 identical manifests and passed the derived-value test that Helm and Kustomize
 failed in the [companion post](/blog/same-app/).
@@ -29,7 +29,7 @@ from the web Service port.
 - cdk8s 2.70.111 in TypeScript 5.9.3, using the generated low-level `Kube*`
   classes for Kubernetes 1.36.
 - Kapitan 0.36.3 with the kadet-hub [kubernetes generator](/generators/kubernetes/)
-  1.2.0 pinned by digest, as in the companion minus `endpoints.json`.
+  1.2.0 pinned by [digest](/glossary/#digest), as in the companion minus `endpoints.json`.
 
 `check` sorts objects and keys and drops one label,
 `app.kubernetes.io/managed-by`, which only the Kapitan generator sets and
@@ -94,8 +94,8 @@ another, separate Helm values files cannot.
 
 The mechanisms differ. Jsonnet binds `$._config` late, so an environment that
 overrides the web port also changes the api URL. In cdk8s it is an ordinary
-variable, so the dependency follows your code structure. Kapitan interpolates
-`${...}` across the whole inventory, so any class or target can reference any
+variable, so the dependency follows your code structure. Kapitan [interpolates](/glossary/#interpolation)
+`${...}` across the whole inventory, so any [class](/glossary/#class) or [target](/glossary/#target) can reference any
 value in another file.
 
 ## Typos and type safety
@@ -114,7 +114,7 @@ and the generated imports type every Kubernetes field for the editor. Jsonnet
 has no types: reading a missing field fails, adding a misspelled one does not,
 unless you write `assert`s. [jsonnet-language-server](https://github.com/grafana/jsonnet-language-server)
 adds completion. Kapitan's inventory is YAML, and neither Kapitan nor the
-generator rejected the unknown key. An output diff in CI, like `check`, caught
+generator rejected the unknown key. An [output diff](/glossary/#output-diff) in CI, like `check`, caught
 it in all three.
 
 ## Toolchain and speed
@@ -146,8 +146,8 @@ last 12 months and its latest release, v0.6.0, dates from August 2024.
 cdk8s uses npm or the package manager of its other languages, and
 [Construct Hub](https://constructs.dev/) indexes published constructs.
 
-The kadet-hub [catalog](/) lists 36 Kapitan generators, each an OCI artifact
-with a build attestation. The registry is young: created on 2026-10-08, one
+The kadet-hub [catalog](/) lists 36 Kapitan generators, each an [OCI artifact](/glossary/#oci-artifact)
+with a [build attestation](/glossary/#attestation). The registry is young: created on 2026-10-08, one
 human committer so far.
 
 All three consume Helm charts: Tanka through
@@ -161,7 +161,7 @@ looks. I pointed a Kapitan target at the unchanged Tanka library and the
 vendored k8s-libsonnet, with an 11-line `main.jsonnet` that reads the prod
 values from the inventory. After the same normalization the output matched
 `tk show environments/prod`, all 8 objects. A team with a Jsonnet codebase
-can keep it and add inventory, refs and non-Kubernetes outputs, giving up
+can keep it and add inventory, [refs](/glossary/#ref) and non-Kubernetes outputs, giving up
 `tk diff` and `tk apply` against a cluster.
 
 ## Output beyond Kubernetes

@@ -9,7 +9,7 @@ If your CI executes code that contributors send you, a plain container is not
 a boundary. Run it under gVisor with the network off and a read-only root
 filesystem, keep a syscall trace, and treat everything else (timeouts, what
 you mount in, your tokens) as separate problems. This is what the
-[kadet-hub](/) gate does to compile contributor-supplied Kapitan generators,
+[kadet-hub](/) [gate](/glossary/#gate) does to compile contributor-supplied [Kapitan](/glossary/#kapitan) [generators](/glossary/#generator),
 and the pieces transfer to any project that runs plugins, formatters, test
 code or build scripts from a pull request.
 
