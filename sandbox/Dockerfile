@@ -1,7 +1,7 @@
 FROM python:3.13-slim@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f
 # renovate: datasource=github-releases depName=helm/helm
-ARG HELM_VERSION=v4.3.0
-ARG HELM_SHA256=86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+ARG HELM_VERSION=v4.3.1
+ARG HELM_SHA256=0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
 ADD --checksum=sha256:${HELM_SHA256} https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz /tmp/helm.tgz
 # renovate: datasource=github-release-attachments depName=open-policy-agent/conftest
 ARG CONFTEST_VERSION=v0.71.1
