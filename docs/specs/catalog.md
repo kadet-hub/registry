@@ -158,7 +158,7 @@ remembered in the browser's `localStorage`.
   | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
   | gvisor vs docker | no page yet |
-  | helm vs terraform, kubernetes manifests terraform | no page yet |
+  | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
 
   "kapicorp" is not a target: the people who search it know Kapitan
   already, and a page ranking for it could be taken for kapicorp's own.
