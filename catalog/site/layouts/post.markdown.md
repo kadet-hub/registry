@@ -2,3 +2,12 @@
 # {{ .Title }}
 
 {{ strings.TrimSpace .RenderShortcodes }}
+{{ range where site.Data.catalog.releases "monday" (.Params.release | default "") }}{{ range .generators }}{{ if .entries }}{{ $g := . }}{{/* CAT-36b */}}
+## {{ .name }}
+{{ range .entries }}
+### {{ $g.name }} {{ .version }}
+
+{{ .text }}
+{{ end }}{{ if .cut }}
+[Full changelog]({{ .changelog }})
+{{ end }}{{ end }}{{ end }}{{ end -}}

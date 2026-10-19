@@ -12,6 +12,18 @@
 </details>
 </nav>{{ end }}
 {{ .Content }}
+{{- /* CAT-36b: the CHANGELOG sections of a weekly digest; the render hooks treat them as untrusted while "changelog" is set. */ -}}
+{{ $page := . }}
+{{ range where site.Data.catalog.releases "monday" (.Params.release | default "") }}{{ range .generators }}{{ if .entries }}{{ $g := . }}
+<h2 id="changes-{{ .name }}">{{ .name }}</h2>
+{{ range .entries }}
+<h3 id="changes-{{ $g.name }}-{{ .version }}">{{ $g.name }} {{ .version }}</h3>
+{{ $page.Store.Set "changelog" $g.blob_url }}{{ $page.Store.Set "changelog-id" (printf "changes-%s-%s" $g.name .version) }}{{ $page.Store.Set "changelog-heading" 3 }}
+{{ $page.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .text) }}
+{{ $page.Store.Delete "changelog" }}{{ $page.Store.Delete "changelog-id" }}{{ $page.Store.Delete "changelog-heading" }}
+{{ end }}
+{{ if .cut }}<p><a href="{{ .changelog }}" rel="nofollow noopener">Full changelog</a></p>{{ end }}
+{{ end }}{{ end }}{{ end }}
 <footer class="post-foot">
 <p><a href="https://github.com/{{ site.Data.catalog.owner }}/registry/discussions">Discuss on GitHub</a> · <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/catalog/site/content/{{ .File.Path }}">Edit this post</a> · <a href="{{ "blog/index.xml" | relURL }}">Atom feed</a></p>
 {{ $related := where (site.RegularPages.Related .) "Section" "blog" | first 3 }}

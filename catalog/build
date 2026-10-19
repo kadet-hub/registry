@@ -11,7 +11,7 @@
 # requests from $CATALOG_WANTED (CAT-31) and pull requests with their gate
 # comments from $CATALOG_GATE (CAT-33) and the recipe classes from
 # $CATALOG_RECIPES/inventory/classes (CAT-37a) instead. Online, the
-# previous build's published catalog.json supplies README, log index and
+# previous build's published catalog.json supplies README, CHANGELOG sections, log index and
 # SBOM of every unchanged digest, and its output diffs are kept when their
 # sha256 matches the index, so each version is pulled from the registry
 # once (CAT-23); CATALOG_PAGES receives the package pages.
@@ -57,8 +57,8 @@ else
   mkdir -p -- "$artifacts"
   while read -r name digest; do
     ref=ghcr.io/$OWNER/$name
-    if jq -e --arg n "$name" --arg d "$digest" '.generators[] | select(.name == $n and .latest.digest == $d and .readme != null)' "$previous" >/dev/null; then
-      continue  # view.py takes the README from the previous build
+    if jq -e --arg n "$name" --arg d "$digest" '.generators[] | select(.name == $n and .latest.digest == $d and .readme != null and .changelog != null)' "$previous" >/dev/null; then
+      continue  # view.py takes the README and the CHANGELOG sections (CAT-36b) from the previous build
     fi
     if layer=$(oras manifest fetch -- "$ref@$digest" | jq -er 'select(.artifactType == "application/vnd.kadet-hub.generator.v1") | .layers[0].digest') \
       && oras blob fetch --output "$artifacts/$name.tar" -- "$ref@$layer"; then

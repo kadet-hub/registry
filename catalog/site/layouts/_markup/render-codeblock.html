@@ -1,7 +1,9 @@
 {{- /* CAT-36a: code blocks in blog posts get a copy button; elsewhere Hugo's default. */ -}}
 {{- $r := transform.HighlightCodeBlock . -}}
+{{- $id := printf "code-%d" .Ordinal -}}
+{{- if .Page.Store.Get "changelog" }}{{ $id = printf "%s-%s" (.Page.Store.Get "changelog-id") $id }}{{ end -}}{{/* CAT-36b: one render per section */}}
 {{- if eq .Page.Section "blog" -}}
-<div class="snippet"><div id="code-{{ .Ordinal }}">{{ $r.Wrapped }}</div><button type="button" class="copy icon-button" data-copy="code-{{ .Ordinal }}" aria-label="Copy code block {{ add .Ordinal 1 }}" hidden><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></div>
+<div class="snippet"><div id="{{ $id }}">{{ $r.Wrapped }}</div><button type="button" class="copy icon-button" data-copy="{{ $id }}" aria-label="Copy code block {{ add .Ordinal 1 }}" hidden><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></div>
 {{- else -}}
 {{ $r.Wrapped }}
 {{- end -}}

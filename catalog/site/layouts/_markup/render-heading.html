@@ -7,6 +7,10 @@
   {{- $l = add .Level 1 | math.Min (add $prev 1) | math.Min 6 | int -}}
   {{- .Page.Store.Set "readme-heading" $l -}}
   {{- $id = printf "readme-%s" .Anchor -}}
+{{- else if .Page.Store.Get "changelog-heading" }}{{/* CAT-36b: below the h3 of the version, however the text writes it */}}
+  {{- $l = math.Max .Level 4 | math.Min (add (.Page.Store.Get "changelog-heading") 1) | math.Min 6 | int -}}
+  {{- .Page.Store.Set "changelog-heading" $l -}}
+  {{- $id = printf "%s-%s" (.Page.Store.Get "changelog-id") .Anchor -}}
 {{- end -}}
 {{- if eq .Page.Section "blog" }}{{/* CAT-36a: a link to the section */}}
 <h{{ $l }} id="{{ $id }}">{{ .Text }} <a class="anchor" href="#{{ $id }}" aria-label="Link to {{ .PlainText }}"></a></h{{ $l }}>
