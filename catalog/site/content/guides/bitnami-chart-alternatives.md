@@ -72,9 +72,24 @@ the kube-prometheus Helm chart by prometheus-community.
 ## Charts without a generator yet
 
 `redis`, `mongodb` and `mysql` have no generator on kadet-hub yet. For
-`redis` and `external-dns`, the [Valkey](/recipes/valkey/) and
+them and `external-dns`, the [Valkey](/recipes/valkey/),
+[MongoDB](/recipes/mongodb/), [MySQL](/recipes/mysql/) and
 [external-dns with PowerDNS](/recipes/external-dns-powerdns/) [recipes](/glossary/#recipe)
-render plain workloads with the kubernetes generator.
+render plain workloads with the kubernetes generator: one StatefulSet per
+database, without replication. MySQL Community Server is GPL-2.0 and the
+recipe uses Oracle's image `container-registry.oracle.com/mysql/community-server`.
+MongoDB Community Server is licensed SSPLv1, which the OSI does not
+approve as open source; the recipe uses MongoDB Inc's image
+`mongodb/mongodb-community-server`.
+
+For replication, both projects maintain an operator without a generator
+here: Oracle's [MySQL Operator for Kubernetes](https://github.com/mysql/mysql-operator)
+(UPL-1.0) runs InnoDB Cluster, and MongoDB's
+[Controllers for Kubernetes](https://github.com/mongodb/mongodb-kubernetes),
+which replaced the archived Community Operator, is Apache-2.0 for
+Community deployments. For MariaDB, a fork of MySQL, the MIT-licensed
+[mariadb-operator](https://github.com/mariadb-operator/mariadb-operator)
+does the same.
 [Wanted generators](/wanted/) lists the open requests; a 👍 there or a new
 request is how one gets prioritised.
 
