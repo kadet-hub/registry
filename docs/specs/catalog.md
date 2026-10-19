@@ -32,7 +32,14 @@ remembered in the browser's `localStorage`.
 
 - CAT-7: The generator page MUST show the README of the latest version that
   is not yanked, read from that version's published artifact by digest, as
-  Markdown without raw HTML.
+  Markdown without raw HTML. The README MUST NOT be able to call a
+  shortcode.
+
+  Hugo expands shortcodes in text passed to `RenderString`, and an unknown
+  one fails the whole build, so one README could block every deploy. The
+  delimiters `{{<` and `{{%` are escaped before rendering, as for the
+  CHANGELOG sections of CAT-36b. In prose they show as typed; in code the
+  escaping backslash shows (`{{\<`), since Markdown keeps backslashes there.
 
   The README passed the gate and the review with the rest of the tree;
   the catalog job pulls the layer by digest, so it shows exactly what
@@ -43,7 +50,7 @@ remembered in the browser's `localStorage`.
   256 KiB is not shown.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #45
+  - Since: #45, #293
 
 - CAT-8: Selecting several tags MUST show the generators that carry all of
   them, and the selection MUST be kept in the URL as `?tags=<a>,<b>`.
@@ -741,14 +748,14 @@ Related: CAT-15, CAT-30, CON-2.
   from the partial the page uses, `_partials/commands.html`, so both show
   the same text. The README is the Markdown of `catalog.json` as the
   artifact carries it, not the filtered HTML of CAT-7: raw HTML and links
-  with any scheme stay in, and a line names the base relative links
-  resolve against. The variant of a generator without a listed version has
+  with any scheme and shortcode delimiters stay in as typed, and a line
+  names the base relative links resolve against. The variant of a generator without a listed version has
   the name, each version with its yank reason and the page's URL. A guide's
   variant is its title and its Markdown source with its shortcodes
   rendered; the diagrams of CAT-35a render as nothing there.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #231, #242, #257
+  - Since: #231, #242, #257, #293
 
 - CAT-17: Every version on a generator page MUST have a permalink
   (`/generators/<name>/#v<version>`) that opens it, and MUST link the
@@ -1296,8 +1303,12 @@ index is refused (CON-2).
   artifact and the index and deployed the catalog under a project path;
   the version page showed the attested digest and the owner's login.
 
-  - Test: manual: fork rehearsal (2026-10-09)
-  - Since: #16
+  A failed Hugo build MUST print Hugo's error. `catalog/build` runs Hugo
+  with `--logLevel error` and discards its statistics on stdout; with
+  `--quiet`, Hugo 0.167 printed nothing and the job only exited 1.
+
+  - Test: manual: fork rehearsal (2026-10-09); `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`, the error text)
+  - Since: #16, #295
 
 - CAT-2: A version page MUST show the inventory entry with version and
   digest, `source: ghcr.io/kadet-hub/<name>:<version>@sha256:<digest>`, and

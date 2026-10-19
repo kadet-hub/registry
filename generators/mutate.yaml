@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: mutate
+  tag: mutate-v0.1.0
+  sha: 925525b2fabb1c2fb33c00f1b00b0d2495edce06
+owners: [3042152]

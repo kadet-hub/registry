@@ -143,4 +143,4 @@ previous_arg=()
 if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
 python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --gate "$gate" --out "$work/data/catalog.json"
 cp -- "$work/data/catalog.json" "$work/static/catalog.json"  # CAT-23: the next build reuses it
-hugo --quiet --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}"
+hugo --logLevel error --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}" >/dev/null  # CAT-1: errors on stderr
