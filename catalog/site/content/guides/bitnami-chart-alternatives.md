@@ -18,25 +18,26 @@ job in two: installing the operator and its CRDs, which the project
 documents, and writing the custom resources for each instance, which is
 where a Kapitan generator renders reviewed YAML from inventory parameters.
 The generators below render custom resources only; none installs an
-operator.
+operator. A [recipe](/recipes/) is an inventory class for
+such a replacement that CI deploys and checks on a kind cluster.
 
 ## The replacements
 
 Facts checked against each project's release pages and install docs on
 18 October 2026.
 
-| Bitnami chart | Replacement | Images | Generator |
-|---|---|---|---|
-| `postgresql`, `postgresql-ha` | [CloudNativePG](https://cloudnative-pg.io/docs/1.30/installation_upgrade) | `ghcr.io/cloudnative-pg/cloudnative-pg`, `ghcr.io/cloudnative-pg/postgresql` | [cloudnative-pg](/generators/cloudnative-pg/) |
-| `rabbitmq`, `rabbitmq-cluster-operator` | [RabbitMQ Cluster Operator](https://www.rabbitmq.com/kubernetes/operator/install-operator) and [Messaging Topology Operator](https://www.rabbitmq.com/kubernetes/operator/install-topology-operator) | `ghcr.io/rabbitmq/cluster-operator`, `ghcr.io/rabbitmq/messaging-topology-operator`, `rabbitmq` (Docker Official Image) | [rabbitmq](/generators/rabbitmq/) |
-| `kafka` | [Strimzi](https://strimzi.io/docs/operators/latest/deploying) | `quay.io/strimzi/operator`, `quay.io/strimzi/kafka` | [strimzi](/generators/strimzi/) |
-| `keycloak` | [Keycloak Operator](https://www.keycloak.org/operator/installation) | `quay.io/keycloak/keycloak-operator`, `quay.io/keycloak/keycloak` | [keycloak](/generators/keycloak/) |
-| `grafana`, `grafana-operator` | [Grafana Operator](https://grafana.github.io/grafana-operator/docs/installation/) | `ghcr.io/grafana/grafana-operator`, `docker.io/grafana/grafana` | [grafana](/generators/grafana/) |
-| `grafana-loki` | [Loki Operator](https://loki-operator.dev/docs/prologue/quickstart.md/) | `docker.io/grafana/loki-operator`, `docker.io/grafana/loki` | [loki](/generators/loki/) |
-| `thanos` | [Thanos Operator](https://github.com/thanos-community/thanos-operator/blob/main/docs/installation.md) | `quay.io/thanos/thanos-operator`, `quay.io/thanos/thanos` | [thanos](/generators/thanos/) |
-| `argo-cd` | [Argo CD](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/) | `quay.io/argoproj/argocd` | [argocd](/generators/argocd/) |
-| `cert-manager` | [cert-manager](https://cert-manager.io/docs/installation/) | `quay.io/jetstack/cert-manager-controller`, `-webhook`, `-cainjector` | [certmanager](/generators/certmanager/) |
-| `kube-prometheus` | [Prometheus Operator](https://prometheus-operator.dev/docs/getting-started/installation/) | `quay.io/prometheus-operator/prometheus-operator`, `quay.io/prometheus/prometheus`, `quay.io/prometheus/alertmanager` | [prometheus-operator](/generators/prometheus-operator/) |
+| Bitnami chart | Replacement | Images | Generator | Recipe |
+|---|---|---|---|---|
+| `postgresql`, `postgresql-ha` | [CloudNativePG](https://cloudnative-pg.io/docs/1.30/installation_upgrade) | `ghcr.io/cloudnative-pg/cloudnative-pg`, `ghcr.io/cloudnative-pg/postgresql` | [cloudnative-pg](/generators/cloudnative-pg/) | [postgresql](/recipes/postgresql/) |
+| `rabbitmq`, `rabbitmq-cluster-operator` | [RabbitMQ Cluster Operator](https://www.rabbitmq.com/kubernetes/operator/install-operator) and [Messaging Topology Operator](https://www.rabbitmq.com/kubernetes/operator/install-topology-operator) | `ghcr.io/rabbitmq/cluster-operator`, `ghcr.io/rabbitmq/messaging-topology-operator`, `rabbitmq` (Docker Official Image) | [rabbitmq](/generators/rabbitmq/) | [rabbitmq](/recipes/rabbitmq/) |
+| `kafka` | [Strimzi](https://strimzi.io/docs/operators/latest/deploying) | `quay.io/strimzi/operator`, `quay.io/strimzi/kafka` | [strimzi](/generators/strimzi/) | [kafka](/recipes/kafka/) |
+| `keycloak` | [Keycloak Operator](https://www.keycloak.org/operator/installation) | `quay.io/keycloak/keycloak-operator`, `quay.io/keycloak/keycloak` | [keycloak](/generators/keycloak/) | [keycloak](/recipes/keycloak/) |
+| `grafana`, `grafana-operator` | [Grafana Operator](https://grafana.github.io/grafana-operator/docs/installation/) | `ghcr.io/grafana/grafana-operator`, `docker.io/grafana/grafana` | [grafana](/generators/grafana/) | none |
+| `grafana-loki` | [Loki Operator](https://loki-operator.dev/docs/prologue/quickstart.md/) | `docker.io/grafana/loki-operator`, `docker.io/grafana/loki` | [loki](/generators/loki/) | none |
+| `thanos` | [Thanos Operator](https://github.com/thanos-community/thanos-operator/blob/main/docs/installation.md) | `quay.io/thanos/thanos-operator`, `quay.io/thanos/thanos` | [thanos](/generators/thanos/) | none |
+| `argo-cd` | [Argo CD](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/) | `quay.io/argoproj/argocd` | [argocd](/generators/argocd/) | none |
+| `cert-manager` | [cert-manager](https://cert-manager.io/docs/installation/) | `quay.io/jetstack/cert-manager-controller`, `-webhook`, `-cainjector` | [certmanager](/generators/certmanager/) | none |
+| `kube-prometheus` | [Prometheus Operator](https://prometheus-operator.dev/docs/getting-started/installation/) | `quay.io/prometheus-operator/prometheus-operator`, `quay.io/prometheus/prometheus`, `quay.io/prometheus/alertmanager` | [prometheus-operator](/generators/prometheus-operator/) | none |
 
 ## Where the install differs from a chart
 
@@ -70,7 +71,10 @@ the kube-prometheus Helm chart by prometheus-community.
 
 ## Charts without a generator yet
 
-`redis`, `mongodb` and `mysql` have no generator on kadet-hub yet.
+`redis`, `mongodb` and `mysql` have no generator on kadet-hub yet. For
+`redis` and `external-dns`, the [Valkey](/recipes/valkey/) and
+[external-dns with PowerDNS](/recipes/external-dns-powerdns/) recipes
+render plain workloads with the kubernetes generator.
 [Wanted generators](/wanted/) lists the open requests; a 👍 there or a new
 request is how one gets prioritised.
 

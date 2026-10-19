@@ -1040,6 +1040,81 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py`
   - Since: #280
 
+- CAT-37: The site MUST have a page at `/recipes/<name>/` for every recipe
+  of kadet-hub/examples and an index of them at `/recipes/`. A recipe page
+  MUST show the Bitnami charts it replaces, its generators linked to their
+  pages, the operators it needs, its inventory class, the compile classes
+  that class includes, the pins of those generators, what the examples CI
+  asserts after deploying it, and a link to the recipe's folder. The site
+  navigation MUST link `/recipes/`.
+
+  A recipe is an inventory class that replaces one or more Bitnami charts
+  with kadet-hub generators and is deployed and checked on a kind cluster
+  by the examples CI (EX-5, EX-6). The page is where a reader copies it
+  from, so the class, the compile classes and the pins are the files on
+  the `main` branch of kadet-hub/examples at build time, and the page shows
+  what that CI last checked. The lead is the comment at the top of the
+  class. The generators are the `recipes.lib.<generator>` classes the class
+  includes, and the pins are the entries of `generators.yml` whose
+  `output_path` is `lib/<generator>`.
+
+  What the page states around the files lives in the front matter of
+  `content/recipes/<name>.md`: title, description, the replaced charts,
+  the operators and the check, taken from the Recipes table of the
+  examples spec. A new recipe needs that page here; the build fetches only
+  the classes of recipes that have one.
+
+  As CAT-11a asks, every recipe title and the index title lead with the
+  searched term and name Kapitan, such as "PostgreSQL on Kubernetes without
+  Bitnami, with Kapitan", and every description names Kapitan with
+  Kubernetes. A title that leaves no room for the " · kadet-hub" suffix
+  within CAT-11's 65 characters stands alone; the template counts bytes,
+  so the suffix's "·" counts twice.
+
+  A page per recipe does not conflict with the single Bitnami guide of
+  CAT-11a: each recipe page carries its own tested class, not the same text
+  under another search term.
+
+  Related: EX-5, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
+
+  - Test: `catalog/test_catalog.py` (`test_recipes`)
+  - Since: #283
+
+- CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
+  is missing.
+
+  `catalog/build` fetches `generators.yml`, the class of every recipe page
+  and the compile class of every generator pinned in `generators.yml` from
+  `raw.githubusercontent.com` with `curl -f`, as it reads the previous
+  `catalog.json`, and copies them into the site's `assets/classes/`;
+  the recipe templates stop the build with `errorf` when one is missing.
+  The API lookups of the build degrade to a warning because the page
+  stays usable without a star count or a README; a recipe page without its
+  class has nothing to copy. A failed build stops the release's catalog
+  job before the Pages upload, so the previous site stays live, as with
+  CAT-11d. With `CATALOG_OFFLINE=1` the build reads the files from
+  `$CATALOG_RECIPES/inventory/classes/`, laid out as in the examples
+  repository's `recipes/` folder, so the tests use fixtures and a local
+  checkout can be previewed.
+
+  Hugo's `resources.GetRemote` would fetch from the templates instead. Its
+  file cache keeps a fetched file without expiry unless `maxAge` is set,
+  and the offline switch would need an environment variable allowed
+  through `security.funcs.getenv`; the build script already owns network
+  access and the offline fixtures. Neither variant uses `actions/cache`
+  (GI-10).
+
+  - Test: `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`)
+  - Since: #283
+
+- CAT-37b: Every recipe page MUST have a Markdown variant (CAT-28) with
+  the same facts and files, `/llms.txt` (CAT-16) MUST list it in a section
+  "Recipes" after "Guides", and the Bitnami guide MUST link the recipe of
+  every chart it names that has one.
+
+  - Test: `catalog/test_catalog.py` (`test_recipes`, `test_llms_txt`)
+  - Since: #283
+
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
   page" list linking each section that is present, which marks the section
