@@ -9,7 +9,8 @@
 # $CATALOG_DIFFS/<name>/<version>.output.diff and transparency log indexes
 # from $CATALOG_REKOR (JSON {name: {version: index}}) and open generator
 # requests from $CATALOG_WANTED (CAT-31) and pull requests with their gate
-# comments from $CATALOG_GATE (CAT-33) instead. Online, the
+# comments from $CATALOG_GATE (CAT-33) and the recipe classes from
+# $CATALOG_RECIPES/inventory/classes (CAT-37a) instead. Online, the
 # previous build's published catalog.json supplies README, log index and
 # SBOM of every unchanged digest, and its output diffs are kept when their
 # sha256 matches the index, so each version is pulled from the registry
@@ -33,10 +34,21 @@ discussions=${CATALOG_DISCUSSIONS:-$work/discussions.json}
 wanted=${CATALOG_WANTED:-$work/wanted.json}
 gate=${CATALOG_GATE:-$work/gate.json}
 pages=${CATALOG_PAGES:-$work/pages}
+recipes=$work/recipes
 site=${CATALOG_URL:-https://kadet-hub.org/}
 if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
   offline=(--offline)
+  recipes=$CATALOG_RECIPES
 else
+  # CAT-37a: the recipe classes from kadet-hub/examples@main; one that is not fetched fails the build.
+  fetch() {
+    mkdir -p -- "$(dirname -- "$recipes/inventory/classes/$1")"
+    curl -fsSL --max-time 20 "https://raw.githubusercontent.com/$OWNER/examples/main/recipes/inventory/classes/$1" -o "$recipes/inventory/classes/$1" \
+      || { echo "::error::recipes: $1 not fetched from $OWNER/examples"; exit 1; }
+  }
+  fetch generators.yml
+  for page in "$here"/site/content/recipes/*.md; do fetch "recipes/$(basename -- "$page" .md).yml"; done
+  for g in $(sed -nE 's|^ *output_path: lib/([a-z0-9-]+)$|\1|p' -- "$recipes/inventory/classes/generators.yml"); do fetch "recipes/lib/$g.yml"; done
   # CAT-7: the layer of each generator's latest version that is not yanked, by digest.
   # CAT-23: what the previous build published, to reuse for unchanged digests.
   previous=$work/previous.json
@@ -125,6 +137,8 @@ for dir in "$sboms" "$diffs"; do
   fi
 done
 cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
+mkdir -- "$work/assets/classes"
+cp -R -- "$recipes/inventory/classes/." "$work/assets/classes/"
 previous_arg=()
 if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
 python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --gate "$gate" --out "$work/data/catalog.json"

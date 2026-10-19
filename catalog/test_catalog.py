@@ -152,7 +152,28 @@ def artifact(path, files):
             t.addfile(info, __import__("io").BytesIO(data))
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None):
+# CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
+RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"], "valkey": [],
+                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": []}
+
+
+def recipe_classes(root):
+    """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
+    os.makedirs(os.path.join(root, "recipes", "lib"), exist_ok=True)
+    pins = sorted({g for gs in RECIPE_GENERATORS.values() for g in gs} | {"kubernetes"})
+    with open(os.path.join(root, "generators.yml"), "w", encoding="utf-8") as f:
+        f.write("# pins\nparameters:\n  kapitan:\n    dependencies:\n" + "".join(
+            f"      - type: oci\n        source: ghcr.io/{OWNER}/{g}:1.0.0@sha256:{'e' * 64}\n        output_path: lib/{g}\n" for g in pins))
+    for g in pins:
+        with open(os.path.join(root, "recipes", "lib", f"{g}.yml"), "w", encoding="utf-8") as f:
+            f.write(f"# Compiles {g}.\nparameters:\n  kapitan:\n    compile:\n      - {{input_type: kadet, input_paths: [lib/{g}], output_path: {g}/}}\n")
+    for name, gens in RECIPE_GENERATORS.items():
+        with open(os.path.join(root, "recipes", f"{name}.yml"), "w", encoding="utf-8") as f:
+            f.write(f"# {name} <script>alert(7)</script> in place of\n# a Bitnami chart.\nclasses:\n"
+                    + "".join(f"  - recipes.lib.{g}\n" for g in ["kubernetes"] + gens) + f"\nparameters:\n  {name}: {{a: <b>}}\n")
+
+
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -162,6 +183,10 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
                CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"),
                CATALOG_PAGES=pages or os.path.join(tmp, "none"), CATALOG_DIFFS=diffs or os.path.join(tmp, "none"),
                CATALOG_WANTED=wanted or os.path.join(tmp, "none.json"), CATALOG_GATE=gate or os.path.join(tmp, "none.json"))
+    if recipes is None:
+        recipes = os.path.join(tmp, "recipes")
+        recipe_classes(os.path.join(recipes, "inventory", "classes"))
+    env["CATALOG_RECIPES"] = recipes
     subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
     return out
 
@@ -385,7 +410,9 @@ class Site(unittest.TestCase):
         self.assertTrue(text.startswith("# kadet-hub\n\n> "))
         for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
             self.assertIn(link, text)
-        self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-3:], ["Generators", "Guides", "Optional"])
+        self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
+        self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): A Kapitan", text)  # CAT-37b
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS))
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
@@ -449,6 +476,7 @@ class Site(unittest.TestCase):
         self.assertRegex(css, r"\.compat td::before \{ content: attr\(data-label\)")
         for html in self.pages() + [page]:
             self.assertRegex(html, r'(?s)<nav>.*<a href="[./]*compatibility/">Compatibility</a>.*</nav>')
+            self.assertRegex(html, r'(?s)<nav>.*<a href="[./]*recipes/">Recipes</a>.*</nav>')  # CAT-37
 
     def test_compatibility_facts_are_the_same_on_page_details_and_markdown(self):  # CAT-30, CAT-28
         def text(h):
@@ -487,6 +515,49 @@ class Site(unittest.TestCase):
             self.page("guides", slug)
         self.assertIn('<h2 id="generator-contract">Generator contract</h2>', self.page("guides", "writing-a-kapitan-generator"))  # CAT-24
 
+    def test_recipes(self):  # CAT-37, CAT-37b
+        index = self.page("recipes")
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(RECIPE_GENERATORS))
+        self.assertIn("<title>Bitnami chart replacements on Kubernetes with Kapitan</title>", index)  # CAT-11a
+        self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
+        page = self.page("recipes", "keycloak")
+        self.assertIn("<title>Keycloak on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", page)
+        self.assertIn('<p class="lead">keycloak &lt;script&gt;alert(7)&lt;/script&gt; in place of a Bitnami chart.</p>', page)
+        self.assertNotIn("<script>alert(7)", page)
+        self.assertIn("<li>Replaces the Bitnami charts: <code>keycloak</code></li>", page)
+        self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/cloudnative-pg/">cloudnative-pg</a>, '
+                      '<a href="../../generators/certmanager/">certmanager</a>, <a href="../../generators/keycloak/">keycloak</a></li>', page)
+        self.assertIn("<li>Operators: Keycloak Operator, CloudNativePG, cert-manager</li>", page)
+        with open(os.path.join(self.tmp.name, "recipes", "inventory", "classes", "recipes", "keycloak.yml"), encoding="utf-8") as f:
+            cls = f.read()
+        self.assertIn(f'<pre id="class"><code>{cls.replace("<", "&lt;").replace(">", "&gt;")}</code></pre>', page)
+        pins = _unescape(re.search(r'<pre id="pins"><code>(.*?)</code></pre>', page, re.S).group(1))
+        self.assertEqual(re.findall(r"output_path: lib/(\S+)", pins), ["certmanager", "cloudnative-pg", "keycloak", "kubernetes"])
+        self.assertNotIn("strimzi", pins)
+        self.assertIn('<pre id="lib-3"><code># Compiles keycloak.', page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
+        self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
+        self.assertIn('<li>Operators: none</li>', self.page("recipes", "valkey"))
+        md = self.markdown("recipes", "keycloak")
+        self.assertTrue(md.startswith("# Keycloak on Kubernetes without Bitnami, with Kapitan\n\n> keycloak <script>"))
+        self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
+        self.assertIn("\n## inventory/classes/recipes/lib/strimzi.yml\n", self.markdown("recipes", "kafka"))
+        self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
+        guide = self.page("guides", "bitnami-chart-alternatives")
+        for name in RECIPE_GENERATORS:
+            self.assertIn(f'href="../../recipes/{name}/"', guide)
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
+
+    def test_recipe_file_missing_fails_the_build(self):  # CAT-37a
+        with tempfile.TemporaryDirectory() as tmp:
+            recipes = os.path.join(tmp, "recipes")
+            recipe_classes(os.path.join(recipes, "inventory", "classes"))
+            os.remove(os.path.join(recipes, "inventory", "classes", "recipes", "lib", "strimzi.yml"))
+            with self.assertRaises(subprocess.CalledProcessError):
+                build({"serial": 1, "generators": {}}, tmp, recipes=recipes)
+
     def test_blog(self):  # CAT-36
         slug = "kapitan-generators-as-supply-chain-artifacts"
         blog = self.page("blog")
@@ -524,6 +595,7 @@ class Site(unittest.TestCase):
                         f"{body}\n\n```bash\necho hi\n```\n")
             os.makedirs(os.path.join(site, "data"))
             shutil.copy(os.path.join(HERE, "..", "policy", "tags.yaml"), os.path.join(site, "data", "tags.yaml"))
+            recipe_classes(os.path.join(site, "assets", "classes"))
             with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
                 json.dump(view(INDEX, OWNER, lambda _: None), f)
             subprocess.run(["hugo", "--quiet", "--source", site, "--destination", os.path.join(tmp, "out")], check=True)
@@ -619,6 +691,7 @@ class Site(unittest.TestCase):
             shutil.copytree(os.path.join(HERE, "site"), site)
             os.makedirs(os.path.join(site, "data"))
             shutil.copy(os.path.join(HERE, "..", "policy", "tags.yaml"), os.path.join(site, "data", "tags.yaml"))
+            recipe_classes(os.path.join(site, "assets", "classes"))
             with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
                 json.dump(view(INDEX, OWNER, {"/user/331675722": {"login": "someone"}}.get), f)
             subprocess.run(["hugo", "--quiet", "--source", site, "--destination", os.path.join(tmp, "out")], check=True)

@@ -1,0 +1,28 @@
+{{- /* CAT-37: a recipe's files as catalog/build copies them to assets/classes; a missing one fails the build (CAT-37a). */ -}}
+{{- $name := .File.ContentBaseName -}}
+{{- $class := resources.Get (printf "classes/recipes/%s.yml" $name) -}}
+{{- $pins := resources.Get "classes/generators.yml" -}}
+{{- if not $class }}{{ errorf "CAT-37a: recipe %s: classes/recipes/%s.yml missing" $name $name }}{{ end -}}
+{{- if not $pins }}{{ errorf "CAT-37a: recipe %s: classes/generators.yml missing" $name }}{{ end -}}
+{{- $generators := slice -}}{{ $libs := slice -}}
+{{- range (transform.Unmarshal $class).classes -}}
+  {{- if strings.HasPrefix . "recipes.lib." -}}
+    {{- $g := strings.TrimPrefix "recipes.lib." . -}}
+    {{- $path := printf "classes/recipes/lib/%s.yml" $g -}}
+    {{- $lib := resources.Get $path -}}
+    {{- if not $lib }}{{ errorf "CAT-37a: recipe %s: %s missing" $name $path }}{{ end -}}
+    {{- $generators = $generators | append $g -}}
+    {{- $libs = $libs | append (dict "path" (printf "inventory/classes/recipes/lib/%s.yml" $g) "text" $lib.Content) -}}
+  {{- end -}}
+{{- end -}}
+{{- $deps := slice -}}
+{{- range (transform.Unmarshal $pins).parameters.kapitan.dependencies -}}
+  {{- if in $generators (strings.TrimPrefix "lib/" .output_path) }}{{ $deps = $deps | append . }}{{ end -}}
+{{- end -}}
+{{- if ne (len $deps) (len $generators) }}{{ errorf "CAT-37a: recipe %s: generators.yml pins %d of %d generators" $name (len $deps) (len $generators) }}{{ end -}}
+{{- $lead := "" -}}
+{{- with findRE `^(#[^\n]*\n)+` $class.Content 1 }}{{ $lead = index . 0 | replaceRE `(?m)^# ?` "" | replaceRE `\s+` " " | strings.TrimSpace }}{{ end -}}
+{{- return dict "name" $name "class" $class.Content "lead" $lead "generators" $generators "libs" $libs
+  "pins" (transform.Remarshal "yaml" (dict "parameters" (dict "kapitan" (dict "dependencies" $deps))))
+  "folder" (printf "https://github.com/%s/examples/tree/main/recipes" site.Data.catalog.owner)
+  "test" (printf "https://github.com/%s/examples/blob/main/recipes/tests/%s/chainsaw-test.yaml" site.Data.catalog.owner $name) -}}
