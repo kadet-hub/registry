@@ -163,6 +163,7 @@ remembered in the browser's `localStorage`.
   | kubectl validate crd | guide "Validate Kubernetes custom resources against their CRDs" |
   | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
   | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
+  | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI" |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
   | helm vs argocd, kustomize vs helm vs argocd | same guide |
@@ -173,7 +174,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291
+  - Since: #284, #287, #288, #290, #291, #297
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
