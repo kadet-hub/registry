@@ -1,5 +1,5 @@
 ---
 title: Guides
 layout: guides
-description: Guides on writing and choosing Kapitan generators, consuming them safely, checking custom resources and migrating off ingress-nginx and Bitnami charts.
+description: Guides on Helm alternatives for Kubernetes, writing and choosing Kapitan generators, consuming them safely, checking custom resources and leaving Bitnami.
 ---
