@@ -173,7 +173,7 @@ def recipe_classes(root):
                     + "".join(f"  - recipes.lib.{g}\n" for g in ["kubernetes"] + gens) + f"\nparameters:\n  {name}: {{a: <b>}}\n")
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -187,7 +187,7 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
         recipes = os.path.join(tmp, "recipes")
         recipe_classes(os.path.join(recipes, "inventory", "classes"))
     env["CATALOG_RECIPES"] = recipes
-    subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True)
+    subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True, capture_output=capture, text=capture)
     return out
 
 
@@ -587,8 +587,9 @@ class Site(unittest.TestCase):
             recipes = os.path.join(tmp, "recipes")
             recipe_classes(os.path.join(recipes, "inventory", "classes"))
             os.remove(os.path.join(recipes, "inventory", "classes", "recipes", "lib", "strimzi.yml"))
-            with self.assertRaises(subprocess.CalledProcessError):
-                build({"serial": 1, "generators": {}}, tmp, recipes=recipes)
+            with self.assertRaises(subprocess.CalledProcessError) as failed:
+                build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
+            self.assertIn("strimzi", failed.exception.stderr)  # CAT-1: Hugo's error is printed
 
     def test_blog(self):  # CAT-36
         slug = "kapitan-generators-as-supply-chain-artifacts"
