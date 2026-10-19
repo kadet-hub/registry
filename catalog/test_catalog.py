@@ -126,6 +126,10 @@ parameters:
 | a | b |
 |---|---|
 | 1 | 2 |
+
+{{< nonexistent >}} {{% nonexistent %}} {{< diagram name="x" >}}
+
+`{{< inline >}}`
 """
 
 
@@ -286,6 +290,8 @@ class Site(unittest.TestCase):
         self.assertNotIn("<img", html)
         self.assertIn(f'href="https://github.com/example/demo/blob/{"c" * 40}/img/arch.png"', html)
         self.assertIn('class="chroma"', html)
+        self.assertIn("<p>{{&lt; nonexistent &gt;}} {{% nonexistent %}} {{&lt; diagram name=&ldquo;x&rdquo; &gt;}}</p>", html)  # no shortcode call
+        self.assertIn("<code>{{\\&lt; inline &gt;}}</code>", html)  # the escape shows in code
         self.assertNotIn("Old readme", self.page("generators", "old"))  # every version yanked
 
     def test_tags_link_to_the_tag_page(self):
