@@ -1343,7 +1343,7 @@ index is refused (CON-2).
   Related: CAT-11, CAT-11a, CAT-37.
 
   - Test: `catalog/test_catalog.py` (`test_glossary`)
-  - Since: this change
+  - Since: #286
 
 - CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none
