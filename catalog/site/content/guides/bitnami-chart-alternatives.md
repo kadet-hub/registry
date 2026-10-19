@@ -19,7 +19,11 @@ documents, and writing the custom resources for each instance, which is
 where a [Kapitan](/glossary/#kapitan) [generator](/glossary/#generator) renders reviewed YAML from [inventory](/glossary/#inventory) parameters.
 The generators below render custom resources only; none installs an
 operator. A [recipe](/recipes/) is an inventory [class](/glossary/#class) for
-such a replacement that CI deploys and checks on a kind cluster.
+such a replacement that CI deploys and checks on a kind cluster. It also
+installs the operator from the project's Helm chart, pinned by digest and
+patched with the [mutate](/generators/mutate/) generator where the chart's
+values fall short; RabbitMQ's operator, which has no chart, is the
+exception.
 
 ## The replacements
 

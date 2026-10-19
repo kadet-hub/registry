@@ -22,6 +22,12 @@
 ```yaml
 {{ strings.TrimSpace .text }}
 ```
+{{ end }}{{ range $r.operators }}
+## {{ .path }}
+
+```yaml
+{{ strings.TrimSpace .text }}
+```
 {{ end }}
 ## Generator pins (inventory/classes/generators.yml)
 

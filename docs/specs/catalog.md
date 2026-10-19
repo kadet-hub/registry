@@ -1130,9 +1130,9 @@ Related: CAT-15, CAT-30, CON-2.
   of kadet-hub/examples and an index of them at `/recipes/`. A recipe page
   MUST show the Bitnami charts it replaces, its generators linked to their
   pages, the operators it needs, its inventory class, the compile classes
-  that class includes, the pins of those generators, what the examples CI
-  asserts after deploying it, and a link to the recipe's folder. The site
-  navigation MUST link `/recipes/`.
+  and operator classes that class includes, the pins of those generators,
+  what the examples CI asserts after deploying it, and a link to the
+  recipe's folder. The site navigation MUST link `/recipes/`.
 
   A recipe is an inventory class that replaces one or more Bitnami charts
   with kadet-hub generators and is deployed and checked on a kind cluster
@@ -1141,8 +1141,10 @@ Related: CAT-15, CAT-30, CON-2.
   the `main` branch of kadet-hub/examples at build time, and the page shows
   what that CI last checked. The lead is the comment at the top of the
   class. The generators are the `recipes.lib.<generator>` classes the class
-  includes, and the pins are the entries of `generators.yml` whose
-  `output_path` is `lib/<generator>`.
+  includes and the generators its `recipes.operators.<operator>` classes
+  compile from `lib/<generator>`, such as mutate, which patches a chart
+  and has no compile class of its own (EX-5a). The pins are the entries of
+  `generators.yml` whose `output_path` is `lib/<generator>`.
 
   What the page states around the files lives in the front matter of
   `content/recipes/<name>.md`: title, description, the replaced charts,
@@ -1161,16 +1163,16 @@ Related: CAT-15, CAT-30, CON-2.
   CAT-11a: each recipe page carries its own tested class, not the same text
   under another search term.
 
-  Related: EX-5, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
+  Related: EX-5, EX-5a, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #283, #299
+  - Since: #283, #299, #300
 
 - CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
   is missing.
 
   `catalog/build` fetches `generators.yml`, the class of every recipe page
-  and the compile class of every generator pinned in `generators.yml` from
+  and every compile and operator class those classes include from
   `raw.githubusercontent.com` with `curl -f`, as it reads the previous
   `catalog.json`, and copies them into the site's `assets/classes/`;
   the recipe templates stop the build with `errorf` when one is missing.
@@ -1191,7 +1193,7 @@ Related: CAT-15, CAT-30, CON-2.
   (GI-10).
 
   - Test: `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`)
-  - Since: #283
+  - Since: #283, #300
 
 - CAT-37b: Every recipe page MUST have a Markdown variant (CAT-28) with
   the same facts and files, `/llms.txt` (CAT-16) MUST list it in a section
