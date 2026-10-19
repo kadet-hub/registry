@@ -110,10 +110,13 @@ remembered in the browser's `localStorage`.
   `sameAs`, without an address or phone number, which the site does not
   publish.
 
-  Titles, the home page's `h1` and its description name Kapitan together
-  with Kubernetes or Terraform. On its own, "kapitan" completes in search
-  suggestions to a restaurant and a border crossing, and "kadet" to a car
-  (checked 2026-10-17 with Google's and DuckDuckGo's suggestion endpoints);
+  The home page's title, `h1` and description, and the titles of guides
+  and recipes about Kapitan, name Kapitan together with Kubernetes or
+  Terraform; only the home page is tested. Blog post titles and generated
+  page titles (generator, tag, kind, release digest) lead with the
+  searched term instead and name Kapitan where it fits. On its own,
+  "kapitan" completes in search suggestions to a restaurant and a border
+  crossing, and "kadet" to a car (checked 2026-10-17 with Google's and DuckDuckGo's suggestion endpoints);
   "kapitan kubernetes" and "kapitan generator" are unambiguous. Guide
   titles lead with the term searched for: "migrate ingress-nginx to
   Gateway API", "kapitan generator vs helm chart vs kustomize", "Bitnami
@@ -142,9 +145,18 @@ remembered in the browser's `localStorage`.
   | helm alternatives kubernetes | home page, guide "Helm alternatives for Kubernetes" |
   | kustomize alternatives | home page, same guide |
   | pulumi vs helm | same guide |
-  | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "The same app in Helm, Kustomize and Kapitan", guide "Kapitan generator vs Helm chart vs Kustomize" |
+  | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
+  | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app", guide "Kapitan generator vs Helm chart vs Kustomize" |
   | bitnami alternative | guide "Bitnami chart alternatives", `/recipes/` |
-  | kubernetes configuration management tools | blog post "Kapitan vs Tanka vs cdk8s" |
+  | bitnami alternative postgres, bitnami alternative redis, bitnami alternative kafka, cloudnativepg vs bitnami | `/recipes/`, blog post "Bitnami Helm alternatives", `/recipes/postgresql/` |
+  | postgres, redis, keycloak, rabbitmq or kafka helm chart without bitnami (also "not bitnami"), valkey helm chart not bitnami | the matching `/recipes/<name>/` page, `/recipes/valkey/` for redis |
+  | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
+  | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
+  | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
+  | kubectl validate crd | guide "Validate Kubernetes custom resources against their CRDs" |
+  | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
+  | gvisor vs docker | blog post "gVisor vs Docker for running untrusted code in CI" |
+  | helm vs terraform, kubernetes manifests terraform | no page yet |
 
   "kapicorp" is not a target: the people who search it know Kapitan
   already, and a page ranking for it could be taken for kapicorp's own.
@@ -1092,8 +1104,8 @@ Related: CAT-15, CAT-30, CON-2.
 
   As CAT-11a asks, every recipe title and the index title lead with the
   searched term and name Kapitan, such as "PostgreSQL on Kubernetes without
-  Bitnami, with Kapitan", and every description names Kapitan with
-  Kubernetes. A title that leaves no room for the " · kadet-hub" suffix
+  Bitnami, with Kapitan", and every description leads with "Bitnami
+  <chart> Helm chart alternative:" and names Kapitan with Kubernetes. A title that leaves no room for the " · kadet-hub" suffix
   within CAT-11's 65 characters stands alone; the template counts bytes,
   so the suffix's "·" counts twice.
 
