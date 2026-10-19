@@ -126,6 +126,32 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #196, #274, #279
 
+- CAT-11f: The home page's title, `h1` and description MUST name Helm as
+  what kadet-hub is an alternative to, and the description MUST also name
+  Kustomize.
+
+  kadet-hub wants to appear where Helm, Kustomize and Pulumi appear. The
+  queries below complete in Google's or DuckDuckGo's suggestions (checked
+  2026-10-19); suggestions show that a query is made, not how often. A new
+  page title or description SHOULD lead with one of them when the page
+  answers it, and the list is rechecked when a page is added for a query
+  not on it.
+
+  | Query | Answered by |
+  |---|---|
+  | helm alternatives kubernetes | home page, guide "Helm alternatives for Kubernetes" |
+  | kustomize alternatives | home page, same guide |
+  | pulumi vs helm | same guide |
+  | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "The same app in Helm, Kustomize and Kapitan", guide "Kapitan generator vs Helm chart vs Kustomize" |
+  | bitnami alternative | guide "Bitnami chart alternatives", `/recipes/` |
+  | kubernetes configuration management tools | blog post "Kapitan vs Tanka vs cdk8s" |
+
+  "kapicorp" is not a target: the people who search it know Kapitan
+  already, and a page ranking for it could be taken for kapicorp's own.
+
+  - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
+  - Since: tbd
+
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
 
