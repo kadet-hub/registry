@@ -476,6 +476,7 @@ class Site(unittest.TestCase):
         self.assertRegex(css, r"\.compat td::before \{ content: attr\(data-label\)")
         for html in self.pages() + [page]:
             self.assertRegex(html, r'(?s)<nav>.*<a href="[./]*compatibility/">Compatibility</a>.*</nav>')
+            self.assertRegex(html, r'(?s)<nav>.*<a href="[./]*recipes/">Recipes</a>.*</nav>')  # CAT-37
 
     def test_compatibility_facts_are_the_same_on_page_details_and_markdown(self):  # CAT-30, CAT-28
         def text(h):
