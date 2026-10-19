@@ -1300,7 +1300,7 @@ index is refused (CON-2).
   `--quiet`, Hugo 0.167 printed nothing and the job only exited 1.
 
   - Test: manual: fork rehearsal (2026-10-09); `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`, the error text)
-  - Since: #16, this change
+  - Since: #16, #295
 
 - CAT-2: A version page MUST show the inventory entry with version and
   digest, `source: ghcr.io/kadet-hub/<name>:<version>@sha256:<digest>`, and
