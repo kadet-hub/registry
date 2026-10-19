@@ -27,13 +27,12 @@ jobs:
 
       - name: Install Terraform
         env:
-          # renovate: datasource=github-releases depName=hashicorp/terraform
-          TERRAFORM_VERSION: 1.16.5
-          TERRAFORM_SHA256: 2bc2fcfff033265c9e02ca0351f01794eb122f62a9b2a49a3294b9e49eaab5e4
+          # renovate: datasource=docker depName=hashicorp/terraform
+          TERRAFORM_IMAGE: hashicorp/terraform:1.16.5@sha256:c7926feace05d0f7e73542842bf3945924e955a1f782cf000ccbb8d18fa42d77
         run: |
-          curl -fsSLo "$RUNNER_TEMP/terraform.zip" "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
-          echo "${TERRAFORM_SHA256}  $RUNNER_TEMP/terraform.zip" | sha256sum -c -
-          sudo unzip -q -o "$RUNNER_TEMP/terraform.zip" terraform -d /usr/local/bin
+          c=$(docker create "$TERRAFORM_IMAGE")
+          sudo docker cp -q "$c:/bin/terraform" /usr/local/bin/terraform
+          docker rm "$c" >/dev/null
 
       - name: Compare the extracts with the provider schemas
         env:

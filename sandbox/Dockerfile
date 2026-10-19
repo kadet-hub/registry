@@ -3,19 +3,16 @@ FROM python:3.13-slim@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c
 ARG HELM_VERSION=v4.3.0
 ARG HELM_SHA256=86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
 ADD --checksum=sha256:${HELM_SHA256} https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz /tmp/helm.tgz
-# renovate: datasource=github-releases depName=open-policy-agent/conftest
-ARG CONFTEST_VERSION=0.71.1
+# renovate: datasource=github-release-attachments depName=open-policy-agent/conftest
+ARG CONFTEST_VERSION=v0.71.1
 ARG CONFTEST_SHA256=c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985
-ADD --checksum=sha256:${CONFTEST_SHA256} https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz /tmp/conftest.tgz
-# renovate: datasource=github-releases depName=kapicorp/krab
-ARG KRAB_VERSION=2.0.0-alpha.5
+ADD --checksum=sha256:${CONFTEST_SHA256} https://github.com/open-policy-agent/conftest/releases/download/${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION#v}_Linux_x86_64.tar.gz /tmp/conftest.tgz
+# renovate: datasource=github-release-attachments depName=kapicorp/krab
+ARG KRAB_VERSION=v2.0.0-alpha.5
 ARG KRAB_SHA256=c57cb602e6c89174894708e00b9d4373e67f08582fdd6f7b95517a6658ab9c85
-ADD --checksum=sha256:${KRAB_SHA256} https://github.com/kapicorp/krab/releases/download/v${KRAB_VERSION}/krab-${KRAB_VERSION}-x86_64-unknown-linux-gnu.tar.gz /tmp/krab.tgz
-# renovate: datasource=github-releases depName=kubernetes/kubernetes
-ARG KUBERNETES_VERSION=v1.37.1
-ARG KUBE_APISERVER_SHA256=de9b1b43c10143f448408b3aaf15f44fd5248b97a56301417a1fe2f1fc47a691
-ADD --checksum=sha256:${KUBE_APISERVER_SHA256} --chmod=755 https://dl.k8s.io/release/${KUBERNETES_VERSION}/bin/linux/amd64/kube-apiserver /usr/local/bin/kube-apiserver
-# renovate: datasource=github-releases depName=etcd-io/etcd
+ADD --checksum=sha256:${KRAB_SHA256} https://github.com/kapicorp/krab/releases/download/${KRAB_VERSION}/krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu.tar.gz /tmp/krab.tgz
+COPY --from=registry.k8s.io/kube-apiserver:v1.37.1@sha256:e190f914a6cc21cab9268485d1ae7282fdeab1315ac64b668aa42d732fd1061d /usr/local/bin/kube-apiserver /usr/local/bin/kube-apiserver
+# renovate: datasource=github-release-attachments depName=etcd-io/etcd
 ARG ETCD_VERSION=v3.7.2
 ARG ETCD_SHA256=3a3679bc51a4ee9d30bccea1da7cd4fe62c6fc1d2ca1255068d2c53bf3026135
 ADD --checksum=sha256:${ETCD_SHA256} https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz /tmp/etcd.tgz
@@ -25,7 +22,7 @@ RUN tar -xzf /tmp/helm.tgz -C /usr/local/bin --strip-components=1 linux-amd64/he
  && tar -xzf /tmp/conftest.tgz -C /usr/local/bin conftest \
  && tar -xzf /tmp/etcd.tgz -C /usr/local/bin --strip-components=1 "etcd-${ETCD_VERSION}-linux-amd64/etcd" \
  && pip install --no-cache-dir --require-hashes --no-deps -r /tmp/requirements.txt \
- && tar -xzf /tmp/krab.tgz -C /usr/local/bin --strip-components=1 "krab-${KRAB_VERSION}-x86_64-unknown-linux-gnu/krab" \
+ && tar -xzf /tmp/krab.tgz -C /usr/local/bin --strip-components=1 "krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu/krab" \
  && python -m venv /opt/krab-python \
  && /opt/krab-python/bin/pip install --no-cache-dir --require-hashes --no-deps -r /tmp/krab-requirements.txt \
  && rm /tmp/helm.tgz /tmp/conftest.tgz /tmp/etcd.tgz /tmp/krab.tgz /tmp/requirements.txt /tmp/krab-requirements.txt \
