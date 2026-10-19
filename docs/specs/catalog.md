@@ -156,6 +156,7 @@ remembered in the browser's `localStorage`.
   | kubectl validate crd | guide "Validate Kubernetes custom resources against their CRDs" |
   | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
   | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
+  | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
   | gvisor vs docker | no page yet |
   | helm vs terraform, kubernetes manifests terraform | no page yet |
 
@@ -163,7 +164,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287
+  - Since: #284, #287, #288
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
