@@ -169,6 +169,8 @@ remembered in the browser's `localStorage`.
   | helm vs argocd, kustomize vs helm vs argocd | same guide |
   | gvisor vs docker | no page yet |
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
+  | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
+  | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
 
   "kapicorp" is not a target: the people who search it know Kapitan
   already, and a page ranking for it could be taken for kapicorp's own.
