@@ -51,7 +51,7 @@
 <div class="generator-body">
 {{ with .readme }}
 <section class="readme" id="readme" aria-label="README">
-  {{ $page.RenderString (dict "display" "block") . }}
+  {{ $page.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .) }}
 </section>
 {{ end }}
 </div>
