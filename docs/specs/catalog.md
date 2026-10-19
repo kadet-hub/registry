@@ -157,6 +157,7 @@ remembered in the browser's `localStorage`.
   | bitnami alternative | guide "Bitnami chart alternatives", `/recipes/` |
   | bitnami alternative postgres, bitnami alternative redis, bitnami alternative kafka, cloudnativepg vs bitnami | `/recipes/`, blog post "Bitnami Helm alternatives", `/recipes/postgresql/` |
   | postgres, redis, keycloak, rabbitmq or kafka helm chart without bitnami (also "not bitnami"), valkey helm chart not bitnami | the matching `/recipes/<name>/` page, `/recipes/valkey/` for redis |
+  | mysql helm chart not bitnami, bitnami mysql alternative, bitnami alternative mongodb | `/recipes/mysql/`, `/recipes/mongodb/` |
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
@@ -176,7 +177,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
@@ -1163,7 +1164,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: EX-5, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #283
+  - Since: #283, #299
 
 - CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
   is missing.
@@ -1198,7 +1199,7 @@ Related: CAT-15, CAT-30, CON-2.
   every chart it names that has one.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`, `test_llms_txt`)
-  - Since: #283
+  - Since: #283, #299
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this

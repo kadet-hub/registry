@@ -158,7 +158,7 @@ def artifact(path, files):
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
 RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"], "valkey": [],
-                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": []}
+                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": [], "mysql": [], "mongodb": []}
 
 
 def recipe_classes(root):
@@ -559,6 +559,7 @@ class Site(unittest.TestCase):
         self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(RECIPE_GENERATORS))
         self.assertIn("<title>Bitnami chart replacements on Kubernetes with Kapitan</title>", index)  # CAT-11a
         self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
+        self.assertIn("<title>MongoDB on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))  # 64 bytes
         page = self.page("recipes", "keycloak")
         self.assertIn("<title>Keycloak on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", page)
         self.assertIn('<p class="lead">keycloak &lt;script&gt;alert(7)&lt;/script&gt; in place of a Bitnami chart.</p>', page)
