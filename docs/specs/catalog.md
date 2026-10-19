@@ -1295,8 +1295,12 @@ index is refused (CON-2).
   artifact and the index and deployed the catalog under a project path;
   the version page showed the attested digest and the owner's login.
 
-  - Test: manual: fork rehearsal (2026-10-09)
-  - Since: #16
+  A failed Hugo build MUST print Hugo's error. `catalog/build` runs Hugo
+  with `--logLevel error` and discards its statistics on stdout; with
+  `--quiet`, Hugo 0.167 printed nothing and the job only exited 1.
+
+  - Test: manual: fork rehearsal (2026-10-09); `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`, the error text)
+  - Since: #16, this change
 
 - CAT-2: A version page MUST show the inventory entry with version and
   digest, `source: ghcr.io/kadet-hub/<name>:<version>@sha256:<digest>`, and
