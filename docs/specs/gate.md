@@ -64,7 +64,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Since: #8
 
 - GI-6: Every third-party action MUST be pinned by full commit SHA and every
-  downloaded tool binary by sha256.
+  downloaded tool binary by sha256 or by the digest of the image it is
+  copied from.
 
   `tests/workflow-policy` checks that every `uses:` other than `./` and
   `$/` ends in a 40-character SHA, that every `curl` in `.github/` is
@@ -963,12 +964,12 @@ review go into the review comment and do not fail the gate.
   Service without ports, Secret `data` that was not base64.
 
   The sandbox image carries kube-apiserver and etcd, pinned in
-  `sandbox/Dockerfile` as `KUBERNETES_VERSION` (v1.37.1, from dl.k8s.io)
-  and `ETCD_VERSION` (v3.7.2, from the etcd GitHub release), each checked
-  against the sha256 its publisher lists. Kubernetes 1.37.1 names etcd
-  3.7.0 in `build/dependencies.yaml`; 3.7.2 is the newest patch of that
-  minor. Renovate proposes both versions independently, and the reviewer
-  of a bump updates the checksums and keeps etcd on the minor the
+  `sandbox/Dockerfile`: kube-apiserver v1.37.1 copied from the
+  registry.k8s.io image pinned by digest, etcd v3.7.2 from the etcd GitHub
+  release pinned by sha256. Kubernetes 1.37.1 names etcd 3.7.0 in
+  `build/dependencies.yaml`; 3.7.2 is the newest patch of that minor.
+  Renovate proposes both versions independently, with their digests
+  (REG-7), and the reviewer of a bump keeps etcd on the minor the
   Kubernetes release names. envtest from kubernetes-sigs/controller-tools
   was considered: one archive instead of two, but it publishes 1.37.0 only
   and ships kubectl, which the check does not need.
