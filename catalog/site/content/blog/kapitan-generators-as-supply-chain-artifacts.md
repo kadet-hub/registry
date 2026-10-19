@@ -53,7 +53,7 @@ through. Some examples from the generators now listed:
   differed between two runs of the same commit.
 
 The CRD dry run has its own write-up:
-[Checking custom resources against their CRDs](/guides/checking-custom-resources-against-crds/).
+[Validate Kubernetes custom resources against their CRDs](/guides/checking-custom-resources-against-crds/).
 It also covers operators that create their CRDs at runtime and publish
 no YAML, such as KubeVirt and CDI, which leaves nothing to validate
 against offline.
