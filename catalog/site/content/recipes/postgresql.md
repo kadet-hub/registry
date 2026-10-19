@@ -1,6 +1,6 @@
 ---
 title: "PostgreSQL on Kubernetes without Bitnami, with Kapitan"
-description: A Kapitan inventory class for PostgreSQL on Kubernetes with CloudNativePG, in place of the Bitnami postgresql and postgresql-ha charts.
+description: "Bitnami postgresql Helm chart alternative: a Kapitan inventory class for PostgreSQL on Kubernetes with CloudNativePG, also for postgresql-ha, checked on kind."
 replaces: [postgresql, postgresql-ha]
 operators: [CloudNativePG]
 check: the Cluster is `Ready` and `select 1` runs as the app user through the pooler
