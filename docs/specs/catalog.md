@@ -1111,7 +1111,7 @@ Related: CAT-15, CAT-30, CON-2.
   keeps raw HTML as CAT-28 does for the README.
 
   - Test: `catalog/test_catalog.py` (`ReleaseDigest`)
-  - Since: #280, this change
+  - Since: #280, #289
 
 - CAT-37: The site MUST have a page at `/recipes/<name>/` for every recipe
   of kadet-hub/examples and an index of them at `/recipes/`. A recipe page
