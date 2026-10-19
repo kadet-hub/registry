@@ -4,12 +4,12 @@ layout: prose
 description: How a Kapitan generator is gate-checked, published as an attested OCI artifact, verified by consumers, kept current and withdrawn when needed.
 ---
 
-A generator lives in its author's repository. kadet-hub lists it through a
+A [generator](/glossary/#generator) lives in its author's repository. kadet-hub lists it through a
 pull request that adds one entry file to kadet-hub/registry, checks the
-pinned commit in a gate and, after a maintainer's review, publishes the
-checked tree as an attested OCI artifact on ghcr.io. Consumers pin that
-artifact by digest, verify it and compile it in a sandbox. Renovate bump
-pull requests and a daily rescan keep the listings current, and a yank
+pinned commit in a [gate](/glossary/#gate) and, after a maintainer's review, publishes the
+checked tree as an attested [OCI artifact](/glossary/#oci-artifact) on ghcr.io. Consumers pin that
+artifact by [digest](/glossary/#digest), verify it and compile it in a sandbox. Renovate bump
+pull requests and a daily rescan keep the listings current, and a [yank](/glossary/#yanked)
 withdraws a version.
 
 {{< diagram name="overview" title="How kadet-hub works" desc="Overview: author repository, pull request, gate, review, release, ghcr.io and kadet-hub.org, consumer CI, with the Renovate bump and the rescan feeding back into the pull request." >}}
@@ -20,9 +20,9 @@ withdraws a version.
 
 1. The author creates a repository from
    [kadet-hub/generator-template](https://github.com/kadet-hub/generator-template).
-   For an operator's custom resources, `./scaffold <name> <crd-url>...`
+   For an operator's [custom resources](/glossary/#crd), `./scaffold <name> <crd-url>...`
    writes a generator with the upstream schemas and CRDs, a README, a
-   CHANGELOG and a `minimal` fixture target. `./check <dir>` runs the
+   CHANGELOG and a `minimal` fixture [target](/glossary/#target). `./check <dir>` runs the
    gate's static scans and its sandbox compile from the registry's `main`
    with docker. It has no gVisor, so only the gate judges the syscall
    trace.
@@ -55,7 +55,7 @@ has the manifest, the fixture project and the entry format.
 | Registration ([GI-1, GI-2](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#gate-integrity), [REG-1 to REG-6, REG-8](https://github.com/kadet-hub/registry/blob/main/docs/specs/registration.md#registration)) | the pull request changes more than one entry file, the entry or its name breaks the rules, the author is not an owner, the tag does not resolve to the pinned SHA, or a bump does not raise the version or moves the source |
 | Source and charts ([QA-1, QA-2, QA-5](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate), [CMP-3](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#compile-gate), [SEC-7, SEC-8](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#dependencies-binaries-and-charts)) | the manifest breaks its schema or licence rules, its Kapitan range excludes the pinned version, it declares a program that is not allowed, or a chart differs from its sha256 |
 | Static scans ([SEC-1 to SEC-6](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#static-checks), [SEC-14](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection), [QA-3](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate)) | gitleaks, GuardDog, the import allowlist and semgrep rules, the file tree rules, ClamAV or ruff report a finding that no exception bound to the file's content covers |
-| Sandbox compile ([SEC-9 to SEC-11](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection), [CMP-1, CMP-2, CMP-4, CMP-5](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#compile-gate), [QA-4](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate)) | a target fails or writes nothing on an inventory backend, the output changes with `CI` set or with `--cache`, the trace shows a forbidden call, or a decoy value appears in the output; the krab result is recorded, not judged |
+| Sandbox compile ([SEC-9 to SEC-11](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection), [CMP-1, CMP-2, CMP-4, CMP-5](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#compile-gate), [QA-4](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate)) | a target fails or writes nothing on an inventory backend, the output changes with `CI` set or with `--cache`, the trace shows a forbidden call, or a decoy value appears in the output; the [krab](/glossary/#krab) result is recorded, not judged |
 | Output checks ([SEC-12](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection), [QA-6 to QA-8, QA-10 to QA-12](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate)) | the output uses a capability the manifest does not declare, carries a tag without evidence, fails the JSON Schemas the generator ships, or a throwaway kube-apiserver rejects it in a dry run |
 | Output diff ([SEC-13](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection)) | never; the diff goes into the comment for review |
 
@@ -71,17 +71,17 @@ has the manifest, the fixture project and the entry format.
    each source by SHA without checkout and rebuilds the tree as a
    reproducible tar. For every unpublished version it reruns the static
    scans and the sandbox compile, and a finding fails the release before
-   anything is pushed. It records the scan, the output diff against the
-   newest listed version that is not yanked, the kinds the fixture renders
-   and the inventory backends it compiled on in the artifact's metadata.
+   anything is pushed. It records the scan, the [output diff](/glossary/#output-diff) against the
+   newest listed version that is not yanked, the [kinds](/glossary/#kind) the fixture renders
+   and the [inventory](/glossary/#inventory) backends it compiled on in the artifact's metadata.
 3. The sign job runs in the `release` environment, which only `main` can
    use. It fetches the commit again and fails when its git tree differs
    from the tar. It pushes the artifact to `ghcr.io/kadet-hub/<name>` by
-   digest and attests SLSA provenance, an SPDX SBOM and the output diff
-   with GitHub artifact attestations, signed keyless through Sigstore and
+   digest and attests [SLSA provenance](/glossary/#provenance), an SPDX [SBOM](/glossary/#sbom) and the output diff
+   with GitHub [artifact attestations](/glossary/#attestation), signed keyless through Sigstore and
    logged in its public transparency log. Only then does it set the
    version tag, which is never moved.
-4. The index job publishes `ghcr.io/kadet-hub/index` with the next serial
+4. The [index](/glossary/#index) job publishes `ghcr.io/kadet-hub/index` with the next serial
    when anything changed, and attests it. A GitHub release
    `index-<serial>` carries the same `index.json` with its Sigstore and
    in-toto bundles; a published release cannot be changed.
@@ -105,7 +105,7 @@ tagged with the git tree of the registry's `sandbox/` directory.
 2. The consumer's CI calls the reusable workflow `consumer.yml`, pinned
    by commit, with a policy file `.kapitan-sandbox.yaml`: the lowest index
    serial it accepts, the allowed hosts per dependency type, the programs
-   its own inputs run and the output capabilities it accepts per path.
+   its own inputs run and the [output capabilities](/glossary/#output-capability) it accepts per path.
    The workflow uses the sandbox image built from its own commit, verified
    like an artifact.
 3. It runs `kapitan inventory` in the sandbox, since the inventory backend
@@ -122,7 +122,7 @@ tagged with the git tree of the registry's `sandbox/` directory.
    before you apply it: a listing does not make a generator's output
    right for your cluster.
 
-Kapitan's own `--fetch` checks neither digests nor attestations and runs
+[Kapitan](/glossary/#kapitan)'s own `--fetch` checks neither digests nor attestations and runs
 the generator with your environment. GitLab CI has a template with the
 same steps; GitLab's hosted runners cannot run gVisor, so the syscall trace
 is missing there.

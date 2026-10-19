@@ -9,19 +9,19 @@
 <li>Operators: {{ with .Params.operators }}{{ delimit . ", " }}{{ else }}none{{ end }}</li>
 </ul>
 <h2>Inventory class</h2>
-<p><code>inventory/classes/recipes/{{ $r.name }}.yml</code>, as on the <code>main</code> branch of <a href="{{ $r.folder }}">kadet-hub/examples</a>. A target includes it next to the pins below.</p>
+<p><code>inventory/classes/recipes/{{ $r.name }}.yml</code>, as on the <code>main</code> branch of <a href="{{ $r.folder }}">kadet-hub/examples</a>. A <a href="{{ "/glossary/#target" | relURL }}">target</a> includes it next to the pins below.</p>
 {{ partial "snippet.html" (dict "id" "class" "label" "inventory class" "text" $r.class) }}
 <h2>Compile classes</h2>
-<p>The class includes one per generator; each compiles its generator once, so a target can combine several recipes.</p>
+<p>The <a href="{{ "/glossary/#class" | relURL }}">class</a> includes one per generator; each compiles its generator once, so a target can combine several recipes.</p>
 {{ range $i, $l := $r.libs }}
 <p><code>{{ $l.path }}</code></p>
 {{ partial "snippet.html" (dict "id" (printf "lib-%d" $i) "label" $l.path "text" $l.text) }}
 {{ end }}
 <h2>Generator pins</h2>
-<p>The entries of <code>inventory/classes/generators.yml</code> for these generators, pinned by version and digest.</p>
+<p>The entries of <code>inventory/classes/generators.yml</code> for these generators, pinned by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>.</p>
 {{ partial "snippet.html" (dict "id" "pins" "label" "generator pins" "text" $r.pins) }}
 <h2>How it is checked</h2>
-<p>The examples CI verifies the signed index and the attestation of every pinned generator, compiles the target, validates the output against the generators' schemas, deploys it to a new kind cluster with the operators above and fails unless {{ .Params.check | markdownify }}. <a href="{{ $r.test }}">The Chainsaw test</a> holds the assertions.</p>
+<p>The examples CI verifies the signed <a href="{{ "/glossary/#index" | relURL }}">index</a> and the <a href="{{ "/glossary/#attestation" | relURL }}">attestation</a> of every pinned generator, compiles the target, validates the output against the generators' schemas, deploys it to a new kind cluster with the operators above and fails unless {{ .Params.check | markdownify }}. <a href="{{ $r.test }}">The Chainsaw test</a> holds the assertions.</p>
 <p><a href="{{ "/recipes/" | relURL }}">All recipes</a> · <a href="{{ "/guides/bitnami-chart-alternatives/" | relURL }}">Bitnami chart alternatives</a></p>
 </section>
 {{ end }}

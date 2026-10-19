@@ -4,9 +4,9 @@ layout: prose
 description: How to write a reusable Kapitan kadet generator, test it in a sandbox like the kadet-hub gate does, and publish it as an attested OCI artifact.
 ---
 
-A Kapitan generator is a kadet module: Python that reads a block of
-inventory parameters and returns the files Kapitan writes. One generator
-replaces the same hand-written manifests in every target that needs them.
+A [Kapitan](/glossary/#kapitan) [generator](/glossary/#generator) is a [kadet](/glossary/#kadet) module: Python that reads a block of
+[inventory](/glossary/#inventory) parameters and returns the files Kapitan writes. One generator
+replaces the same hand-written manifests in every [target](/glossary/#target) that needs them.
 
 ## 1. Check that a generator is the right tool
 
@@ -39,12 +39,12 @@ def main(input_params=None):
     return out
 ```
 
-What `main()` receives and returns, and the rules the gate applies to it,
+What `main()` receives and returns, and the rules the [gate](/glossary/#gate) applies to it,
 are in the [generator contract](#generator-contract) below.
 
 ## 4. Ship the schemas of what you emit
 
-Put the JSON Schema of every kind you render under `schemas/` and name its
+Put the JSON Schema of every [kind](/glossary/#kind) you render under `schemas/` and name its
 upstream source in `schemas/sources.yaml`; the contract says
 [what the gate and the catalog do with them](#schemas-and-built-for). When
 you move to a newer upstream release, update the schemas in the same
@@ -58,7 +58,7 @@ the commit (`example-v0.1.0`) and open the entry pull request described in
 [Adding a generator](https://github.com/kadet-hub/registry/blob/main/docs/authors.md#the-pull-request).
 The gate adds secret, malware and code scans and a traced compile in
 gVisor; a maintainer reviews the code; the release publishes it attested
-and pinned by digest.
+and pinned by [digest](/glossary/#digest).
 
 Working with a coding agent: point it at the template's
 [AGENTS.md](https://github.com/kadet-hub/generator-template/blob/main/AGENTS.md).
@@ -211,7 +211,7 @@ replaces a whole `spec` field instead of merging into it.
   decoy credentials; a connection attempt, a read of a decoy or a decoy
   value in the output fails it
   ([SEC-9 to SEC-11](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection)).
-  Secrets reach the output as Kapitan refs (`?{...}`) from the inventory.
+  Secrets reach the output as [Kapitan refs](/glossary/#ref) (`?{...}`) from the inventory.
 - Determinism: a second compile with `CI`, `GITHUB_ACTIONS` and `GITLAB_CI`
   set must write identical output
   ([CMP-2](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#compile-gate)),

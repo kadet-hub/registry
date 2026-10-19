@@ -7,8 +7,8 @@ description: Moving Kapitan targets from ingress-nginx Ingresses to Gateway API 
 ingress-nginx is retired: best-effort maintenance ended in March 2026, and
 the project no longer ships releases or security fixes
 ([announcement](https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/)).
-Kubernetes recommends Gateway API as the successor. In a Kapitan project
-the move is an inventory change per target, and Ingress and Gateway can
+Kubernetes recommends Gateway API as the successor. In a [Kapitan](/glossary/#kapitan) project
+the move is an [inventory](/glossary/#inventory) change per [target](/glossary/#target), and Ingress and Gateway can
 run side by side until DNS points at the new address.
 
 ## Before and after
@@ -102,7 +102,7 @@ SecurityPolicy.
 
 ## Checking the result
 
-Compile, then validate the routes against the Gateway API CRDs before
-anything reaches a cluster. Server-side dry runs catch what the JSON
+Compile, then validate the routes against the Gateway API [CRDs](/glossary/#crd) before
+anything reaches a cluster. [Server-side dry runs](/glossary/#server-side-dry-run) catch what the JSON
 Schemas do not; see
 [Checking custom resources against their CRDs](/guides/checking-custom-resources-against-crds/).

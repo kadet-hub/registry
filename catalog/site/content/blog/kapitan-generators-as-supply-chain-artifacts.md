@@ -5,7 +5,7 @@ topics: [supply chain, gate, kapitan]
 description: Why kadet-hub gate-checks Kapitan generators before listing them, what the sandboxed compile and API server dry runs caught, and how to use them.
 ---
 
-Kapitan's kadet generators are Python packages that turn an inventory into
+[Kapitan](/glossary/#kapitan)'s [kadet](/glossary/#kadet) [generators](/glossary/#generator) are Python packages that turn an [inventory](/glossary/#inventory) into
 Kubernetes manifests, Terraform JSON or anything else. They are also code
 that runs on your machine and in CI with access to your inventory and
 secrets. In most projects they get copied between repositories and run
@@ -20,22 +20,22 @@ Telekom Cloud.
 
 ## What a version goes through
 
-Before a version is listed, a gate runs on the pull request that registers
+Before a version is listed, a [gate](/glossary/#gate) runs on the pull request that registers
 it:
 
 - secret, malware and code scans of the source;
-- a compile of the generator's fixture targets in a gVisor sandbox without
+- a compile of the generator's [fixture targets](/glossary/#target) in a gVisor sandbox without
   network, on every inventory backend it declares, once more with
   Kapitan's compile cache, which must produce identical output;
 - validation of the rendered output against the JSON Schemas the
   generator ships;
-- a server-side dry run of every built-in document, and of every custom
-  resource whose CRD the generator ships, against a throwaway
+- a [server-side dry run](/glossary/#server-side-dry-run) of every built-in document, and of every custom
+  resource whose [CRD](/glossary/#crd) the generator ships, against a throwaway
   kube-apiserver.
 
 A maintainer reviews the result. The version is then published to
-`ghcr.io/kadet-hub/<name>` as an OCI artifact with a Sigstore signature,
-an SBOM and a transparency log entry, and you pin it by digest in your
+`ghcr.io/kadet-hub/<name>` as an [OCI artifact](/glossary/#oci-artifact) with a Sigstore signature,
+an [SBOM](/glossary/#sbom) and a transparency log entry, and you pin it by [digest](/glossary/#digest) in your
 inventory.
 
 ## What the gate caught

@@ -14,11 +14,11 @@ longer get security fixes.
 
 For most of the popular charts the replacement is the operator the
 project itself maintains, with the project's own images. That splits the
-job in two: installing the operator and its CRDs, which the project
+job in two: installing the operator and its [CRDs](/glossary/#crd), which the project
 documents, and writing the custom resources for each instance, which is
-where a Kapitan generator renders reviewed YAML from inventory parameters.
+where a [Kapitan](/glossary/#kapitan) [generator](/glossary/#generator) renders reviewed YAML from [inventory](/glossary/#inventory) parameters.
 The generators below render custom resources only; none installs an
-operator. A [recipe](/recipes/) is an inventory class for
+operator. A [recipe](/recipes/) is an inventory [class](/glossary/#class) for
 such a replacement that CI deploys and checks on a kind cluster.
 
 ## The replacements
@@ -73,7 +73,7 @@ the kube-prometheus Helm chart by prometheus-community.
 
 `redis`, `mongodb` and `mysql` have no generator on kadet-hub yet. For
 `redis` and `external-dns`, the [Valkey](/recipes/valkey/) and
-[external-dns with PowerDNS](/recipes/external-dns-powerdns/) recipes
+[external-dns with PowerDNS](/recipes/external-dns-powerdns/) [recipes](/glossary/#recipe)
 render plain workloads with the kubernetes generator.
 [Wanted generators](/wanted/) lists the open requests; a 👍 there or a new
 request is how one gets prioritised.
@@ -93,4 +93,4 @@ A migration per chart follows the same order:
    PersistentVolumeClaims once the old data is no longer needed.
 
 [Verifying a generator before you pull it](/guides/supply-chain-security-for-kapitan-generators/)
-covers checking the artifact's signature and provenance.
+covers checking the artifact's signature and [provenance](/glossary/#provenance).

@@ -10,9 +10,9 @@ packaged chart you pinned and the images it pulls no longer receive
 updates, and the legacy images are meant only to buy time for a migration.
 For PostgreSQL the move with the least friction is an operator its own
 project maintains, CloudNativePG, together with images from that project.
-Its custom resources can come from the upstream `cluster` chart or be
+Its [custom resources](/glossary/#crd) can come from the upstream `cluster` chart or be
 rendered in your own repository, for example with the
-[cloudnative-pg](/generators/cloudnative-pg/) generator. Both work. Neither
+[cloudnative-pg](/generators/cloudnative-pg/) [generator](/glossary/#generator). Both work. Neither
 replaces Bitnami one to one, because a chart or a generator only produces
 manifests; the images still need a source you trust.
 
@@ -98,10 +98,10 @@ pin `cluster.imageName`.
 ## Rendering the Cluster with a generator
 
 The other way is to keep the manifests in your repository and render them
-from an inventory. The [example](https://github.com/kadet-hub/examples/tree/main/bitnami)
+from an [inventory](/glossary/#inventory). The [example](https://github.com/kadet-hub/examples/tree/main/bitnami)
 does this with the cloudnative-pg generator 1.0.1, which is built for
 CloudNativePG 1.30.1 and the Barman Cloud Plugin 0.15.1 (see
-[compatibility](/compatibility/)). The target maps the Bitnami defaults of
+[compatibility](/compatibility/)). The [target](/glossary/#target) maps the Bitnami defaults of
 one database and one owner onto a three-instance cluster:
 
 ```yaml
@@ -132,7 +132,7 @@ The generator fills `instances: 3` and turns `storage: 10Gi` into
 a Secret `app-db-app` with the credentials and a connection URI, which
 replaces the password Secret the Bitnami chart rendered.
 
-Kapitan 0.36.3 checks neither digests nor attestations when it fetches, so
+[Kapitan](/glossary/#kapitan) 0.36.3 checks neither [digests](/glossary/#digest) nor [attestations](/glossary/#attestation) when it fetches, so
 `kapitan compile --fetch` gives you no integrity check. It also needs the
 `kapitan[oci]` extra for OCI sources; without it the compile stops with
 "The 'oras' package is required for OCI dependencies". The example
@@ -150,8 +150,8 @@ uvx --python 3.13 --from 'kapitan[omegaconf,reclass-rs]==0.36.3' \
   --with omegaconf==2.4.0.dev4 kapitan compile --inventory-backend omegaconf
 ```
 
-Between the two `verify` calls, `run.sh` checks that the attested index
-lists that digest as version 1.0.1 and not yanked. The omegaconf pin is not
+Between the two `verify` calls, `run.sh` checks that the [attested index](/glossary/#index)
+lists that digest as version 1.0.1 and not [yanked](/glossary/#yanked). The omegaconf pin is not
 optional: without it the resolver installed a newer omegaconf and the
 compile failed with `cannot import name 'ListMergeMode'`.
 

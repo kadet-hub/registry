@@ -345,6 +345,38 @@ class Site(unittest.TestCase):
         self.assertIn('href="https://kapitan.dev/"', glossary)
         self.assertIn('id="index"', glossary)
 
+    def test_glossary(self):  # CAT-13a
+        html = self.page("glossary")
+        terms = re.findall(r'<dt id="([^"]*)">([^<]*)</dt>', html)
+        ids = [i for i, _ in terms]
+        self.assertGreaterEqual(len(ids), 23)
+        self.assertEqual(len(ids), len(set(ids)))
+        for i in ids:
+            self.assertRegex(i, r"^[a-z]+(-[a-z]+)*$")
+        ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)]
+        (terms_ld,) = [b for b in ld if b.get("@type") == "DefinedTermSet"]
+        self.assertEqual([(t["@type"], t["url"], t["name"]) for t in terms_ld["hasDefinedTerm"]],
+                         [("DefinedTerm", f"https://kadet-hub.org/glossary/#{i}", n) for i, n in terms])
+        for t in terms_ld["hasDefinedTerm"]:
+            self.assertTrue(t["description"], t["name"])
+            self.assertNotRegex(t["description"], r"</?(?:a|code)\b|&\w+;", t["name"])  # plain text
+        for other in ("index.html", os.path.join("generators", "demo", "index.html")):
+            with open(os.path.join(self.out, other), encoding="utf-8") as f:
+                self.assertNotIn("DefinedTermSet", f.read())
+        title = re.search(r"<title>(.*?)</title>", html).group(1)
+        desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
+        for text in (title, desc):  # CAT-11a
+            self.assertIn("Kapitan", text)
+            self.assertIn("Kubernetes", text)
+        linked = set()
+        for root, _, files in os.walk(self.out):
+            for name in files:
+                if name == "index.html" and os.path.relpath(root, self.out) != "glossary":
+                    with open(os.path.join(root, name), encoding="utf-8") as f:
+                        linked.update(re.findall(r'href="[^"]*glossary/#([a-z-]+)"', f.read()))
+        self.assertEqual(sorted(set(ids) - linked), [])
+        self.assertEqual(sorted(linked - set(ids)), [])
+
     def test_legal_pages_and_notices(self):
         for html in self.pages():
             self.assertIn("not affiliated with or endorsed by the Kapitan project or kapicorp", html)
@@ -567,7 +599,7 @@ class Site(unittest.TestCase):
         self.assertIn('<time datetime="2026-10-17">17 October 2026</time>', post)
         self.assertIn('<a href="../../guides/checking-custom-resources-against-crds/">', post)  # internal, so no rel=nofollow
         self.assertNotIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog"', self.page("guides"))
-        self.assertTrue(self.markdown("blog", slug).startswith("# Kapitan generators as supply-chain artifacts\n\nKapitan's kadet"))
+        self.assertTrue(self.markdown("blog", slug).startswith("# Kapitan generators as supply-chain artifacts\n\n[Kapitan](/glossary/#kapitan)'s [kadet](/glossary/#kadet)"))
         with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
             feed = __import__("xml.dom.minidom").dom.minidom.parseString(f.read())
         self.assertIn(f"https://kadet-hub.org/blog/{slug}/", [e.getElementsByTagName("id")[0].firstChild.data for e in feed.getElementsByTagName("entry")])
@@ -631,7 +663,7 @@ class Site(unittest.TestCase):
         text = re.sub(r"<[^>]+>", " ", main.replace(table, ""))  # requirement IDs only in the stage table
         self.assertNotRegex(text, r"\b(?:GI|REG|SEC|QA|CMP|PUB|CON|CAT|UPD|INC|DEC)-\d")
         md = self.markdown("guides", "how-kadet-hub-works")
-        self.assertTrue(md.startswith("# How kadet-hub works\n\nA generator lives in its author's repository."))
+        self.assertTrue(md.startswith("# How kadet-hub works\n\nA [generator](/glossary/#generator) lives in its author's repository."))
         self.assertRegex(md, r"\n## Listing a new generator\n+1\. The author creates a repository from\n")
         for gone in ("{{", "<svg", "<figure", 'name="'):
             self.assertNotIn(gone, md)

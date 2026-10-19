@@ -5,13 +5,13 @@ topics: [supply chain, sigstore, verification]
 description: Verify SLSA provenance attestations on OCI artifacts with gh and cosign, using kadet-hub's signed index, real digests and the failures that matter.
 ---
 
-To verify an OCI artifact that carries GitHub artifact attestations, run
+To verify an [OCI artifact](/glossary/#oci-artifact) that carries GitHub [artifact attestations](/glossary/#attestation), run
 `gh attestation verify` with the exact workflow identity. cosign v3 checks
 the same Sigstore bundles with `cosign verify-blob-attestation`, but only
 after you download them: `cosign verify-attestation` on the image finds
 nothing, because the attestations live in GitHub's attestation API and not
 in the registry. This post walks through both on a real kadet-hub
-generator, shows the failures you want to see, and ends with a script that
+[generator](/glossary/#generator), shows the failures you want to see, and ends with a script that
 does it in one call. Why a generator needs this at all is covered in
 [supply-chain security for Kapitan generators](/guides/supply-chain-security-for-kapitan-generators/).
 
@@ -22,11 +22,11 @@ oras 1.3.4.
 ## What kadet-hub attests
 
 The [release workflow](/guides/how-kadet-hub-works/) pushes each generator
-as an OCI artifact to `ghcr.io/kadet-hub/<name>` and attests its digest
-three times: SLSA provenance (`https://slsa.dev/provenance/v1`), an SPDX 2.3
-SBOM (`https://spdx.dev/Document/v2.3`) and the diff of its fixture output
+as an OCI artifact to `ghcr.io/kadet-hub/<name>` and attests its [digest](/glossary/#digest)
+three times: [SLSA provenance](/glossary/#provenance) (`https://slsa.dev/provenance/v1`), an SPDX 2.3
+[SBOM](/glossary/#sbom) (`https://spdx.dev/Document/v2.3`) and the diff of its fixture output
 against the previous version (`https://kadet-hub.org/output-diff/v1`). It
-also attests the index that lists every version with its digest, and
+also attests the [index](/glossary/#index) that lists every version with its digest, and
 publishes that index as a GitHub release `index-<serial>` with a Sigstore
 bundle next to it.
 
@@ -214,8 +214,8 @@ text matches the index entry. The first hunk adds a ClusterRole.
 
 [`verify-oci/verify`](https://github.com/kadet-hub/examples/tree/main/verify-oci)
 needs gh, jq and sha256sum. It downloads the latest index release,
-verifies it, enforces a minimum serial, rejects yanked versions, verifies
-provenance, SBOM and output diff for the digest, checks the diff hash
+verifies it, enforces a minimum serial, rejects [yanked](/glossary/#yanked) versions, verifies
+provenance, SBOM and [output diff](/glossary/#output-diff) for the digest, checks the diff hash
 against the index, and confirms that a tampered index, another branch,
 another repository and another workflow are rejected. Any failure exits
 non-zero.

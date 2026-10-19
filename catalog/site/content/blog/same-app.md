@@ -5,7 +5,7 @@ topics: [kapitan, helm, kustomize, comparison]
 description: One app, two environments, three tools, matching manifests. Where Kapitan saves work and where Helm and Kustomize stay ahead, checked by a script.
 ---
 
-Comparisons between Helm, Kustomize and Kapitan usually compare features.
+Comparisons between Helm, Kustomize and [Kapitan](/glossary/#kapitan) usually compare features.
 This one compares output. The
 [example](https://github.com/kadet-hub/examples/tree/main/same-app) renders
 the same small app with all three tools, and `./check` fails unless the
@@ -32,9 +32,9 @@ http://web.shop.svc:80`. That value matters later.
 
 The Helm side is one generic chart rendered once per app with a base and an
 environment values file. The Kustomize side is a base per app and an overlay
-per environment. The Kapitan side is an inventory that feeds the
+per environment. The Kapitan side is an [inventory](/glossary/#inventory) that feeds the
 [kubernetes generator](/generators/kubernetes/) from kadet-hub, pinned by
-digest:
+[digest](/glossary/#digest):
 
 ```yaml
 dependencies:
@@ -79,7 +79,7 @@ maintains and that you pin, verify and run. It is the same trade as pulling a
 generic chart from a chart repository, with the difference that the generator
 reads the whole inventory instead of one values tree.
 
-The one-app prod target in Kapitan, `inventory/targets/prod.yml`:
+The one-app prod [target](/glossary/#target) in Kapitan, `inventory/targets/prod.yml`:
 
 ```yaml
 classes: [common, apps.web]
@@ -116,7 +116,7 @@ then become patches of their own.
 
 ## A value derived from another
 
-The api needs the web Service URL. In Kapitan it is an interpolation, so it
+The api needs the web Service URL. In Kapitan it is an [interpolation](/glossary/#interpolation), so it
 follows the web definition:
 
 ```yaml
@@ -197,21 +197,21 @@ vendor YAML you do not control is where Kustomize is strongest. Kapitan has a
 `kustomize` input type for that case too.
 
 Both have a gentler start. A values file and a patch are plain YAML.
-Kapitan asks you to learn classes, targets, interpolation and the generator's
+Kapitan asks you to learn [classes](/glossary/#class), targets, interpolation and the generator's
 schema before the first manifest, and it needs a Python toolchain. Argo CD and Flux render Helm and Kustomize natively. With Kapitan you
 commit compiled output or add a compile step in CI.
 
 ## Fetching generators honestly
 
-Kapitan 0.36.3 checks neither attestations nor digests when it fetches
+Kapitan 0.36.3 checks neither [attestations](/glossary/#attestation) nor digests when it fetches
 dependencies, so `kapitan compile --fetch` gives no integrity check. It also
 runs generator code with your environment and credentials. `check` does not
 use `--fetch`. On first run it verifies the generator's attestation with
 `gh attestation verify` against the kadet-hub release workflow, pulls by
 digest with `oras` and unpacks into `kapitan/lib/kubernetes`.
 
-That is not the full consumer flow. It does not check the attested index
-for yanked versions, and it compiles on your machine without a sandbox. In
+That is not the full consumer flow. It does not check the [attested index](/glossary/#index)
+for [yanked](/glossary/#yanked) versions, and it compiles on your machine without a sandbox. In
 CI, use the [consumer
 workflow](https://github.com/kadet-hub/registry/blob/main/docs/consumers.md#workflow),
 which does both and compiles in gVisor without network. The

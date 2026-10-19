@@ -6,17 +6,17 @@ description: Two Kapitan targets from four verified kadet-hub generators, from a
 ---
 
 This post builds a small platform from the catalog: a `dev` and a `prod`
-target that share one inventory and render a web workload, its TLS
+[target](/glossary/#target) that share one [inventory](/glossary/#inventory) and render a web workload, its TLS
 certificate, a Cilium network policy and the Argo CD Application that deploys
-it. Four generators do the rendering: [kubernetes](/generators/kubernetes/),
+it. Four [generators](/glossary/#generator) do the rendering: [kubernetes](/generators/kubernetes/),
 [cilium](/generators/cilium/), [certmanager](/generators/certmanager/) and
 [argocd](/generators/argocd/). Every artifact is checked against the signed
-index before it is used.
+[index](/glossary/#index) before it is used.
 
 The finished project is in
 [kadet-hub/examples](https://github.com/kadet-hub/examples/tree/main/first-platform).
 Replayed from an empty directory with a cold package cache, the commands in
-this post take 79 seconds: 33 for installing Kapitan, 44 for verifying and
+this post take 79 seconds: 33 for installing [Kapitan](/glossary/#kapitan), 44 for verifying and
 fetching the index and the four generators, two for compiling and
 validating. The
 rest of your time goes into reading four generator pages and writing 107
@@ -54,7 +54,7 @@ gh attestation verify index.json --bundle index.json.sigstore.json --owner kadet
 jq .serial index.json   # 47
 ```
 
-The digest for a version is one `jq` call away, and `yanked` is `null` for
+The [digest](/glossary/#digest) for a version is one `jq` call away, and `yanked` is `null` for
 all four versions used here:
 
 ```sh
@@ -62,7 +62,7 @@ jq -r '.generators.certmanager["1.0.2"].digest' index.json
 # sha256:ba7632e9e06a593fbe20e9fa6774139203d7df65992adff9db94779606888ad9
 ```
 
-Then each artifact's attestation, checked against the same workflow identity:
+Then each artifact's [attestation](/glossary/#attestation), checked against the same workflow identity:
 
 ```sh
 gh attestation verify \
@@ -77,7 +77,7 @@ script, `gh` prints nothing on success, so check the exit code or add
 
 ## Pin the generators
 
-One class holds the four dependencies and one compile entry per generator,
+One [class](/glossary/#class) holds the four dependencies and one compile entry per generator,
 each writing to its own directory below the target:
 
 ```yaml
@@ -226,7 +226,7 @@ common name, the ACME server and the certificate's DNS name.
 The Deployment came out with the restricted profile: `runAsNonRoot`,
 `seccompProfile: RuntimeDefault`, all capabilities dropped, no service
 account token. The cilium generator turned `ports: [8080]` into a
-`toPorts` entry with the port as a string, which the CRD requires, and
+`toPorts` entry with the port as a string, which the [CRD](/glossary/#crd) requires, and
 `allow_dns: true` into an egress rule to kube-dns with an L7 DNS rule.
 
 Each generator ships the JSON Schemas it was checked against, so the output
@@ -282,6 +282,6 @@ locally against this project: both passed, the plan failed as expected with
 The workflow treats the repository root as the Kapitan project. To use the
 example, copy the `first-platform` folder to the root of your own
 repository. The [how kadet-hub works](/guides/how-kadet-hub-works/) guide
-covers what the gate checked before these versions were listed, and the
+covers what the [gate](/glossary/#gate) checked before these versions were listed, and the
 [supply-chain guide](/guides/supply-chain-security-for-kapitan-generators/)
 what a listing does not cover.
