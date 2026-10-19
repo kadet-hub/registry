@@ -1,32 +1,14 @@
 {{ define "main" }}
 {{ $owner := site.Data.catalog.owner }}
-{{ $docs := printf "https://github.com/%s/registry/blob/main/docs/" $owner }}
+{{ $docs := printf "https://github.com/%s/registry/blob/main/" $owner }}
 <section class="prose-page">
-<h1>Glossary</h1>
+<h1>{{ .Title }}</h1>
 <p class="lead">kadet-hub lists generators for <a href="https://kapitan.dev/">Kapitan</a>. These are the terms the catalog uses.</p>
 <dl class="glossary">
-  <dt id="kapitan">Kapitan</dt>
-  <dd>A configuration management tool that compiles an inventory into Kubernetes manifests, Terraform, documentation and other files. kadet-hub is a community catalog and is not run by the Kapitan project. <a href="https://kapitan.dev/">kapitan.dev</a></dd>
-  <dt id="inventory">Inventory</dt>
-  <dd>The YAML hierarchy of classes and targets that holds a project's parameters; a generator reads its settings from it. <a href="https://kapitan.dev/latest/pages/inventory/introduction/">Inventory in the Kapitan docs</a></dd>
-  <dt id="kadet">kadet</dt>
-  <dd>Kapitan's Python input type: a Python module that returns objects, which Kapitan writes as files. <a href="https://kapitan.dev/latest/pages/input_types/kadet/">kadet in the Kapitan docs</a></dd>
-  <dt id="generator">Generator</dt>
-  <dd>A reusable kadet module that turns a block of inventory parameters into many output files, for example every resource of an operator. Each listed generator ships a manifest, <code>kapitan-generator.yaml</code>, and a fixture project the gate compiles.</dd>
-  <dt id="gate">Gate</dt>
-  <dd>The checks every version passes before review: secret, malware and code scans, Python errors, and a compile of the fixture project in a gVisor sandbox without network, with decoy credentials and a trace of the programs it starts. <a href="{{ $docs }}authors.md">What the gate checks</a></dd>
-  <dt id="output-capability">Output capability</dt>
-  <dd>A risky kind of output a generator declares, such as privileged pods, host paths or Terraform provisioners. Undeclared ones fail the gate, and consumers decide which ones they accept.</dd>
-  <dt id="digest">Digest</dt>
-  <dd>The sha256 of a published artifact. Pinning by digest means the inventory gets exactly the reviewed content, even if a tag moves.</dd>
-  <dt id="attestation">Attestation</dt>
-  <dd>A signed statement, stored by GitHub and logged in Sigstore's transparency log, that the marketplace's release workflow built and published an artifact with this digest. It says where the artifact came from, not that it is free of flaws. <a href="{{ $docs }}consumers.md#verifying-by-hand">Verifying by hand</a></dd>
-  <dt id="index">Index and index serial</dt>
-  <dd>The attested list of every published version. Its serial grows with each change; a consumer who sets <code>index_serial</code> refuses any older index, so a rolled-back index cannot bring back a yanked version.</dd>
-  <dt id="yanked">Yanked</dt>
-  <dd>A version withdrawn by its owners or the maintainers. The catalog shows the reason instead of the inventory entry, and the consumer workflow refuses its digest.</dd>
-  <dt id="krab">krab</dt>
-  <dd>An alternative Kapitan implementation. The gate also compiles each fixture with krab and records whether the output is the same; that is information, not a requirement.</dd>
+{{- range $t := .Params.terms }}{{/* CAT-13a */}}
+  <dt id="{{ .id }}">{{ .name }}</dt>
+  <dd>{{ .text | markdownify }}{{ with .url }} <a href="{{ cond (strings.HasPrefix . "docs/") (print $docs .) (cond (strings.HasPrefix . "/") (relURL .) .) }}">{{ $t.label }}</a>{{ end }}</dd>
+{{- end }}
 </dl>
 </section>
 {{ end }}
