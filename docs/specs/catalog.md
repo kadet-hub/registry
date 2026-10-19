@@ -155,7 +155,8 @@ remembered in the browser's `localStorage`.
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
   | kubectl validate crd | guide "Validate Kubernetes custom resources against their CRDs" |
   | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
-  | gvisor vs docker | blog post "gVisor vs Docker for running untrusted code in CI" |
+  | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
+  | gvisor vs docker | no page yet |
   | helm vs terraform, kubernetes manifests terraform | no page yet |
 
   "kapicorp" is not a target: the people who search it know Kapitan
