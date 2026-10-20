@@ -81,6 +81,28 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (partial: the markup)
   - Since: #45
 
+- CAT-9a: Below 48rem the site header MUST be one row with a menu button
+  that opens the nav as a list below it, the tag chips MUST be collapsed
+  behind a "Filter by tag" button that counts the selected tags, and the
+  home page filters MUST NOT stay fixed while the visitor scrolls.
+
+  At 393 px, an iPhone 15, the ten nav links wrapped into four
+  right-aligned rows and the header was 150 px tall; the eleven tag chips
+  took five rows, and the sticky filters covered 354 px of a 660 px
+  viewport, more than half of every scrolled screen. The menu follows
+  GitHub's mobile header: brand, theme button, menu button; Escape closes
+  the open menu. The filters scroll with the page; the search is at the top
+  of the list, one scroll up. The hero buttons share each row's width
+  instead of leaving ragged gaps.
+
+  Both buttons are added by `site.js`. Without JavaScript the nav and the
+  chips stay open, so every link and tag remains reachable.
+
+  - Test: `catalog/test_catalog.py` (partial: markup and stylesheet);
+    manual: 393 px viewport, menu and tag filter open and close, filters
+    not sticky
+  - Since: #309
+
 - CAT-10: The home page MUST let visitors sort the cards by name, by the
   time of the latest version and by popularity score (CAT-23).
 
