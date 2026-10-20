@@ -9,7 +9,7 @@
   "schedule": ["* 0-5 * * 1"],
   "automerge": false,
   "minimumReleaseAge": "3 days",
-  "minimumReleaseAgeBehaviour": "timestamp-optional",
+  "minimumReleaseAgeBehaviour": "timestamp-required",
   "internalChecksFilter": "strict",
   "rebaseWhen": "behind-base-branch",
   "pip-compile": {
@@ -110,6 +110,24 @@
       ],
       "groupName": null,
       "commitMessageTopic": "generator {{depName}}"
+    },
+    {
+      "description": "REG-7: git tags carry no release timestamp",
+      "matchDatasources": [
+        "git-tags"
+      ],
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
+      "description": "REG-7: registries other than Docker Hub report no release timestamp",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "/^[^/]*[.:][^/]*//",
+        "!/^(docker\\.io|index\\.docker\\.io)//"
+      ],
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
     }
   ],
   "gitlabci": {
