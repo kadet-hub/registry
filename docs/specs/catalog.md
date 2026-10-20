@@ -1032,11 +1032,12 @@ Related: CAT-15, CAT-30, CON-2.
   The release feed at `/index.xml` (CAT-18) stays limited to published
   versions, so its subscribers get no posts; the blog and its posts
   announce the blog feed in their `<head>`. A post is a Markdown page with
-  `layout: prose` and a `date`, and comes in through a maintainer pull
-  request like a guide.
+  a `date`; it gets the `post` layout from the `/blog/*` cascade in
+  `catalog/site/hugo.toml` and comes in through a maintainer pull request
+  like a guide.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #271
+  - Since: #271, this change
 
 - CAT-36a: A post page MUST show a byline (author, publication date, an
   update date only when `lastmod` is later, reading time), the post's
