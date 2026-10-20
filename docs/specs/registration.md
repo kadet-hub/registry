@@ -164,7 +164,7 @@ fetched tree; this is the layout consumers use.
     `timestamp-optional` proposed. Checksums: lookup with tool pins set
     one release back; `checksum-pins` workflow.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
-    this change
+    #306
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
