@@ -1037,7 +1037,7 @@ Related: CAT-15, CAT-30, CON-2.
   like a guide.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #271, this change
+  - Since: #271, #308
 
 - CAT-36a: A post page MUST show a byline (author, publication date, an
   update date only when `lastmod` is later, reading time), the post's
