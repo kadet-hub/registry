@@ -1135,6 +1135,83 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`ReleaseDigest`)
   - Since: #280, #289
 
+- CAT-36c: Every post page MUST link to sharing the post on LinkedIn,
+  Bluesky, X, Hacker News and Reddit and to cross-posting it to dev.to,
+  each link carrying the post's canonical URL and, where the network takes
+  one, its title, URL-encoded. Other pages MUST NOT carry these links.
+
+  The links are plain `<a>` elements with the values in the query string,
+  so they work without JavaScript. They load nothing from the networks and
+  set no cookie; a network learns of the post only when the visitor
+  follows its link. Each opens in a new tab with `rel="nofollow noopener
+  noreferrer"`: Google asks for `nofollow` on links it should not crawl
+  from the site
+  ([qualifying outbound links](https://developers.google.com/search/docs/crawling-indexing/qualify-outbound-links)),
+  and every target is a compose form behind a login. They point to other
+  origins, so the sitemap and the CAT-11d check do not see them, and the
+  Markdown variant (CAT-28) does not carry them.
+
+  Guides and recipes have layouts of their own and no share links; the
+  weekly release posts (CAT-36b) are posts and have them.
+
+  | Network | Link | Source, checked 2026-10-20 |
+  |---|---|---|
+  | LinkedIn | `https://www.linkedin.com/sharing/share-offsite/?url=<url>` | LinkedIn's documentation describes only the Share Plugin, which loads `platform.linkedin.com/in.js`; the URL redirects to LinkedIn's share form |
+  | Bluesky | `https://bsky.app/intent/compose?text=<title> <url>` | [Action Intent Links](https://docs.bsky.app/docs/advanced-guides/intent-links) |
+  | X | `https://x.com/intent/tweet?text=<title>&url=<url>` | [Web Intent](https://docs.x.com/x-for-websites/post-button/guides/web-intent), which does not name `intent/post` |
+  | Hacker News | `https://news.ycombinator.com/submitlink?u=<url>&t=<title>` | [bookmarklet](https://news.ycombinator.com/bookmarklet.html) |
+  | Reddit | `https://www.reddit.com/submit?url=<url>&title=<title>` | no current documentation; `GET_submit` in reddit-archive/reddit reads both, and reddit.com accepts them |
+  | dev.to | `https://dev.to/new?prefill=<front matter and excerpt>` | `ArticlesController#new` and `Articles::Builder` in forem/forem |
+  | Mastodon (CAT-36d) | `https://<server>/share?text=<title> <url>` | `render_initial_state` in mastodon/mastodon v4.7.3 |
+
+  Hugo's `urlquery` encodes the values and writes a space as `+`, which
+  query-string parsers read as a space; checked in the source for Bluesky
+  (`URLSearchParams`) and for Arc's `urldecode`, which Hacker News runs on.
+
+  dev.to has no intent for sharing a link: `/new?prefill=` opens its
+  editor with a draft, after a sign-in. The draft is front matter with the
+  title in double quotes, `published: false` and `canonical_url` set to the
+  post, then the description and a link to the post, so the copy is an
+  excerpt with a link (CAT-36). Forem's default editor reads only the title
+  and the text after the front matter: the visitor sees the quotes and
+  sets the canonical URL under the post's options. The Markdown editor
+  with front matter reads all of it.
+
+  The icons are inline SVG in `currentColor`, so they follow the theme:
+  Bluesky, X, Hacker News (Y Combinator), Reddit, dev.to and Mastodon from
+  Simple Icons 16.35.0 (CC0). Simple Icons no longer has LinkedIn; its
+  "in" is drawn for this site. Every link is an icon button named by
+  `aria-label`, such as "Share on X".
+
+  - Test: `catalog/test_catalog.py` (`test_share_links`)
+  - Since: #307
+
+- CAT-36d: With JavaScript, a post page MUST offer sharing on Mastodon
+  through a server the visitor enters, and MUST offer the browser's share
+  menu when `navigator.share` exists.
+
+  Mastodon has no central instance to link to. A form asks for the server,
+  such as `mastodon.social`, accepts a host name only, and opens
+  `https://<server>/share?text=<title> <url>` in a new tab. Mastodon's
+  share page joins `title`, `text` and `url` into the draft; the link uses
+  `text` alone. The server is kept in `localStorage` under `mastodon`,
+  read and written in `try`/`catch` so blocked storage only means asking
+  again; the privacy page names the key (LEG-1). A share service that
+  picks the server for the visitor would put a third party between them
+  and was left out.
+
+  The share button hands title and canonical URL to `navigator.share`;
+  closing the menu is not an error. Form and button are `hidden` in the
+  markup and shown by `site.js`, so without JavaScript, or without the
+  API, a visitor has the CAT-36c links.
+
+  - Test: `catalog/test_catalog.py` (`test_share_links`; partial: the
+    markup, the script runs in the browser); manual: the post in Chromium
+    at 375 px and 1280 px, light and dark, sharing on Mastodon with a
+    server entered and remembered, and the share button with
+    `navigator.share` present and absent
+  - Since: #307
+
 - CAT-37: The site MUST have a page at `/recipes/<name>/` for every recipe
   of kadet-hub/examples and an index of them at `/recipes/`. A recipe page
   MUST show the Bitnami charts it replaces, its generators linked to their

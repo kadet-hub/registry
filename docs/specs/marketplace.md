@@ -443,7 +443,7 @@ coverage is named at each:
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |
 | `release/scan-record`, `release/sbom.py` | PUB-7, PUB-8 |
-| `catalog/` | CAT-1 to CAT-35: Hugo site, `build` script, `test_catalog.py`, Graphviz diagrams in `site/assets/diagrams/`; icons from lucide-static 1.55.0 (ISC); `static/count.js` from GoatCounter (ISC, CAT-25) |
+| `catalog/` | CAT-1 to CAT-35: Hugo site, `build` script, `test_catalog.py`, Graphviz diagrams in `site/assets/diagrams/`; icons from lucide-static 1.55.0 (ISC), share icons from simple-icons 16.35.0 (CC0, CAT-36c); `static/count.js` from GoatCounter (ISC, CAT-25) |
 | `docs/authors.md`, `README.md` | CAT-6 |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |

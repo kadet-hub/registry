@@ -38,4 +38,4 @@ Linked external sites, such as GitHub, generator repositories and upstream proje
 
 ## Copyright
 
-The site's texts and code are published under the Apache License 2.0 in the [registry repository](https://github.com/kadet-hub/registry). Each generator is the work of its authors under the license named on its page. Icons are from Lucide (ISC); the visitor counter script is from GoatCounter (ISC).
+The site's texts and code are published under the Apache License 2.0 in the [registry repository](https://github.com/kadet-hub/registry). Each generator is the work of its authors under the license named on its page. Icons are from Lucide (ISC); the logos on a blog post's share links are from Simple Icons (CC0) or drawn for this site and are trademarks of their owners. The visitor counter script is from GoatCounter (ISC).
