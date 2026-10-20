@@ -138,22 +138,33 @@ fetched tree; this is the layout consumers use.
   week. Vulnerability fixes and the Dependency Dashboard's manual
   checkboxes are not bound to the schedule.
 
-  Renovate proposes a version only once its release is three days old
-  (`minimumReleaseAge`), and `internalChecksFilter: strict` holds back the
-  branch and the pull request until then. Updates whose datasource
-  reports no release timestamp go through at once
-  (`minimumReleaseAgeBehaviour: timestamp-optional`): the entry bumps
-  themselves (git tags), images outside Docker Hub and runner labels.
-  Renovate's default since version 42 would hold them indefinitely.
-  Security updates are not delayed (RISK-11).
+  Renovate proposes a version only once it has been published for three
+  days (`minimumReleaseAge`), and `internalChecksFilter: strict` holds back
+  the branch and the pull request until then. The age counts from the
+  datasource's release timestamp: the publish time on PyPI and of GitHub
+  releases and their assets, also for actions whose tag has a GitHub
+  release; the last push of the tag on Docker Hub; the date GitHub
+  announced a runner label. A version without a timestamp is held
+  (`minimumReleaseAgeBehaviour: timestamp-required`), so a failed Docker
+  Hub lookup delays the update instead of letting it through.
+
+  Two kinds of update never carry a timestamp and go through at once
+  (`timestamp-optional`): the entry bumps themselves, because `git-tags`
+  reads no dates, and images outside Docker Hub, whose registries list
+  tags without dates. Security updates are not delayed (RISK-11).
 
   - Test: manual: `renovate --platform=local --dry-run=lookup` with sample
     entries (partial: no CI check). On 2026-10-16 the lookup with
     Renovate 44.161.2 held codeql-action 4.39.0, ruff 0.17.1 and semgrep
     1.181.0, each released less than three days before, and proposed the
-    argocd and cilium entry bumps. Checksums: lookup with tool pins set
+    argocd and cilium entry bumps. On 2026-10-20 Renovate 44.171.1 held
+    oras 1.3.5 and the clamav digest, proposed the external-secrets entry
+    bump and kube-apiserver v1.37.1 from one release back, and held docker
+    29.9.1 when the anonymous Docker Hub tag list failed, which
+    `timestamp-optional` proposed. Checksums: lookup with tool pins set
     one release back; `checksum-pins` workflow.
-  - Since: #6; release age: #259; checksums: #292
+  - Since: #6; release age: #259; checksums: #292; timestamps required:
+    this change
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
