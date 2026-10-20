@@ -332,6 +332,13 @@ class Site(unittest.TestCase):
         self.assertRegex(css, r"pre \{[^}]*white-space: pre-wrap")
         self.assertRegex(css, r"pre \{[^}]*overflow-x: hidden")
 
+    def test_mobile_header_and_filters(self):  # CAT-9a
+        self.assertRegex(self.page(), r'</nav>\s*<button type="button" id="theme"')
+        with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
+            narrow = re.search(r"@media \(max-width: 48rem\) \{(.*?)\n\}", f.read(), re.S).group(1)
+        self.assertRegex(narrow, r"header\.site nav \{[^}]*flex-wrap: nowrap;[^}]*overflow-x: auto")
+        self.assertIn(".filters { position: static; }", narrow)
+
     def test_issue_forms_are_linked(self):
         links = [__import__("html").unescape(h) for h in re.findall(r'href="([^"]*issues/new[^"]*)"', self.page("generators", "demo"))]
         self.assertIn(f"https://github.com/{OWNER}/registry/issues/new?generator=demo&template=generator-report.yml&title=%5Breport%5D+demo%3A+&version=1.10.0", links)
