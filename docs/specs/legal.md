@@ -26,8 +26,9 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
   the site loads no scripts, styles, fonts or images from other origins,
   what the visitor counter on the operator's own GoatCounter instance
   receives (catalog spec CAT-25), that the site sets no cookies and writes
-  `localStorage` only when the visitor uses the theme toggle, and the
-  rights under GDPR Articles 15 to 21. Whether §5 DDG requires an imprint
+  `localStorage` only when the visitor uses the theme toggle or shares a
+  post on Mastodon (catalog spec CAT-36d), and the rights under GDPR
+  Articles 15 to 21. Whether §5 DDG requires an imprint
   for an unpaid project is unsettled; §18 MStV likely requires name and
   address, so the page exists with `tbd` values.
 
