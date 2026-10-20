@@ -142,7 +142,8 @@ remembered in the browser's `localStorage`.
 
   kadet-hub wants to appear where Helm, Kustomize and Pulumi appear. The
   queries below complete in Google's or DuckDuckGo's suggestions (checked
-  2026-10-19); suggestions show that a query is made, not how often. A new
+  2026-10-19, the cert-manager and trust-manager row 2026-10-20);
+  suggestions show that a query is made, not how often. A new
   page title or description SHOULD lead with one of them when the page
   answers it, and the list is rechecked when a page is added for a query
   not on it.
@@ -172,12 +173,20 @@ remembered in the browser's `localStorage`.
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
   | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
   | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
+  | cert-manager helm chart, helm chart initcontainers, trust-manager helm chart, cert manager trust manager helm chart | blog post "cert-manager Helm chart initContainers and trust-manager issuer" |
+
+  The two requests that post answers, "cert-manager helm chart
+  initcontainers" and "trust-manager custom issuer", complete in neither
+  engine. Its sections keep the fixed anchors `#cert-manager-initcontainers`
+  and `#trust-manager-custom-issuer`, so that a link to a section, from
+  cert-manager/cert-manager#6071 or cert-manager/trust-manager#778 for
+  example, stays valid when a heading changes.
 
   "kapicorp" is not a target: the people who search it know Kapitan
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
