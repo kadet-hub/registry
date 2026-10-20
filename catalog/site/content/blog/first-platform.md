@@ -19,7 +19,7 @@ Replayed from an empty directory with a cold package cache, the commands in
 this post take 79 seconds: 33 for installing [Kapitan](/glossary/#kapitan), 44 for verifying and
 fetching the index and the four generators, two for compiling and
 validating. The
-rest of your time goes into reading four generator pages and writing 107
+rest of your time goes into reading four generator pages and writing 109
 lines of inventory, which I did not time for a person.
 
 ## Kapitan
@@ -133,6 +133,8 @@ parameters:
   components:
     web:
       image: ghcr.io/stefanprodan/podinfo:6.9.2
+      command: [./podinfo, --port=8080]
+      security_context: {runAsUser: 65534}
       replicas: ${replicas}
       ports:
         http: {container_port: 8080, service_port: 80}
@@ -225,7 +227,11 @@ common name, the ACME server and the certificate's DNS name.
 
 The Deployment came out with the restricted profile: `runAsNonRoot`,
 `seccompProfile: RuntimeDefault`, all capabilities dropped, no service
-account token. The cilium generator turned `ports: [8080]` into a
+account token. podinfo's image names its user `app`, which the kubelet
+cannot check against `runAsNonRoot`, so the class sets `runAsUser`;
+without it the container does not start. podinfo listens on 9898 unless
+started with `--port`, so `command` moves it to 8080, the port of the
+probe and the network policy. The cilium generator turned `ports: [8080]` into a
 `toPorts` entry with the port as a string, which the [CRD](/glossary/#crd) requires, and
 `allow_dns: true` into an egress rule to kube-dns with an L7 DNS rule.
 
