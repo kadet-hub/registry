@@ -1184,7 +1184,7 @@ Related: CAT-15, CAT-30, CON-2.
   `aria-label`, such as "Share on X".
 
   - Test: `catalog/test_catalog.py` (`test_share_links`)
-  - Since: this change
+  - Since: #307
 
 - CAT-36d: With JavaScript, a post page MUST offer sharing on Mastodon
   through a server the visitor enters, and MUST offer the browser's share
@@ -1210,7 +1210,7 @@ Related: CAT-15, CAT-30, CON-2.
     at 375 px and 1280 px, light and dark, sharing on Mastodon with a
     server entered and remembered, and the share button with
     `navigator.share` present and absent
-  - Since: this change
+  - Since: #307
 
 - CAT-37: The site MUST have a page at `/recipes/<name>/` for every recipe
   of kadet-hub/examples and an index of them at `/recipes/`. A recipe page
