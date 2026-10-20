@@ -351,8 +351,9 @@ cover none of the changed files.
   force-pushed to a new commit, the digest update ages from the tag's
   original release and is proposed at once; the reviewer sees a new
   digest under an unchanged version. Updates without a release timestamp
-  are not delayed either: entry bumps (git tags), images outside Docker
-  Hub and runner labels.
+  are not delayed either: entry bumps (git tags) and images outside Docker
+  Hub. An action tag without a GitHub release ages from its commit or
+  tagger date, which the tag's author sets (google/clusterfuzzlite `v1`).
 
 - RISK-12: the release build fetches every entry's source on every run
   (`release/build-all`). An author who deletes the pinned commit or the
