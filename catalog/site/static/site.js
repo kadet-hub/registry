@@ -1,5 +1,5 @@
-// Theme toggle, copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), and the home page's
-// search, tag filter and sort (CAT-8 to CAT-10). No markup is built from data.
+// Theme toggle, the menu (CAT-9a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), and the home page's
+// search, tag filter and sort (CAT-8 to CAT-10, CAT-9a). No markup is built from data.
 const root = document.documentElement;
 const announce = (text) => { document.getElementById("announce").textContent = text; };
 
@@ -13,6 +13,20 @@ themeButton.addEventListener("click", () => {
   root.dataset.theme = next;
   themeButton.setAttribute("aria-pressed", String(next === "dark"));
   try { localStorage.setItem("theme", next); } catch (e) { /* not remembered */ }
+});
+
+// CAT-9a: on narrow screens the nav opens from the menu button; Escape closes it.
+const header = document.querySelector("header.site");
+const menuButton = document.getElementById("menu");
+const setMenu = (open) => {
+  header.dataset.menu = open ? "open" : "closed";
+  menuButton.setAttribute("aria-expanded", String(open));
+};
+menuButton.hidden = false;
+setMenu(false);
+menuButton.addEventListener("click", () => setMenu(header.dataset.menu === "closed"));
+header.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && header.dataset.menu === "open") { setMenu(false); menuButton.focus(); }
 });
 
 // Version permalinks (CAT-17): open the version a #v<version> link points to.
@@ -152,6 +166,15 @@ if (search) {
   const clear = document.getElementById("clear");
   const sort = document.getElementById("sort");
   const result = document.getElementById("result");
+  const filters = document.querySelector(".filters");
+  const tagToggle = document.getElementById("tag-toggle");
+  const setTags = (open) => {
+    filters.dataset.tags = open ? "open" : "closed";
+    tagToggle.setAttribute("aria-expanded", String(open));
+  };
+  tagToggle.hidden = false;
+  setTags(false);
+  tagToggle.addEventListener("click", () => setTags(filters.dataset.tags === "closed"));
   const params = new URLSearchParams(location.search);
   const known = new Set(buttons.map((b) => b.dataset.tag));
   let selected = new Set((params.get("tags") || "").split(",").filter((t) => known.has(t)));
@@ -181,6 +204,7 @@ if (search) {
       b.disabled = !on && count === 0;
     }
     clear.hidden = selected.size === 0;
+    tagToggle.querySelector(".count").textContent = selected.size ? `(${selected.size})` : "";
     const tagText = [...selected].join(" and ");
     result.textContent = `${shown} generator${shown === 1 ? "" : "s"}${tagText ? " tagged " + tagText : ""}${q ? ` matching “${q}”` : ""}`;
     document.getElementById("empty").hidden = shown > 0;

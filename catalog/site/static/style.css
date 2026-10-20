@@ -324,11 +324,20 @@ details.version:target { border-color: var(--accent); }
 .diagram .fail path, .diagram .fail polygon { stroke: var(--warn); }
 .diagram .edge.fail polygon { fill: var(--warn); }
 .diagram .fail text { fill: var(--warn); }
-/* CAT-9a: below 48rem the brand and theme button share row one, the nav scrolls sideways on row two. */
+/* CAT-9a: below 48rem the header is one row with a menu button, the nav opens as a list below it and the tag chips
+   collapse behind "Filter by tag". site.js adds both buttons; without it the nav and chips stay open. */
+#menu, #tag-toggle { display: none; }
 @media (max-width: 48rem) {
-  header.site { flex-wrap: wrap; row-gap: .5rem; padding-block: .75rem; }
-  header.site nav { order: 1; flex: 1 0 100%; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; margin: 0; padding-block: .25rem; scrollbar-width: none; }
-  header.site nav a { white-space: nowrap; padding-block: .35rem; }
+  header.site { flex-wrap: wrap; gap: .5rem; padding-block: .75rem; }
+  .brand { margin-right: auto; }
+  #menu:not([hidden]) { display: inline-grid; }
+  header.site nav { order: 1; flex: 1 0 100%; flex-direction: column; align-items: stretch; gap: 0; margin: 0; }
+  header.site nav a { padding: .7rem 0; border-top: 1px solid var(--border); }
+  header.site[data-menu="closed"] nav { display: none; }
   .filters { position: static; }
+  #tag-toggle:not([hidden]) { display: inline-flex; justify-self: start; }
+  #tag-toggle::after { content: "›"; transition: rotate .15s; }
+  #tag-toggle[aria-expanded="true"]::after { rotate: 90deg; }
+  .filters[data-tags="closed"] .tag-filter { display: none; }
   .actions .button { flex: 1 1 auto; justify-content: center; }
 }

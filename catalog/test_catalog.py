@@ -333,11 +333,18 @@ class Site(unittest.TestCase):
         self.assertRegex(css, r"pre \{[^}]*overflow-x: hidden")
 
     def test_mobile_header_and_filters(self):  # CAT-9a
-        self.assertRegex(self.page(), r'</nav>\s*<button type="button" id="theme"')
+        html = self.page()
+        self.assertRegex(html, r'(?s)<nav id="site-nav">.*</nav>\s*<button type="button" id="theme"[^>]*hidden>.*?</button>\s*'
+                               r'<button type="button" id="menu" class="icon-button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav" hidden>')
+        self.assertRegex(html, r'<button type="button" id="tag-toggle" class="chip" aria-expanded="false" aria-controls="tags" hidden>Filter by tag')
+        self.assertIn('<symbol id="i-menu"', html)
         with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
-            narrow = re.search(r"@media \(max-width: 48rem\) \{(.*?)\n\}", f.read(), re.S).group(1)
-        self.assertRegex(narrow, r"header\.site nav \{[^}]*flex-wrap: nowrap;[^}]*overflow-x: auto")
-        self.assertIn(".filters { position: static; }", narrow)
+            css = f.read()
+        self.assertIn("#menu, #tag-toggle { display: none; }", css)
+        narrow = re.search(r"@media \(max-width: 48rem\) \{(.*?)\n\}", css, re.S).group(1)
+        for rule in ('header.site[data-menu="closed"] nav { display: none; }', '.filters[data-tags="closed"] .tag-filter { display: none; }',
+                     ".filters { position: static; }"):
+            self.assertIn(rule, narrow)
 
     def test_issue_forms_are_linked(self):
         links = [__import__("html").unescape(h) for h in re.findall(r'href="([^"]*issues/new[^"]*)"', self.page("generators", "demo"))]
@@ -533,8 +540,8 @@ class Site(unittest.TestCase):
         self.assertRegex(css, r"@media \(max-width: 60rem\) \{[^@]*\.compat tr, \.compat th, \.compat td \{ display: block; \}")
         self.assertRegex(css, r"\.compat td::before \{ content: attr\(data-label\)")
         for html in self.pages() + [page]:
-            self.assertRegex(html, r'(?s)<nav>.*<a href="[./]*compatibility/">Compatibility</a>.*</nav>')
-            self.assertRegex(html, r'(?s)<nav>.*<a href="[./]*recipes/">Recipes</a>.*</nav>')  # CAT-37
+            self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*compatibility/">Compatibility</a>.*</nav>')
+            self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*recipes/">Recipes</a>.*</nav>')  # CAT-37
 
     def test_compatibility_facts_are_the_same_on_page_details_and_markdown(self):  # CAT-30, CAT-28
         def text(h):
