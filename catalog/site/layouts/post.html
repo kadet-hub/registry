@@ -25,6 +25,7 @@
 {{ if .cut }}<p><a href="{{ .changelog }}" rel="nofollow noopener">Full changelog</a></p>{{ end }}
 {{ end }}{{ end }}{{ end }}
 <footer class="post-foot">
+{{ partial "share.html" . }}
 <p><a href="https://github.com/{{ site.Data.catalog.owner }}/registry/discussions">Discuss on GitHub</a> · <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/catalog/site/content/{{ .File.Path }}">Edit this post</a> · <a href="{{ "blog/index.xml" | relURL }}">Atom feed</a></p>
 {{ $related := where (site.RegularPages.Related .) "Section" "blog" | first 3 }}
 {{ with $related }}<h2 id="related">Related posts</h2>

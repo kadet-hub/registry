@@ -22,6 +22,10 @@ The site loads no scripts, styles, fonts or images from other origins and sets n
 
 If you use the light or dark toggle, your choice is stored in your browser's `localStorage` under the key `theme`, so the site keeps it on your next visit. Nothing is written before you use the toggle, and the value never leaves your browser. You can delete it at any time in your browser's site data. This storage is strictly necessary for a function you requested (§ 25(2) no. 2 TDDDG).
 
+## Sharing a blog post
+
+The share links under a blog post are plain links: nothing is sent to LinkedIn, Bluesky, X, Hacker News, Reddit, dev.to or Mastodon until you follow one, and then the network receives the post's address and title under its own privacy notice. If you share on Mastodon, the server you enter is stored in your browser's `localStorage` under the key `mastodon`, so the form offers it next time. The value never leaves your browser except as the address you are sent to; you can delete it in your browser's site data. This storage is strictly necessary for a function you requested (§ 25(2) no. 2 TDDDG).
+
 ## Data shown in the catalog
 
 The catalog shows the GitHub login of each generator's owners and the star count of its source repository, taken from the public GitHub API when the site is built. Owners submit their GitHub user ID when they register a generator; their login is shown to attribute the generator to them.

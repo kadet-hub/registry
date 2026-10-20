@@ -681,6 +681,41 @@ class Site(unittest.TestCase):
         self.assertIn('rel="prev"', first.split('class="pager"')[1])
         self.assertIn('<h2 id="related">Related posts</h2>', first)  # shares the topic gate
 
+    def test_share_links(self):  # CAT-36c, CAT-36d
+        post = self.page("blog", "kapitan-generators-as-supply-chain-artifacts")
+        url = "https://kadet-hub.org/blog/kapitan-generators-as-supply-chain-artifacts/"
+        title = "Kapitan generators as supply-chain artifacts"
+        description = _unescape(re.search(r'<meta name="description" content="([^"]+)">', post)[1])
+        q = urllib.parse.quote_plus  # Go's url.QueryEscape, behind Hugo's urlquery
+        prefill = f'---\ntitle: "{title}"\npublished: false\ncanonical_url: {url}\n---\n\n{description}\n\nRead the full post: {url}\n'
+        links = re.findall(r'<a class="icon-button" href="([^"]+)" target="_blank" rel="nofollow noopener noreferrer" aria-label="([^"]+)">', post)
+        self.assertEqual([(_unescape(h), label) for h, label in links], [
+            (f"https://www.linkedin.com/sharing/share-offsite/?url={q(url)}", "Share on LinkedIn"),
+            (f"https://bsky.app/intent/compose?text={q(title + ' ' + url)}", "Share on Bluesky"),
+            (f"https://x.com/intent/tweet?text={q(title)}&url={q(url)}", "Share on X"),
+            (f"https://news.ycombinator.com/submitlink?u={q(url)}&t={q(title)}", "Share on Hacker News"),
+            (f"https://www.reddit.com/submit?url={q(url)}&title={q(title)}", "Share on Reddit"),
+            (f"https://dev.to/new?prefill={q(prefill)}", "Cross-post to dev.to"),
+        ])
+        self.assertIn(f'<div class="share" data-title="{title}" data-url="{url}">', post)
+        self.assertRegex(post, r'<button type="button" class="share-native icon-button" aria-label="[^"]+" hidden>')
+        form = re.search(r'<form class="share-mastodon" hidden>.*?</form>', post, re.S)[0]
+        self.assertIn('<label for="mastodon-server">', form)
+        pattern = _unescape(re.search(r'<input id="mastodon-server" name="server" [^>]*pattern="([^"]+)"', form)[1])
+        for host, ok in [("mastodon.social", True), (" hachyderm.io ", True), ("https://mastodon.social", False),
+                         ("mastodon.social/share", False), ("@me@mastodon.social", False), ("localhost", False)]:
+            self.assertEqual(bool(re.fullmatch(pattern, host)), ok, host)
+        with open(os.path.join(self.out, "site.js"), encoding="utf-8") as f:
+            script = f.read()
+        self.assertIn("navigator.share", script)
+        self.assertIn('localStorage.setItem("mastodon"', script)
+        self.assertIn("/share?text=${encodeURIComponent(", script)
+        self.assertIn("under the key <code>mastodon</code>", self.page("privacy"))  # LEG-1
+        for page in (self.page(), self.page("blog"), self.page("guides", "writing-a-kapitan-generator"),
+                     self.page("recipes", "kafka"), self.page("generators", "demo")):
+            self.assertNotIn('class="share"', page)
+            self.assertNotIn("share-offsite", page)
+
     def test_how_kadet_hub_works(self):  # CAT-35, CAT-35a, CAT-28, CAT-11b
         html = self.page("guides", "how-kadet-hub-works")
         main = html[html.index("<main"):html.index("</main>")]

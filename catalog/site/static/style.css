@@ -264,6 +264,14 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .post :is(h2, h3):hover .anchor, .post .anchor:focus { opacity: 1; }
 .post-foot { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 1rem; }
 .pager { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+/* CAT-36c, CAT-36d: share links; the logos are filled in the link colour, so they follow the theme. */
+.share { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-bottom: 1.5rem; }
+.share p { margin: 0; color: var(--text-muted); }
+.share ul { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.share .logo { width: 18px; height: 18px; fill: currentColor; }
+.share-mastodon { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; flex-basis: 100%; }
+.share-mastodon label { display: inline-flex; align-items: center; gap: .4rem; color: var(--text-muted); }
+.share-mastodon input { min-height: 36px; width: 12rem; max-width: 100%; padding: 0 .6rem; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
 
 .disclaimer { color: var(--text-muted); font-size: .875rem; }
 /* Checks (CAT-14) */

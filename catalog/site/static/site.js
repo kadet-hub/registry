@@ -1,5 +1,5 @@
-// Theme toggle, copy buttons, the version selector (CAT-34), and the home page's search, tag filter and
-// sort (CAT-8 to CAT-10). No markup is built from data.
+// Theme toggle, copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), and the home page's
+// search, tag filter and sort (CAT-8 to CAT-10). No markup is built from data.
 const root = document.documentElement;
 const announce = (text) => { document.getElementById("announce").textContent = text; };
 
@@ -120,6 +120,27 @@ if (match) {
   software.addEventListener("change", apply);
   version.addEventListener("input", apply);
   apply();
+}
+
+// CAT-36d: on a post, sharing on Mastodon through the visitor's server, and the browser's share menu.
+const share = document.querySelector(".share");
+if (share) {
+  const { title, url } = share.dataset;
+  const native = share.querySelector(".share-native");
+  if (navigator.share) {
+    native.hidden = false;
+    native.addEventListener("click", () => navigator.share({ title, url }).catch(() => { /* closed: the links remain */ }));
+  }
+  const mastodon = share.querySelector(".share-mastodon");
+  const server = mastodon.elements.server;
+  try { server.value = localStorage.getItem("mastodon") || ""; } catch (e) { /* storage blocked: ask each time */ }
+  mastodon.hidden = false;
+  mastodon.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const host = server.value.trim();
+    try { localStorage.setItem("mastodon", host); } catch (e) { /* not remembered */ }
+    window.open(`https://${host}/share?text=${encodeURIComponent(`${title} ${url}`)}`, "_blank", "noopener,noreferrer");
+  });
 }
 
 // Home page
