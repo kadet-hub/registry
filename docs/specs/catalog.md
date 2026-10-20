@@ -81,6 +81,22 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (partial: the markup)
   - Since: #45
 
+- CAT-9a: Below 48rem the site header MUST take two rows at most, and the
+  home page filters MUST NOT stay fixed while the visitor scrolls.
+
+  At 393 px, an iPhone 15, the ten nav links wrapped into four
+  right-aligned rows and the header was 150 px tall; the sticky filters
+  (search, eleven tag chips, sort) covered 354 px of a 660 px viewport,
+  more than half of every scrolled screen. The header now puts the brand
+  and the theme button on the first row and the nav on a second row that
+  scrolls sideways. The filters scroll with the page; the search is at the
+  top of the list, one scroll up. The hero buttons share each row's width
+  instead of leaving ragged gaps.
+
+  - Test: `catalog/test_catalog.py` (partial: the stylesheet); manual:
+    393 px viewport, header height and filters not sticky
+  - Since: tbd
+
 - CAT-10: The home page MUST let visitors sort the cards by name, by the
   time of the latest version and by popularity score (CAT-23).
 
