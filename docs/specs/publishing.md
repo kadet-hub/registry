@@ -114,7 +114,18 @@ since the documented package API has no visibility call.
   reads versions from semver tags only (PUB-4), so they are not taken for
   versions.
 
-  - Test: `release/test_release.py` (`test_oci_attestations_are_pushed_to_the_registry`); manual: `cosign verify-attestation` on the first version published after the change
+  Run on 2026-10-19 against mutate 0.1.0 from index 48
+  (`sha256:428e548bb10c6dda0105220c3a9f135d3a964a419303e30849a06f6d9e194a15`),
+  the first version published with referrers, using the commands of the
+  blog post from #301: `cosign verify-attestation` with the identity
+  `https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main`
+  and the issuer `https://token.actions.githubusercontent.com` verified
+  `slsaprovenance1` and `https://spdx.dev/Document/v2.3`, and exited 1
+  for another branch, source repository, issuer or digest. mutate 0.1.0
+  has no output diff; the sandbox image and the index manifest were not
+  part of the run.
+
+  - Test: `release/test_release.py` (`test_oci_attestations_are_pushed_to_the_registry`); manual: `cosign verify-attestation` on mutate 0.1.0 (2026-10-19)
   - Since: #275
 
 - PUB-4: The release workflow MUST publish an attested index as
