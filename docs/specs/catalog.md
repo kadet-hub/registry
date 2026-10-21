@@ -1107,7 +1107,8 @@ Related: CAT-15, CAT-30, CON-2.
   not a Monday and has no post yet, so the blog gains one post a day;
   Mondays belong to the release posts (CAT-36b).
   The six posts queued for Tuesdays up to 1 December 2026 were instead
-  published together on 21 October 2026. Topics are
+  published together on 21 October 2026, and so were the five posts on
+  Helm chart patches queued for 22 to 27 October. Topics are
   front matter only; there are no topic pages, since `/tags/` belongs to
   the generator tags (CAT-18). A per-post Open Graph image, a newsletter
   and comments were left out: the first has no measured effect, the

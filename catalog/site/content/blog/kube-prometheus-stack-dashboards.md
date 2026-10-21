@@ -1,6 +1,6 @@
 ---
 title: "kube-prometheus-stack default Grafana dashboards, one by one"
-date: 2026-10-23
+date: 2026-10-21
 topics: [helm, kustomize, kapitan, monitoring]
 description: "kube-prometheus-stack dashboards: which values switch removes which default Grafana dashboard, and how to drop single ones with Kustomize or Kapitan."
 ---

@@ -1,6 +1,6 @@
 ---
 title: Actions Runner Controller dind image from your own registry
-date: 2026-10-22
+date: 2026-10-21
 topics: [helm, kustomize, kapitan, ci]
 description: "GitHub Actions Runner Controller dind image from a mirror or air-gapped registry: gha-runner-scale-set patched with Kustomize or Kapitan, tested on kind."
 ---
