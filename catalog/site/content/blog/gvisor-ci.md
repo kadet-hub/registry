@@ -141,6 +141,47 @@ bare sandbox boot (`runsc do /bin/true`) is about 0.07 s. So gVisor adds
 roughly 0.07 to 0.10 s of startup per run plus per-syscall overhead. For a CI
 compile that already takes seconds, the sandbox is not the bottleneck.
 
+## gVisor vs a plain Docker container (runc) {#gvisor-vs-docker}
+
+The runs so far are unconfined and under rootless `runsc`. To put gVisor
+directly against a plain container, the same three scripts also run under
+`docker run` with Docker's default runtime (runc) and under `docker run
+--runtime=runsc`, every other option equal, so only the runtime changes.
+The script is piped in on stdin and nothing else is mounted. These were
+measured on the example repository's CI, one `ubuntu-24.04` runner, in
+[run 39571252377](https://github.com/kadet-hub/examples/actions/runs/39571252377).
+
+Swapping runc for runsc changes nothing the three scripts can show. The
+`fork_exec` child runs under both, because neither runtime is an audit-hook
+sandbox. The raw-IP `connect` reaches the network and times out at
+192.0.2.1 under both, because the default Docker network routes out either
+way; gVisor blocks it only with `--network=none`, as above. The read of
+`/etc/passwd` returns the image's own file under both, because the image,
+not the runtime, is the filesystem the process sees.
+
+What differs is the kernel the process talks to:
+
+    runc:  Linux 6.17.0-1022-azure
+    runsc: Linux 4.19.0-gvisor
+
+Under runc the sandboxed code's syscalls reach the runner's own kernel, so
+a bug in that kernel is reachable from the code being judged. Under runsc
+they reach gVisor's userspace kernel, and the host kernel surface the code
+can touch is small. That is what a plain container does not give you: the
+network and the spawn are bounded by flags and the trace, which you set on
+runc too, while the runtime is what moves the host kernel out of reach.
+
+Cost of the swap on the same runner, five runs each: a `python -c pass` in
+the container is about 0.20 s under runc and about 0.27 s under runsc, so
+runsc adds roughly 0.07 s per run. The absolute figures are higher than the
+rootless `runsc ... do` numbers above because each `docker run` starts a
+container through the daemon, which dominates both runtimes.
+
+This measures gVisor against Docker's default runtime. It does not answer
+"gVisor vs Docker Sandboxes", Docker's hosted sandbox product, or gVisor
+against microVM runtimes such as Firecracker or Kata, which would need
+microVM measurements this example does not take.
+
 ## Decoy credentials
 
 Detection beats hope for the untargeted credential stealer. The gate seeds the
