@@ -81,16 +81,15 @@ and `.darwin.enabled` remove only nodes-aix and nodes-darwin.
 ### Dashboard names
 
 A dashboard ConfigMap is named `<fullname>-<dashboard>`, cut to 63
-characters. The chart's `kube-prometheus-stack.fullname` is the release
-name when it contains `kube-prometheus-stack`, and otherwise
-`<release>-kube-prometheus-stack` cut to 26 characters. Release
-`kube-prometheus-stack` therefore names a dashboard
+characters. The chart's `kube-prometheus-stack.fullname` starts from the
+release name when that contains `kube-prometheus-stack`, and from
+`<release>-kube-prometheus-stack` otherwise, and cuts either to 26
+characters. Release `kube-prometheus-stack` therefore names a dashboard
 `kube-prometheus-stack-grafana-overview`, and release `monitoring`, whose
-fullname `monitoring-kube-prometheus-stack` is cut to
-`monitoring-kube-prometheus`, names it
-`monitoring-kube-prometheus-grafana-overview`. The 63-character cut never
-applies to the default dashboards: the longest name, for a fullname of the
-full 26 characters, has 60.
+`monitoring-kube-prometheus-stack` is cut to `monitoring-kube-prometheus`,
+names it `monitoring-kube-prometheus-grafana-overview`. The 63-character
+cut never applies to the default dashboards: the longest name, for a
+fullname of the full 26 characters, has 60.
 
 ### Kustomize over helm template
 
@@ -213,8 +212,63 @@ dashboard.
 
 ### With the Grafana Operator
 
-With `grafana.operator.dashboardsConfigMapRefEnabled: true` the chart also
-renders a `GrafanaDashboard` per dashboard, with the same name as its
-ConfigMap and a `configMapRef` to it. Both patches above match the kind
-ConfigMap only and leave those objects in place. The test rendered them
-but did not install the Grafana Operator.
+With `grafana.operator.dashboardsConfigMapRefEnabled: true` and
+`grafana.operator.matchLabels` set, the chart also renders a
+`GrafanaDashboard` per dashboard, with the same name as its ConfigMap and
+a `configMapRef` to it. The patches above delete only the ConfigMaps and
+would leave two GrafanaDashboards that reference ConfigMaps that no longer
+exist. With the operator, the Kustomize patch deletes both kinds:
+
+```yaml
+resources:
+  - helm.yaml
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: monitoring-kube-prometheus-grafana-overview
+        namespace: monitoring
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: monitoring-kube-prometheus-k8s-resources-multicluster
+        namespace: monitoring
+  - patch: |-
+      $patch: delete
+      apiVersion: grafana.integreatly.org/v1beta1
+      kind: GrafanaDashboard
+      metadata:
+        name: monitoring-kube-prometheus-grafana-overview
+        namespace: monitoring
+  - patch: |-
+      $patch: delete
+      apiVersion: grafana.integreatly.org/v1beta1
+      kind: GrafanaDashboard
+      metadata:
+        name: monitoring-kube-prometheus-k8s-resources-multicluster
+        namespace: monitoring
+```
+
+and each mutation matches every kind by name and expects two objects:
+
+```yaml
+parameters:
+  mutations:
+    no-grafana-overview-dashboard:
+      match: {kind: "*", name: monitoring-kube-prometheus-grafana-overview}
+      delete: true
+      expects: 2
+    no-multicluster-dashboard:
+      match: {kind: "*", name: monitoring-kube-prometheus-k8s-resources-multicluster}
+      delete: true
+      expects: 2
+```
+
+Rendered with those two values, both removed exactly the two ConfigMaps
+and the two GrafanaDashboards, and no remaining GrafanaDashboard refers to
+a missing ConfigMap. The Grafana Operator itself was not installed, so
+this variant is tested on the rendered output only.
