@@ -1094,7 +1094,12 @@ Related: CAT-15, CAT-30, CON-2.
   so a typo fix does not make a post look new. A post dated in the future
   stays out of the build until the daily release run (04:17 UTC, the
   schedule CAT-20 added to `release.yml`) on or after
-  that date, which schedules posts without another mechanism. Topics are
+  that date, which schedules posts without another mechanism. A queued
+  article post is dated on the first day after the newest post that is
+  not a Monday and has no post yet, so the blog gains one post a day;
+  Mondays belong to the release posts (CAT-36b).
+  The six posts queued for Tuesdays up to 1 December 2026 were instead
+  published together on 21 October 2026. Topics are
   front matter only; there are no topic pages, since `/tags/` belongs to
   the generator tags (CAT-18). A per-post Open Graph image, a newsletter
   and comments were left out: the first has no measured effect, the
@@ -1119,8 +1124,8 @@ Related: CAT-15, CAT-30, CON-2.
   adapter, so no one writes or commits it, and it enters the blog feed and
   the outreach pipeline like a written post. A week's post is dated after
   the week ends; Hugo leaves future-dated pages out, so a post appears
-  complete with the first daily build on that Monday. Article posts are
-  dated on Tuesdays and do not share the day. Grouping by generator keeps
+  complete with the first daily build on that Monday. Article posts do
+  not share its day (CAT-36a). Grouping by generator keeps
   a week of upstream bumps to one line each. The week of 5 October, when
   the first 30 versions were imported, has no post; the launch post covers
   it.
