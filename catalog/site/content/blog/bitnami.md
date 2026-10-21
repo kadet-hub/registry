@@ -1,6 +1,6 @@
 ---
 title: "Bitnami Helm alternatives: render manifests yourself"
-date: 2026-10-27
+date: 2026-10-21
 topics: [helm, bitnami, generators]
 description: "Bitnami PostgreSQL chart alternatives, now that the free charts and images get no updates: from the upstream operator chart to a verified Kapitan generator."
 ---

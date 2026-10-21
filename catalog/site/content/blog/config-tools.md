@@ -1,6 +1,6 @@
 ---
 title: cdk8s vs Tanka vs Kapitan for Kubernetes config
-date: 2026-11-24
+date: 2026-10-21
 topics: [kapitan, helm, comparison, jsonnet]
 description: "Kubernetes configuration management tools: one app built with Tanka, cdk8s and Kapitan to identical manifests, with size, speed, type safety and GitOps."
 ---
