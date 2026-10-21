@@ -198,6 +198,7 @@ remembered in the browser's `localStorage`.
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
   | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
   | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
+  | kube prometheus stack dashboards, kube prometheus stack default dashboards, kube prometheus stack default grafana dashboards (checked 2026-10-21) | blog post "kube-prometheus-stack default Grafana dashboards, one by one", section #disable-default-dashboards |
   | kustomize helm chart generator, kustomize render helm chart, kustomize enable helm, kustomize helm values file, kustomize helm argocd, render helm chart locally | same guide, section "Kustomize with helmCharts" |
   | cert-manager helm chart, helm chart initcontainers, trust-manager helm chart, cert manager trust manager helm chart | blog post "cert-manager Helm chart initContainers and trust-manager issuer" |
   | actions runner controller dind, github actions runner controller dind, gha runner scale set dind (checked 2026-10-21) | blog post "Actions Runner Controller dind image from your own registry", section #arc-dind-image |
@@ -213,7 +214,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
