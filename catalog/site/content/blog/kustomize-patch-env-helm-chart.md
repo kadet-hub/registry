@@ -1,6 +1,6 @@
 ---
 title: Kustomize patch env variable with valueFrom in a Helm chart
-date: 2026-10-25
+date: 2026-10-21
 topics: [helm, kustomize, kapitan]
 description: "Kustomize patch environment variable with valueFrom into Helm chart containers by name, and the same with Kapitan's mutate: KEDA HTTP add-on and Crossplane."
 ---

@@ -1,6 +1,6 @@
 ---
 title: "Kustomize delete resource: Kyverno PDBs and ESO webhooks"
-date: 2026-10-24
+date: 2026-10-21
 topics: [helm, kustomize, kapitan]
 description: "Kustomize patch delete resource on a rendered Helm chart, and the same with Kapitan's mutate: Kyverno's forced PDBs and External Secrets' webhooks, on kind."
 ---
