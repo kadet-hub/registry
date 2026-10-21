@@ -164,7 +164,8 @@ remembered in the browser's `localStorage`.
 
   kadet-hub wants to appear where Helm, Kustomize and Pulumi appear. The
   queries below complete in Google's or DuckDuckGo's suggestions (checked
-  2026-10-19, the cert-manager and trust-manager row 2026-10-20);
+  2026-10-19, the cert-manager and trust-manager row 2026-10-20, the
+  kustomize, thanos and prometheus operator queries 2026-10-21);
   suggestions show that a query is made, not how often. A new
   page title or description SHOULD lead with one of them when the page
   answers it, and the list is rechecked when a page is added for a query
@@ -176,10 +177,12 @@ remembered in the browser's `localStorage`.
   | kustomize alternatives | home page, same guide |
   | pulumi vs helm | same guide |
   | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
+  | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
   | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app", guide "Kapitan generator vs Helm chart vs Kustomize" |
   | bitnami alternative | guide "Bitnami chart alternatives", `/recipes/` |
+  | thanos helm chart not bitnami, thanos bitnami alternative, prometheus operator helm chart bitnami | guide "Bitnami chart alternatives" |
   | bitnami alternative postgres, bitnami alternative redis, bitnami alternative kafka, cloudnativepg vs bitnami | `/recipes/`, blog post "Bitnami Helm alternatives", `/recipes/postgresql/` |
-  | postgres, redis, keycloak, rabbitmq or kafka helm chart without bitnami (also "not bitnami"), valkey helm chart not bitnami | the matching `/recipes/<name>/` page, `/recipes/valkey/` for redis |
+  | postgres, redis, keycloak, rabbitmq or kafka helm chart without bitnami (also "not bitnami", "bitnami alternative"), valkey helm chart not bitnami | the matching `/recipes/<name>/` page, `/recipes/valkey/` for redis |
   | mysql helm chart not bitnami, bitnami mysql alternative, bitnami alternative mongodb | `/recipes/mysql/`, `/recipes/mongodb/` |
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
@@ -190,11 +193,12 @@ remembered in the browser's `localStorage`.
   | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI" |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
-  | helm vs argocd, kustomize vs helm vs argocd | same guide |
+  | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
   | gvisor vs docker | no page yet |
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
   | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
   | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
+  | kustomize helm chart generator, kustomize render helm chart, kustomize enable helm, kustomize helm values file, kustomize helm argocd, render helm chart locally | same guide, section "Kustomize with helmCharts" |
   | cert-manager helm chart, helm chart initcontainers, trust-manager helm chart, cert manager trust manager helm chart | blog post "cert-manager Helm chart initContainers and trust-manager issuer" |
 
   The two requests that post answers, "cert-manager helm chart
