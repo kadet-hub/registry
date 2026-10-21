@@ -194,7 +194,7 @@ remembered in the browser's `localStorage`.
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
-  | gvisor vs docker | no page yet |
+  | gvisor vs docker (also "docker vs gvisor", "gvisor docker runtime") | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions", section #gvisor-vs-docker |
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
   | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
   | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
@@ -212,7 +212,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
