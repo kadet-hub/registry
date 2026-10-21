@@ -178,9 +178,9 @@ rootless `runsc ... do` numbers above because each `docker run` starts a
 container through the daemon, which dominates both runtimes.
 
 This measures gVisor against Docker's default runtime. It does not answer
-"gVisor vs Docker Sandboxes", Docker's hosted sandbox product, or gVisor
-against microVM runtimes such as Firecracker or Kata, which would need
-microVM measurements this example does not take.
+"gVisor vs Docker sandbox", Docker's Sandboxes product, or gVisor against
+microVM runtimes such as Firecracker or Kata, which would need microVM
+measurements this example does not take.
 
 ## Decoy credentials
 
