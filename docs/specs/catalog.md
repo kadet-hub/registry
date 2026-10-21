@@ -196,6 +196,7 @@ remembered in the browser's `localStorage`.
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
   | gvisor vs docker (also "docker vs gvisor", "gvisor docker runtime") | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions", section #gvisor-vs-docker |
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
+  | kustomize patch env variable, kustomize patch environment variable, kustomize patch add env var (checked 2026-10-21) | blog post "Kustomize patch env variable with valueFrom in a Helm chart", sections #keda-http-add-on-env and #crossplane-env-secret |
   | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
   | kustomize delete resource, kustomize patch delete resource, kustomize remove resource (checked 2026-10-21) | blog post "Kustomize delete resource: Kyverno PDBs and ESO webhooks", sections #kyverno-pdb and #external-secrets-webhooks |
   | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
@@ -215,7 +216,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
