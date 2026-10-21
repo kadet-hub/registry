@@ -29,8 +29,9 @@ maintainer realshuting
 [asked](https://github.com/kyverno/kyverno/issues/11469#issuecomment-2437149508)
 the authors of the change that introduced the behaviour whether there was a
 reason to keep PDBs on for more than one replica, and the question is
-unanswered. In chart 3.9.2, the release of 21 October 2026, the PDB template of
-each of the four controllers has the same condition, here from
+unanswered. In chart 3.9.2, published to the chart repository and to
+ghcr.io on 21 October 2026, the PDB template of each of the four
+controllers has the same condition, here from
 [`admission-controller/poddisruptionbudget.yaml`](https://github.com/kyverno/kyverno/blob/kyverno-chart-3.9.2/charts/kyverno/templates/admission-controller/poddisruptionbudget.yaml#L1):
 
 ```yaml
