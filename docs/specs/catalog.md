@@ -200,6 +200,7 @@ remembered in the browser's `localStorage`.
   | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
   | kustomize helm chart generator, kustomize render helm chart, kustomize enable helm, kustomize helm values file, kustomize helm argocd, render helm chart locally | same guide, section "Kustomize with helmCharts" |
   | cert-manager helm chart, helm chart initcontainers, trust-manager helm chart, cert manager trust manager helm chart | blog post "cert-manager Helm chart initContainers and trust-manager issuer" |
+  | actions runner controller dind, github actions runner controller dind, gha runner scale set dind (checked 2026-10-21) | blog post "Actions Runner Controller dind image from your own registry", section #arc-dind-image |
 
   The two requests that post answers, "cert-manager helm chart
   initcontainers" and "trust-manager custom issuer", complete in neither
