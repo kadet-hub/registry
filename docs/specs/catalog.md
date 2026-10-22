@@ -266,7 +266,7 @@ remembered in the browser's `localStorage`.
   `sitemap.xml` (OUT-14 there). A new key needs both places changed.
 
   - Test: `catalog/test_catalog.py` (`test_indexnow_key`)
-  - Since: tbd
+  - Since: #325
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
