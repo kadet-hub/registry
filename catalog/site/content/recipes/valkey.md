@@ -4,4 +4,5 @@ description: "Bitnami redis Helm chart alternative: a Kapitan inventory class fo
 replaces: [redis]
 operators: []
 check: the StatefulSet is ready and `valkey-cli ping` answers `PONG`
+lastmod: 2026-10-19
 ---

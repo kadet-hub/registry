@@ -2,6 +2,7 @@
 title: Talos machine config for Kubernetes from a Kapitan inventory
 layout: prose
 description: Talos machine configs for every node from one Kapitan inventory, checked with talosctl validate in CI, compared with talosctl gen config and config patches.
+lastmod: 2026-10-19
 ---
 
 A Talos machine config is a YAML file per node that can hold several

@@ -13,6 +13,10 @@ goatcounter = "https://stats.kadet-hub.org"
 [sitemap]
 changeFreq = "daily"
 
+# CAT-11g: lastmod alone does not date a page, so guides keep their order.
+[frontmatter]
+date = ["date", "publishDate"]
+
 # Highlighting as classes: the CSP blocks inline styles.
 [markup.highlight]
 noClasses = false

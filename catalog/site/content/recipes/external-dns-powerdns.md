@@ -4,4 +4,5 @@ description: "Bitnami external-dns Helm chart alternative: a Kapitan inventory c
 replaces: [external-dns]
 operators: []
 check: a Service hostname resolves through PowerDNS
+lastmod: 2026-10-19
 ---

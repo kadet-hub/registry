@@ -4,4 +4,5 @@ description: "Bitnami mysql Helm chart alternative: a Kapitan inventory class fo
 replaces: [mysql]
 operators: []
 check: the StatefulSet is ready and `select 1` runs as the app user in its own database
+lastmod: 2026-10-19
 ---

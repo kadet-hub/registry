@@ -4,4 +4,5 @@ description: "Bitnami mongodb Helm chart alternative: a Kapitan inventory class 
 replaces: [mongodb]
 operators: []
 check: the StatefulSet is ready and `mongosh` authenticates as root and gets `ok` from `ping`
+lastmod: 2026-10-19
 ---

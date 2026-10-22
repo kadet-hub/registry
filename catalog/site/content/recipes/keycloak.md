@@ -4,4 +4,5 @@ description: "Bitnami keycloak Helm chart alternative: a Kapitan inventory class
 replaces: [keycloak]
 operators: [Keycloak Operator, CloudNativePG, cert-manager]
 check: the Keycloak is `Ready` and `/realms/master` answers 200 over TLS
+lastmod: 2026-10-19
 ---

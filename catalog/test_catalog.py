@@ -695,6 +695,33 @@ class Site(unittest.TestCase):
         self.assertIn('rel="prev"', first.split('class="pager"')[1])
         self.assertIn('<h2 id="related">Related posts</h2>', first)  # shares the topic gate
 
+    def test_guides_and_recipes_dated(self):  # CAT-11g
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            sitemap = f.read()
+        for section in ("guides", "recipes"):
+            names = sorted(f[:-3] for f in os.listdir(os.path.join(HERE, "site", "content", section)))
+            for name in names:
+                with open(os.path.join(HERE, "site", "content", section, name + ".md"), encoding="utf-8") as f:
+                    day = re.search(r"^lastmod: (\d{4}-\d{2}-\d{2})$", f.read(), re.M)
+                self.assertTrue(day, name)
+                ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', self.page(section, name), re.S)]
+                self.assertIn(("TechArticle", day.group(1)), [(b["@type"], b.get("dateModified")) for b in ld], name)
+                self.assertRegex(sitemap, rf"/{section}/{name}/</loc>\s*<lastmod>{day.group(1)}")
+        titles = re.findall(r'<li><a href="[^"]*">([^<]*)</a>', self.page("guides"))
+        self.assertEqual(titles, sorted(titles, key=str.lower))  # lastmod does not reorder the list
+
+    def test_generator_mentions_linked(self):  # CAT-11h
+        names = [f[:-5] for f in os.listdir(os.path.join(HERE, "..", "generators"))]
+        content = os.path.join(HERE, "site", "content")
+        for section in ("guides", "recipes", "blog"):
+            for f in os.listdir(os.path.join(content, section)):
+                with open(os.path.join(content, section, f), encoding="utf-8") as fh:
+                    body = fh.read().split("---", 2)[2]
+                for name in names:
+                    mentioned = re.search(rf"(?<![\w/-])`?{re.escape(name)}`? generators?\b", body, re.I)
+                    if mentioned:
+                        self.assertTrue(f"](/generators/{name}/" in body, f"{section}/{f}: {name} generator not linked")
+
     def test_share_links(self):  # CAT-36c, CAT-36d
         post = self.page("blog", "kapitan-generators-as-supply-chain-artifacts")
         url = "https://kadet-hub.org/blog/kapitan-generators-as-supply-chain-artifacts/"

@@ -4,4 +4,5 @@ description: "Bitnami kafka Helm chart alternative: a Kapitan inventory class fo
 replaces: [kafka]
 operators: [Strimzi]
 check: the Kafka is `Ready` and a message is produced and consumed
+lastmod: 2026-10-19
 ---

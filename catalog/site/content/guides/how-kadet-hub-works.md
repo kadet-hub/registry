@@ -2,6 +2,7 @@
 title: How kadet-hub works
 layout: prose
 description: How a Kapitan generator is gate-checked, published as an attested OCI artifact, verified by consumers, kept current and withdrawn when needed.
+lastmod: 2026-10-19
 ---
 
 A [generator](/glossary/#generator) lives in its author's repository. kadet-hub lists it through a

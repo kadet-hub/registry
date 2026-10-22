@@ -49,6 +49,9 @@
 {{- $org := dict "@type" "Organization" "name" "kadet-hub maintainers" "url" (printf "https://github.com/%s" site.Data.catalog.owner) -}}
 <script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "BlogPosting" "headline" .Title "description" .Description "url" .Permalink "mainEntityOfPage" .Permalink "image" ("og.png" | absURL) "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") "author" $org "publisher" (dict "@type" "Organization" "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL)) }}</script>
 {{- end }}
+{{- if and (in (slice "guides" "recipes") .Section) (eq .Kind "page") }}{{/* CAT-11g */}}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "TechArticle" "headline" .Title "description" .Description "url" .Permalink "mainEntityOfPage" .Permalink "image" ("og.png" | absURL) "dateModified" (.Lastmod.Format "2006-01-02") "author" (dict "@type" "Organization" "name" "kadet-hub maintainers" "url" (printf "https://github.com/%s" site.Data.catalog.owner)) "publisher" (dict "@type" "Organization" "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL)) }}</script>
+{{- end }}
 {{- with .Params.terms }}{{/* CAT-13a */}}
 {{- $terms := slice -}}
 {{- range . }}{{ $terms = $terms | append (dict "@type" "DefinedTerm" "name" .name "description" (.text | markdownify | plainify | htmlUnescape) "url" (printf "%s#%s" $.Permalink .id)) }}{{ end -}}

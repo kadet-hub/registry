@@ -2,6 +2,7 @@
 title: Helm vs Terraform for Kubernetes, and Kapitan for both
 layout: prose
 description: "Helm vs Terraform for Kubernetes manifests: what the helm and kubernetes providers plan without a cluster, and one Kapitan inventory feeding both."
+lastmod: 2026-10-19
 ---
 
 Helm and Terraform can both put objects into a Kubernetes cluster; Helm

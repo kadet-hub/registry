@@ -2,6 +2,7 @@
 title: Supply-chain security for Kapitan generators
 layout: prose
 description: Why a third-party Kapitan generator runs with your credentials at compile time, what kadet-hub checks before listing one, and how to consume generators safely.
+lastmod: 2026-10-19
 ---
 
 A [generator](/glossary/#generator) is code. When [Kapitan](/glossary/#kapitan) compiles, it imports the generator's

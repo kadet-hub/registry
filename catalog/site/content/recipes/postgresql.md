@@ -4,4 +4,5 @@ description: "Bitnami postgresql Helm chart alternative: a Kapitan inventory cla
 replaces: [postgresql, postgresql-ha]
 operators: [CloudNativePG]
 check: the Cluster is `Ready` and `select 1` runs as the app user through the pooler
+lastmod: 2026-10-19
 ---
