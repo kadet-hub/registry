@@ -1459,6 +1459,20 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py`
   - Since: #16, #226, #231
 
+- CAT-3a: The CSP MUST allow `connect-src 'self'`.
+
+  Lighthouse fetches `/robots.txt` from inside the page. Under
+  `default-src 'none'` with no `'self'` in `connect-src` that fetch is
+  blocked, and Lighthouse fails its robots.txt audit with "Lighthouse was
+  unable to download a robots.txt file". That cost 8 points of the SEO
+  score, 0.92 instead of 1, and audit tools built on Lighthouse report it
+  as an invalid robots.txt. Crawlers fetch the file directly and were
+  never affected. The site's own scripts make no requests, so `'self'`
+  opens nothing they use.
+
+  - Test: `catalog/test_catalog.py`; manual: Lighthouse SEO category on a local build
+  - Since: #321
+
 - CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
   origin of a GoatCounter instance, every page MUST count its view with
   `count.js` served from the site's own origin, and the CSP MUST allow that

@@ -905,7 +905,7 @@ class Site(unittest.TestCase):
             self.assertNotRegex(page, r"<img\b[^>]*shields")
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', page).group(1)
             self.assertEqual(csp, "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://stats.kadet-hub.org; "
-                                  "connect-src https://stats.kadet-hub.org; base-uri 'none'; form-action 'none'")
+                                  "connect-src 'self' https://stats.kadet-hub.org; base-uri 'none'; form-action 'none'")  # CAT-3a
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertNotIn("badge.json", f.read())
 
@@ -1081,7 +1081,7 @@ class Site(unittest.TestCase):
                     html = f.read()
                 self.assertNotIn("count.js", html)
                 self.assertNotIn("goatcounter.com/count", html)
-                self.assertNotIn("connect-src", html)
+                self.assertIn("connect-src 'self'; base-uri", html)  # CAT-3a, no counter origin
             self.assertIn("The site runs no analytics or tracking.", html)
 
     def test_site_counts_on_its_own_instance(self):
@@ -1100,7 +1100,7 @@ class Site(unittest.TestCase):
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
             self.assertIn("script-src 'self';", csp)
             self.assertIn("img-src 'self' https://stats.example.org;", csp)
-            self.assertIn("connect-src https://stats.example.org;", csp)
+            self.assertIn("connect-src 'self' https://stats.example.org;", csp)
             self.assertIn("licenses/goatcounter.txt", html)
             with open(os.path.join(out, "privacy", "index.html"), encoding="utf-8") as f:
                 privacy = f.read()
