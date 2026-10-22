@@ -200,6 +200,7 @@ remembered in the browser's `localStorage`.
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
   | gvisor vs docker (also "docker vs gvisor", "gvisor docker runtime") | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions", section #gvisor-vs-docker |
+  | write your own helm chart, how to write helm charts, kube prometheus stack alternative (checked 2026-10-22) | blog post "Writing a Helm chart vs Kapitan: three popular charts rebuilt", section #kube-prometheus-stack-alternative for the last |
   | helm chart vs operator, operator vs helm chart, kubernetes operator vs helm chart, k8s operator vs helm chart (checked 2026-10-22) | blog post "Helm chart vs operator: PostgreSQL installed both ways on kind" |
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
   | kustomize patch env variable, kustomize patch environment variable, kustomize patch add env var (checked 2026-10-21) | blog post "Kustomize patch env variable with valueFrom in a Helm chart", sections #keda-http-add-on-env and #crossplane-env-secret |
@@ -229,7 +230,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331
 
 - CAT-11g: Every guide and recipe MUST carry `lastmod` in its front
   matter, the day its text last changed, and schema.org `TechArticle`
