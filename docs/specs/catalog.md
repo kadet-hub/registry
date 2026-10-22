@@ -176,6 +176,7 @@ remembered in the browser's `localStorage`.
   | helm alternatives kubernetes | home page, guide "Helm alternatives for Kubernetes" |
   | kustomize alternatives | home page, same guide |
   | pulumi vs helm | same guide |
+  | helm vs helmfile (also "helmfile vs helm"), helm chart vs helmfile, helm umbrella chart vs helmfile (checked 2026-10-22) | same guide, section #helmfile |
   | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
   | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app", guide "Kapitan generator vs Helm chart vs Kustomize" |
