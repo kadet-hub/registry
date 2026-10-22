@@ -140,7 +140,10 @@ since the documented package API has no visibility call.
 
   The index job reads the versions from the registry tags, each version's
   metadata from its config blob, and accepts only digests with a marketplace
-  attestation. Versions of a removed entry stay listed as yanked with reason
+  attestation. A failed attestation lookup is tried three times, 5 and 15
+  seconds apart, before the digest counts as unattested: on 2026-10-22 a
+  single failed lookup for an attested multus version stopped the index job,
+  and with it the catalog deploy, until the next release. Versions of a removed entry stay listed as yanked with reason
   `entry removed`. The index is tagged `<serial>` and `latest`; the serial
   is the verified `latest` serial plus one, and an index whose content
   equals `latest` apart from the serial is not published. Advisories stay

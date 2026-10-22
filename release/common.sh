@@ -13,7 +13,15 @@ lookup() {
   return 2
 }
 
-# The digest carries an attestation from this repository's release workflow on main.
+# The digest carries an attestation from this repository's release workflow on
+# main. A lookup that fails is tried again, because the attestation API also
+# fails on transient errors (PUB-4); a digest without one still fails.
+# ATTESTED_DELAY_SCALE=0 lets the tests skip the waits.
 attested() {
-  gh attestation verify "oci://$1" --repo "$GITHUB_REPOSITORY" --cert-identity "$IDENTITY" >/dev/null 2>&1
+  local delay
+  for delay in 5 15 0; do
+    gh attestation verify "oci://$1" --repo "$GITHUB_REPOSITORY" --cert-identity "$IDENTITY" >/dev/null 2>&1 && return 0
+    ((delay == 0)) || sleep "$((delay * ${ATTESTED_DELAY_SCALE:-1}))"
+  done
+  return 1
 }

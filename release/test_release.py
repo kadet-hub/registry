@@ -307,6 +307,36 @@ echo 'port: 80' >"$OUTPUT_DIR/compiled/t/svc.yml"
 }
 
 
+class Attested(unittest.TestCase):
+    """PUB-4: a failed attestation lookup is tried three times before the digest counts as unattested."""
+
+    def run_attested(self, failures):
+        with tempfile.TemporaryDirectory() as tmp:
+            calls = os.path.join(tmp, "calls")
+            gh = os.path.join(tmp, "gh")
+            with open(gh, "w", encoding="utf-8") as f:
+                f.write(f"""#!/usr/bin/env bash
+echo x >>{calls!r}
+(( $(wc -l <{calls!r}) > {failures} ))
+""")
+            os.chmod(gh, 0o755)
+            root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            p = subprocess.run(["bash", "-c", f". {os.path.join(root, 'release', 'common.sh')!r} && attested ghcr.io/x/demo@sha256:0"],
+                               env={**os.environ, "PATH": f"{tmp}:{os.environ['PATH']}", "ATTESTED_DELAY_SCALE": "0",
+                                    "GITHUB_REPOSITORY": "o/r", "IDENTITY": "i"})
+            with open(calls, encoding="utf-8") as f:
+                return p.returncode, len(f.readlines())
+
+    def test_transient_failures_are_retried(self):
+        self.assertEqual(self.run_attested(2), (0, 3))
+
+    def test_missing_attestation_still_fails(self):
+        self.assertEqual(self.run_attested(3), (1, 3))
+
+    def test_attested_digest_needs_one_lookup(self):
+        self.assertEqual(self.run_attested(0), (0, 1))
+
+
 class BuildAll(unittest.TestCase):
     """PUB-7, PUB-9 to PUB-11, CMP-4: release/build-all merges the gate's results into meta.json."""
 
