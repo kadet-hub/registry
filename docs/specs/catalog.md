@@ -234,7 +234,7 @@ remembered in the browser's `localStorage`.
   recipes keep their order by title.
 
   - Test: `catalog/test_catalog.py` (`test_guides_and_recipes_dated`)
-  - Since: tbd
+  - Since: #322
 
 - CAT-11h: A guide, recipe or post that names a listed generator as
   "`<name>` generator" MUST link that generator's page there.
@@ -244,7 +244,7 @@ remembered in the browser's `localStorage`.
   leaves the reader one search away from the page.
 
   - Test: `catalog/test_catalog.py` (`test_generator_mentions_linked`)
-  - Since: tbd
+  - Since: #322
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
