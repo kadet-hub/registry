@@ -314,7 +314,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Test: workflow job `gate-selftest` (Kapitan renders and semgrep scans
     with the overridden versions); Scorecard's Vulnerabilities check
     (GI-12)
-  - Since: #268
+  - Since: #268, #334
 
 ## Static checks
 
