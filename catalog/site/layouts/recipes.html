@@ -1,7 +1,7 @@
 {{ define "main" }}{{/* CAT-37 */}}
 <section class="prose-page">
 <h1>{{ .Title }}</h1>
-<p class="lead">{{ .Description }} The classes are read from <a href="https://github.com/{{ site.Data.catalog.owner }}/examples/tree/main/recipes">kadet-hub/examples</a> when the site is built.</p>
+<p class="lead">{{ .Description }} The classes are read from <a href="https://github.com/{{ site.Data.catalog.owner }}/examples/tree/main/recipes">kadet-hub/examples</a> when the site is built. <a href="{{ "/guides/bitnami-chart-alternatives/" | relURL }}">Bitnami chart alternatives</a> lists the replacement for every chart, with or without a recipe.</p>
 <ul class="guide-list">
 {{ range where site.RegularPages "Section" "recipes" }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p></li>{{ end }}
 </ul>

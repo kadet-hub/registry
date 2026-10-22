@@ -584,7 +584,8 @@ class Site(unittest.TestCase):
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
         self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(RECIPE_GENERATORS))
-        self.assertIn("<title>Bitnami chart replacements on Kubernetes with Kapitan</title>", index)  # CAT-11a
+        self.assertIn("<title>Kubernetes recipes that replace Bitnami charts, tested on kind</title>", index)  # CAT-11a
+        self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
         self.assertIn("<title>MongoDB on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))  # 64 bytes
         page = self.page("recipes", "keycloak")
@@ -1066,7 +1067,7 @@ class Site(unittest.TestCase):
         self.assertIn("Helm alternative", title)  # CAT-11f
         desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
         self.assertTrue("Helm" in desc and "Kustomize" in desc, desc)
-        for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan generator vs Helm"),
+        for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan inputs"),
                             ("bitnami-chart-alternatives", "Bitnami chart alternatives"),
                             ("helm-alternatives-for-kubernetes", "Helm alternatives for Kubernetes"),
                             ("talos-machine-config", "Talos machine config"),

@@ -1,5 +1,5 @@
 ---
-title: "Bitnami Helm alternatives: render manifests yourself"
+title: "Bitnami PostgreSQL chart alternatives: CloudNativePG and Kapitan"
 date: 2026-10-21
 topics: [helm, bitnami, generators]
 description: "Bitnami PostgreSQL chart alternatives, now that the free charts and images get no updates: from the upstream operator chart to a verified Kapitan generator."
@@ -14,7 +14,9 @@ Its [custom resources](/glossary/#crd) can come from the upstream `cluster` char
 rendered in your own repository, for example with the
 [cloudnative-pg](/generators/cloudnative-pg/) [generator](/glossary/#generator). Both work. Neither
 replaces Bitnami one to one, because a chart or a generator only produces
-manifests; the images still need a source you trust.
+manifests; the images still need a source you trust. For the other
+Bitnami charts, [Bitnami chart alternatives](/guides/bitnami-chart-alternatives/)
+lists the replacement chart by chart.
 
 ## What Broadcom changed, and when
 

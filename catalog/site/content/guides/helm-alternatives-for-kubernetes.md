@@ -136,7 +136,7 @@ kadet-hub lists Kapitan generators for Kubernetes and Terraform, each
 version scanned, compiled in a sandbox and published as a signed OCI
 artifact. [Recipes](/recipes/) combine them into replacements for popular
 Bitnami charts, deployed and checked on a kind cluster in CI, and
-[Kapitan generator vs Helm chart vs Kustomize](/guides/generator-helm-or-jinja2/)
+[Kapitan inputs: kadet generator, helm, jinja2 or Kustomize](/guides/generator-helm-or-jinja2/)
 covers the choice when you write one yourself.
 
 ## When Helm stays
