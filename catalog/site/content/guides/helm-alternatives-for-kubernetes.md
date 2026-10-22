@@ -132,6 +132,21 @@ Kustomize and Jsonnet as inputs, so adopting it does not mean rewriting
 those. The example's inventory renders the app with the
 [kubernetes](/generators/kubernetes/) generator.
 
+The derived value from the table is one line in the api's class,
+`inventory/classes/apps/api.yml`. It reads the web Service port from the
+web class, so changing that port changes `web_url` in the same compile:
+
+```yaml
+parameters:
+  components:
+    api:
+      config_maps:
+        config:
+          data:
+            web_url:
+              value: http://web.${namespace}.svc:${components:web:ports:http:service_port}
+```
+
 kadet-hub lists Kapitan generators for Kubernetes and Terraform, each
 version scanned, compiled in a sandbox and published as a signed OCI
 artifact. [Recipes](/recipes/) combine them into replacements for popular
