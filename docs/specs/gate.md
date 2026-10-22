@@ -295,6 +295,11 @@ which only a maintainer pull request changes (GI-2, REV-1).
   50.0.0 or later (PYSEC-2026-3552, -3553, -3554; upstream PR
   kapicorp/kapitan#1632). semgrep 1.180.0 pins `mcp==1.29.0`; the scan
   overrides it to 1.30.0 or later and below 2 (GHSA-84m7-p3x7-pcfv).
+  semgrep and guarddog pin `opentelemetry-api~=1.37.0`; the scan lifts the
+  OpenTelemetry family together to 1.45.1 and 0.66b1
+  (GHSA-xcq7-p3pf-p88h), because semgrep does not load the 1.37 exporters
+  with api 1.45, and semgrep and guarddog report the same findings with
+  both sets on the kubernetes generator.
   Kapitan uses cryptography only for the key pairs of its `rsa`,
   `rsapublic`, `ed25519` and `publickey` ref functions, and those
   generate and load keys with 50.0.2. semgrep imports `mcp` at startup
