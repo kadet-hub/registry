@@ -255,6 +255,19 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`test_generator_mentions_linked`)
   - Since: #322
 
+- CAT-11i: The site MUST serve the IndexNow key `9402a7122cd662ad840c013f9c6f7906` as
+  `/9402a7122cd662ad840c013f9c6f7906.txt`, a file whose only content is the key.
+
+  IndexNow lets a site tell Bing, Yandex and the other participating
+  engines that URLs are new or changed, instead of waiting for a crawl.
+  An engine accepts a submission only when the key it names is served
+  from the same host. The key is public by design; it proves control of
+  the host, not of an account. kadet-hub/outreach submits the URLs from
+  `sitemap.xml` (OUT-14 there). A new key needs both places changed.
+
+  - Test: `catalog/test_catalog.py` (`test_indexnow_key`)
+  - Since: tbd
+
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
 

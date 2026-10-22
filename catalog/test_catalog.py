@@ -723,6 +723,10 @@ class Site(unittest.TestCase):
                     if mentioned:
                         self.assertTrue(f"](/generators/{name}/" in body, f"{section}/{f}: {name} generator not linked")
 
+    def test_indexnow_key(self):  # CAT-11i
+        with open(os.path.join(self.out, "9402a7122cd662ad840c013f9c6f7906.txt"), encoding="utf-8") as f:
+            self.assertEqual(f.read(), "9402a7122cd662ad840c013f9c6f7906")
+
     def test_share_links(self):  # CAT-36c, CAT-36d
         post = self.page("blog", "kapitan-generators-as-supply-chain-artifacts")
         url = "https://kadet-hub.org/blog/kapitan-generators-as-supply-chain-artifacts/"
