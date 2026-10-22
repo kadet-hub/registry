@@ -1470,7 +1470,7 @@ index is refused (CON-2).
   opens nothing they use.
 
   - Test: `catalog/test_catalog.py`; manual: Lighthouse SEO category on a local build
-  - Since: tbd
+  - Since: #321
 
 - CAT-25: When `params.goatcounter` in `catalog/site/hugo.toml` names the
   origin of a GoatCounter instance, every page MUST count its view with
