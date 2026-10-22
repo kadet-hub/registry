@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {{- $gc := "" }}{{ with site.Params.goatcounter }}{{ $gc = strings.TrimSuffix "/" . }}{{ end }}
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'{{ with $gc }} {{ . }}{{ end }};{{ with $gc }} connect-src {{ . }};{{ end }} base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'{{ with $gc }} {{ . }}{{ end }}; connect-src 'self'{{ with $gc }} {{ . }}{{ end }}; base-uri 'none'; form-action 'none'">
 <meta name="color-scheme" content="light dark">
 {{ partial "seo.html" . }}
 <script src="{{ "theme.js" | relURL }}"></script>
