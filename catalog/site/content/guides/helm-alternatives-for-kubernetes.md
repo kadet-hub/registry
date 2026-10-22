@@ -6,11 +6,11 @@ description: Kustomize, Pulumi, cdk8s, Tanka and Kapitan as Helm alternatives fo
 
 Most comparisons of Helm alternatives list features. This one starts from
 output: the same two-service app in two environments, rendered with Helm,
-Kustomize, Pulumi, cdk8s, Tanka and [Kapitan](/glossary/#kapitan), and a check in CI that fails
+Helmfile, Kustomize, Pulumi, cdk8s, Tanka and [Kapitan](/glossary/#kapitan), and a check in CI that fails
 unless every tool produces the same objects. The code is in
 [kadet-hub/examples](https://github.com/kadet-hub/examples):
 [`same-app`](https://github.com/kadet-hub/examples/tree/main/same-app) for
-Helm, Kustomize and Pulumi,
+Helm, Helmfile, Kustomize and Pulumi,
 [`config-tools`](https://github.com/kadet-hub/examples/tree/main/config-tools)
 for Tanka and cdk8s, both against the same Kapitan [inventory](/glossary/#inventory).
 
@@ -30,6 +30,7 @@ dropped.
 | | Written in | Values from | A value derived from another | Output | Applies to the cluster |
 |---|---|---|---|---|---|
 | Helm | Go templates | values files per release | no: releases cannot read each other's values | Kubernetes | yes, with release history |
+| Helmfile | Go templates over Helm charts | environments and values files per release | yes, an environment value templated into several releases | Kubernetes, through Helm | yes, one Helm release per entry |
 | Kustomize | YAML patches | overlays | only through `replacements`, per field | Kubernetes | through `kubectl apply -k` |
 | Pulumi | TypeScript, Python, Go, C#, Java, YAML | stack config and code | yes, in code | any cloud resource; Kubernetes YAML only in render mode | yes, with state and previews |
 | cdk8s | TypeScript, Python, Go, Java | code | yes, in code | Kubernetes | no, writes files |
@@ -50,6 +51,33 @@ second app usually starts as a copy of the first app's base; in the example
 the second app touched 9 files and added 149 lines, against 3 files and 25
 lines in Helm, whose chart was already generic. Use it for vendor YAML and
 small differences between environments.
+
+## Helmfile {#helmfile}
+
+Helmfile is not a Helm alternative so much as a layer over it. A
+`helmfile.yaml` lists releases, each a chart with its values files, and
+`helmfile -e <environment> sync` installs or upgrades them with Helm. In
+the example, `same-app/helmfile/helmfile.yaml.gotmpl` names the same
+chart and values files as the Helm version, with one environment each for
+dev and prod. It renders the same 6 and 8 objects.
+
+Compared with plain Helm, it adds an environment layer that values files
+lack. Moving the web Service port into an environment value and
+templating that value into both releases (`servicePort` for web, `web_url`
+for api) made a port change reach the api's ConfigMap. Plain Helm and the
+committed helmfile, which reuses Helm's values files, still render the
+stale `:80`. `helmfile apply` diffs before it upgrades and needs the
+helm-diff plugin. Without it, Helmfile 1.8.2 stops with `unknown command
+"diff" for "helm"`, while `helmfile sync` works with Helm alone.
+
+The usual Helm-only answer to several releases is an umbrella chart with
+the app chart as a subchart per service. Here that fails silently. The
+chart names its objects after `.Release.Name`, which in a subchart is the
+umbrella's release, so web and api both render a ConfigMap, Service and
+Deployment named `shop`. On a kind cluster `helm install` reported
+`Install complete` with three objects, and the one Deployment ran the api
+image. Helmfile keeps one Helm release per service, each with its own
+history and rollback.
 
 ## Pulumi
 
