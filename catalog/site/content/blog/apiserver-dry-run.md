@@ -61,6 +61,44 @@ way. For the [built-in kinds](/glossary/#kind), much of the server's validation 
 code that the published OpenAPI schema does not describe, such as name
 formats and selector matching.
 
+## kubeval, helm lint and kube-linter {#kubeval-helm-lint-kube-linter}
+
+kubeconform is not the only first pass in use. Run on 2026-10-22 against
+the same seven files, the other common ones each catch at most one of the
+five:
+
+| Tool | Version | Broken documents it rejects |
+|---|---|---|
+| `kubeconform -strict` | 0.8.0 | none |
+| `kubeval --strict` | 0.16.1 | none |
+| `helm lint --strict` | 4.3.1 | ConfigMap `Web_Settings` |
+| `kube-linter lint` | 0.8.3 | Deployment `worker` |
+| `kubectl apply --dry-run=server` | 1.37.1 | all five |
+
+kubeval is kubeconform's predecessor. Its README says it is no longer
+maintained and points to kubeconform, and its last release, v0.16.1, is
+from March 2021. Its default schema host, kubernetesjsonschema.dev, now
+fails the TLS handshake, and the run fails with certificate errors until
+`--schema-location` points at a mirror such as
+[yannh/kubernetes-json-schema](https://github.com/yannh/kubernetes-json-schema).
+With that and `--ignore-missing-schemas` it passes both broken built-in
+kinds and skips the Gateway API objects, for which it has no schema.
+
+`helm lint` checks a chart: that the templates render to YAML, the
+`Chart.yaml` fields, and the values against `values.schema.json`. With
+the seven files as templates of a chart, it also checks object names
+against the Kubernetes naming rules and flags `Web_Settings`. That
+finding is a warning. Helm 4.3.1 shows it only with `--strict`, which
+then fails the run. Plain `helm lint` exits 0 without mentioning it.
+Helm's own selector check only asks that a Deployment has a selector, so
+`worker` passes.
+
+kube-linter checks best practices, not the schema. Its default checks
+report ten findings on the example, among them `mismatching-selector` on
+`worker`. The other nine are about resource requests, `runAsNonRoot`,
+a read-only root filesystem and pod anti-affinity on the two Deployments.
+It does not look at the Gateway API objects.
+
 ## The job
 
 ```yaml

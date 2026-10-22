@@ -187,6 +187,7 @@ remembered in the browser's `localStorage`.
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
+  | kubeconform vs kubeval, helm lint vs kubeconform, kubelinter vs kubeconform (checked 2026-10-22) | same post, section #kubeval-helm-lint-kube-linter |
   | kubectl validate crd | guide "Validate Kubernetes custom resources against their CRDs" |
   | kustomize json patch add, kustomize add annotation, service appprotocol, kubernetes trafficdistribution (checked 2026-10-21) | blog post "Kustomize JSON patch add: fields a Helm chart does not template", one section per chart |
   | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
