@@ -2,7 +2,7 @@
 title: Helm alternatives for Kubernetes, compared on one app
 layout: prose
 description: Kustomize, Pulumi, cdk8s, Tanka and Kapitan as Helm alternatives for Kubernetes, each rendering the same app to manifests a CI job checks for equality.
-lastmod: 2026-10-19
+lastmod: 2026-10-22
 ---
 
 Most comparisons of Helm alternatives list features. This one starts from
