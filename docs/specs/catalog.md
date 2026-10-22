@@ -179,10 +179,11 @@ remembered in the browser's `localStorage`.
   | helm vs helmfile (also "helmfile vs helm"), helm chart vs helmfile, helm umbrella chart vs helmfile (checked 2026-10-22) | same guide, section #helmfile |
   | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
-  | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app", guide "Kapitan generator vs Helm chart vs Kustomize" |
-  | bitnami alternative | guide "Bitnami chart alternatives", `/recipes/` |
+  | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
+  | bitnami alternative | guide "Bitnami chart alternatives" |
   | thanos helm chart not bitnami, thanos bitnami alternative, prometheus operator helm chart bitnami | guide "Bitnami chart alternatives" |
-  | bitnami alternative postgres, bitnami alternative redis, bitnami alternative kafka, cloudnativepg vs bitnami | `/recipes/`, blog post "Bitnami Helm alternatives", `/recipes/postgresql/` |
+  | bitnami alternative postgres, cloudnativepg vs bitnami | blog post "Bitnami PostgreSQL chart alternatives", `/recipes/postgresql/` |
+  | bitnami alternative redis, bitnami alternative kafka | `/recipes/valkey/`, `/recipes/kafka/` |
   | postgres, redis, keycloak, rabbitmq or kafka helm chart without bitnami (also "not bitnami", "bitnami alternative"), valkey helm chart not bitnami | the matching `/recipes/<name>/` page, `/recipes/valkey/` for redis |
   | mysql helm chart not bitnami, bitnami mysql alternative, bitnami alternative mongodb | `/recipes/mysql/`, `/recipes/mongodb/` |
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
@@ -215,11 +216,18 @@ remembered in the browser's `localStorage`.
   cert-manager/cert-manager#6071 or cert-manager/trust-manager#778 for
   example, stays valid when a heading changes.
 
+  One page answers a query first, and its title leads with it. Other pages
+  on the topic link to that page instead of competing with it. The
+  Bitnami guide is that page for the generic query, the Bitnami post for
+  PostgreSQL, and `/recipes/` lists the tested recipes. The guide on
+  Kapitan inputs is titled for that choice, so "helm vs kustomize" queries
+  go to the post that compares the tools on one app.
+
   "kapicorp" is not a target: the people who search it know Kapitan
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323
 
 - CAT-11g: Every guide and recipe MUST carry `lastmod` in its front
   matter, the day its text last changed, and schema.org `TechArticle`
