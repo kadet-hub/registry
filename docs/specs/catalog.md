@@ -221,6 +221,31 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
   - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320
 
+- CAT-11g: Every guide and recipe MUST carry `lastmod` in its front
+  matter, the day its text last changed, and schema.org `TechArticle`
+  JSON-LD with that date as `dateModified`.
+
+  Without a date, guides and recipes were the only content pages without
+  `<lastmod>` in the sitemap and without JSON-LD (55 of 110 pages had
+  none). The date is in the front matter because `catalog/build` copies
+  the site to a work directory, where Hugo has no Git history to read.
+  Hugo would otherwise take `lastmod` as `date` too, which orders lists;
+  `[frontmatter] date` names `date` and `publishDate` only, so guides and
+  recipes keep their order by title.
+
+  - Test: `catalog/test_catalog.py` (`test_guides_and_recipes_dated`)
+  - Since: #322
+
+- CAT-11h: A guide, recipe or post that names a listed generator as
+  "`<name>` generator" MUST link that generator's page there.
+
+  The posts and guides are where search traffic arrives, the generator
+  pages are what kadet-hub lists. A name in running text without the link
+  leaves the reader one search away from the page.
+
+  - Test: `catalog/test_catalog.py` (`test_generator_mentions_linked`)
+  - Since: #322
+
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
 

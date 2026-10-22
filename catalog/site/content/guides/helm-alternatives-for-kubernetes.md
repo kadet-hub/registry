@@ -2,6 +2,7 @@
 title: Helm alternatives for Kubernetes, compared on one app
 layout: prose
 description: Kustomize, Pulumi, cdk8s, Tanka and Kapitan as Helm alternatives for Kubernetes, each rendering the same app to manifests a CI job checks for equality.
+lastmod: 2026-10-22
 ---
 
 Most comparisons of Helm alternatives list features. This one starts from
@@ -128,7 +129,8 @@ other file, and `${...}` lets any target reference a value from another
 file. It writes files and leaves applying them to `kubectl`, Argo CD or
 Flux; it has no release history like Helm's. It can render Helm charts,
 Kustomize and Jsonnet as inputs, so adopting it does not mean rewriting
-those.
+those. The example's inventory renders the app with the
+[kubernetes](/generators/kubernetes/) generator.
 
 kadet-hub lists Kapitan generators for Kubernetes and Terraform, each
 version scanned, compiled in a sandbox and published as a signed OCI

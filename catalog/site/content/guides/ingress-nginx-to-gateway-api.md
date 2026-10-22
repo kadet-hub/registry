@@ -2,6 +2,7 @@
 title: Migrate ingress-nginx to Gateway API with Kapitan
 layout: prose
 description: ingress-nginx is retired. Moving Kapitan targets from Ingresses to Gateway API routes, side by side, with the annotation mapping and the defaults that differ.
+lastmod: 2026-10-19
 ---
 
 ingress-nginx is retired: best-effort maintenance ended in March 2026, and

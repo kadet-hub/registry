@@ -2,6 +2,7 @@
 title: Writing a Kapitan generator
 layout: prose
 description: How to write a reusable Kapitan kadet generator, test it in a sandbox like the kadet-hub gate does, and publish it as an attested OCI artifact.
+lastmod: 2026-10-19
 ---
 
 A [Kapitan](/glossary/#kapitan) [generator](/glossary/#generator) is a [kadet](/glossary/#kadet) module: Python that reads a block of
