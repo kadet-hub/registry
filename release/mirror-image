@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Mirror job (PUB-13): copy the digest an upstream tag points to into
+# $REGISTRY/mirror/<name>, tagged by its source commit, without moving a tag.
+#
+# Usage: mirror-image <upstream repository>:<tag> <name>
+# Needs: REGISTRY (ghcr.io/<owner>), oras logged in, jq.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+# shellcheck source=release/common.sh
+. "$root/release/common.sh"
+src=${1:?usage: mirror-image <repository>:<tag> <name>}
+dst=$REGISTRY/mirror/${2:?usage: mirror-image <repository>:<tag> <name>}
+
+digest=$(oras resolve -- "$src")
+tag=$(oras manifest fetch-config -- "${src%:*}@$digest" | jq -er '
+  .config.Labels["org.opencontainers.image.revision"] // .config.Labels["multi.GIT_SHA"]
+  // (.created[0:10] | gsub("-"; ""))')
+[[ $tag =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$ ]] || { echo "PUB-13: $src: no valid tag from its labels: $tag"; exit 1; }
+
+rc=0; current=$(lookup oras resolve -- "$dst:$tag") || rc=$?
+((rc < 2)) || exit 1
+if ((rc == 0)); then
+  [[ $current == "$digest" ]] || { echo "PUB-13: $dst:$tag is $current, $src is now $digest; tag not moved"; exit 1; }
+  echo "$dst:$tag: already $digest"
+else
+  oras cp -- "${src%:*}@$digest" "$dst@$digest" >/dev/null
+  oras tag -- "$dst@$digest" "$tag" >/dev/null
+  echo "$dst:$tag: pushed $digest"
+fi
+echo "| \`$src\` | \`$digest\` | \`$dst:$tag\` |" >>"${GITHUB_STEP_SUMMARY:-/dev/null}"

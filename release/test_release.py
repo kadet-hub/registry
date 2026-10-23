@@ -358,3 +358,55 @@ class BuildAll(unittest.TestCase):
                 "output_diff": {"base": None, "error": "no earlier listed version"},
                 "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
                 "backends": ["reclass-rs", "omegaconf"]})
+
+
+class Mirror(unittest.TestCase):
+    """PUB-13: release/mirror-image with a fake oras; FAKE_TAGS lists the mirror's tags as <tag> <digest>."""
+
+    UP = "sha256:" + "u" * 64
+
+    def mirror(self, labels, tags="", created="2026-10-13T21:58:13Z"):
+        with tempfile.TemporaryDirectory() as tmp:
+            calls, summary = os.path.join(tmp, "calls"), os.path.join(tmp, "summary")
+            with open(os.path.join(tmp, "config.json"), "w", encoding="utf-8") as f:
+                json.dump({"created": created, "config": {"Labels": labels}}, f)
+            with open(os.path.join(tmp, "oras"), "w", encoding="utf-8") as f:
+                f.write(f"""#!/usr/bin/env bash
+echo "$*" >>{calls!r}
+case "$1" in
+  resolve) [[ $3 == quay.io/* ]] && {{ echo {self.UP}; exit; }}
+           d=$(awk -v t="${{3##*:}}" '$1 == t {{print $2}}' <<<"$FAKE_TAGS"); [[ -n $d ]] || {{ echo "$3: not found" >&2; exit 1; }}; echo "$d" ;;
+  manifest) cat {os.path.join(tmp, "config.json")!r} ;;
+esac
+""")
+            os.chmod(os.path.join(tmp, "oras"), 0o755)
+            p = subprocess.run([os.path.join(ROOT, "release", "mirror-image"), "quay.io/kubevirt/kubevirt-csi-driver:latest",
+                                "kubevirt-csi-driver"], capture_output=True, text=True,
+                               env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], REGISTRY="ghcr.io/kadet-hub",
+                                        FAKE_TAGS=tags, GITHUB_STEP_SUMMARY=summary))
+            with open(calls, encoding="utf-8") as f:
+                writes = [c.split()[0] for c in f.read().splitlines() if c.split()[0] in ("cp", "tag")]
+            summary_text = ""
+            if os.path.exists(summary):
+                with open(summary, encoding="utf-8") as f:
+                    summary_text = f.read()
+            return p.returncode, p.stdout, writes, summary_text
+
+    def test_new_commit_is_copied_and_tagged(self):
+        rc, out, writes, summary = self.mirror({"multi.GIT_SHA": "3a1a099"})
+        self.assertEqual((rc, writes), (0, ["cp", "tag"]))
+        self.assertIn(f"ghcr.io/kadet-hub/mirror/kubevirt-csi-driver:3a1a099: pushed {self.UP}", out)
+        self.assertIn(f"| `{self.UP}` | `ghcr.io/kadet-hub/mirror/kubevirt-csi-driver:3a1a099` |", summary)
+
+    def test_oci_revision_wins_and_date_is_the_fallback(self):
+        self.assertIn(":abc: pushed", self.mirror({"org.opencontainers.image.revision": "abc", "multi.GIT_SHA": "def"})[1])
+        self.assertIn(":20261013: pushed", self.mirror({})[1])
+        self.assertIn(":20261013: pushed", self.mirror(None)[1])
+
+    def test_existing_tag_is_never_moved(self):
+        rc, out, writes, _ = self.mirror({"multi.GIT_SHA": "3a1a099"}, tags=f"3a1a099 {self.UP}")
+        self.assertEqual((rc, writes), (0, []))
+        self.assertIn("already", out)
+        rc, out, writes, summary = self.mirror({"multi.GIT_SHA": "3a1a099"}, tags="3a1a099 sha256:" + "o" * 64)
+        self.assertEqual((rc, writes, summary), (1, [], ""))
+        self.assertIn("tag not moved", out)
