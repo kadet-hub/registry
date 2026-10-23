@@ -205,7 +205,11 @@ jobs:
           token: ${{ github.token }}
 
       - name: Mirror the KubeVirt CSI driver
-        run: release/mirror-image quay.io/kubevirt/kubevirt-csi-driver:latest kubevirt-csi-driver
+        run: >-
+          release/mirror-image quay.io/kubevirt/kubevirt-csi-driver:latest kubevirt-csi-driver
+          https://github.com/kubevirt/csi-driver
+          https://mirror.stream.centos.org/9-stream/BaseOS/source/tree/Packages/
+          https://mirror.stream.centos.org/9-stream/AppStream/source/tree/Packages/
 
   index:
     needs: [build, sign]

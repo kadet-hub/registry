@@ -381,7 +381,8 @@ esac
 """)
             os.chmod(os.path.join(tmp, "oras"), 0o755)
             p = subprocess.run([os.path.join(ROOT, "release", "mirror-image"), "quay.io/kubevirt/kubevirt-csi-driver:latest",
-                                "kubevirt-csi-driver"], capture_output=True, text=True,
+                                "kubevirt-csi-driver", "https://github.com/kubevirt/csi-driver", "https://srpm/a/", "https://srpm/b/"],
+                               capture_output=True, text=True,
                                env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], REGISTRY="ghcr.io/kadet-hub",
                                         FAKE_TAGS=tags, GITHUB_STEP_SUMMARY=summary))
             with open(calls, encoding="utf-8") as f:
@@ -397,6 +398,13 @@ esac
         self.assertEqual((rc, writes), (0, ["cp", "tag"]))
         self.assertIn(f"ghcr.io/kadet-hub/mirror/kubevirt-csi-driver:3a1a099: pushed {self.UP}", out)
         self.assertIn(f"| `{self.UP}` | `ghcr.io/kadet-hub/mirror/kubevirt-csi-driver:3a1a099` |", summary)
+        self.assertIn("Source: https://github.com/kubevirt/csi-driver/tree/3a1a099.", summary)
+        self.assertIn("Base image source RPMs: https://srpm/a/ https://srpm/b/", summary)
+
+    def test_summary_names_no_commit_for_a_date_tag(self):
+        summary = self.mirror({})[3]
+        self.assertIn("Source: https://github.com/kubevirt/csi-driver (tag 20261013 is the image date, not a commit).", summary)
+        self.assertNotIn("/tree/", summary)
 
     def test_oci_revision_wins_and_date_is_the_fallback(self):
         self.assertIn(":abc: pushed", self.mirror({"org.opencontainers.image.revision": "abc", "multi.GIT_SHA": "def"})[1])
@@ -407,6 +415,7 @@ esac
         rc, out, writes, _ = self.mirror({"multi.GIT_SHA": "3a1a099"}, tags=f"3a1a099 {self.UP}")
         self.assertEqual((rc, writes), (0, []))
         self.assertIn("already", out)
+        self.assertIn("Source: https://github.com/kubevirt/csi-driver/tree/3a1a099.", self.mirror({"multi.GIT_SHA": "3a1a099"}, tags=f"3a1a099 {self.UP}")[3])
         rc, out, writes, summary = self.mirror({"multi.GIT_SHA": "3a1a099"}, tags="3a1a099 sha256:" + "o" * 64)
         self.assertEqual((rc, writes, summary), (1, [], ""))
         self.assertIn("tag not moved", out)

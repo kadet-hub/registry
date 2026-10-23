@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
-# Mirror job (PUB-13): copy the digest an upstream tag points to into
-# $REGISTRY/mirror/<name>, tagged by its source commit, without moving a tag.
+# Mirror job (PUB-13, PUB-13a): copy the digest an upstream tag points to into
+# $REGISTRY/mirror/<name>, tagged by its source commit, without moving a tag,
+# and record where its sources are published (DEC-16).
 #
-# Usage: mirror-image <upstream repository>:<tag> <name>
+# Usage: mirror-image <upstream repository>:<tag> <name> <source repository URL> <source RPM URL>...
 # Needs: REGISTRY (ghcr.io/<owner>), oras logged in, jq.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 # shellcheck source=release/common.sh
 . "$root/release/common.sh"
-src=${1:?usage: mirror-image <repository>:<tag> <name>}
-dst=$REGISTRY/mirror/${2:?usage: mirror-image <repository>:<tag> <name>}
+(($# >= 4)) || { echo "usage: mirror-image <repository>:<tag> <name> <source repository URL> <source RPM URL>..."; exit 2; }
+src=$1 dst=$REGISTRY/mirror/$2 repo=$3
+shift 3
 
 digest=$(oras resolve -- "$src")
-tag=$(oras manifest fetch-config -- "${src%:*}@$digest" | jq -er '
-  .config.Labels["org.opencontainers.image.revision"] // .config.Labels["multi.GIT_SHA"]
-  // (.created[0:10] | gsub("-"; ""))')
+config=$(oras manifest fetch-config -- "${src%:*}@$digest")
+commit=$(jq -r '.config.Labels["org.opencontainers.image.revision"] // .config.Labels["multi.GIT_SHA"] // empty' <<<"$config")
+tag=${commit:-$(jq -er '.created[0:10] | gsub("-"; "")' <<<"$config")}
 [[ $tag =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$ ]] || { echo "PUB-13: $src: no valid tag from its labels: $tag"; exit 1; }
 
 rc=0; current=$(lookup oras resolve -- "$dst:$tag") || rc=$?
@@ -27,4 +29,9 @@ else
   oras tag -- "$dst@$digest" "$tag" >/dev/null
   echo "$dst:$tag: pushed $digest"
 fi
-echo "| \`$src\` | \`$digest\` | \`$dst:$tag\` |" >>"${GITHUB_STEP_SUMMARY:-/dev/null}"
+if [[ -n $commit ]]; then source=$repo/tree/$tag; else source="$repo (tag $tag is the image date, not a commit)"; fi
+{
+  echo "| \`$src\` | \`$digest\` | \`$dst:$tag\` |"
+  echo
+  echo "Copied unmodified. Source: $source. Base image source RPMs: $*"
+} >>"${GITHUB_STEP_SUMMARY:-/dev/null}"
