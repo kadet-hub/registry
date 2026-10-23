@@ -176,6 +176,17 @@ data the catalog is built from:
   `compatibility`, a list of `software`, `version` and the schema `source`.
   Versions published before the record existed have no `compatibility`;
   the catalog shows them as "not recorded".
+- `kinds`: the Kubernetes kinds of each generator's latest listed version,
+  keyed by section and then by kind in lower case. A section is the API
+  group, `core` for `v1` without a group, and the version for any other
+  apiVersion without a group, such as `v1alpha1` for Talos machine config.
+  Keys of `kinds` are therefore not always API groups. Each entry holds the
+  kind's `name`, the generators whose fixture output renders it
+  (`rendered`), those that only ship a schema for it (`schema`), its
+  `versions` as apiVersion to generators, and `page`, true when the kind
+  has its own page at `/kinds/<section>/<kind>/`.
+- `sections`: the section names, split into `builtin` (served by
+  kube-apiserver without CRDs) and `custom`.
 
 The listed certmanager versions built for cert-manager 1.21.2, one
 `<version> <digest>` line each, newest first:
@@ -185,6 +196,14 @@ curl -fsSL https://kadet-hub.org/catalog.json | jq -r --arg name certmanager --a
   .generators[] | select(.name == $name) | .versions[]
   | select(.yanked == null and any(.compatibility[]?; .software == $software and .version == $version))
   | "\(.version) \(.digest)"'
+```
+
+The generators that render a ConfigMap, one `<section> <generators>` line
+per section:
+
+```sh
+curl -fsSL https://kadet-hub.org/catalog.json | jq -r --arg kind configmap '
+  .kinds | to_entries[] | select(.value[$kind]) | "\(.key) \(.value[$kind].rendered | join(" "))"'
 ```
 
 To have Renovate propose only versions built for your upstream line,

@@ -1216,7 +1216,7 @@ class Site(unittest.TestCase):
         for url in ("kinds/", "kinds/gateway.networking.k8s.io/httproute/"):
             self.assertIn(f"<loc>https://kadet-hub.org/{url}</loc>", sitemap)
 
-    def test_kinds_without_a_group_split_by_version(self):  # CAT-29, CAT-29b, CAT-29c
+    def test_kinds_without_a_group_split_by_version(self):  # CAT-29, CAT-29b, CAT-29c, CAT-34e
         def gen(d, kinds, *software):
             return {"1.0.0": dict(record(d, tags=()), kinds=[dict(zip(("group", "version", "kind"), k)) for k in kinds],
                                   compatibility=[{"software": s, "version": "1", "source": "tbd"} for s in software])}
@@ -1235,7 +1235,11 @@ class Site(unittest.TestCase):
             kinds, core, talos = read(), read("core", "configmap"), read("v1alpha1", "configmap")
             with open(os.path.join(out, "sitemap.xml"), encoding="utf-8") as f:
                 sitemap = f.read()
+            with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:  # CAT-34e
+                command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq -r --arg kind .*?)\n```", f.read(), re.S).group(1)
+            lookup = subprocess.run(shlex.split(command) + [os.path.join(out, "catalog.json")], capture_output=True, text=True, check=True)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
+        self.assertEqual(lookup.stdout, "core k8s-a k8s-b\nv1alpha1 talos-a talos-b\n")
         cards = lambda page: re.findall(r'data-name="([^"]+)"', page.split('<ul class="cards')[1])
         self.assertEqual((cards(core), cards(talos)), (["k8s-a", "k8s-b"], ["talos-a", "talos-b"]))
         self.assertIn("<dd><code>v1</code>: k8s-a, k8s-b</dd>", core)
