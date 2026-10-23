@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: kubevirt
-  tag: kubevirt-v1.3.0
-  sha: 026306296452dfb5b667ca195a0192ee4159ebc8
+  tag: kubevirt-v1.3.1
+  sha: e4e20f8e2b020aa58509b359709c9185b00c006d
 owners: [3042152]
