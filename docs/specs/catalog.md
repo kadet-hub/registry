@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Catalog
 
 Status: Approved
-Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`, `docs/consumers.md` (CAT-34d)
+Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`, `docs/consumers.md` (CAT-34d, CAT-34e)
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -788,6 +788,27 @@ silently.
   - Test: `catalog/test_catalog.py`; manual: Renovate dry run of the recipe
     against the live `catalog.json` (2026-10-16)
   - Since: #254
+
+- CAT-34e: `docs/consumers.md` MUST document the `kinds` and `sections`
+  fields of `catalog.json` with a jq example that looks up the generators
+  rendering a kind, and MUST state that the keys of `kinds` are the
+  sections of CAT-29, not API groups.
+
+  A tool that reads `kinds` as keyed by API group finds a key `v1alpha1`,
+  which is no group. It is the section of Talos machine config, whose
+  apiVersion `v1alpha1` has no group (CAT-29, CAT-29b). The doc names the
+  rule: the API group, `core` for `v1` without a group, the version for
+  any other apiVersion without a group. Below a section, kinds are keyed
+  in lower case, and each entry holds `name`, `rendered`, `schema`,
+  `versions` (apiVersion to generators) and `page`. `sections` splits the
+  section names into `builtin` and `custom` (CAT-29c).
+
+  A test runs this jq example against a fixture build with a core
+  `ConfigMap` and a Talos `v1alpha1` `ConfigMap` and expects one line per
+  section.
+
+  - Test: `catalog/test_catalog.py`
+  - Since: this change
 
 Related: CAT-15, CAT-30, CON-2.
 
