@@ -1,2 +1,14 @@
 # GI-16: semgrep pins mcp==1.29.0.
 mcp>=1.30.0,<2
+# GI-16: semgrep and guarddog pin opentelemetry-api~=1.37.0 (GHSA-xcq7-p3pf-p88h);
+# the family moves together, since the 1.37 exporters do not load with api 1.45.
+opentelemetry-api>=1.45.1,<1.46
+opentelemetry-sdk>=1.45.1,<1.46
+opentelemetry-proto>=1.45.1,<1.46
+opentelemetry-exporter-otlp-proto-common>=1.45.1,<1.46
+opentelemetry-exporter-otlp-proto-http>=1.45.1,<1.46
+opentelemetry-semantic-conventions==0.66b1
+opentelemetry-instrumentation==0.66b1
+opentelemetry-instrumentation-requests==0.66b1
+opentelemetry-instrumentation-threading==0.66b1
+opentelemetry-util-http==0.66b1
