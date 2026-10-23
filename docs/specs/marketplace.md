@@ -360,6 +360,9 @@ cover none of the changed files.
   repository stops releases, and with them yank publication, until the
   entry is removed.
 
+- RISK-13 (accepted, DEC-16 in [publishing.md](publishing.md)): mirrored
+  images are redistributed with references to their upstream sources only.
+
 ## Out of scope
 
 - Ratings, download counts and install telemetry.
