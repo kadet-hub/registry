@@ -1,7 +1,7 @@
 name: release
 
-# PUB-1 to PUB-12, CMP-4, CAT-1, CAT-7, CAT-14, CAT-20, CAT-27. Only this workflow holds publishing permissions:
-# its sign, sandbox, index and github-release jobs in the release environment,
+# PUB-1 to PUB-13, CMP-4, CAT-1, CAT-7, CAT-14, CAT-20, CAT-27. Only this workflow holds publishing permissions:
+# its sign, sandbox, mirror, index and github-release jobs in the release environment,
 # and its pages job in the github-pages environment (GI-8).
 on:
   push:
@@ -186,6 +186,30 @@ jobs:
           DIGEST: ${{ steps.push.outputs.digest }}
           TREE: ${{ steps.push.outputs.tree }}
         run: oras tag -- "$REF@$DIGEST" "$TREE"
+
+  mirror:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+      packages: write # push and tag on ghcr.io
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+        with:
+          token: ${{ github.token }}
+
+      - name: Mirror the KubeVirt CSI driver
+        run: >-
+          release/mirror-image quay.io/kubevirt/kubevirt-csi-driver:latest kubevirt-csi-driver
+          https://github.com/kubevirt/csi-driver
+          https://mirror.stream.centos.org/9-stream/BaseOS/source/tree/Packages/
+          https://mirror.stream.centos.org/9-stream/AppStream/source/tree/Packages/
 
   index:
     needs: [build, sign]

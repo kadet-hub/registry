@@ -372,6 +372,93 @@ since the documented package API has no visibility call.
     documented verification passes on its assets
   - Since: #249
 
+## Mirrored images
+
+quay.io/kubevirt/kubevirt-csi-driver is published only as `latest`, and
+quay.io deletes the previous digest once `latest` moves (kubevirt generator
+README, Driver image). The kubevirt generator's CSI fixtures and a KubeVirt
+CSI end-to-end run need a digest that stays pullable. The release workflow
+therefore copies the image into `ghcr.io/kadet-hub/mirror/<name>`.
+
+The copy is a job of the release workflow, because GI-8 allows
+`packages: write` only there. The workflow's daily schedule and its runs on
+`main` also run the mirror job, and a run where upstream has not moved
+changes nothing. The job uses oras from `setup-oras`, pinned by version and
+sha256 like every other push. `oras cp` by digest copies the manifest bytes
+unchanged, so the mirror has the upstream digest. Checked on 2026-10-23 with
+oras 1.3.5: `sha256:44c98353...f409` copied to an OCI layout resolves to
+the same digest.
+
+The `mirror/` prefix keeps the names apart from generators, which publish
+to `ghcr.io/kadet-hub/<name>` (PUB-1). `mirror` is on
+`policy/reserved-names.txt`, so no entry can take it (REG-2).
+
+The mirror carries no attestation. A provenance attestation from this
+workflow would claim a build it did not run. The digest is the pin, and it
+equals upstream's.
+
+- PUB-13: The mirror job MUST copy the digest an upstream tag points to
+  into `ghcr.io/kadet-hub/mirror/<name>` and tag it there, and MUST NOT
+  move an existing tag.
+
+  The tag is the image's source commit, read from its config label
+  `org.opencontainers.image.revision`, else `multi.GIT_SHA`, which the
+  KubeVirt CSI driver's build sets. Without either label the tag is the
+  image's `created` date as `YYYYMMDD`. A tag that already points to the
+  same digest leaves the job green. A tag that points to another digest
+  fails the job and stays as it is. That happens when upstream rebuilds the
+  same commit, which a maintainer then resolves by hand. The tag on
+  ghcr.io is the durable record, and consumers pin
+  `ghcr.io/kadet-hub/mirror/<name>:<tag>@sha256:<digest>`.
+
+  - Test: `release/test_release.py::Mirror`; manual: the first release run
+    after the merge tags `mirror/kubevirt-csi-driver:3a1a099330045754011803e3d53cd8276ff21723`
+    at `sha256:44c98353e6137455d6a393ad13e04f60e10ee49fdcd00cf078f7f7084714f409`
+  - Since: this change
+
+The first push creates the package as private. A maintainer sets it to
+public once in the organisation's package settings, so the generator
+fixtures and the end-to-end runs can pull it without credentials.
+
+- DEC-16: The mirror references the upstream sources and ships no source
+  offer of its own.
+
+  The image's base layers are CentOS Stream 9, labelled
+  `org.label-schema.license: GPLv2`. kadet-hub copies the image by digest
+  and does not modify or rebuild it. The corresponding sources are
+  published upstream: the CSI driver at the commit the tag names, and the
+  source RPMs of the base packages in the CentOS Stream 9 BaseOS and
+  AppStream source trees on mirror.stream.centos.org. On 2026-10-23 all 120
+  source RPMs recorded in the rpm database of
+  `sha256:44c98353e6137455d6a393ad13e04f60e10ee49fdcd00cf078f7f7084714f409`
+  were listed there.
+
+  Whether a reference to sources someone else hosts satisfies GPLv2
+  section 3 for a redistributor is not settled. CentOS can remove older
+  source RPMs from the mirror while a mirrored tag still exists. The
+  maintainer accepted this risk. A lawyer's answer on it belongs to OQ-1.
+  Hosting the sources next to the image was the alternative, and it would
+  need the source RPMs fetched and pushed for every mirrored tag.
+
+- PUB-13a: For each tag it mirrors or finds in place, the mirror job MUST
+  write to the run summary the upstream reference and digest, the mirror
+  tag, the source repository at the tag's commit and the locations of the
+  base image's source RPMs (DEC-16).
+
+  The workflow passes the source repository and the source RPM locations
+  as arguments. A tag from the `created` fallback is no commit, so the
+  summary names the repository without a commit and says so.
+
+  - Test: `release/test_release.py::Mirror`
+  - Since: this change
+
+- PUB-13b: `docs/consumers.md` MUST state for each mirrored image the
+  upstream image, the source repository, where the base image's source RPMs
+  are published, and that kadet-hub does not modify or rebuild it (DEC-16).
+
+  - Test: none
+  - Since: this change
+
 ## Incident response
 
 - INC-1: A version confirmed malicious MUST be yanked, its artifact deleted,

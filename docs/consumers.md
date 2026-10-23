@@ -297,6 +297,30 @@ owners can move them.
 Only the digest, checked against the attested index, identifies what the
 gate scanned.
 
+## Mirrored images
+
+The release workflow copies a few third-party images into
+`ghcr.io/kadet-hub/mirror/<name>`, because upstream keeps no stable tag.
+kadet-hub does not modify or rebuild them. A mirror tag is the image's
+source commit and its digest is the upstream digest. The run summary of the
+release run that pushed a tag records the upstream reference and digest
+and the source links for that tag.
+
+`ghcr.io/kadet-hub/mirror/kubevirt-csi-driver` copies
+`quay.io/kubevirt/kubevirt-csi-driver:latest`. The first mirrored tag is
+`3a1a099330045754011803e3d53cd8276ff21723` at
+`sha256:44c98353e6137455d6a393ad13e04f60e10ee49fdcd00cf078f7f7084714f409`.
+Each tag is a commit of
+[kubevirt/csi-driver](https://github.com/kubevirt/csi-driver), taken from
+the image label `multi.GIT_SHA`, so its source is
+`https://github.com/kubevirt/csi-driver/tree/<tag>`. The base image is
+CentOS Stream 9, whose packages are partly GPLv2. Their source RPMs are
+published by CentOS in the
+[BaseOS](https://mirror.stream.centos.org/9-stream/BaseOS/source/tree/Packages/)
+and
+[AppStream](https://mirror.stream.centos.org/9-stream/AppStream/source/tree/Packages/)
+source trees.
+
 ## What a listing covers
 
 The marketplace is offered free of charge, as is and on a best-effort basis

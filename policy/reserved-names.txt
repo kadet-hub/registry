@@ -1,5 +1,5 @@
 # Names no new entry may take (REG-2, REG-3, REG-9): removed entries and
-# names that would read as official.
+# names that would read as official or that the registry publishes under (PUB-13).
 kapitan
 kadet
 krab
@@ -9,3 +9,4 @@ marketplace
 registry
 official
 calico-resources
+mirror
