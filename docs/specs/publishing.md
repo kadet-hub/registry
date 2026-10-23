@@ -407,9 +407,8 @@ equals upstream's.
   image's `created` date as `YYYYMMDD`. A tag that already points to the
   same digest leaves the job green. A tag that points to another digest
   fails the job and stays as it is. That happens when upstream rebuilds the
-  same commit, which a maintainer then resolves by hand. The job writes
-  the upstream reference, the digest and the mirror tag to the run
-  summary. The tag on ghcr.io is the durable record, and consumers pin
+  same commit, which a maintainer then resolves by hand. The tag on
+  ghcr.io is the durable record, and consumers pin
   `ghcr.io/kadet-hub/mirror/<name>:<tag>@sha256:<digest>`.
 
   - Test: `release/test_release.py::Mirror`; manual: the first release run
@@ -421,10 +420,44 @@ The first push creates the package as private. A maintainer sets it to
 public once in the organisation's package settings, so the generator
 fixtures and the end-to-end runs can pull it without credentials.
 
-- OQ-10: The image's base layers are CentOS Stream 9 (label
-  `org.label-schema.license: GPLv2`). Whether redistributing it on ghcr.io
-  needs a source offer beyond pointing to CentOS and kubevirt/csi-driver is
-  open, together with OQ-1.
+- DEC-16: The mirror references the upstream sources and ships no source
+  offer of its own.
+
+  The image's base layers are CentOS Stream 9, labelled
+  `org.label-schema.license: GPLv2`. kadet-hub copies the image by digest
+  and does not modify or rebuild it. The corresponding sources are
+  published upstream: the CSI driver at the commit the tag names, and the
+  source RPMs of the base packages in the CentOS Stream 9 BaseOS and
+  AppStream source trees on mirror.stream.centos.org. On 2026-10-23 all 120
+  source RPMs recorded in the rpm database of
+  `sha256:44c98353e6137455d6a393ad13e04f60e10ee49fdcd00cf078f7f7084714f409`
+  were listed there.
+
+  Whether a reference to sources someone else hosts satisfies GPLv2
+  section 3 for a redistributor is not settled. CentOS can remove older
+  source RPMs from the mirror while a mirrored tag still exists. The
+  maintainer accepted this risk. A lawyer's answer on it belongs to OQ-1.
+  Hosting the sources next to the image was the alternative, and it would
+  need the source RPMs fetched and pushed for every mirrored tag.
+
+- PUB-13a: For each tag it mirrors or finds in place, the mirror job MUST
+  write to the run summary the upstream reference and digest, the mirror
+  tag, the source repository at the tag's commit and the locations of the
+  base image's source RPMs (DEC-16).
+
+  The workflow passes the source repository and the source RPM locations
+  as arguments. A tag from the `created` fallback is no commit, so the
+  summary names the repository without a commit and says so.
+
+  - Test: `release/test_release.py::Mirror`
+  - Since: this change
+
+- PUB-13b: `docs/consumers.md` MUST state for each mirrored image the
+  upstream image, the source repository, where the base image's source RPMs
+  are published, and that kadet-hub does not modify or rebuild it (DEC-16).
+
+  - Test: none
+  - Since: this change
 
 ## Incident response
 

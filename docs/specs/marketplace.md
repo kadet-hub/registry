@@ -387,7 +387,7 @@ coverage is named at each:
   them.
 - GI-14: a parser added without a fuzz target goes unnoticed.
 - REV-2: the comment is rendered, not asserted.
-- CON-3: documentation content.
+- CON-3, PUB-13b: documentation content.
 - CAT-5: URL stability.
 
 ## Open questions
@@ -395,7 +395,8 @@ coverage is named at each:
 - OQ-1: A lawyer reviews LEG-1 to LEG-4: whether republishing reviewed code
   under the marketplace's namespace counts as adopting it, whether the DSA
   applies to an unpaid service, whether the operator is a controller of
-  GitHub Pages' access logs, and whether an imprint is required.
+  GitHub Pages' access logs, whether an imprint is required, and whether
+  referencing upstream sources suffices for the mirrored image (DEC-16).
 - OQ-2: The operator supplies the name for the imprint and the privacy
   notice, and the serviceable postal address of an address service that
   holds a written power to accept service (Zustellungsvollmacht) for the
@@ -438,7 +439,7 @@ coverage is named at each:
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
-| `docs/consumers.md` | CON-2, CON-3, PUB-12, CAT-34d, CAT-34e |
+| `docs/consumers.md` | CON-2, CON-3, PUB-12, PUB-13b, CAT-34d, CAT-34e |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |
