@@ -412,7 +412,7 @@ coverage is named at each:
 |---|---|
 | `generators/<name>.yaml` | Marketplace entry (Registration) |
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
-| `policy/reserved-names.txt` | REG-2, REG-3, REG-9 |
+| `policy/reserved-names.txt` | REG-2, REG-3, REG-9, PUB-13 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
 | `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9) |
 | `.github/actions/setup-gate/` | gVisor, scanners and sandbox image for `gate.yml` and `selftest.yml` |
@@ -432,8 +432,8 @@ coverage is named at each:
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/{consumer-selftest,catalog-tests,release-tests}.yml` | CI-1: `consumer-selftest`, `catalog-tests`, `release-tests` |
-| `.github/workflows/release.yml` | PUB-1 to PUB-12, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, index and catalog |
-| `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-12: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff` |
+| `.github/workflows/release.yml` | PUB-1 to PUB-13, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, index and catalog |
+| `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-13: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff`, `mirror-image` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
