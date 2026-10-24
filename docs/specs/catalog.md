@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Catalog
 
 Status: Approved
-Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`, `docs/consumers.md` (CAT-34d, CAT-34e)
+Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`, `docs/consumers.md` (CAT-34d, CAT-34e, CAT-38b)
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -1398,6 +1398,54 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`, `test_llms_txt`)
   - Since: #283, #299
+
+- CAT-38: The site MUST have a page at `/recipes/<name>/` for every recipe
+  the index lists (REC-13). It MUST show the README of the latest version
+  that is not yanked under the rules of CAT-7, the README's level as the
+  claim of kadet-hub/recipes CI next to the `renders` result of that
+  version's scan record, the chart as
+  `oci://<repo>:<version>@sha256:<digest>`, the generators it pins linked to
+  their pages, its output capabilities with the `output_capabilities` line
+  a consumer policy needs, and every version. A version MUST show the fetch
+  inventory entry (CON-4), the `classes` lines that include the recipe and
+  the CON-5 verification commands. A version that is yanked, or that pins a
+  yanked generator version, MUST show the reason and no inventory entry.
+
+  The README carries the include snippet, the settings table that maps
+  chart values to inventory keys, the objects left out and the proof, so
+  the page renders it rather than parsing it. The structured facts come from
+  the index. A generator yank is shown because the recipe still lists as
+  not yanked (REC-13) while the consumer workflow fails on it.
+
+  - Test: `catalog/test_catalog.py` (not written)
+  - Since: not implemented
+
+- CAT-38a: `/recipes/` MUST list the recipes the index lists above the
+  recipes of kadet-hub/examples (CAT-37), and the build MUST fail when a
+  listed recipe and a kadet-hub/examples recipe page share a name.
+
+  Both kinds live under `/recipes/<name>/`, which the navigation already
+  links, and the glossary's "recipe" covers both. A listed recipe is a
+  pinned, attested artifact, an examples recipe a class to copy, so the
+  index page names the difference in its two headings. The failing build
+  makes the pull request that lists a recipe also retire the examples page
+  of the same name, with an alias from the old page to the new.
+
+  - Test: `catalog/test_catalog.py` (not written)
+  - Since: not implemented
+
+- CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
+  and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
+  and `generators`, `docs/consumers.md` MUST document these fields as
+  CAT-34d does, and every recipe page MUST have a Markdown variant (CAT-28)
+  that `/llms.txt` lists under "Recipes" (CAT-37b).
+
+  Listed recipes are not cards on the home page and do not count in the
+  tag filter, `/kinds/` or `/compatibility/`. Those pages describe
+  generators, and a recipe has no tags.
+
+  - Test: `catalog/test_catalog.py` (not written)
+  - Since: not implemented
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this

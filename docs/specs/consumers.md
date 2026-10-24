@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Consumers
 
 Status: Approved
-Code: `consumer/`, `sandbox/gitlab-ci.yml`, `.github/workflows/consumer.yml`, `.github/actions/consumer/`, `tests/consumers/`, `docs/consumers.md`
+Code: `consumer/`, `sandbox/gitlab-ci.yml`, `.github/workflows/consumer.yml`, `.github/actions/consumer/`, `tests/consumers/`, `docs/consumers.md`, `policy/consumer.schema.json` (CON-4)
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -152,3 +152,82 @@ own.
   does not, referring to the threat model.
   - Test: none
   - Since: #15
+
+## Recipes
+
+Kapitan 0.36.3 resolves the inventory before it fetches and does not reload
+it afterwards (kapicorp/kapitan#1638). A recipe class that is missing stops
+`kapitan inventory` with `Class recipes.<name> not found`, and a recipe that
+is present but stale compiles in its old version even under
+`--force-fetch`. The consumer therefore pins recipes in a separate fetch
+inventory, which holds nothing but those pins, as RCP-15 in kadet-hub/recipes
+does for local compiles:
+
+```yaml
+# .kapitan-sandbox.yaml
+fetch_inventory: fetch        # optional; a Kapitan inventory path with targets/
+```
+
+```yaml
+# fetch/targets/recipes.yml
+parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/recipes/cert-manager:1.0.0@sha256:<digest>
+        output_path: inventory/classes/recipes/cert-manager
+```
+
+The generators a recipe pins are dependencies in the recipe's own classes.
+After the recipes are in place they are part of the main inventory, and
+CON-1 checks, fetches and verifies them like any generator.
+
+- CON-4: When the policy names a `fetch_inventory`, the reusable workflow
+  MUST, before step 1 of CON-1:
+
+  1. run `kapitan inventory --inventory-path <fetch_inventory>` in the SEC-9
+     sandbox as in step 1;
+  2. fail unless every target's `parameters.kapitan` holds only
+     `dependencies`, and each dependency is an `oci` source
+     `ghcr.io/<owner>/recipes/<name>[:<version>]@sha256:<digest>` with
+     `output_path: inventory/classes/recipes/<name>`;
+  3. fetch these outside the sandbox and verify them (CON-5);
+  4. unpack each into the project at its `output_path`, replacing what the
+     checkout holds there.
+
+  Step 2 of CON-1 MUST then fail on a recipe source in the main inventory.
+  The GitLab template (CON-1a) MUST run the same steps.
+
+  A recipe pinned in the main inventory would be fetched after Kapitan
+  loaded the inventory, so the workflow would verify the new recipe and
+  compile the old one. `fetch_inventory` is a path relative to the
+  repository root without `..`, as `output_path` is. The Renovate preset
+  `github>kadet-hub/renovate-config` matches `**/inventory/**` only and
+  needs a pattern for the fetch inventory (kadet-hub/renovate-config,
+  follow-up).
+
+  - Test: `consumer/test_consumer.py`; `consumer-selftest` (AC-12) (not written)
+  - Since: not implemented
+
+- CON-5: Verification of a recipe MUST check the artifact attestation as
+  CON-2 does for `oci://ghcr.io/kadet-hub/recipes/<name>@sha256:<digest>`,
+  and reject a digest that the index's `recipes` section (REC-13) does not
+  list under the same name or lists as yanked, and a tag that is not the
+  version listed for the digest. CON-1b applies to the compiled output
+  unchanged.
+
+  A recipe adds no binaries to the compile's trace policy. Its output
+  capabilities are in the index record and on its catalog page (CAT-38), so
+  the consumer sees which `output_capabilities` its policy needs before the
+  first run fails; the cert-manager recipe renders admission webhooks.
+
+  - Test: `consumer/test_consumer.py` (not written)
+  - Since: not implemented
+
+- CON-6: `docs/consumers.md` MUST describe the fetch inventory, the policy
+  field, the two commands of a local compile
+  (`kapitan compile --inventory-path fetch --force-fetch --output-path .`
+  and `kapitan compile`) and the verification of a recipe by hand.
+
+  - Test: none
+  - Since: not implemented
