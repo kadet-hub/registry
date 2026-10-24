@@ -1448,7 +1448,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: RCP-1, RCP-15, RCP-23 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: this change
+  - Since: #342
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1459,7 +1459,7 @@ Related: CAT-15, CAT-30, CON-2.
   deployed to kind and checked by its assertions (EX-5).
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: this change
+  - Since: #342
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
