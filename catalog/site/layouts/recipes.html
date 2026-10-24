@@ -1,9 +1,17 @@
-{{ define "main" }}{{/* CAT-37 */}}
+{{ define "main" }}{{/* CAT-37, CAT-37d */}}
+{{ $pages := where site.RegularPages "Section" "recipes" }}
 <section class="prose-page">
 <h1>{{ .Title }}</h1>
-<p class="lead">{{ .Description }} The classes are read from <a href="https://github.com/{{ site.Data.catalog.owner }}/examples/tree/main/recipes">kadet-hub/examples</a> when the site is built. <a href="{{ "/guides/bitnami-chart-alternatives/" | relURL }}">Bitnami chart alternatives</a> lists the replacement for every chart, with or without a recipe.</p>
+<p class="lead">{{ .Description }} The files are read from kadet-hub/recipes and kadet-hub/examples when the site is built. <a href="{{ "/guides/bitnami-chart-alternatives/" | relURL }}">Bitnami chart alternatives</a> lists the replacement for every Bitnami chart, with or without a recipe.</p>
+<h2>Rebuilt from a Helm chart</h2>
+<p>From <a href="https://github.com/{{ site.Data.catalog.owner }}/recipes">kadet-hub/recipes</a>. Its CI compares each recipe with the chart it rebuilds. At level <code>renders</code> it compares the objects and permissions, at <code>deploys</code> it also installs the recipe on kind and runs its smoke test.</p>
 <ul class="guide-list">
-{{ range where site.RegularPages "Section" "recipes" }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p></li>{{ end }}
+{{ range where $pages "Layout" "chart-recipe" }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p><p>Proof level: <code>{{ (partial "chart-recipe.html" .).level }}</code></p></li>{{ end }}
+</ul>
+<h2>Replacing Bitnami charts</h2>
+<p>From <a href="https://github.com/{{ site.Data.catalog.owner }}/examples/tree/main/recipes">kadet-hub/examples</a>. Its CI deploys each recipe to a kind cluster and checks it with assertions.</p>
+<ul class="guide-list">
+{{ range where $pages "Layout" "ne" "chart-recipe" }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p></li>{{ end }}
 </ul>
 </section>
 {{ end }}

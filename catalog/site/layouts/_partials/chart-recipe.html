@@ -1,0 +1,64 @@
+{{- /* CAT-37c: a recipe of kadet-hub/recipes as catalog/build copies it to assets/classes/recipes/<name>/; a missing file or line fails the build. */ -}}
+{{- $name := .File.ContentBaseName -}}
+{{- $owner := site.Data.catalog.owner -}}
+{{- $sha := resources.Get "classes/recipes.sha" -}}
+{{- if not $sha }}{{ errorf "CAT-37c: recipe %s: classes/recipes.sha missing" $name }}{{ end -}}
+{{- $sha = strings.TrimSpace $sha.Content -}}
+{{- $readme := resources.Get (printf "classes/recipes/%s/README.md" $name) -}}
+{{- if not $readme }}{{ errorf "CAT-37c: recipe %s: classes/recipes/%s/README.md missing" $name $name }}{{ end -}}
+{{- $md := $readme.Content -}}
+{{- $source := "" }}{{ with findRESubmatch "(?m)^Source: `(oci://[^`]+@sha256:[0-9a-f]{64})`$" $md 1 }}{{ $source = index (index . 0) 1 }}{{ end -}}
+{{- $level := "" }}{{ with findRESubmatch "(?m)^Level: `([a-z]+)`$" $md 1 }}{{ $level = index (index . 0) 1 }}{{ end -}}
+{{- $lead := "" }}{{ with findRESubmatch `(?s)\A# [^\n]*\n+(.*?)\n\n` $md 1 }}{{ $lead = index (index . 0) 1 | replaceRE `\s+` " " | strings.TrimSpace | replaceRE `:$` "." }}{{ end -}}
+{{- $sections := slice -}}
+{{- range after 1 (split $md "\n## ") -}}
+  {{- $h := index (split . "\n") 0 | strings.TrimSpace -}}
+  {{- $sections = $sections | append (dict "heading" $h "body" (strings.TrimPrefix $h . | strings.TrimSpace)) -}}
+{{- end -}}
+{{- $include := "" -}}
+{{- with where $sections "heading" "Include" }}{{ with findRESubmatch "(?s)```yaml\n(.*?)\n```" (index . 0).body 1 }}{{ $include = index (index . 0) 1 }}{{ end }}{{ end -}}
+{{- range slice (slice "Source:" $source) (slice "Level:" $level) (slice "Include snippet" $include) -}}
+  {{- if not (index . 1) }}{{ errorf "CAT-37c: recipe %s: README.md has no %s" $name (index . 0) }}{{ end -}}
+{{- end -}}
+{{- /* The component classes init.yml includes as .<component>, then the options the Include snippet names. */ -}}
+{{- $files := slice (dict "class" (printf "recipes.%s" $name) "file" "init.yml") -}}
+{{- $init := resources.Get (printf "classes/recipes/%s/init.yml" $name) -}}
+{{- if not $init }}{{ errorf "CAT-37c: recipe %s: classes/recipes/%s/init.yml missing" $name $name }}{{ end -}}
+{{- range (transform.Unmarshal $init.Content).classes -}}
+  {{- if strings.HasPrefix . "." }}{{ $files = $files | append (dict "class" (printf "recipes.%s%s" $name .) "file" (printf "%s.yml" (strings.TrimPrefix "." .))) }}{{ end -}}
+{{- end -}}
+{{- range findRESubmatch (printf `(?m)^\s*- (recipes\.%s\.([a-z0-9-]+))` $name) $include -1 -}}
+  {{- $files = $files | append (dict "class" (index . 1) "file" (printf "%s.yml" (index . 2)) "option" true) -}}
+{{- end -}}
+{{- $classes := slice -}}{{ $generators := slice -}}
+{{- range $files -}}
+  {{- $path := printf "classes/recipes/%s/%s" $name .file -}}
+  {{- $f := resources.Get $path -}}
+  {{- if not $f }}{{ errorf "CAT-37c: recipe %s: %s missing" $name $path }}{{ end -}}
+  {{- $components := slice -}}
+  {{- with (transform.Unmarshal $f.Content).parameters -}}
+    {{- range $k, $_ := .components }}{{ $components = $components | append $k }}{{ end -}}
+    {{- with .kapitan }}{{ range .dependencies -}}
+      {{- with findRESubmatch (printf `^ghcr\.io/%s/([a-z0-9-]+):([^@]+)@(sha256:[0-9a-f]{64})$` $owner) .source 1 -}}
+        {{- $m := index . 0 }}{{ $generators = $generators | append (dict "name" (index $m 1) "version" (index $m 2) "digest" (index $m 3)) -}}
+      {{- end -}}
+    {{- end }}{{ end -}}
+  {{- end -}}
+  {{- $classes = $classes | append (merge . (dict "components" $components)) -}}
+{{- end -}}
+{{- $fetch := printf `parameters:
+  kapitan:
+    vars:
+      target: recipes
+    dependencies:
+      - type: git
+        source: https://github.com/%s/recipes.git
+        ref: %s
+        subdir: %s
+        output_path: inventory/classes/recipes/%s` $owner $sha $name $name -}}
+{{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "level" $level "include" $include
+  "classes" $classes "generators" $generators "fetch" $fetch
+  "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"
+  "sections" (where $sections "heading" "in" (slice "Settings" "Left out" "Renamed RBAC objects" "Proof"))
+  "folder" (printf "https://github.com/%s/recipes/tree/%s/%s" $owner $sha $name)
+  "guide" (printf "https://github.com/%s/recipes#using-a-recipe" $owner) -}}

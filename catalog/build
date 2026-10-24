@@ -9,8 +9,9 @@
 # $CATALOG_DIFFS/<name>/<version>.output.diff and transparency log indexes
 # from $CATALOG_REKOR (JSON {name: {version: index}}) and open generator
 # requests from $CATALOG_WANTED (CAT-31) and pull requests with their gate
-# comments from $CATALOG_GATE (CAT-33) and the recipe classes from
-# $CATALOG_RECIPES/inventory/classes (CAT-37a) instead. Online, the
+# comments from $CATALOG_GATE (CAT-33) and the recipe classes and the
+# recipes.sha of kadet-hub/recipes from $CATALOG_RECIPES/inventory/classes
+# (CAT-37a, CAT-37c) instead. Online, the
 # previous build's published catalog.json supplies README, CHANGELOG sections, log index and
 # SBOM of every unchanged digest, and its output diffs are kept when their
 # sha256 matches the index, so each version is pulled from the registry
@@ -47,9 +48,28 @@ else
       || { echo "::error::recipes: $1 not fetched from $OWNER/examples"; exit 1; }
   }
   fetch generators.yml
-  for page in "$here"/site/content/recipes/*.md; do fetch "recipes/$(basename -- "$page" .md).yml"; done
+  for page in $(grep -Lx 'layout: chart-recipe' -- "$here"/site/content/recipes/*.md); do fetch "recipes/$(basename -- "$page" .md).yml"; done
   # The compile and operator classes the recipe classes include; mutate, used by operator classes, has no compile class.
   for c in $(sed -nE 's/^ *- recipes\.(lib|operators)\.([a-z0-9-]+)$/\1\/\2/p' -- "$recipes"/inventory/classes/recipes/*.yml | sort -u); do fetch "recipes/$c.yml"; done
+  # CAT-37c: the recipes of kadet-hub/recipes at the commit main points to, so the files and the page's pin agree.
+  sha=$(git ls-remote "https://github.com/$OWNER/recipes.git" refs/heads/main | cut -f1)
+  [[ $sha =~ ^[0-9a-f]{40}$ ]] || { echo "::error::recipes: main of $OWNER/recipes not resolved"; exit 1; }
+  echo "$sha" >"$recipes/inventory/classes/recipes.sha"
+  fetch_recipe() {
+    curl -fsSL --max-time 20 "https://raw.githubusercontent.com/$OWNER/recipes/$sha/$1" -o "$recipes/inventory/classes/recipes/$1" \
+      || { echo "::error::recipes: $1 not fetched from $OWNER/recipes@$sha"; exit 1; }
+  }
+  for page in $(grep -lx 'layout: chart-recipe' -- "$here"/site/content/recipes/*.md); do
+    name=$(basename -- "$page" .md)
+    mkdir -p -- "$recipes/inventory/classes/recipes/$name"
+    fetch_recipe "$name/README.md"
+    fetch_recipe "$name/init.yml"
+    # The component classes init.yml includes and the options the README's Include snippet names.
+    for c in $(sed -nE 's/^ *- \.([a-z0-9-]+)$/\1/p' -- "$recipes/inventory/classes/recipes/$name/init.yml") \
+      $(sed -nE "s/^ *- recipes\.$name\.([a-z0-9-]+)( .*)?\$/\1/p" -- "$recipes/inventory/classes/recipes/$name/README.md"); do
+      fetch_recipe "$name/$c.yml"
+    done
+  done
   # CAT-7: the layer of each generator's latest version that is not yanked, by digest.
   # CAT-23: what the previous build published, to reuse for unchanged digests.
   previous=$work/previous.json
