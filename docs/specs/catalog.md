@@ -1399,6 +1399,68 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_recipes`, `test_llms_txt`)
   - Since: #283, #299
 
+- CAT-37c: The site MUST have a page at `/recipes/<name>/` for every
+  recipe of kadet-hub/recipes that has a content page with
+  `layout: chart-recipe`. The page MUST show the source chart pinned by
+  digest, the proof level, the components and options the recipe deploys,
+  the include snippet, a fetch inventory pinned to the commit the page was
+  built from with the commands that use it, the README sections "Settings",
+  "Left out", "Renamed RBAC objects" and "Proof", the generators the recipe
+  pins linked to their pages with version and digest, and a link to the
+  recipe's folder at that commit. The build MUST fail when a file or line
+  the page shows cannot be fetched or is missing.
+
+  A recipe of kadet-hub/recipes rebuilds one Helm chart as a class
+  directory, and that repository's CI compares it with the chart at the
+  proof level its README states (RCP-23, RCP-13). Until recipes are
+  published as OCI artifacts (OQ-3 there), a consumer fetches one through a
+  fetch inventory with a `git` dependency pinned by commit (RCP-15). The
+  page gives that dependency for the commit it was built from and links
+  the repository README's "Using a recipe" for verifying the generators and
+  raising the pin.
+
+  `catalog/build` resolves `refs/heads/main` of kadet-hub/recipes with
+  `git ls-remote` and fetches from `raw.githubusercontent.com` at that
+  commit with `curl -f`: the recipe's `README.md` and `init.yml`, the class
+  of every component `init.yml` includes as `.<component>`, and the class
+  of every option the README's Include snippet names as
+  `recipes.<name>.<option>`. Fetching by commit keeps the files and the
+  pinned `ref` the same when `main` moves during the build. Vendored files
+  such as the CRDs are not fetched, because the page does not show them.
+  The build copies the files to `assets/classes/recipes/<name>/`, the path
+  a consumer fetches them to, and the commit to
+  `assets/classes/recipes.sha`. With `CATALOG_OFFLINE=1` it reads both from
+  `$CATALOG_RECIPES/inventory/classes/`, as in CAT-37a.
+
+  The README sections are rendered from the README's Markdown the way Hugo
+  renders content, which drops raw HTML, so the content page does not
+  repeat the tables. The lead is the README's first paragraph. The
+  template stops the build with `errorf` when a class, the `Source:` or
+  `Level:` line or the Include snippet is missing. The content page's
+  front matter holds title, description, `layout` and `lastmod`, and
+  CAT-37b and CAT-11g apply as to every recipe page.
+
+  Titles lead with the chart and "without Helm" and name Kapitan, such as
+  "cert-manager on Kubernetes without Helm, with Kapitan". Descriptions
+  lead with "<chart> Helm chart alternative:" and name Kapitan with
+  Kubernetes. "Bitnami" appears only where the chart is a Bitnami chart.
+
+  Related: RCP-1, RCP-15, RCP-23 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37a.
+
+  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_recipe_file_missing_fails_the_build`)
+  - Since: this change
+
+- CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
+  CAT-37 under separate headings, each recipe of CAT-37c with its proof
+  level.
+
+  The two kinds were checked differently. A kadet-hub/recipes recipe is
+  compared with the chart it rebuilds. A kadet-hub/examples recipe is
+  deployed to kind and checked by its assertions (EX-5).
+
+  - Test: `catalog/test_catalog.py` (`test_recipes`)
+  - Since: this change
+
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
   page" list linking each section that is present, which marks the section
