@@ -165,8 +165,32 @@ RECIPE_OPERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cert-manager
 OPERATOR_MUTATES = {"cloudnative-pg": True, "cert-manager": False, "keycloak": False, "strimzi": True}
 
 
+# CAT-37c: a kadet-hub/recipes recipe as fetched to inventory/classes/recipes/<name>/, raw HTML in a section.
+CHART_RECIPE_SHA = "1" * 40
+CHART_RECIPE_FILES = {
+    "README.md": "# cert-manager\n\nThe controller and the webhook, rendered by the kadet-hub `kubernetes`\ngenerator. Derived from the chart:\n\n"
+                 f"Source: `oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}`\n\nLevel: `deploys`\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.cert-manager\n  - recipes.cert-manager.crds   # the chart's crds.enabled\n```\n\n"
+                 "## Settings\n\n| Chart value | Inventory |\n|---|---|\n| `replicaCount` | `components.cert-manager.replicas` |\n\n"
+                 "## Left out\n\nThe hook <script>alert(8)</script> `Job/cert-manager-startupapicheck`.\n\n"
+                 "## Renamed RBAC objects\n\n| Chart | Recipe |\n|---|---|\n| `cert-manager:leaderelection` | `cert-manager-leaderelection` |\n\n"
+                 "## Proof\n\n`check cert-manager --level deploys` on kind.\n\n## Replacing a Helm release\n\nNot tested.\n",
+    "init.yml": "classes:\n  - .controller\n  - .webhook\nparameters:\n  kapitan:\n    dependencies:\n      - type: oci\n"
+                f"        source: ghcr.io/{OWNER}/kubernetes:1.7.0@sha256:{'d' * 64}\n        output_path: lib/kubernetes\n",
+    "controller.yml": "parameters:\n  components:\n    cert-manager:\n      application: cert-manager\n",
+    "webhook.yml": "parameters:\n  components:\n    cert-manager-webhook:\n      application: cert-manager\n",
+    "crds.yml": "parameters:\n  kapitan:\n    compile: []\n",
+}
+
+
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
+    os.makedirs(os.path.join(root, "recipes", "cert-manager"), exist_ok=True)
+    with open(os.path.join(root, "recipes.sha"), "w", encoding="utf-8") as f:
+        f.write(CHART_RECIPE_SHA + "\n")
+    for name, text in CHART_RECIPE_FILES.items():
+        with open(os.path.join(root, "recipes", "cert-manager", name), "w", encoding="utf-8") as f:
+            f.write(text)
     os.makedirs(os.path.join(root, "recipes", "lib"), exist_ok=True)
     os.makedirs(os.path.join(root, "recipes", "operators"), exist_ok=True)
     pins = sorted({g for gs in RECIPE_GENERATORS.values() for g in gs} | {"kubernetes", "mutate"})
@@ -477,7 +501,8 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS))
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 1)
+        self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
@@ -583,8 +608,12 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(RECIPE_GENERATORS))
-        self.assertIn("<title>Kubernetes recipes that replace Bitnami charts, tested on kind</title>", index)  # CAT-11a
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager"]))
+        self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
+        chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
+        self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
+        self.assertNotIn("recipes/cert-manager/", examples)
+        self.assertIn("recipes/kafka/", examples)
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
         self.assertIn("<title>MongoDB on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))  # 64 bytes
@@ -622,12 +651,68 @@ class Site(unittest.TestCase):
         self.assertIn("\n## inventory/classes/recipes/operators/strimzi.yml\n\n```yaml\n# Installs strimzi.", self.markdown("recipes", "kafka"))
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in RECIPE_GENERATORS:
+        for name in [*RECIPE_GENERATORS, "cert-manager"]:
             self.assertIn(f'href="../../recipes/{name}/"', guide)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
 
-    def test_recipe_file_missing_fails_the_build(self):  # CAT-37a
+    def test_chart_recipe(self):  # CAT-37c
+        page = self.page("recipes", "cert-manager")
+        self.assertIn("<title>cert-manager on Kubernetes without Helm, with Kapitan</title>", page)  # no room for the suffix
+        self.assertIn('<p class="lead">The controller and the webhook, rendered by the kadet-hub <code>kubernetes</code> generator. Derived from the chart.</p>', page)
+        self.assertIn(f"<li>Source chart: <code>oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}</code></li>", page)
+        self.assertIn("<li>Proof level: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
+        self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.0">kubernetes 1.7.0</a> <code>sha256:{"d" * 64}</code></li>', page)
+        self.assertIn("<li><code>recipes.cert-manager.controller</code> (<code>controller.yml</code>): <code>cert-manager</code></li>", page)
+        self.assertIn("<li><code>recipes.cert-manager.webhook</code> (<code>webhook.yml</code>): <code>cert-manager-webhook</code></li>", page)
+        self.assertIn("<li><code>recipes.cert-manager.crds</code> (<code>crds.yml</code>), an option</li>", page)
+        self.assertIn('<pre id="include"><code>classes:\n  - recipes.cert-manager\n  - recipes.cert-manager.crds   # the chart&#39;s crds.enabled</code></pre>', page)
+        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
+        self.assertIn(f"      - type: git\n        source: https://github.com/{OWNER}/recipes.git\n        ref: {CHART_RECIPE_SHA}\n"
+                      "        subdir: cert-manager\n        output_path: inventory/classes/recipes/cert-manager", fetch)
+        self.assertIn('<pre id="commands"><code>kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch</code></pre>', page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes#using-a-recipe">Using a recipe</a>', page)
+        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+                         ["What it deploys", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
+        self.assertIn("<td><code>replicaCount</code></td>", page)  # rendered from the README
+        self.assertIn("<td><code>cert-manager:leaderelection</code></td>", page)
+        self.assertNotIn("alert(8)</script>", page)  # raw HTML is dropped
+        self.assertNotIn("Not tested.", page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{CHART_RECIPE_SHA}/cert-manager">kadet-hub/recipes</a>', page)
+        self.assertNotIn("Bitnami", page.split("<main")[1])
+        md = self.markdown("recipes", "cert-manager")
+        self.assertTrue(md.startswith("# cert-manager on Kubernetes without Helm, with Kapitan\n\n> The controller and the webhook, rendered by the kadet-hub `kubernetes` generator."))
+        self.assertIn(f"\n- Generators: kubernetes 1.7.0 (sha256:{'d' * 64})\n", md)
+        self.assertIn("\n- Option recipes.cert-manager.crds (crds.yml)\n", md)
+        self.assertIn(f"ref: {CHART_RECIPE_SHA}\n", md)
+        self.assertIn("\n## Settings\n\n| Chart value | Inventory |\n", md)
+        self.assertIn("\n## Proof\n\n`check cert-manager --level deploys` on kind.\n", md)
+
+    def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c
+        for missing in ("lib", "operators"):
+            with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
+                recipes = os.path.join(tmp, "recipes")
+                recipe_classes(os.path.join(recipes, "inventory", "classes"))
+                os.remove(os.path.join(recipes, "inventory", "classes", "recipes", missing, "strimzi.yml"))
+                with self.assertRaises(subprocess.CalledProcessError) as failed:
+                    build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
+                self.assertIn(f"recipes/{missing}/strimzi.yml missing", failed.exception.stderr)  # CAT-1: Hugo's error is printed
+        for missing, error in (("webhook.yml", "classes/recipes/cert-manager/webhook.yml missing"),
+                               ("crds.yml", "classes/recipes/cert-manager/crds.yml missing"),
+                               ("Level", "README.md has no Level:")):
+            with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
+                recipes = os.path.join(tmp, "recipes")
+                recipe_classes(os.path.join(recipes, "inventory", "classes"))
+                path = os.path.join(recipes, "inventory", "classes", "recipes", "cert-manager", missing)
+                if missing == "Level":
+                    path = os.path.join(os.path.dirname(path), "README.md")
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(CHART_RECIPE_FILES["README.md"].replace("Level: `deploys`", "Level: deploys"))
+                else:
+                    os.remove(path)
+                with self.assertRaises(subprocess.CalledProcessError) as failed:
+                    build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
+                self.assertIn(error, failed.exception.stderr)
         for missing in ("lib", "operators"):
             with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
                 recipes = os.path.join(tmp, "recipes")

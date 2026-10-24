@@ -2,7 +2,7 @@
 title: Bitnami chart alternatives, chart by chart
 layout: prose
 description: What replaces the frozen Bitnami charts for PostgreSQL, RabbitMQ, Kafka, Keycloak, Grafana, Loki, Thanos, Argo CD, cert-manager and kube-prometheus.
-lastmod: 2026-10-19
+lastmod: 2026-10-24
 ---
 
 Bitnami stopped publishing new images and charts to Docker Hub on 28
@@ -41,7 +41,7 @@ Facts checked against each project's release pages and install docs on
 | `grafana-loki` | [Loki Operator](https://loki-operator.dev/docs/prologue/quickstart.md/) | `docker.io/grafana/loki-operator`, `docker.io/grafana/loki` | [loki](/generators/loki/) | none |
 | `thanos` | [Thanos Operator](https://github.com/thanos-community/thanos-operator/blob/main/docs/installation.md) | `quay.io/thanos/thanos-operator`, `quay.io/thanos/thanos` | [thanos](/generators/thanos/) | none |
 | `argo-cd` | [Argo CD](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/) | `quay.io/argoproj/argocd` | [argocd](/generators/argocd/) | none |
-| `cert-manager` | [cert-manager](https://cert-manager.io/docs/installation/) | `quay.io/jetstack/cert-manager-controller`, `-webhook`, `-cainjector` | [certmanager](/generators/certmanager/) | none |
+| `cert-manager` | [cert-manager](https://cert-manager.io/docs/installation/) | `quay.io/jetstack/cert-manager-controller`, `-webhook`, `-cainjector` | [certmanager](/generators/certmanager/) | [cert-manager](/recipes/cert-manager/) |
 | `kube-prometheus` | [Prometheus Operator](https://prometheus-operator.dev/docs/getting-started/installation/) | `quay.io/prometheus-operator/prometheus-operator`, `quay.io/prometheus/prometheus`, `quay.io/prometheus/alertmanager` | [prometheus-operator](/generators/prometheus-operator/) | none |
 
 ## Where the install differs from a chart

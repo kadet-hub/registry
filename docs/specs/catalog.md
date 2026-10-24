@@ -1399,53 +1399,102 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_recipes`, `test_llms_txt`)
   - Since: #283, #299
 
-- CAT-38: The page `/recipes/<name>/` of a recipe the index lists
-  (REC-13) MUST show the README of the latest version
-  that is not yanked under the rules of CAT-7, the README's level as the
-  claim of kadet-hub/recipes CI next to the `renders` result of that
-  version's scan record, the chart as
-  `oci://<repo>:<version>@sha256:<digest>`, the generators it pins linked to
-  their pages, its output capabilities with the `output_capabilities` line
-  a consumer policy needs, and every version. A version MUST show the fetch
-  inventory entry (CON-4), the `classes` lines that include the recipe and
-  the CON-5 verification commands. A version that is yanked, or that pins a
-  yanked generator version, MUST show the reason and no inventory entry.
+- CAT-37c: The site MUST have a page at `/recipes/<name>/` for every
+  recipe of kadet-hub/recipes that has a content page with
+  `layout: chart-recipe`. The page MUST show the source chart pinned by
+  digest, the proof level, the components and options the recipe deploys,
+  the include snippet, a fetch inventory pinned to the commit the page was
+  built from with the commands that use it, the README sections "Settings",
+  "Left out", "Renamed RBAC objects" and "Proof", the generators the recipe
+  pins linked to their pages with version and digest, and a link to the
+  recipe's folder at that commit. The build MUST fail when a file or line
+  the page shows cannot be fetched or is missing.
 
-  Before its first publication a kadet-hub/recipes recipe has its page from
-  `main` of that repository (CAT-37), with the class to copy. Publication
-  keeps the URL and switches the include snippet to the fetch inventory
-  entry with the OCI pin; the class files are no longer shown for copying.
+  A recipe of kadet-hub/recipes rebuilds one Helm chart as a class
+  directory, and that repository's CI compares it with the chart at the
+  proof level its README states (RCP-23, RCP-13). Until recipes are
+  published as OCI artifacts (RCP-31 there), a consumer fetches one through a
+  fetch inventory with a `git` dependency pinned by commit (RCP-15). The
+  page gives that dependency for the commit it was built from and links
+  the repository README's "Using a recipe" for verifying the generators and
+  raising the pin.
 
-  The README carries the include snippet, the settings table that maps
-  chart values to inventory keys, the objects left out and the proof, so
-  the page renders it rather than parsing it. The structured facts come from
-  the index. A generator yank is shown because the recipe still lists as
-  not yanked (REC-13) while the consumer workflow fails on it.
+  `catalog/build` resolves `refs/heads/main` of kadet-hub/recipes with
+  `git ls-remote` and fetches from `raw.githubusercontent.com` at that
+  commit with `curl -f`: the recipe's `README.md` and `init.yml`, the class
+  of every component `init.yml` includes as `.<component>`, and the class
+  of every option the README's Include snippet names as
+  `recipes.<name>.<option>`. Fetching by commit keeps the files and the
+  pinned `ref` the same when `main` moves during the build. Vendored files
+  such as the CRDs are not fetched, because the page does not show them.
+  The build copies the files to `assets/classes/recipes/<name>/`, the path
+  a consumer fetches them to, and the commit to
+  `assets/classes/recipes.sha`. With `CATALOG_OFFLINE=1` it reads both from
+  `$CATALOG_RECIPES/inventory/classes/`, as in CAT-37a.
+
+  The README sections are rendered from the README's Markdown the way Hugo
+  renders content, which drops raw HTML, so the content page does not
+  repeat the tables. The lead is the README's first paragraph. The
+  template stops the build with `errorf` when a class, the `Source:` or
+  `Level:` line or the Include snippet is missing. The content page's
+  front matter holds title, description, `layout` and `lastmod`, and
+  CAT-37b and CAT-11g apply as to every recipe page.
+
+  Titles lead with the chart and "without Helm" and name Kapitan, such as
+  "cert-manager on Kubernetes without Helm, with Kapitan". Descriptions
+  lead with "<chart> Helm chart alternative:" and name Kapitan with
+  Kubernetes. "Bitnami" appears only where the chart is a Bitnami chart.
+
+  Related: RCP-1, RCP-15, RCP-23 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37a.
+
+  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_recipe_file_missing_fails_the_build`)
+  - Since: #342
+
+- CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
+  CAT-37 under separate headings, each recipe of CAT-37c with its proof
+  level.
+
+  The two kinds were checked differently. A kadet-hub/recipes recipe is
+  compared with the chart it rebuilds. A kadet-hub/examples recipe is
+  deployed to kind and checked by its assertions (EX-5).
+
+  - Test: `catalog/test_catalog.py` (`test_recipes`)
+  - Since: #342
+
+- CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
+  keep its URL and take the README sections, the chart, the level and the
+  generators from the latest version that is not yanked, read from its
+  artifact by digest under the rules of CAT-7, instead of from `main`. The
+  fetch inventory entry MUST pin `ghcr.io/kadet-hub/recipes/<name>` by
+  version and digest (CON-4) in place of the commit, with the CON-5
+  verification commands. The page MUST add the `renders` result of that
+  version's scan record next to the README's level, the output
+  capabilities with the `output_capabilities` line a consumer policy needs,
+  and every version. A version that is yanked, or that pins a yanked
+  generator version, MUST show the reason and no fetch inventory entry.
+
+  The page then shows what consumers fetch, not what `main` holds since.
+  A generator yank is shown because the recipe still lists as not yanked
+  (REC-13) while the consumer workflow fails on it.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented
 
-- CAT-38a: `/recipes/` MUST list the recipes the index lists above the
-  recipes of kadet-hub/examples (CAT-37), and the build MUST fail when a
-  listed recipe and a kadet-hub/examples recipe page share a name.
-  A kadet-hub/recipes recipe that is not listed yet stays with the
-  unpublished ones of CAT-37.
+- CAT-38a: Under the kadet-hub/recipes heading of CAT-37d, a listed recipe
+  MUST show its latest version, and the build MUST fail when a
+  kadet-hub/recipes recipe and a kadet-hub/examples recipe share a name.
 
-  Both kinds live under `/recipes/<name>/`, which the navigation already
-  links, and the glossary's "recipe" covers both. A listed recipe is a
-  pinned, attested artifact, an examples recipe a class to copy, so the
-  index page names the difference in its two headings. The failing build
-  makes the pull request that lists a recipe also retire the examples page
-  of the same name, with an alias from the old page to the new.
+  Both kinds live under `/recipes/<name>/`. The failing build makes the
+  pull request that adds a kadet-hub/recipes page also retire the examples
+  page of the same name, with an alias from the old page to the new.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
-  and `generators`, `docs/consumers.md` MUST document these fields as
-  CAT-34d does, and every recipe page MUST have a Markdown variant (CAT-28)
-  that `/llms.txt` lists under "Recipes" (CAT-37b).
+  and `generators`, and `docs/consumers.md` MUST document these fields as
+  CAT-34d does.
 
   Listed recipes are not cards on the home page and do not count in the
   tag filter, `/kinds/` or `/compatibility/`. Those pages describe
