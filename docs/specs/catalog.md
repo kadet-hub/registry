@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Catalog
 
 Status: Approved
-Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`, `docs/consumers.md` (CAT-34d, CAT-34e)
+Code: `catalog/`, `policy/tags.yaml`, `.github/ISSUE_TEMPLATE/`, `docs/authors.md`, `README.md`, `docs/consumers.md` (CAT-34d, CAT-34e, CAT-38b)
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -1413,7 +1413,7 @@ Related: CAT-15, CAT-30, CON-2.
   A recipe of kadet-hub/recipes rebuilds one Helm chart as a class
   directory, and that repository's CI compares it with the chart at the
   proof level its README states (RCP-23, RCP-13). Until recipes are
-  published as OCI artifacts (OQ-3 there), a consumer fetches one through a
+  published as OCI artifacts (RCP-31 there), a consumer fetches one through a
   fetch inventory with a `git` dependency pinned by commit (RCP-15). The
   page gives that dependency for the commit it was built from and links
   the repository README's "Using a recipe" for verifying the generators and
@@ -1460,6 +1460,48 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
   - Since: #342
+
+- CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
+  keep its URL and take the README sections, the chart, the level and the
+  generators from the latest version that is not yanked, read from its
+  artifact by digest under the rules of CAT-7, instead of from `main`. The
+  fetch inventory entry MUST pin `ghcr.io/kadet-hub/recipes/<name>` by
+  version and digest (CON-4) in place of the commit, with the CON-5
+  verification commands. The page MUST add the `renders` result of that
+  version's scan record next to the README's level, the output
+  capabilities with the `output_capabilities` line a consumer policy needs,
+  and every version. A version that is yanked, or that pins a yanked
+  generator version, MUST show the reason and no fetch inventory entry.
+
+  The page then shows what consumers fetch, not what `main` holds since.
+  A generator yank is shown because the recipe still lists as not yanked
+  (REC-13) while the consumer workflow fails on it.
+
+  - Test: `catalog/test_catalog.py` (not written)
+  - Since: not implemented
+
+- CAT-38a: Under the kadet-hub/recipes heading of CAT-37d, a listed recipe
+  MUST show its latest version, and the build MUST fail when a
+  kadet-hub/recipes recipe and a kadet-hub/examples recipe share a name.
+
+  Both kinds live under `/recipes/<name>/`. The failing build makes the
+  pull request that adds a kadet-hub/recipes page also retire the examples
+  page of the same name, with an alias from the old page to the new.
+
+  - Test: `catalog/test_catalog.py` (not written)
+  - Since: not implemented
+
+- CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
+  and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
+  and `generators`, and `docs/consumers.md` MUST document these fields as
+  CAT-34d does.
+
+  Listed recipes are not cards on the home page and do not count in the
+  tag filter, `/kinds/` or `/compatibility/`. Those pages describe
+  generators, and a recipe has no tags.
+
+  - Test: `catalog/test_catalog.py` (not written)
+  - Since: not implemented
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this

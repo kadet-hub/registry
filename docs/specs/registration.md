@@ -50,6 +50,9 @@ directory, so every check that scans the tree scans it too. Its compile
 entries load the generator from `lib/<name>`, where the gate places the
 fetched tree; this is the layout consumers use.
 
+Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
+[recipes.md](recipes.md) say which of the rules below apply to them.
+
 - REG-1: An entry MUST pin `source.sha` to a full commit SHA, and the gate MUST
   fail when `source.tag` does not resolve to that SHA.
   - Test: none (partial: `gate/run` checks it; no sample yet)

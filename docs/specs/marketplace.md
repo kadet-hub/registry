@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `docs/incident.md`, `README.md`, `.github/`, `renovate.json`
+Code: `generators/`, `recipes/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `docs/incident.md`, `README.md`, `.github/`, `renovate.json`
 Verified against: main @ 970a5d4
 
 ## Problem
@@ -112,6 +112,9 @@ the build job (RISK-10).
   generator would mostly rename the chart's values. `docs/authors.md` shows
   instead how to render a pinned chart with the `helm` input and patch the
   output in a kadet step of the consumer's own project (#104).
+- DEC-17 to DEC-23: recipes from kadet-hub/recipes only are registered,
+  gated and published here, under their own names and package path
+  ([recipes.md](recipes.md)).
 
 ## Area specs
 
@@ -125,6 +128,7 @@ Requirements live in the spec of their area; IDs are unchanged by the split.
 | [consumers.md](consumers.md) | Consumers | CON |
 | [catalog.md](catalog.md) | Catalog | CAT |
 | [legal.md](legal.md) | Legal | LEG |
+| [recipes.md](recipes.md) | Recipes: registration, gate, artifact and index | REC |
 
 ## Verification
 
@@ -278,6 +282,19 @@ cover none of the changed files.
   file written to `/tmp`, which `noexec` blocks. Check: `gate-selftest`;
   first passed in the spike workflow with gVisor release-20260928.0.
 
+- AC-12 (REC-1 to REC-15, CON-4, CON-5): recipe samples fail the gate with
+  a `${oc.env:...}` resolver, a `vendor/x.yml` included as `.vendor.x`, a
+  class `recipes.<other>`, a Python file, a generator pinned by a digest the
+  index does not list, a yanked generator, a chart whose version differs
+  from the `Source` line, an image without digest, a vendored file without
+  `.LICENSE`, and an object diff
+  against the chart outside the RCP-12 classes; cert-manager at its first
+  tag passes. A consumer sample with a fetch inventory compiles
+  cert-manager, and fails with the recipe pinned in the main inventory, with
+  a digest the index does not list, and on its webhooks without
+  `admission-webhook` in `output_capabilities`. Check: `gate-selftest`,
+  `consumer-selftest` (not written).
+
 ## Residual risk
 
 - RISK-1 (accepted, DEC-13): one maintainer account controls rulesets, policy
@@ -410,11 +427,18 @@ coverage is named at each:
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
 
+- OQ-12: How does a recipe pin the recipes it includes (DEC-4 in
+  kadet-hub/recipes)? REC-5 rejects such includes until it is settled. A
+  dependency in the parent's classes is fetched too late (CON-4), so the
+  record would list the children and CON-4 would check that the fetch
+  inventory pins exactly them.
+
 ## Implementation inventory
 
 | Path | Content |
 |---|---|
 | `generators/<name>.yaml` | Marketplace entry (Registration) |
+| `recipes/<name>.yaml` | Recipe entry; the paths of the recipe requirements are in [recipes.md](recipes.md) |
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9, PUB-13 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
