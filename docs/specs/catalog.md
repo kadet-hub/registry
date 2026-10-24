@@ -1399,8 +1399,8 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_recipes`, `test_llms_txt`)
   - Since: #283, #299
 
-- CAT-38: The site MUST have a page at `/recipes/<name>/` for every recipe
-  the index lists (REC-13). It MUST show the README of the latest version
+- CAT-38: The page `/recipes/<name>/` of a recipe the index lists
+  (REC-13) MUST show the README of the latest version
   that is not yanked under the rules of CAT-7, the README's level as the
   claim of kadet-hub/recipes CI next to the `renders` result of that
   version's scan record, the chart as
@@ -1410,6 +1410,11 @@ Related: CAT-15, CAT-30, CON-2.
   inventory entry (CON-4), the `classes` lines that include the recipe and
   the CON-5 verification commands. A version that is yanked, or that pins a
   yanked generator version, MUST show the reason and no inventory entry.
+
+  Before its first publication a kadet-hub/recipes recipe has its page from
+  `main` of that repository (CAT-37), with the class to copy. Publication
+  keeps the URL and switches the include snippet to the fetch inventory
+  entry with the OCI pin; the class files are no longer shown for copying.
 
   The README carries the include snippet, the settings table that maps
   chart values to inventory keys, the objects left out and the proof, so
@@ -1423,6 +1428,8 @@ Related: CAT-15, CAT-30, CON-2.
 - CAT-38a: `/recipes/` MUST list the recipes the index lists above the
   recipes of kadet-hub/examples (CAT-37), and the build MUST fail when a
   listed recipe and a kadet-hub/examples recipe page share a name.
+  A kadet-hub/recipes recipe that is not listed yet stays with the
+  unpublished ones of CAT-37.
 
   Both kinds live under `/recipes/<name>/`, which the navigation already
   links, and the glossary's "recipe" covers both. A listed recipe is a

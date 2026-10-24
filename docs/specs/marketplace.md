@@ -112,7 +112,7 @@ the build job (RISK-10).
   generator would mostly rename the chart's values. `docs/authors.md` shows
   instead how to render a pinned chart with the `helm` input and patch the
   output in a kadet step of the consumer's own project (#104).
-- DEC-17 to DEC-23: recipes from kadet-hub/recipes are registered,
+- DEC-17 to DEC-23: recipes from kadet-hub/recipes only are registered,
   gated and published here, under their own names and package path
   ([recipes.md](recipes.md)).
 
@@ -282,11 +282,12 @@ cover none of the changed files.
   file written to `/tmp`, which `noexec` blocks. Check: `gate-selftest`;
   first passed in the spike workflow with gVisor release-20260928.0.
 
-- AC-12 (REC-1 to REC-13, CON-4, CON-5): recipe samples fail the gate with
+- AC-12 (REC-1 to REC-15, CON-4, CON-5): recipe samples fail the gate with
   a `${oc.env:...}` resolver, a `vendor/x.yml` included as `.vendor.x`, a
   class `recipes.<other>`, a Python file, a generator pinned by a digest the
   index does not list, a yanked generator, a chart whose version differs
-  from the `Source` line, an image without digest, and an object diff
+  from the `Source` line, an image without digest, a vendored file without
+  `.LICENSE`, and an object diff
   against the chart outside the RCP-12 classes; cert-manager at its first
   tag passes. A consumer sample with a fetch inventory compiles
   cert-manager, and fails with the recipe pinned in the main inventory, with
@@ -426,15 +427,6 @@ coverage is named at each:
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
 
-- OQ-10: Should repositories other than kadet-hub/recipes register recipes
-  (DEC-18)? That needs owners from the source repository, as REG-4 reads
-  them from a manifest, and a rule that the layout and `check` of RCP-1
-  apply there.
-- OQ-11: Does a recipe artifact have to carry the license of its vendored
-  files? The cert-manager CRDs are Apache-2.0, whose section 4 asks for a
-  copy of the license with every redistribution. The tree carries the source
-  URL in each SHA-256 comment, not the license text. One answer is a
-  `vendor/LICENSE-<file>` next to each file, which REC-4 then admits.
 - OQ-12: How does a recipe pin the recipes it includes (DEC-4 in
   kadet-hub/recipes)? REC-5 rejects such includes until it is settled. A
   dependency in the parent's classes is fetched too late (CON-4), so the

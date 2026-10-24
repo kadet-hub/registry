@@ -45,13 +45,15 @@ recipe cannot be fetched the way a generator is (kapicorp/kapitan#1638).
   identity.
 
 - DEC-18: In version 1 every recipe comes from kadet-hub/recipes, and new
-  recipe entries are maintainer pull requests.
+  recipe entries are maintainer pull requests. Decided with #341, formerly
+  OQ-10.
 
   The gate runs its pinned `check` on whatever repository a recipe comes
   from, so the layout of RCP-1 is not the obstacle. Two other things are.
   REG-4 proves ownership from a manifest, which a recipe does not have. A
   level above `renders` (DEC-20) is a claim that only kadet-hub/recipes CI
-  backs. Opening registration (DEC-2) to other repositories is OQ-10.
+  backs. Registration from other repositories (DEC-2) needs both solved
+  first and is out of scope for version 1.
 
 - DEC-19: Recipe names are a namespace of their own. Generators publish to
   `ghcr.io/kadet-hub/<name>` (PUB-1), recipes to
@@ -167,7 +169,8 @@ rules it is judged by.
 
 - REC-4: The shipped tree, `source.path` without `tests/`, MUST hold only
   `README.md`, class files `*.yml` at its root, and below `vendor/` files
-  that are neither `*.yml` nor `*.py`. The gate MUST run SEC-1, SEC-5 and
+  that are neither `*.yml` nor `*.py`, and every vendored file MUST have
+  its license next to it (REC-15). The gate MUST run SEC-1, SEC-5 and
   SEC-6 over the shipped tree and `tests/target.yml` and
   `tests/values.yaml`, and MUST NOT read any other file below `tests/`.
 
@@ -273,6 +276,23 @@ rules it is judged by.
   - Test: `scan/test_rescan_issues.py` (not written for recipes)
   - Since: not implemented
 
+- REC-15: For every file a recipe's `copy` entries vendor, the shipped tree
+  MUST hold the upstream license as `vendor/<file>.LICENSE`, and the
+  upstream NOTICE as `vendor/<file>.NOTICE` when the upstream source has
+  one. The gate MUST fail on a vendored file without `.LICENSE`.
+
+  The artifact redistributes vendored files, such as the cert-manager
+  CRDs under Apache-2.0, whose section 4 requires a copy of the license
+  and the NOTICE with every redistribution. The SHA-256 comment names the
+  source, not the terms. A file per vendored file keeps the rule
+  mechanical: the gate and `check lint` (RCP-35 in kadet-hub/recipes) see
+  the pair without a mapping. Whether the upstream source has a NOTICE is
+  a review question, since neither can fetch upstream. Decided with #341,
+  formerly OQ-11.
+
+  - Test: workflow job `gate-selftest` (not written)
+  - Since: not implemented
+
 ## Artifact and index
 
 ```yaml
@@ -349,7 +369,7 @@ REG-2. They fail closed.
 |---|---|
 | `recipes/<name>.yaml` | Recipe entry (REC-1 to REC-3) |
 | `policy/reserved-names.txt` | `recipes` (REC-2) |
-| `gate/check_entry.py`, `gate/run` | REC-1 to REC-7, REC-10 |
+| `gate/check_entry.py`, `gate/run` | REC-1 to REC-7, REC-10, REC-15 |
 | `scan/rescan`, `.github/workflows/scheduled.yml` | REC-14 |
 | `sandbox/gate-compile` | REC-7, REC-8 |
 | `.github/actions/setup-gate/` | `check` pin (REC-5, REC-9) |
