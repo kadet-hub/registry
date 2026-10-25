@@ -40,10 +40,10 @@ spec records how that build works today.
   the fork runs it through repository variables instead of carrying a
   variant.
 
-  A fork-only workflow would be simpler to change, but it would have to be
-  committed to `next` and kept there by hand. Upstream, the same workflow
-  builds a shared `next` from PRs labelled `next`. If #1637 is merged, the
-  fork keeps working without changes.
+  A fork-only workflow could change without an upstream review, but
+  kadet-hub would maintain it alone. Upstream, the same workflow builds a
+  shared `next` from PRs labelled `next`. If #1637 is merged, the fork
+  keeps working without changes.
 
 - DEC-26: The fork takes the open PRs of one maintainer (`NEXT_AUTHOR`) and
   Dependabot's PRs once their checks pass, not labelled PRs.
