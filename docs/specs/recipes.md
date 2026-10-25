@@ -235,7 +235,16 @@ rules it is judged by.
   of RCP-23. For a release manifest (RCP-23, RCP-59) it MUST instead
   download the release asset of the line and fail unless its SHA-256 is
   the line's digest. The manifest's documents then take the rendered
-  chart's place in REC-9, and helm does not run.
+  chart's place in REC-9, and helm does not run. For a chart from an HTTP
+  repository (RCP-23) it MUST download the archive that the repository's
+  `index.yaml` names for the line's chart and version, and fail unless the
+  archive's SHA-256 is the line's digest and its `Chart.yaml` names that
+  chart and version, before it renders the archive as above.
+
+  `helm pull` by digest works only for an OCI chart. An HTTP repository's
+  index can change under the same version, and helm 4.3.1 uses the
+  index entry's `digest` as a cache key without comparing it with the
+  archive. So the gate checks the archive itself, as `check` does.
 
   The chart or manifest is not scanned (SEC-8) and not shipped. It never
   reaches a consumer: it is only the other side of the comparison. DEC-15 is
@@ -399,6 +408,10 @@ parameters:
   included recipe (REC-16), `output_capabilities` (the SEC-12 matches,
   DEC-23), `kinds` (PUB-10), `scan`, `output_diff`, `published`, `yanked`
   and `advisories`.
+
+  For a chart from an HTTP repository `repo` is the line's
+  `https://<repository>/<chart>` with its scheme, so a reader tells it from
+  an OCI reference, and `digest` is the SHA-256 of the archive.
 
   `generators` stays as it is, so a consumer workflow or `check` that reads
   only that key keeps working. The description is the first paragraph of
