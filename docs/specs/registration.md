@@ -167,7 +167,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     `timestamp-optional` proposed. Checksums: lookup with tool pins set
     one release back; `checksum-pins` workflow.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
-    #306
+    #306; recipe entries: #378
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
