@@ -986,6 +986,37 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py`, `sandbox/test_apiserver_check.py`
   - Since: #247
 
+- CAT-29d: Under "Custom resources and other APIs" (CAT-29c), `/kinds/`
+  MUST group the sections by domain, the last two DNS labels of the group,
+  and MUST sort the domains and, within a domain, the groups alphabetically.
+  A domain with one group MUST keep that group's heading. A domain with two
+  or more groups MUST have an `h3` heading with the domain and an `h4`
+  heading per group. Every group MUST keep its anchor `#<group>`, and a
+  domain with two or more groups MUST have the anchor `#domain-<domain>`.
+
+  A project often ships several API groups, such as KubeVirt's
+  `kubevirt.io`, `cdi.kubevirt.io` and `pool.kubevirt.io`, and a flat list
+  of the groups scatters them. The domain heading names the software of
+  its groups (CAT-29c), each name once and joined with `, `, and the group
+  headings below it carry no name. `autoscaling.k8s.io`,
+  `gateway.networking.k8s.io` and `snapshot.storage.k8s.io` share
+  `k8s.io` and stay in this section, since built in is what CAT-29c
+  decides, not the suffix. A section without a dot, such as `v1alpha1`, is
+  its own domain. A domain with one group sorts by the domain, so
+  `k8s.cni.cncf.io` stands among the `c` domains. The rule does not
+  consult the public suffix list, and no listed group has a suffix such as
+  `co.uk`.
+
+  The domain anchor has the `domain-` prefix because the domain is often a
+  group as well, such as `kubevirt.io` or `cert-manager.io`, and the anchor
+  of that group has existed since CAT-29. The grouping is done by the
+  template. The `kinds` and `sections` fields of `catalog.json` stay as
+  CAT-34e documents them, and the kind pages keep `/kinds/<group>/<kind>/`
+  (CAT-29b).
+
+  - Test: `catalog/test_catalog.py`
+  - Since: #369
+
 - CAT-29b: A kind that two or more listed generators render (PUB-10)
   MUST have a page at `/kinds/<section>/<kind>/` with each apiVersion, the
   cards of those generators and the generators that only ship a schema

@@ -1718,6 +1718,47 @@ class Site(unittest.TestCase):
             self.assertIn(f'href="../{url}"', kinds)
             self.assertIn(f"<loc>https://kadet-hub.org/{url}</loc>", sitemap)
 
+    def test_custom_sections_group_by_domain(self):  # CAT-29d, CAT-29b
+        def gen(d, kinds, *software):
+            return {"1.0.0": dict(record(d, tags=()), kinds=[dict(zip(("group", "version", "kind"), k)) for k in kinds],
+                                  compatibility=[{"software": s, "version": "1", "source": "tbd"} for s in software])}
+        pool = ("pool.kubevirt.io", "v1alpha1", "VirtualMachinePool")
+        index = {"serial": 1, "generators": {
+            "k8s": gen("a", [("apps", "v1", "Deployment"), ("networking.k8s.io", "v1", "Ingress"), ("autoscaling.k8s.io", "v1", "VerticalPodAutoscaler"),
+                             ("gateway.networking.k8s.io", "v1", "HTTPRoute"), ("snapshot.storage.k8s.io", "v1", "VolumeSnapshot")]),
+            "kv-a": gen("b", [("kubevirt.io", "v1", "VirtualMachine"), pool, ("cdi.kubevirt.io", "v1beta1", "DataVolume")], "KubeVirt", "CDI"),
+            "kv-b": gen("c", [pool]),
+            "iron": gen("d", [("compute.ironcore.dev", "v1alpha1", "Machine"), ("storage.ironcore.dev", "v1alpha1", "Volume")], "IronCore"),
+            "cm": gen("e", [("cert-manager.io", "v1", "Certificate")], "cert-manager"),
+            "tm": gen("f", [("trust.cert-manager.io", "v1alpha1", "Bundle")], "trust-manager"),
+            "multus": gen("g", [("k8s.cni.cncf.io", "v1", "NetworkAttachmentDefinition")], "Multus CNI"),
+            "calico": gen("h", [("projectcalico.org", "v3", "IPPool")]),
+            "talos": gen("i", [("", "v1alpha1", "MachineConfig")], "Talos")}}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = build(index, tmp)
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+            with open(os.path.join(out, "kinds", "index.html"), encoding="utf-8") as f:
+                kinds = f.read()
+            pool_page = os.path.isfile(os.path.join(out, "kinds", "pool.kubevirt.io", "virtualmachinepool", "index.html"))
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+        headings = re.findall(r'<h([234]) id="([^"]+)">(.*?)</h[234]>', kinds)
+        self.assertEqual(headings, [
+            ("2", "builtin", "Kubernetes built-in APIs"), ("3", "apps", "apps"), ("3", "networking.k8s.io", "networking.k8s.io"),
+            ("2", "custom", "Custom resources and other APIs"),
+            ("3", "domain-cert-manager.io", "cert-manager.io · cert-manager, trust-manager"),
+            ("4", "cert-manager.io", "cert-manager.io"), ("4", "trust.cert-manager.io", "trust.cert-manager.io"),
+            ("3", "k8s.cni.cncf.io", "k8s.cni.cncf.io · Multus CNI"),
+            ("3", "domain-ironcore.dev", "ironcore.dev · IronCore"),
+            ("4", "compute.ironcore.dev", "compute.ironcore.dev"), ("4", "storage.ironcore.dev", "storage.ironcore.dev"),
+            ("3", "domain-k8s.io", "k8s.io"), ("4", "autoscaling.k8s.io", "autoscaling.k8s.io"),
+            ("4", "gateway.networking.k8s.io", "gateway.networking.k8s.io"), ("4", "snapshot.storage.k8s.io", "snapshot.storage.k8s.io"),
+            ("3", "domain-kubevirt.io", "kubevirt.io"), ("4", "cdi.kubevirt.io", "cdi.kubevirt.io"), ("4", "kubevirt.io", "kubevirt.io"),
+            ("4", "pool.kubevirt.io", "pool.kubevirt.io"), ("3", "projectcalico.org", "projectcalico.org"), ("3", "v1alpha1", "v1alpha1 · Talos")])
+        ids = [h[1] for h in headings]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(pool_page)
+        self.assertIn('href="../kinds/pool.kubevirt.io/virtualmachinepool/"', kinds)
+
     def test_search_matches_kind_names(self):  # CAT-29a
         home = self.page()
         self.assertRegex(home, r'data-text="demo [^"]* configmap httproute" data-tags="helm" data-name="demo"')
