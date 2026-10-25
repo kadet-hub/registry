@@ -110,7 +110,8 @@
         "recipes/*.yaml"
       ],
       "groupName": null,
-      "commitMessageTopic": "generator {{depName}}"
+      "branchTopic": "{{{packageFile}}}",
+      "commitMessageTopic": "{{{replace '^(.*)s/(.*)[.]yaml$' '$1 $2' packageFile}}}"
     },
     {
       "description": "REG-7: git tags carry no release timestamp",
