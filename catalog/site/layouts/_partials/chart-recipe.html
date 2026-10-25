@@ -7,7 +7,8 @@
 {{- $readme := resources.Get (printf "classes/recipes/%s/README.md" $name) -}}
 {{- if not $readme }}{{ errorf "CAT-37c: recipe %s: classes/recipes/%s/README.md missing" $name $name }}{{ end -}}
 {{- $md := $readme.Content -}}
-{{- $source := "" }}{{ with findRESubmatch "(?m)^Source: `(oci://[^`]+@sha256:[0-9a-f]{64})`$" $md 1 }}{{ $source = index (index . 0) 1 }}{{ end -}}
+{{- /* A chart from an OCI registry, or from an HTTP repository, whose reference ends in :<version>. */ -}}
+{{- $source := "" }}{{ with findRESubmatch "(?m)^Source: `((?:oci://[^`]+|https://[^`@]+:[^`@:/]+)@sha256:[0-9a-f]{64})`$" $md 1 }}{{ $source = index (index . 0) 1 }}{{ end -}}
 {{- /* CAT-37e: a compose file as a GitHub blob URL pinned to a commit, then the file's digest. */ -}}
 {{- $compose := false -}}
 {{- with findRESubmatch "(?m)^Source: `(https://github\\.com/([^/`]+/[^/`]+)/blob/([0-9a-f]{40})/([^`@]+))@(sha256:[0-9a-f]{64})`$" $md 1 -}}
@@ -33,8 +34,11 @@
 {{- $files := slice (dict "class" (printf "recipes.%s" $name) "file" "init.yml") -}}
 {{- $init := resources.Get (printf "classes/recipes/%s/init.yml" $name) -}}
 {{- if not $init }}{{ errorf "CAT-37c: recipe %s: classes/recipes/%s/init.yml missing" $name $name }}{{ end -}}
+{{- /* The recipes it includes as recipes.<other>, which a consumer fetches too. */ -}}
+{{- $deps := slice $name -}}
 {{- range (transform.Unmarshal $init.Content).classes -}}
   {{- if strings.HasPrefix . "." }}{{ $files = $files | append (dict "class" (printf "recipes.%s%s" $name .) "file" (printf "%s.yml" (strings.TrimPrefix "." .))) }}{{ end -}}
+  {{- with findRESubmatch `^recipes\.([a-z0-9-]+)$` . 1 }}{{ $deps = $deps | append (index (index . 0) 1) }}{{ end -}}
 {{- end -}}
 {{- range findRESubmatch (printf `(?m)^\s*- (recipes\.%s\.([a-z0-9-]+))` $name) $include -1 -}}
   {{- $files = $files | append (dict "class" (index . 1) "file" (printf "%s.yml" (index . 2)) "option" true) -}}
@@ -55,16 +59,15 @@
   {{- end -}}
   {{- $classes = $classes | append (merge . (dict "components" $components)) -}}
 {{- end -}}
-{{- $fetch := printf `parameters:
-  kapitan:
-    vars:
-      target: recipes
-    dependencies:
+{{- $fetch := "parameters:\n  kapitan:\n    vars:\n      target: recipes\n    dependencies:" -}}
+{{- range $deps -}}
+  {{- $fetch = printf `%s
       - type: git
         source: https://github.com/%s/recipes.git
         ref: %s
         subdir: %s
-        output_path: inventory/classes/recipes/%s` $owner $sha $name $name -}}
+        output_path: inventory/classes/recipes/%s` $fetch $owner $sha . . -}}
+{{- end -}}
 {{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "image" $image "level" $level "include" $include
   "replaces" $replaces "required" $required "classes" $classes "generators" $generators "fetch" $fetch
   "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"

@@ -1362,8 +1362,8 @@ Related: CAT-15, CAT-30, CON-2.
 
   Related: EX-5, EX-5a, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
 
-  - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #283, #299, #300, #354
+  - Test: `catalog/test_catalog.py` (`test_recipes`, `test_recipe_without_operator`)
+  - Since: #283, #299, #300, #354, #363
 
 - CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
   is missing.
@@ -1423,6 +1423,15 @@ Related: CAT-15, CAT-30, CON-2.
   the repository README's "Using a recipe" for verifying the generators and
   raising the pin.
 
+  A chart is shown as the `Source:` line gives it, `oci://<reference>:<version>`
+  or, for a chart that only an HTTP repository publishes,
+  `https://<repository>/<chart>:<version>`, each followed by `@sha256:` and
+  the digest. The digest of an HTTP chart is the SHA-256 of the archive the
+  repository's `index.yaml` lists (RCP-23 there, REC-7, REC-13). A recipe
+  that includes another as `recipes.<other>` in its `init.yml` (REC-16)
+  gets one more `git` dependency in the fetch inventory, for `<other>` at
+  the same commit, because the compile stops without that class.
+
   `catalog/build` resolves `refs/heads/main` of kadet-hub/recipes with
   `git ls-remote` and fetches from `raw.githubusercontent.com` at that
   commit with `curl -f`: the recipe's `README.md` and `init.yml`, the class
@@ -1470,7 +1479,11 @@ Related: CAT-15, CAT-30, CON-2.
   searched term without "without Bitnami". valkey replaces the stand-in
   for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes with
   Kapitan", with a description that leads with "Bitnami redis Helm chart
-  alternative:". The title "Valkey on Kubernetes without Helm" named
+  alternative:". external-dns-powerdns replaces the stand-in for
+  Bitnami's `external-dns` chart, rebuilt from the project's own chart
+  that only an HTTP repository publishes, and keeps "external-dns and
+  PowerDNS on Kubernetes with Kapitan" with a description that leads with
+  "Bitnami external-dns Helm chart alternative:". The title "Valkey on Kubernetes without Helm" named
   neither Redis nor Bitnami, although CAT-11f sends the Redis queries and
   "valkey helm chart not bitnami" to the page. Moving those queries to the
   Bitnami guide was considered, but the guide only links the recipe, and
@@ -1478,8 +1491,8 @@ Related: CAT-15, CAT-30, CON-2.
 
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
-  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347, #349, #354
+  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
+  - Since: #342, #344, #347, #349, #354; HTTP chart: #363
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1544,9 +1557,9 @@ Related: CAT-15, CAT-30, CON-2.
   `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
   chart. PowerDNS itself replaces no Bitnami chart, so its new page is
   "PowerDNS on Kubernetes with Kapitan" with a description that leads with
-  "PowerDNS Helm chart alternative:". The examples page
-  `/recipes/external-dns-powerdns/` stays until the external-dns part
-  moves to kadet-hub/recipes under that name (CAT-38a).
+  "PowerDNS Helm chart alternative:". The external-dns part moved to
+  kadet-hub/recipes under the name `external-dns-powerdns`, and its page
+  `/recipes/external-dns-powerdns/` with it (CAT-37c, CAT-38a).
 
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
@@ -1586,12 +1599,12 @@ Related: CAT-15, CAT-30, CON-2.
   merges together with the kadet-hub/examples pull request that removes
   the recipe there, after the recipe is on `main` of kadet-hub/recipes,
   because the build fetches each page's files from the repository its
-  layout names (CAT-37a, CAT-37c). valkey, mysql and mongodb moved this
-  way.
+  layout names (CAT-37a, CAT-37c). valkey, mysql, mongodb and
+  external-dns-powerdns moved this way.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented; valkey moved: #345; mysql moved: #349;
-    mongodb moved: #352
+    mongodb moved: #352; external-dns-powerdns moved: #363
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`

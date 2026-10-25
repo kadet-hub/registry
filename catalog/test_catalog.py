@@ -158,7 +158,7 @@ def artifact(path, files):
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
 RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"],
-                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": []}
+                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"]}
 # The operator classes and whether each runs mutate, which has a pin and no compile class.
 RECIPE_OPERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cert-manager", "cloudnative-pg", "keycloak"], "kafka": ["strimzi"],
                     "rabbitmq": ["cert-manager"]}
@@ -248,11 +248,25 @@ POWERDNS_RECIPE_FILES = {
     "powerdns.yml": "parameters:\n  components:\n    powerdns:\n      application: powerdns\n",
 }
 
+# CAT-37c: external-dns-powerdns, rebuilt from a chart of an HTTP repository, moved from kadet-hub/examples under the same name.
+HTTP_CHART_SOURCE = f"https://kubernetes-sigs.github.io/external-dns/external-dns:1.23.0@sha256:{'6' * 64}"
+EXTERNAL_DNS_RECIPE_FILES = {
+    "README.md": "# external-dns-powerdns\n\nexternal-dns writing a record for every annotated Service into a zone on PowerDNS. PowerDNS is the included recipe `powerdns`.\n\n"
+                 f"Source: `{HTTP_CHART_SOURCE}`\n\nLevel: `deploys`\n\n"
+                 "## Replaces\n\nThis recipe replaces the `external-dns-powerdns` recipe of kadet-hub/examples.\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.external-dns-powerdns\n```\n\n"
+                 "## Required parameters\n\n`applications.powerdns.api_key` must be set.\n\n"
+                 "## Proof\n\n`check external-dns-powerdns --level deploys` on kind.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .external-dns-powerdns\n  - recipes.powerdns\n"),
+    "external-dns-powerdns.yml": "parameters:\n  components:\n    external-dns-powerdns:\n      application: external-dns-powerdns\n",
+}
+
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
     for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES), ("valkey", VALKEY_RECIPE_FILES),
-                          ("mysql", MYSQL_RECIPE_FILES), ("mongodb", MONGODB_RECIPE_FILES), ("powerdns", POWERDNS_RECIPE_FILES)):
+                          ("mysql", MYSQL_RECIPE_FILES), ("mongodb", MONGODB_RECIPE_FILES), ("powerdns", POWERDNS_RECIPE_FILES),
+                          ("external-dns-powerdns", EXTERNAL_DNS_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
             with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
@@ -282,7 +296,7 @@ def recipe_classes(root):
                     + "".join(f"  - recipes.operators.{o}\n" for o in RECIPE_OPERATORS.get(name, [])) + f"\nparameters:\n  {name}: {{a: <b>}}\n")
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False, root=HERE):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -296,7 +310,7 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
         recipes = os.path.join(tmp, "recipes")
         recipe_classes(os.path.join(recipes, "inventory", "classes"))
     env["CATALOG_RECIPES"] = recipes
-    subprocess.run([os.path.join(HERE, "build"), path, out], env=env, check=True, capture_output=capture, text=capture)
+    subprocess.run([os.path.join(root, "build"), path, out], env=env, check=True, capture_output=capture, text=capture)
     return out
 
 
@@ -569,7 +583,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 6)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 7)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -676,7 +690,7 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
         self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart or a Docker Compose file, or designed on an image</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
@@ -690,12 +704,14 @@ class Site(unittest.TestCase):
         self.assertRegex(chart, r'recipes/mongodb/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
         self.assertNotIn("recipes/mongodb/", examples)
         self.assertRegex(chart, r'recipes/powerdns/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
-        self.assertIn("recipes/external-dns-powerdns/", examples)
+        self.assertRegex(chart, r'recipes/external-dns-powerdns/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-38a: same URL, now a chart recipe
+        self.assertNotIn("recipes/external-dns-powerdns/", examples)
         self.assertIn("recipes/kafka/", examples)
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         self.assertIn("<title>PostgreSQL on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "postgresql"))
         self.assertIn("<title>MongoDB on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))
         self.assertIn("<title>PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "powerdns"))
+        self.assertIn("<title>external-dns and PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "external-dns-powerdns"))
         page = self.page("recipes", "keycloak")
         self.assertIn("<title>Keycloak on Kubernetes with Kapitan · kadet-hub</title>", page)
         self.assertIn('<p class="lead">keycloak &lt;script&gt;alert(7)&lt;/script&gt; in place of a Bitnami chart.</p>', page)
@@ -718,11 +734,9 @@ class Site(unittest.TestCase):
         rabbitmq = self.page("recipes", "rabbitmq")  # cert-manager's class runs no mutate
         self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', rabbitmq)
         self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/rabbitmq/">rabbitmq</a></li>', rabbitmq)
-        self.assertNotIn("Operator classes", self.page("recipes", "external-dns-powerdns"))
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
         self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
-        self.assertIn('<li>Operators: none</li>', self.page("recipes", "external-dns-powerdns"))
         md = self.markdown("recipes", "keycloak")
         self.assertTrue(md.startswith("# Keycloak on Kubernetes with Kapitan\n\n> keycloak <script>"))
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
@@ -730,10 +744,37 @@ class Site(unittest.TestCase):
         self.assertIn("\n## inventory/classes/recipes/operators/strimzi.yml\n\n```yaml\n# Installs strimzi.", self.markdown("recipes", "kafka"))
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb"]:
+        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns"]:
             self.assertIn(f'href="../../recipes/{name}/"', guide)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
+
+    def test_recipe_without_operator(self):  # CAT-37: no examples recipe is left without one, so a page is added to a copy of the site
+        with tempfile.TemporaryDirectory() as tmp:
+            for d in ("catalog", "policy"):  # the build reads policy/tags.yaml next to catalog/
+                shutil.copytree(os.path.join(HERE, "..", d), os.path.join(tmp, d))
+            with open(os.path.join(tmp, "catalog", "site", "content", "recipes", "redis.md"), "w", encoding="utf-8") as f:
+                f.write('---\ntitle: "Redis on Kubernetes with Kapitan"\ndescription: "Bitnami redis Helm chart alternative: a Kapitan class for Redis."\n'
+                        "replaces: [redis]\noperators: []\ncheck: PING is answered\n---\n")
+            recipes = os.path.join(tmp, "recipes")
+            recipe_classes(os.path.join(recipes, "inventory", "classes"))
+            with open(os.path.join(recipes, "inventory", "classes", "recipes", "redis.yml"), "w", encoding="utf-8") as f:
+                f.write("# redis\nclasses:\n  - recipes.lib.kubernetes\n")
+            out = build({"serial": 1, "generators": {}}, tmp, recipes=recipes, root=os.path.join(tmp, "catalog"))
+            with open(os.path.join(out, "recipes", "redis", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        self.assertIn("<li>Operators: none</li>", page)
+        self.assertNotIn("Operator classes", page)
+
+    def test_http_chart_recipe(self):  # CAT-37c
+        page = self.page("recipes", "external-dns-powerdns")
+        self.assertIn(f"<li>Source chart: <code>{HTTP_CHART_SOURCE}</code></li>", page)
+        self.assertIn("<li>Proof level: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
+        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
+        self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["external-dns-powerdns", "powerdns"])  # the recipe it includes, REC-16
+        self.assertEqual(re.findall(r"output_path: inventory/classes/recipes/(\S+)", fetch), ["external-dns-powerdns", "powerdns"])
+        self.assertEqual(fetch.count(f"ref: {CHART_RECIPE_SHA}\n"), 2)
+        self.assertIn(f"- Source chart: {HTTP_CHART_SOURCE}\n", self.markdown("recipes", "external-dns-powerdns"))
 
     def test_chart_recipe(self):  # CAT-37c
         page = self.page("recipes", "cert-manager")
