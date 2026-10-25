@@ -1491,7 +1491,13 @@ Related: CAT-15, CAT-30, CON-2.
   Bitnami's `external-dns` chart, rebuilt from the project's own chart
   that only an HTTP repository publishes, and keeps "external-dns and
   PowerDNS on Kubernetes with Kapitan" with a description that leads with
-  "Bitnami external-dns Helm chart alternative:". The title "Valkey on Kubernetes without Helm" named
+  "Bitnami external-dns Helm chart alternative:". postgresql replaces the
+  stand-in for Bitnami's `postgresql` and `postgresql-ha` charts, rebuilt
+  from CloudNativePG's chart `cluster`, and keeps "PostgreSQL on
+  Kubernetes with Kapitan" with a description that leads with "Bitnami
+  postgresql Helm chart alternative:". It requires `cnpg`, the operator
+  from the project's chart, whose page is "CloudNativePG on Kubernetes
+  without Helm, with Kapitan". The title "Valkey on Kubernetes without Helm" named
   neither Redis nor Bitnami, although CAT-11f sends the Redis queries and
   "valkey helm chart not bitnami" to the page. Moving those queries to the
   Bitnami guide was considered, but the guide only links the recipe, and
@@ -1500,7 +1506,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41, RCP-54 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_recipe_prerequisite`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364
+  - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364; cnpg: #366
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1615,11 +1621,11 @@ Related: CAT-15, CAT-30, CON-2.
   the recipe there, after the recipe is on `main` of kadet-hub/recipes,
   because the build fetches each page's files from the repository its
   layout names (CAT-37a, CAT-37c). valkey, mysql, mongodb,
-  external-dns-powerdns and kafka moved this way.
+  external-dns-powerdns, kafka and postgresql moved this way.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented; valkey moved: #345; mysql moved: #349;
-    mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364
+    mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364; postgresql moved: #366
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
