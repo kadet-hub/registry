@@ -87,10 +87,9 @@ spec records how that build works today.
   labelled `next` whose author has write, maintain or admin permission on
   `NEXT_SOURCE`.
 
-  This is the upstream mode and does not run in the fork. The version the
-  fork runs (6b4302f) still checks `author_association`, which triage users
-  can pass by setting the label themselves. #1637 replaced that with a
-  permission query in 5ab8799 (OQ-13).
+  This is the upstream mode and does not run in the fork. Before 5ab8799
+  the check used `author_association`, which triage users can pass by
+  setting the label themselves.
 
   - Test: manual: the permission query returns `write` for a maintainer
     and `read` for an outside account, per kapicorp/kapitan#1637
@@ -126,16 +125,20 @@ with a warning in the run.
   - Since: kapicorp/kapitan#1637 (b6f65bc)
 
 - NXT-6: The rebuild MUST restore `.github/workflows/next.yml` from the
-  commit the run started on.
+  commit the run started on only when no merged PR and no `master` provides
+  the file.
 
   In the fork `next` is the default branch, and scheduled runs start from
   the default branch, so the workflow must survive a rebuild whose PRs do
-  not contain it. A side effect is that a newer version of the workflow in
-  #1637 never replaces the one the fork runs (OQ-13).
+  not contain it. While #1637 merges, its version wins, so a push to the PR
+  reaches the fork with the next rebuild. The same holds once #1637 is
+  merged upstream and the file comes with `master`. Until 37250d0 was
+  replaced, the running version was always restored and the fork kept an
+  old workflow. The fix was pushed once by hand to `next` as 21329d2.
 
   - Test: manual: `git rev-parse origin/next:.github/workflows/next.yml`
-    equals the blob of the version the fork was bootstrapped with
-  - Since: kapicorp/kapitan#1637 (37250d0)
+    equals the blob at the head of kapicorp/kapitan#1637
+  - Since: kapicorp/kapitan#1637 (37250d0), revised in d262ee8
 
 ## Rebuilds
 
@@ -208,18 +211,19 @@ with a warning in the run.
   - Since: kapicorp/kapitan#1637 (b6f65bc)
 
 - NXT-12: The inventory and compile tests MUST run on every rebuild, and
-  their result MUST be reported in the status issue. The image MUST NOT
-  wait for them.
+  their result MUST be reported in the status issue. The image MUST be
+  pushed only when they pass.
 
-  `test` and `image` both depend only on `assemble`, so `next` and
-  `next-<sha>` move even when `test_omegaconf`, `test_inventory`,
-  `test_inventory_backend_examples` or `test_compile` fail. A consumer that
-  needs a passing build reads the result from the status issue, which names
-  the image by digest.
+  `image` needs `assemble` and `test` and is skipped when `test_omegaconf`,
+  `test_inventory`, `test_inventory_backend_examples` or `test_compile`
+  fail. The `next` tag then keeps pointing to the last tested build, while
+  the `next` branch already has the failing commit. Before d262ee8 the image
+  did not wait for the tests, and a consumer had to read the result from
+  the status issue.
 
   - Test: manual: the line "Inventory and compile tests" in
-    kadet-hub/kapitan#1
-  - Since: kapicorp/kapitan#1637 (b6f65bc)
+    kadet-hub/kapitan#1, and a failed run whose image job is skipped
+  - Since: kapicorp/kapitan#1637 (b6f65bc), revised in d262ee8
 
 ## Status issue
 
@@ -230,7 +234,8 @@ with a warning in the run.
   title, author and the head commit taken.
 
   In the fork this is kadet-hub/kapitan#1. It runs even when `test` or
-  `image` fail, and then says "not built in this run" for the image.
+  `image` fail, and then says the image was not built because the tests
+  did not pass and the `next` tag still points to the previous build.
 
   - Test: manual: kadet-hub/kapitan#1 names the current `next` commit
   - Since: kapicorp/kapitan#1637 (a9e1272)
@@ -273,13 +278,6 @@ reaches the recipes report at the next schedule window plus a merge (OQ-14).
 
 ## Open questions
 
-- OQ-13: How does a change to `next.yml` in kapicorp/kapitan#1637 reach the
-  fork? NXT-6 restores the running version on every rebuild, so the fork
-  still runs 6b4302f while #1637 is at 5ab8799. Today the difference only
-  touches the upstream mode (NXT-3). Options are a manual push of the new
-  file to `next`, or taking `next.yml` from the PR head when the PR is
-  merged into `next`. If #1637 is merged upstream, the file comes with
-  `master`, but NXT-6 would still overwrite it.
 - OQ-14: Should consumers follow `next` faster than the Renovate window of
   RCP-29, for example by a dispatch from the `report` job to kadet-hub/recipes,
   or is a lag of up to a day plus a review acceptable for a report that
@@ -289,7 +287,7 @@ reaches the recipes report at the next schedule window plus a merge (OQ-14).
 
 | Path | Purpose |
 |---|---|
-| kadet-hub/kapitan `.github/workflows/next.yml` | NXT-1 to NXT-13, version of kapicorp/kapitan#1637 at 6b4302f |
+| kadet-hub/kapitan `.github/workflows/next.yml` | NXT-1 to NXT-13, version of kapicorp/kapitan#1637 at its head (NXT-6) |
 | kapicorp/kapitan#1637 `CONTRIBUTING.md` | "Testing unmerged changes on `next`" |
 | kadet-hub/recipes `check/check.py` | `KAPITAN_NEXT` pin (NXT-14, RCP-24) |
 | kadet-hub/recipes `renovate.json` | Moves the pin (RCP-29) |
