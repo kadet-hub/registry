@@ -1,5 +1,5 @@
 ---
-title: "external-dns and PowerDNS without Bitnami, with Kapitan"
+title: "external-dns and PowerDNS with Kapitan"
 description: "Bitnami external-dns Helm chart alternative: a Kapitan inventory class for external-dns with a PowerDNS server on Kubernetes, checked on kind."
 replaces: [external-dns]
 operators: []

@@ -1,5 +1,5 @@
 ---
-title: "PostgreSQL on Kubernetes without Bitnami, with Kapitan"
+title: "PostgreSQL on Kubernetes with Kapitan"
 description: "Bitnami postgresql Helm chart alternative: a Kapitan inventory class for PostgreSQL on Kubernetes with CloudNativePG, also for postgresql-ha, checked on kind."
 replaces: [postgresql, postgresql-ha]
 operators: [CloudNativePG]

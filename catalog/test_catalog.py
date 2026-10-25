@@ -556,7 +556,7 @@ class Site(unittest.TestCase):
         for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
-        self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
+        self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
         self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 5)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
@@ -679,10 +679,10 @@ class Site(unittest.TestCase):
         self.assertNotIn("recipes/mongodb/", examples)
         self.assertIn("recipes/kafka/", examples)
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
-        self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
-        self.assertIn("<title>MongoDB on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))  # 64 bytes
+        self.assertIn("<title>PostgreSQL on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "postgresql"))
+        self.assertIn("<title>MongoDB on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))
         page = self.page("recipes", "keycloak")
-        self.assertIn("<title>Keycloak on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>Keycloak on Kubernetes with Kapitan · kadet-hub</title>", page)
         self.assertIn('<p class="lead">keycloak &lt;script&gt;alert(7)&lt;/script&gt; in place of a Bitnami chart.</p>', page)
         self.assertNotIn("<script>alert(7)", page)
         self.assertIn("<li>Replaces the Bitnami charts: <code>keycloak</code></li>", page)
@@ -709,7 +709,7 @@ class Site(unittest.TestCase):
         self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
         self.assertIn('<li>Operators: none</li>', self.page("recipes", "external-dns-powerdns"))
         md = self.markdown("recipes", "keycloak")
-        self.assertTrue(md.startswith("# Keycloak on Kubernetes without Bitnami, with Kapitan\n\n> keycloak <script>"))
+        self.assertTrue(md.startswith("# Keycloak on Kubernetes with Kapitan\n\n> keycloak <script>"))
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
         self.assertIn("\n## inventory/classes/recipes/lib/strimzi.yml\n", self.markdown("recipes", "kafka"))
         self.assertIn("\n## inventory/classes/recipes/operators/strimzi.yml\n\n```yaml\n# Installs strimzi.", self.markdown("recipes", "kafka"))
@@ -755,7 +755,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n## Proof\n\n`check cert-manager --level deploys` on kind.\n", md)
         self.assertNotIn("## Replaces", md)
         page = self.page("recipes", "valkey")  # Replaces after the source and the level
-        self.assertIn("<title>Valkey (Redis) on Kubernetes without Bitnami, with Kapitan</title>", page)
+        self.assertIn("<title>Valkey (Redis) on Kubernetes with Kapitan · kadet-hub</title>", page)
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>valkey</code> recipe of kadet-hub/examples.", page)
         self.assertIn("<td>StatefulSet <code>valkey</code></td>", page)
         self.assertNotIn("alert(9)</script>", page)
@@ -789,7 +789,7 @@ class Site(unittest.TestCase):
 
     def test_designed_recipe(self):  # CAT-37f
         page = self.page("recipes", "mysql")
-        self.assertIn("<title>MySQL on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>MySQL on Kubernetes with Kapitan · kadet-hub</title>", page)
         self.assertIn(f"<li>Source: container image <code>{DESIGN_SOURCE}</code>, recipe designed in kadet-hub</li>", page)
         self.assertIn("<li>Proof level: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
         self.assertNotIn("Source chart", page)
