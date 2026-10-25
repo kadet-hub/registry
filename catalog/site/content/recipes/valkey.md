@@ -1,8 +1,6 @@
 ---
-title: "Redis on Kubernetes without Bitnami: Valkey with Kapitan"
-description: "Bitnami redis Helm chart alternative: a Kapitan inventory class for Valkey, the BSD-licensed Redis fork, on Kubernetes, without an operator, checked on kind."
-replaces: [redis]
-operators: []
-check: the StatefulSet is ready and `valkey-cli ping` answers `PONG`
-lastmod: 2026-10-19
+title: "Valkey on Kubernetes without Helm, with Kapitan"
+description: "Valkey Helm chart alternative: Kapitan inventory classes for Valkey, the BSD-licensed Redis fork, on Kubernetes, rebuilt from its chart and compared with it."
+layout: chart-recipe
+lastmod: 2026-10-25
 ---

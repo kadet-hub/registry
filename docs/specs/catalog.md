@@ -1524,8 +1524,16 @@ Related: CAT-15, CAT-30, CON-2.
   pull request that adds a kadet-hub/recipes page also retire the examples
   page of the same name, with an alias from the old page to the new.
 
+  A recipe that moves from kadet-hub/examples to kadet-hub/recipes under
+  the same name keeps its content page, which switches to
+  `layout: chart-recipe`. The URL stays, so no alias is needed. The switch
+  merges together with the kadet-hub/examples pull request that removes
+  the recipe there, after the recipe is on `main` of kadet-hub/recipes,
+  because the build fetches each page's files from the repository its
+  layout names (CAT-37a, CAT-37c). valkey moved this way.
+
   - Test: `catalog/test_catalog.py` (not written)
-  - Since: not implemented
+  - Since: not implemented; valkey moved: #345
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`

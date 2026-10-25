@@ -157,7 +157,7 @@ def artifact(path, files):
 
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
-RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"], "valkey": [],
+RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"],
                      "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": [], "mysql": [], "mongodb": []}
 # The operator classes and whether each runs mutate, which has a pin and no compile class.
 RECIPE_OPERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cert-manager", "cloudnative-pg", "keycloak"], "kafka": ["strimzi"],
@@ -198,10 +198,21 @@ COMPOSE_RECIPE_FILES = {
     "db.yml": "parameters:\n  components:\n    miniflux-db:\n      application: miniflux\n",
 }
 
+# CAT-38a: valkey, moved from kadet-hub/examples under the same name.
+VALKEY_RECIPE_FILES = {
+    "README.md": "# valkey\n\nValkey, rendered by the kadet-hub `kubernetes` generator from the valkey-io chart.\n\n"
+                 f"Source: `oci://ghcr.io/valkey-io/valkey-helm/valkey:0.12.0@sha256:{'a' * 64}`\n\nLevel: `deploys`\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.valkey\n```\n\n"
+                 "## Settings\n\n| Chart value | Inventory |\n|---|---|\n| `valkeyConfig` | `applications.valkey.config` |\n\n"
+                 "## Proof\n\n`check valkey --level deploys` on kind.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .valkey\n"),
+    "valkey.yml": "parameters:\n  components:\n    valkey:\n      application: valkey\n",
+}
+
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
-    for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES)):
+    for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES), ("valkey", VALKEY_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
             with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
@@ -518,7 +529,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 2)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 3)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -625,13 +636,15 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
         self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart or a Docker Compose file</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
         self.assertRegex(chart, r'recipes/miniflux/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37e
         self.assertNotIn("recipes/cert-manager/", examples)
         self.assertNotIn("recipes/miniflux/", examples)
+        self.assertRegex(chart, r'recipes/valkey/">.*?Proof level: <code>deploys</code>')  # CAT-38a: same URL, now a chart recipe
+        self.assertNotIn("recipes/valkey/", examples)
         self.assertIn("recipes/kafka/", examples)
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
@@ -658,11 +671,11 @@ class Site(unittest.TestCase):
         rabbitmq = self.page("recipes", "rabbitmq")  # cert-manager's class runs no mutate
         self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', rabbitmq)
         self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/rabbitmq/">rabbitmq</a></li>', rabbitmq)
-        self.assertNotIn("Operator classes", self.page("recipes", "valkey"))
+        self.assertNotIn("Operator classes", self.page("recipes", "mysql"))
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
         self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
-        self.assertIn('<li>Operators: none</li>', self.page("recipes", "valkey"))
+        self.assertIn('<li>Operators: none</li>', self.page("recipes", "mysql"))
         md = self.markdown("recipes", "keycloak")
         self.assertTrue(md.startswith("# Keycloak on Kubernetes without Bitnami, with Kapitan\n\n> keycloak <script>"))
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
@@ -670,7 +683,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n## inventory/classes/recipes/operators/strimzi.yml\n\n```yaml\n# Installs strimzi.", self.markdown("recipes", "kafka"))
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in [*RECIPE_GENERATORS, "cert-manager"]:
+        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey"]:
             self.assertIn(f'href="../../recipes/{name}/"', guide)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
