@@ -96,6 +96,19 @@ recipe cannot be fetched the way a generator is (kapicorp/kapitan#1638).
   each of them per output path (CON-1b). Options that `tests/target.yml`
   does not include are not compiled and not recorded.
 
+- DEC-28: A recipe may include other recipes of kadet-hub/recipes by class
+  (DEC-4 and DEC-12 there), and the parent's `source.sha` pins them. The
+  gate looks up the tree of each included recipe at that commit among the
+  published versions (REC-16), and the parent's record lists the versions
+  it found. The consumer workflow checks that the fetch inventory pins
+  exactly those (CON-4). Decided with this change, formerly OQ-12.
+
+  A pin line in the parent's README was considered. It would repeat what
+  the commit already fixes, and the two could disagree. A dependency in the
+  parent's classes is fetched too late (CON-4). Pinning a range of versions
+  per included recipe was considered too. The gate would then publish
+  combinations that no CI run compiled together.
+
 ## Registration
 
 ```yaml
@@ -188,13 +201,15 @@ rules it is judged by.
 
 - REC-5: `check lint`'s file rules MUST pass on the recipe, run in the
   sandbox image without network. Every class a recipe file includes MUST
-  start with `.` or `recipes.<name>.`.
+  start with `.` or `recipes.<name>.`, or name an included recipe as
+  `recipes.<other>` or `recipes.<other>.<option>` that REC-16 resolves.
 
-  The file rules are RCP-1, RCP-2, RCP-4, RCP-7 and RCP-17 to RCP-19 and the
-  `Source` and `Level` lines of RCP-23. They read the files only. The
-  include rule is stricter than `check lint`, which accepts every
-  `recipes.` class: a recipe that includes another recipe needs that
-  recipe pinned as well, which is OQ-12.
+  The file rules are RCP-1, RCP-2, RCP-4, RCP-7 and RCP-17 to RCP-19, the
+  `Source` and `Level` lines of RCP-23, and the include and pin rules
+  RCP-47, RCP-48 and RCP-54. They read the files only. The include rule is
+  stricter than `check lint`, which accepts every `recipes.` class of its
+  own repository, because the included recipe must also be a published
+  version (REC-16).
 
   - Test: workflow job `gate-selftest` (not written)
   - Since: not implemented
@@ -229,12 +244,13 @@ rules it is judged by.
   - Since: not implemented
 
 - REC-8: The gate MUST compile a project of the shipped tree at
-  `inventory/classes/recipes/<name>/`, `tests/target.yml` as its only target
-  and the verified generators at their `output_path` in the sandbox, with
-  the omegaconf backend. CMP-1, CMP-2, CMP-5, SEC-9 to SEC-11 and QA-10
-  apply, and the output rules of `check lint` (RCP-3, RCP-6) MUST pass on
-  the output. SEC-12 matches MUST be recorded and MUST NOT fail the gate
-  (DEC-23).
+  `inventory/classes/recipes/<name>/`, the artifact of each included recipe
+  that REC-16 resolves at `inventory/classes/recipes/<other>/`,
+  `tests/target.yml` as its only target and the verified generators at
+  their `output_path` in the sandbox, with the omegaconf backend. CMP-1,
+  CMP-2, CMP-5, SEC-9 to SEC-11 and QA-10 apply, and the output rules of
+  `check lint` (RCP-3, RCP-6) MUST pass on the output. SEC-12 matches MUST
+  be recorded and MUST NOT fail the gate (DEC-23).
 
   Recipes are written for omegaconf (RCP DEC-3), so `inventory_backends`
   has no counterpart. krab (CMP-4) is not run: whether krab reads omegaconf
@@ -260,7 +276,7 @@ rules it is judged by.
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
-  chart source and level before and after.
+  included recipes, chart source and level before and after.
 
   A chart update with an unchanged object diff can still bring a new
   admission webhook or `hostPath`. RCP-21 shows that to the reviewer of the
@@ -289,6 +305,37 @@ rules it is judged by.
   the pair without a mapping. Whether the upstream source has a NOTICE is
   a review question, since neither can fetch upstream. Decided with #341,
   formerly OQ-11.
+
+  - Test: workflow job `gate-selftest` (not written)
+  - Since: not implemented
+
+- REC-16: For each recipe `<other>` that a recipe includes, the gate MUST
+  compute the tree ID of `source.sha:<other>` without its `tests` entry, as
+  REC-11 does, and fail unless the latest index lists a version of
+  `<other>` with that tree ID that is not yanked. It MUST pull that version
+  by digest and verify it as CON-5 describes.
+
+  kadet-hub/recipes tags a parent only on a commit where each included
+  recipe equals one of its tags (RCP-53), so the lookup finds the version
+  that CI proved together with the parent. Several versions with the same
+  tree have the same content, and the gate takes the oldest. An included
+  recipe that includes recipes itself fails `check lint` (RCP-47) and
+  therefore REC-5.
+
+  - Test: workflow job `gate-selftest` (not written)
+  - Since: not implemented
+
+- REC-17: For each recipe on a recipe's `Requires:` line (RCP-54) and on
+  those of its included recipes, the gate MUST resolve the required recipe
+  at `source.sha` as REC-16 does, compile it from its own
+  `tests/target.yml` in the sandbox as REC-8 does, and pass that output to
+  `check`, which applies its CRDs before the proof (RCP-55).
+
+  A dry run of a CloudNativePG Cluster or an HTTPRoute fails without its
+  CRD. `gateway-api` is no recipe: `check` installs it with its pinned
+  cloud-provider-kind, which `.github/actions/setup-gate/` pins with the
+  other gate tools. The required recipe is not recorded, since the
+  consumer installs it in a target of its own.
 
   - Test: workflow job `gate-selftest` (not written)
   - Since: not implemented
@@ -341,7 +388,8 @@ parameters:
   hold digest, tree ID, description, license, owners, source repository,
   tag and SHA, `level` from the README, `chart` (`repo`, `version`,
   `digest`) from its `Source` line, `generators` (`name`, `version`,
-  `digest`) for each pin, `output_capabilities` (the SEC-12 matches,
+  `digest`) for each pin, `includes` (`name`, `version`, `digest`) for each
+  included recipe (REC-16), `output_capabilities` (the SEC-12 matches,
   DEC-23), `kinds` (PUB-10), `scan`, `output_diff`, `published`, `yanked`
   and `advisories`.
 
@@ -369,9 +417,9 @@ REG-2. They fail closed.
 |---|---|
 | `recipes/<name>.yaml` | Recipe entry (REC-1 to REC-3) |
 | `policy/reserved-names.txt` | `recipes` (REC-2) |
-| `gate/check_entry.py`, `gate/run` | REC-1 to REC-7, REC-10, REC-15 |
+| `gate/check_entry.py`, `gate/run` | REC-1 to REC-7, REC-10, REC-15 to REC-17 |
 | `scan/rescan`, `.github/workflows/scheduled.yml` | REC-14 |
-| `sandbox/gate-compile` | REC-7, REC-8 |
+| `sandbox/gate-compile` | REC-7, REC-8, REC-17 |
 | `.github/actions/setup-gate/` | `check` pin (REC-5, REC-9) |
 | `.github/workflows/gate.yml` | REC-9 job |
 | `release/build-all`, `release/build.py`, `release/tree.py`, `release/index.py` | REC-11 to REC-13 |
