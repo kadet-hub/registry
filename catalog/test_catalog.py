@@ -157,10 +157,14 @@ def artifact(path, files):
 
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
-RECIPE_GENERATORS = {"keycloak": ["cloudnative-pg", "certmanager", "keycloak"]}
+# No page of the site is a recipe of kadet-hub/examples any more, so the tests that need one add EXAMPLE_PAGE to a copy of the site.
+RECIPE_GENERATORS = {"example": ["cloudnative-pg", "certmanager", "keycloak"]}
 # The operator classes and whether each runs mutate, which has a pin and no compile class.
-RECIPE_OPERATORS = {"keycloak": ["cert-manager", "cloudnative-pg", "keycloak"]}
+RECIPE_OPERATORS = {"example": ["cert-manager", "cloudnative-pg", "keycloak"]}
 OPERATOR_MUTATES = {"cloudnative-pg": True, "cert-manager": False, "keycloak": False}
+EXAMPLE_PAGE = ('---\ntitle: "Example on Kubernetes with Kapitan"\ndescription: "Bitnami example Helm chart alternative: a Kapitan inventory class for Example '
+                'on Kubernetes with the Example Operator, CloudNativePG and cert-manager."\nreplaces: [example]\n'
+                "operators: [Example Operator, CloudNativePG, cert-manager]\ncheck: the Example is `Ready` and answers 200 over TLS\n---\n")
 
 
 # CAT-37c: a kadet-hub/recipes recipe as fetched to inventory/classes/recipes/<name>/, raw HTML in a section.
@@ -327,6 +331,38 @@ RABBITMQ_OPERATOR_RECIPE_FILES = {
     "operator.yml": "parameters:\n  components:\n    rabbitmq-cluster-operator:\n      application: rabbitmq-cluster-operator\n",
 }
 
+# CAT-37f: keycloak, designed on Keycloak's image and moved from kadet-hub/examples under the same name, with the prerequisites keycloak-operator and cert-manager and the included recipe postgresql.
+KEYCLOAK_SOURCE = f"quay.io/keycloak/keycloak:26.8.1@sha256:{'3' * 64}"
+KEYCLOAK_RECIPE_FILES = {
+    "README.md": "# keycloak\n\nKeycloak as one `Keycloak` resource of the Keycloak Operator, designed in kadet-hub on Keycloak's image.\n\n"
+                 f"Source: `{KEYCLOAK_SOURCE}`\n\nLevel: `deploys`\n\nRequires: `keycloak-operator`, `cert-manager`\n\n"
+                 "## Replaces\n\nThis recipe replaces the `keycloak` recipe of kadet-hub/examples.\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.keycloak\n```\n\n"
+                 "## Required parameters\n\n`applications.keycloak.host` must be set.\n\n"
+                 "## Proof\n\n`check keycloak --level deploys` on kind, with `keycloak-operator`, `cert-manager` and, through `postgresql`, `cnpg` installed first.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .keycloak\n  - recipes.postgresql\n"),
+    "keycloak.yml": "parameters:\n  components:\n    keycloak:\n      application: keycloak\n",
+}
+# CAT-37c: keycloak-operator, the operator keycloak requires, rebuilt from the project's chart.
+KEYCLOAK_OPERATOR_RECIPE_FILES = {
+    "README.md": "# keycloak-operator\n\nThe Keycloak Operator, rendered by the kadet-hub `kubernetes` generator from the project's chart.\n\n"
+                 f"Source: `oci://quay.io/keycloak/keycloak-operator-helm:26.8.1@sha256:{'0' * 64}`\n\nLevel: `deploys`\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.keycloak-operator\n```\n\n"
+                 "## Required parameters\n\nNo parameter has to be set.\n\n"
+                 "## Proof\n\n`check keycloak-operator --level deploys` on kind.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .keycloak-operator\n"),
+    "keycloak-operator.yml": "parameters:\n  components:\n    keycloak-operator:\n      application: keycloak-operator\n",
+}
+
+
+def site_with_page(tmp, name, page):
+    """A copy of the site under tmp with one more page in content/recipes; returns the copy's catalog directory."""
+    for d in ("catalog", "policy"):  # the build reads policy/tags.yaml next to catalog/
+        shutil.copytree(os.path.join(HERE, "..", d), os.path.join(tmp, d))
+    with open(os.path.join(tmp, "catalog", "site", "content", "recipes", f"{name}.md"), "w", encoding="utf-8") as f:
+        f.write(page)
+    return os.path.join(tmp, "catalog")
+
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
@@ -334,6 +370,7 @@ def recipe_classes(root):
                           ("mysql", MYSQL_RECIPE_FILES), ("mongodb", MONGODB_RECIPE_FILES), ("powerdns", POWERDNS_RECIPE_FILES),
                           ("external-dns-powerdns", EXTERNAL_DNS_RECIPE_FILES), ("kafka", KAFKA_RECIPE_FILES), ("strimzi", STRIMZI_RECIPE_FILES),
                           ("postgresql", POSTGRESQL_RECIPE_FILES), ("cnpg", CNPG_RECIPE_FILES),
+                          ("keycloak", KEYCLOAK_RECIPE_FILES), ("keycloak-operator", KEYCLOAK_OPERATOR_RECIPE_FILES),
                           ("rabbitmq", RABBITMQ_RECIPE_FILES), ("rabbitmq-cluster-operator", RABBITMQ_OPERATOR_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
@@ -651,7 +688,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 13)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 15)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -758,30 +795,25 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "rabbitmq", "rabbitmq-cluster-operator"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(["cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "keycloak", "keycloak-operator", "rabbitmq", "rabbitmq-cluster-operator"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
-        chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
+        self.assertNotIn("Replacing Bitnami charts", index)  # CAT-37d: no page is a recipe of kadet-hub/examples
+        self.assertIn(" The files are read from kadet-hub/recipes when the site is built.", index)
+        chart = index
         self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart, a release manifest or a Docker Compose file, or designed on an image</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
         self.assertRegex(chart, r'recipes/miniflux/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37e
-        self.assertNotIn("recipes/cert-manager/", examples)
-        self.assertNotIn("recipes/miniflux/", examples)
         self.assertRegex(chart, r'recipes/valkey/">.*?Proof level: <code>deploys</code>')  # CAT-38a: same URL, now a chart recipe
-        self.assertNotIn("recipes/valkey/", examples)
         self.assertRegex(chart, r'recipes/mysql/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
-        self.assertNotIn("recipes/mysql/", examples)
         self.assertRegex(chart, r'recipes/mongodb/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
-        self.assertNotIn("recipes/mongodb/", examples)
         self.assertRegex(chart, r'recipes/powerdns/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
         self.assertRegex(chart, r'recipes/external-dns-powerdns/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-38a: same URL, now a chart recipe
-        self.assertNotIn("recipes/external-dns-powerdns/", examples)
         self.assertRegex(chart, r'recipes/kafka/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f, CAT-38a
-        self.assertNotIn("recipes/kafka/", examples)
         self.assertRegex(chart, r'recipes/strimzi/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37c
         self.assertRegex(chart, r'recipes/postgresql/">.*?Proof level: <code>deploys</code>')  # CAT-38a: same URL, now a chart recipe
-        self.assertNotIn("recipes/postgresql/", examples)
         self.assertRegex(chart, r'recipes/cnpg/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37c
+        self.assertRegex(chart, r'recipes/keycloak/">.*?Proof level: <code>deploys</code>')  # CAT-37f, CAT-38a: same URL, now a chart recipe
+        self.assertRegex(chart, r'recipes/keycloak-operator/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37c
         self.assertRegex(chart, r'recipes/rabbitmq/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f, CAT-38a
-        self.assertNotIn("recipes/rabbitmq/", examples)
         self.assertRegex(chart, r'recipes/rabbitmq-cluster-operator/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37g
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         page = self.page("recipes", "postgresql")
@@ -799,15 +831,37 @@ class Site(unittest.TestCase):
         self.assertIn("<title>RabbitMQ Cluster Operator on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq-cluster-operator"))
         page = self.page("recipes", "keycloak")
         self.assertIn("<title>Keycloak on Kubernetes with Kapitan · kadet-hub</title>", page)
-        self.assertIn('<p class="lead">keycloak &lt;script&gt;alert(7)&lt;/script&gt; in place of a Bitnami chart.</p>', page)
+        self.assertIn('<meta name="description" content="Bitnami keycloak Helm chart alternative: Kapitan', page)
+        self.assertNotIn("without Bitnami", page)
+        self.assertIn("<title>Keycloak Operator on Kubernetes without Helm, with Kapitan</title>", self.page("recipes", "keycloak-operator"))  # no room for the suffix
+        self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
+        guide = self.page("guides", "bitnami-chart-alternatives")
+        for name in ["cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns", "kafka", "postgresql", "keycloak", "rabbitmq"]:
+            self.assertIn(f'href="../../recipes/{name}/"', guide)
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
+
+    def test_examples_recipe(self):  # CAT-37, CAT-37d: no real page is one, so a page is added to a copy of the site
+        with tempfile.TemporaryDirectory() as tmp:
+            root = site_with_page(tmp, "example", EXAMPLE_PAGE)
+            out = build({"serial": 1, "generators": {}}, tmp, root=root)
+            read = lambda *parts: open(os.path.join(out, *parts), encoding="utf-8").read()
+            index, page, md = read("recipes", "index.html"), read("recipes", "example", "index.html"), read("recipes", "example", "index.md")
+            with open(os.path.join(tmp, "recipes", "inventory", "classes", "recipes", "example.yml"), encoding="utf-8") as f:
+                cls = f.read()
+        chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
+        self.assertIn('recipes/example/">', examples)
+        self.assertNotIn("recipes/example/", chart)
+        self.assertNotIn("recipes/keycloak/", examples)
+        self.assertIn(" The files are read from kadet-hub/recipes and kadet-hub/examples when the site is built.", index)
+        self.assertIn("<title>Example on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn('<p class="lead">example &lt;script&gt;alert(7)&lt;/script&gt; in place of a Bitnami chart.</p>', page)
         self.assertNotIn("<script>alert(7)", page)
-        self.assertIn("<li>Replaces the Bitnami charts: <code>keycloak</code></li>", page)
+        self.assertIn("<li>Replaces the Bitnami charts: <code>example</code></li>", page)
         self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/cloudnative-pg/">cloudnative-pg</a>, '
                       '<a href="../../generators/certmanager/">certmanager</a>, <a href="../../generators/keycloak/">keycloak</a>, '
                       '<a href="../../generators/mutate/">mutate</a></li>', page)
-        self.assertIn("<li>Operators: Keycloak Operator, CloudNativePG, cert-manager</li>", page)
-        with open(os.path.join(self.tmp.name, "recipes", "inventory", "classes", "recipes", "keycloak.yml"), encoding="utf-8") as f:
-            cls = f.read()
+        self.assertIn("<li>Operators: Example Operator, CloudNativePG, cert-manager</li>", page)
         self.assertIn(f'<pre id="class"><code>{cls.replace("<", "&lt;").replace(">", "&gt;")}</code></pre>', page)
         pins = _unescape(re.search(r'<pre id="pins"><code>(.*?)</code></pre>', page, re.S).group(1))
         self.assertEqual(re.findall(r"output_path: lib/(\S+)", pins), ["certmanager", "cloudnative-pg", "keycloak", "kubernetes", "mutate"])
@@ -817,31 +871,21 @@ class Site(unittest.TestCase):
         self.assertIn('<p><code>inventory/classes/recipes/operators/keycloak.yml</code></p>', page)
         self.assertIn('<pre id="operator-2"><code># Installs keycloak.', page)
         self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', page)
-        self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/example/chainsaw-test.yaml">', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
-        self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
-        md = self.markdown("recipes", "keycloak")
-        self.assertTrue(md.startswith("# Keycloak on Kubernetes with Kapitan\n\n> keycloak <script>"))
-        self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
-        self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
-        guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns", "kafka", "postgresql", "rabbitmq"]:
-            self.assertIn(f'href="../../recipes/{name}/"', guide)
-        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
-            self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
+        self.assertIn("fails unless the Example is <code>Ready</code> and", page)
+        self.assertTrue(md.startswith("# Example on Kubernetes with Kapitan\n\n> example <script>"))
+        self.assertIn(f"\n## inventory/classes/recipes/example.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
 
     def test_recipe_without_operator(self):  # CAT-37: no examples recipe is left without one, so a page is added to a copy of the site
         with tempfile.TemporaryDirectory() as tmp:
-            for d in ("catalog", "policy"):  # the build reads policy/tags.yaml next to catalog/
-                shutil.copytree(os.path.join(HERE, "..", d), os.path.join(tmp, d))
-            with open(os.path.join(tmp, "catalog", "site", "content", "recipes", "redis.md"), "w", encoding="utf-8") as f:
-                f.write('---\ntitle: "Redis on Kubernetes with Kapitan"\ndescription: "Bitnami redis Helm chart alternative: a Kapitan class for Redis."\n'
-                        "replaces: [redis]\noperators: []\ncheck: PING is answered\n---\n")
+            root = site_with_page(tmp, "redis", '---\ntitle: "Redis on Kubernetes with Kapitan"\ndescription: "Bitnami redis Helm chart alternative: a Kapitan class for Redis."\n'
+                                  "replaces: [redis]\noperators: []\ncheck: PING is answered\n---\n")
             recipes = os.path.join(tmp, "recipes")
             recipe_classes(os.path.join(recipes, "inventory", "classes"))
             with open(os.path.join(recipes, "inventory", "classes", "recipes", "redis.yml"), "w", encoding="utf-8") as f:
                 f.write("# redis\nclasses:\n  - recipes.lib.kubernetes\n")
-            out = build({"serial": 1, "generators": {}}, tmp, recipes=recipes, root=os.path.join(tmp, "catalog"))
+            out = build({"serial": 1, "generators": {}}, tmp, recipes=recipes, root=root)
             with open(os.path.join(out, "recipes", "redis", "index.html"), encoding="utf-8") as f:
                 page = f.read()
         self.assertIn("<li>Operators: none</li>", page)
@@ -874,6 +918,13 @@ class Site(unittest.TestCase):
         self.assertIn(f"\n- {both[0]}{both[1]}, {both[2]}\n- Generators: ", self.markdown("recipes", "rabbitmq"))
         self.assertIn(f'<li>{both[0]}<a href="../../recipes/{both[2]}/"><code>{both[2]}</code></a></li>', self.page("recipes", "rabbitmq-cluster-operator"))
         self.assertNotIn("Prerequisites", self.markdown("recipes", "mysql"))
+        keycloak = self.page("recipes", "keycloak")  # cnpg is required by the included postgresql
+        links = ", ".join(f'<a href="../../recipes/{n}/"><code>{n}</code></a>' for n in ("keycloak-operator", "cert-manager", "cnpg"))
+        self.assertIn(f"<li>{both[0]}{links}</li>", keycloak)
+        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', keycloak, re.S).group(1))
+        self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["keycloak", "postgresql"])
+        self.assertIn(f"\n- {both[0]}keycloak-operator, cert-manager, cnpg\n- Generators: ", self.markdown("recipes", "keycloak"))
+        self.assertNotIn("Prerequisites", self.page("recipes", "keycloak-operator"))
 
     def test_release_manifest_recipe(self):  # CAT-37g
         page = self.page("recipes", "rabbitmq-cluster-operator")
@@ -982,15 +1033,20 @@ class Site(unittest.TestCase):
         self.assertIn(f"<li>Source: container image <code>{RABBITMQ_SOURCE}</code>, recipe designed in kadet-hub</li>", rabbitmq)
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>rabbitmq</code> recipe of kadet-hub/examples.", rabbitmq)
         self.assertNotIn("without Bitnami", rabbitmq)
+        keycloak = self.page("recipes", "keycloak")
+        self.assertIn(f"<li>Source: container image <code>{KEYCLOAK_SOURCE}</code>, recipe designed in kadet-hub</li>", keycloak)
+        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>keycloak</code> recipe of kadet-hub/examples.", keycloak)
+        self.assertNotIn("without Bitnami", keycloak)
 
     def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c, CAT-37e
         for missing in ("lib", "operators"):
             with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
+                root = site_with_page(tmp, "example", EXAMPLE_PAGE)
                 recipes = os.path.join(tmp, "recipes")
                 recipe_classes(os.path.join(recipes, "inventory", "classes"))
                 os.remove(os.path.join(recipes, "inventory", "classes", "recipes", missing, "keycloak.yml"))
                 with self.assertRaises(subprocess.CalledProcessError) as failed:
-                    build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
+                    build({"serial": 1, "generators": {}}, tmp, recipes=recipes, root=root, capture=True)
                 self.assertIn(f"recipes/{missing}/keycloak.yml missing", failed.exception.stderr)  # CAT-1: Hugo's error is printed
         for missing, error in (("webhook.yml", "classes/recipes/cert-manager/webhook.yml missing"),
                                ("crds.yml", "classes/recipes/cert-manager/crds.yml missing"),
@@ -1012,14 +1068,37 @@ class Site(unittest.TestCase):
                 with self.assertRaises(subprocess.CalledProcessError) as failed:
                     build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
                 self.assertIn(error, failed.exception.stderr)
-        for missing in ("lib", "operators"):
-            with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
-                recipes = os.path.join(tmp, "recipes")
+
+    def test_build_fetches_examples_only_for_their_pages(self):  # CAT-37a: the online build with curl, git and gh faked
+        shims = {"curl": 'while (($#)); do case $1 in -o) out=$2; shift;; https://*) url=$1;; esac; shift; done\n'
+                         'echo "$url" >>"$CURL_LOG"\n'
+                         'case $url in\n'
+                         '  https://raw.githubusercontent.com/*/examples/main/recipes/inventory/classes/*) cp "$RECIPES/inventory/classes/${url#*/classes/}" "$out";;\n'
+                         '  https://raw.githubusercontent.com/*/recipes/*/*) cp "$RECIPES/inventory/classes/recipes/${url#https://raw.githubusercontent.com/*/recipes/*/}" "$out";;\n'
+                         '  *) exit 22;;\n'
+                         'esac\n',
+                 "git": 'printf "%s\\trefs/heads/main\\n" "$RECIPES_SHA"\n',
+                 "gh": "exit 1\n"}
+        for page in (None, EXAMPLE_PAGE):
+            with self.subTest(bool(page)), tempfile.TemporaryDirectory() as tmp:
+                root = site_with_page(tmp, "example", page) if page else HERE
+                os.mkdir(os.path.join(tmp, "bin"))
+                for name, script in shims.items():
+                    with open(os.path.join(tmp, "bin", name), "w", encoding="utf-8") as f:
+                        f.write("#!/usr/bin/env bash\n" + script)
+                    os.chmod(os.path.join(tmp, "bin", name), 0o755)
+                recipes, log = os.path.join(tmp, "recipes"), os.path.join(tmp, "curl.log")
                 recipe_classes(os.path.join(recipes, "inventory", "classes"))
-                os.remove(os.path.join(recipes, "inventory", "classes", "recipes", missing, "keycloak.yml"))
-                with self.assertRaises(subprocess.CalledProcessError) as failed:
-                    build({"serial": 1, "generators": {}}, tmp, recipes=recipes, capture=True)
-                self.assertIn(f"recipes/{missing}/keycloak.yml missing", failed.exception.stderr)  # CAT-1: Hugo's error is printed
+                with open(os.path.join(tmp, "index.json"), "w", encoding="utf-8") as f:
+                    json.dump({"serial": 1, "generators": {}}, f)
+                env = dict(os.environ, OWNER=OWNER, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], CURL_LOG=log, RECIPES=recipes, RECIPES_SHA=CHART_RECIPE_SHA)
+                env.pop("CATALOG_OFFLINE", None)
+                subprocess.run([os.path.join(root, "build"), os.path.join(tmp, "index.json"), os.path.join(tmp, "out")], env=env, check=True, capture_output=True)
+                with open(log, encoding="utf-8") as f:
+                    urls = f.read()
+                self.assertIn(f"/{OWNER}/recipes/{CHART_RECIPE_SHA}/keycloak/README.md\n", urls)
+                self.assertEqual("/examples/main/recipes/inventory/classes/generators.yml\n" in urls, bool(page))
+                self.assertEqual("/examples/main/recipes/inventory/classes/recipes/example.yml\n" in urls, bool(page))
 
     def test_blog(self):  # CAT-36
         slug = "kapitan-generators-as-supply-chain-artifacts"
