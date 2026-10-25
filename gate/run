@@ -38,7 +38,7 @@ if [[ $path == removed:* ]]; then
   check entry --path-file /work/path --reserved /work/reserved.txt --base /base --out /work/entry.json
   exit 0
 fi
-# $path matched ^generators/[a-z][a-z0-9-]{1,38}\.yaml$ in the files step.
+# $path matched ^(generators|recipes)/[a-z][a-z0-9-]{1,38}\.yaml$ in the files step.
 raw "$path" >"$work/head.yaml"
 unset GH_TOKEN
 
@@ -55,6 +55,10 @@ resolved=$("${gitc[@]}" ls-remote -- "$src_repo" "refs/tags/$tag" "refs/tags/$ta
 if [[ $resolved != "$sha" ]]; then
   echo "REG-1: tag $tag resolves to ${resolved:-nothing}, entry pins $sha"
   status=1
+fi
+if [[ $path == recipes/* ]]; then
+  echo "REC-4: the recipe checks from REC-4 on are not implemented yet, so no recipe entry passes the gate"
+  exit 1
 fi
 
 echo "## Source"
