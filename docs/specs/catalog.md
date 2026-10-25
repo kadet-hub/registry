@@ -1533,12 +1533,15 @@ Related: CAT-15, CAT-30, CON-2.
   descriptions follow CAT-37c. mysql, the first such recipe, replaces the
   kadet-hub/examples stand-in for Bitnami's `mysql` chart, so it keeps
   "MySQL on Kubernetes without Bitnami, with Kapitan" and a description
-  that leads with "Bitnami mysql Helm chart alternative:".
+  that leads with "Bitnami mysql Helm chart alternative:". mongodb, the
+  stand-in for Bitnami's `mongodb` chart, moved the same way and keeps
+  "MongoDB on Kubernetes without Bitnami, with Kapitan" and "Bitnami
+  mongodb Helm chart alternative:".
 
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349
+  - Since: #349, #352
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
@@ -1573,10 +1576,12 @@ Related: CAT-15, CAT-30, CON-2.
   merges together with the kadet-hub/examples pull request that removes
   the recipe there, after the recipe is on `main` of kadet-hub/recipes,
   because the build fetches each page's files from the repository its
-  layout names (CAT-37a, CAT-37c). valkey and mysql moved this way.
+  layout names (CAT-37a, CAT-37c). valkey, mysql and mongodb moved this
+  way.
 
   - Test: `catalog/test_catalog.py` (not written)
-  - Since: not implemented; valkey moved: #345; mysql moved: #349
+  - Since: not implemented; valkey moved: #345; mysql moved: #349;
+    mongodb moved: #352
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
