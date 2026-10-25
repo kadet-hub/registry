@@ -1363,7 +1363,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: EX-5, EX-5a, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #283, #299, #300
+  - Since: #283, #299, #300, #354
 
 - CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
   is missing.
@@ -1479,7 +1479,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347, #349
+  - Since: #342, #344, #347, #349, #354
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1543,7 +1543,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349, #352
+  - Since: #349, #352, #354
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
