@@ -1,4 +1,4 @@
-"""Checks on a pull request's entry and the generator manifest (GI-2, REG-*, QA-1, QA-2, QA-5).
+"""Checks on a pull request's entry and the generator manifest (GI-2, REG-*, QA-1, QA-1a, QA-2, QA-5).
 
 Runs in the sandbox image (yaml, jsonschema, packaging). Three steps, each
 reading only files the gate wrote and printing findings, exit 1 on any:
@@ -8,10 +8,11 @@ reading only files the gate wrote and printing findings, exit 1 on any:
   entry    --event E --head H --base B --reserved R --policy P --out O
            GI-1/QA-5 schema, layout, REG-2/3/5/6/8/9; writes entry.json.
   manifest --event E --entry J --manifest M --policy P [--root-license L]
-           QA-5 schema, REG-4, CMP-3, SEC-7, name match, QA-1, QA-2.
+           QA-5 schema, REG-4, CMP-3, SEC-7, name match, QA-1, QA-1a, QA-2.
 """
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -184,7 +185,7 @@ def read_text(path, limit=None):
 
 
 def quality(tree, manifest, entry, root_license, policy):
-    """QA-1 and QA-2 on the fetched tree."""
+    """QA-1, QA-1a and QA-2 on the fetched tree."""
     findings = []
     readme = read_text(os.path.join(tree, "README.md"))
     if readme is None:
@@ -198,6 +199,16 @@ def quality(tree, manifest, entry, root_license, policy):
         findings.append("QA-1: CHANGELOG.md missing")
     elif not any(entry_line.search(h) for h in HEADING.findall(changelog)):
         findings.append(f"QA-1: CHANGELOG.md has no heading for {version}")
+    init = read_text(os.path.join(tree, "__init__.py"))
+    try:
+        body = ast.parse(init).body if init is not None else []
+    except (SyntaxError, MemoryError, RecursionError) as e:
+        body = []
+        findings.append(f"QA-1a: __init__.py does not parse: {str(e)[:200]}")
+    for node in body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__version__" for t in node.targets) \
+                and not (isinstance(node.value, ast.Constant) and node.value.value == version):
+            findings.append(f"QA-1a: __init__.py sets __version__ to {ast.get_source_segment(init, node.value)[:100]!r}, the tag is {version}")
     text = read_text(os.path.join(tree, "LICENSE"), LICENSE_HEAD)
     if text is None and root_license:
         text = read_text(root_license, LICENSE_HEAD)
