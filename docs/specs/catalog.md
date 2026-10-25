@@ -951,8 +951,8 @@ Related: CAT-15, CAT-30, CON-2.
 - CAT-29c: `/kinds/` MUST list the sections of the groups that the QA-10
   kube-apiserver serves without CRDs under "Kubernetes built-in APIs" and
   every other section under "Custom resources and other APIs", and MUST
-  name a section's software there when the index names exactly one for
-  it.
+  name a section's software there when the `schemas/sources.yaml` (QA-7)
+  of the generators with kinds in it names exactly one for its group.
 
   Bare group names such as `apps`, `batch` or `policy` read like projects
   of their own, and the `k8s.io` suffix does not mean built in: Gateway
@@ -969,22 +969,42 @@ Related: CAT-15, CAT-30, CON-2.
 
   The index does not map a group to its software: the QA-7 result in a
   version's `compatibility` record names software, version and source of
-  the schema groups the fixture used, without the group. A section is
-  therefore labelled when each listed generator with kinds in it whose
-  latest listed version names exactly one software other than
-  `Kubernetes`, the source of the built-in schemas, names the same one; a
-  generator that names two or more, such as kubernetes with Gateway API,
-  GKE Managed Certificates and the Vertical Pod Autoscaler, labels none.
-  The label is inferred: a generator that ships schemas of two custom
-  groups but used only one in its fixture would lend that one's software
-  to both. On the index of 2026-10-15 the rule labelled 25 of the 45
-  other sections, each as the `sources.yaml` of kadet-hub/generators at
-  e4891e8 names it; the other 20 belong to generators with two or more
-  CRD sources and show the group alone. Labelling them needs the group in
-  the QA-7 result.
+  the schema groups the fixture used, without the group. The artifact
+  holds the map. QA-7 requires a `sources.yaml` entry for every schema group, and
+  the catalog job already fetches the artifact layer of each generator's
+  latest listed version for its README (CAT-7). For a kind of that
+  version the software is the `software` of the entry
+  `<group>/<version>` if the file has one, else of `<group>`, so
+  `core/v1alpha1` names Talos for the `v1alpha1` section. A section is
+  labelled when its generators name exactly one software other than
+  `Kubernetes`, the source of the built-in schemas. kubevirt thus labels
+  `snapshot.storage.k8s.io` with Kubernetes CSI external-snapshotter and
+  `cdi.kubevirt.io` with KubeVirt Containerized Data Importer (CDI), and
+  certmanager labels `trust.cert-manager.io` with trust-manager.
+
+  A group without an entry names nothing, and neither does a generator
+  whose layer the build could not fetch, so such a group shows alone
+  unless another generator names it. Before #370 the label was
+  inferred from `compatibility` when it named one software other than
+  `Kubernetes`. That lent the software of one used group to every group
+  of the generator, and the generators with two or more CRD sources left
+  all their groups bare.
+
+  `view.py` uses the standard library only, so it reads `sources.yaml`
+  in the block form every listed one has: an entry key at the start of a
+  line and `software: <name>` two spaces in below it. A file with a
+  top-level line or a `software` line in another form names nothing, so
+  a misread file leaves its groups bare and never lends a name to the
+  wrong group. `catalog.json` keeps each generator's map as `sources`,
+  and the build pulls a layer again only when the previous build has no
+  `sources` for its digest (CAT-23).
+
+  Measured on 2026-10-25 on the index of serial 61 and the layers of its
+  latest listed versions: the rule labels all 47 other sections, 25 with
+  the name the inference gave them and 22 that the inference left bare.
 
   - Test: `catalog/test_catalog.py`, `sandbox/test_apiserver_check.py`
-  - Since: #247
+  - Since: #247, #370
 
 - CAT-29d: Under "Custom resources and other APIs" (CAT-29c), `/kinds/`
   MUST group the sections by domain, the last two DNS labels of the group,
