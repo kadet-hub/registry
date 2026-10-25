@@ -14,6 +14,8 @@
 <li>Source chart: <code>{{ $r.source }}</code></li>
 <li>Proof level: <code>{{ $r.level }}</code>, compared with the chart by the kadet-hub/recipes CI</li>
 {{- end }}
+{{ with $r.requires }}<li>Prerequisites, installed once per cluster before the recipe: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/recipes/%s" $n) }}<a href="{{ printf "/recipes/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}<code>{{ $n }}</code>{{ end }}{{ end }}</li>
+{{ end -}}
 <li>Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/#v%s" $g.name $g.version | relURL }}">{{ $g.name }} {{ $g.version }}</a> <code>{{ $g.digest }}</code>{{ end }}</li>
 </ul>
 {{ with $r.replaces }}<h2>Replaces</h2>

@@ -1405,7 +1405,8 @@ Related: CAT-15, CAT-30, CON-2.
   `layout: chart-recipe`. The page MUST show the source pinned by digest
   (a chart, a compose file as CAT-37e says, or an image as CAT-37f says),
   the proof level, the
-  README section "Replaces" when the README has one, the components and options the recipe deploys,
+  README section "Replaces" when the README has one, the prerequisites of
+  its `Requires:` line when it has one, the components and options the recipe deploys,
   the README section "Required parameters" before the include snippet,
   the include snippet, a fetch inventory pinned to the commit the page was
   built from with the commands that use it, the README sections "Settings",
@@ -1431,6 +1432,13 @@ Related: CAT-15, CAT-30, CON-2.
   that includes another as `recipes.<other>` in its `init.yml` (REC-16)
   gets one more `git` dependency in the fetch inventory, for `<other>` at
   the same commit, because the compile stops without that class.
+
+  A recipe names what the cluster needs once on its `Requires:` line
+  (RCP-54 there), such as `strimzi` for kafka. The page lists these among
+  the facts at the top, each linked to its own page when the site has one,
+  because a reader has to install them before the recipe. The fetch
+  inventory does not pin them: the recipe does not include them, and
+  their pages give the inventory for their own target.
 
   `catalog/build` resolves `refs/heads/main` of kadet-hub/recipes with
   `git ls-remote` and fetches from `raw.githubusercontent.com` at that
@@ -1489,10 +1497,10 @@ Related: CAT-15, CAT-30, CON-2.
   Bitnami guide was considered, but the guide only links the recipe, and
   the recipe page is what answers them.
 
-  Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
+  Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41, RCP-54 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
-  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347, #349, #354; HTTP chart: #363
+  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_recipe_prerequisite`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
+  - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1561,10 +1569,17 @@ Related: CAT-15, CAT-30, CON-2.
   kadet-hub/recipes under the name `external-dns-powerdns`, and its page
   `/recipes/external-dns-powerdns/` with it (CAT-37c, CAT-38a).
 
+  kafka, the stand-in for Bitnami's `kafka` chart, moved the same way. It
+  is designed on Strimzi's Kafka image and keeps "Kafka on Kubernetes with
+  Kapitan" with a description that leads with "Bitnami kafka Helm chart
+  alternative:". It requires `strimzi`, the operator from Strimzi's chart,
+  whose page is "Strimzi on Kubernetes without Helm, with Kapitan"
+  (CAT-37c).
+
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349, #352, #354; powerdns: #357
+  - Since: #349, #352, #354; powerdns: #357; kafka: #364
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
@@ -1599,12 +1614,12 @@ Related: CAT-15, CAT-30, CON-2.
   merges together with the kadet-hub/examples pull request that removes
   the recipe there, after the recipe is on `main` of kadet-hub/recipes,
   because the build fetches each page's files from the repository its
-  layout names (CAT-37a, CAT-37c). valkey, mysql, mongodb and
-  external-dns-powerdns moved this way.
+  layout names (CAT-37a, CAT-37c). valkey, mysql, mongodb,
+  external-dns-powerdns and kafka moved this way.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented; valkey moved: #345; mysql moved: #349;
-    mongodb moved: #352; external-dns-powerdns moved: #363
+    mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
