@@ -157,9 +157,9 @@ def artifact(path, files):
 
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
-RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"]}
+RECIPE_GENERATORS = {"keycloak": ["cloudnative-pg", "certmanager", "keycloak"]}
 # The operator classes and whether each runs mutate, which has a pin and no compile class.
-RECIPE_OPERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cert-manager", "cloudnative-pg", "keycloak"]}
+RECIPE_OPERATORS = {"keycloak": ["cert-manager", "cloudnative-pg", "keycloak"]}
 OPERATOR_MUTATES = {"cloudnative-pg": True, "cert-manager": False, "keycloak": False}
 
 
@@ -281,6 +281,27 @@ STRIMZI_RECIPE_FILES = {
     "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .cluster-operator\n"),
     "cluster-operator.yml": "parameters:\n  components:\n    strimzi-cluster-operator:\n      application: strimzi\n",
 }
+# CAT-37c: postgresql, rebuilt from CloudNativePG's cluster chart and moved from kadet-hub/examples under the same name, with the prerequisite cnpg.
+POSTGRESQL_RECIPE_FILES = {
+    "README.md": "# postgresql\n\nOne CloudNativePG Cluster, rendered by the kadet-hub `cloudnative-pg` generator from CloudNativePG's chart `cluster`.\n\n"
+                 f"Source: `oci://ghcr.io/cloudnative-pg/charts/cluster:0.9.0@sha256:{'4' * 64}`\n\nLevel: `deploys`\n\nRequires: `cnpg`\n\n"
+                 "## Replaces\n\nThis recipe replaces the `postgresql` recipe of kadet-hub/examples.\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.postgresql\n```\n\n"
+                 "## Required parameters\n\nNo parameter has to be set.\n\n"
+                 "## Proof\n\n`check postgresql --level deploys` on kind, with `cnpg` installed first.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .cluster\n"),
+    "cluster.yml": "parameters:\n  components:\n    postgresql:\n      application: postgresql\n",
+}
+# CAT-37c: cnpg, the operator postgresql requires, rebuilt from the project's chart.
+CNPG_RECIPE_FILES = {
+    "README.md": "# cnpg\n\nThe CloudNativePG operator, rendered by the kadet-hub `kubernetes` generator from the project's chart.\n\n"
+                 f"Source: `oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg:0.29.1@sha256:{'5' * 64}`\n\nLevel: `deploys`\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.cnpg\n```\n\n"
+                 "## Required parameters\n\nNo parameter has to be set.\n\n"
+                 "## Proof\n\n`check cnpg --level deploys` on kind.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .operator\n"),
+    "operator.yml": "parameters:\n  components:\n    cnpg:\n      application: cnpg\n",
+}
 
 # CAT-37f: rabbitmq, designed on the official image and moved from kadet-hub/examples under the same name, with the prerequisite rabbitmq-cluster-operator.
 RABBITMQ_SOURCE = f"docker.io/library/rabbitmq:4.3.6-management@sha256:{'5' * 64}"
@@ -312,6 +333,7 @@ def recipe_classes(root):
     for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES), ("valkey", VALKEY_RECIPE_FILES),
                           ("mysql", MYSQL_RECIPE_FILES), ("mongodb", MONGODB_RECIPE_FILES), ("powerdns", POWERDNS_RECIPE_FILES),
                           ("external-dns-powerdns", EXTERNAL_DNS_RECIPE_FILES), ("kafka", KAFKA_RECIPE_FILES), ("strimzi", STRIMZI_RECIPE_FILES),
+                          ("postgresql", POSTGRESQL_RECIPE_FILES), ("cnpg", CNPG_RECIPE_FILES),
                           ("rabbitmq", RABBITMQ_RECIPE_FILES), ("rabbitmq-cluster-operator", RABBITMQ_OPERATOR_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
@@ -629,7 +651,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 11)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 13)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -736,7 +758,7 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "rabbitmq", "rabbitmq-cluster-operator"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "rabbitmq", "rabbitmq-cluster-operator"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
         self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart, a release manifest or a Docker Compose file, or designed on an image</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
@@ -755,11 +777,19 @@ class Site(unittest.TestCase):
         self.assertRegex(chart, r'recipes/kafka/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f, CAT-38a
         self.assertNotIn("recipes/kafka/", examples)
         self.assertRegex(chart, r'recipes/strimzi/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37c
+        self.assertRegex(chart, r'recipes/postgresql/">.*?Proof level: <code>deploys</code>')  # CAT-38a: same URL, now a chart recipe
+        self.assertNotIn("recipes/postgresql/", examples)
+        self.assertRegex(chart, r'recipes/cnpg/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37c
         self.assertRegex(chart, r'recipes/rabbitmq/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f, CAT-38a
         self.assertNotIn("recipes/rabbitmq/", examples)
         self.assertRegex(chart, r'recipes/rabbitmq-cluster-operator/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37g
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
-        self.assertIn("<title>PostgreSQL on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "postgresql"))
+        page = self.page("recipes", "postgresql")
+        self.assertIn("<title>PostgreSQL on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn('<meta name="description" content="Bitnami postgresql Helm chart alternative: Kapitan', page)
+        self.assertNotIn("without Bitnami", page)
+        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>postgresql</code> recipe of kadet-hub/examples.", page)
+        self.assertIn("<title>CloudNativePG on Kubernetes without Helm, with Kapitan</title>", self.page("recipes", "cnpg"))  # no room for the suffix
         self.assertIn("<title>MongoDB on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))
         self.assertIn("<title>PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "powerdns"))
         self.assertIn("<title>external-dns and PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "external-dns-powerdns"))
@@ -795,7 +825,7 @@ class Site(unittest.TestCase):
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns", "kafka", "rabbitmq"]:
+        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns", "kafka", "postgresql", "rabbitmq"]:
             self.assertIn(f'href="../../recipes/{name}/"', guide)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
@@ -834,7 +864,10 @@ class Site(unittest.TestCase):
         fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["kafka"])  # strimzi has its own target and page
         self.assertIn("\n- Prerequisites, installed once per cluster before the recipe: strimzi\n- Generators: ", self.markdown("recipes", "kafka"))
+        self.assertIn('<li>Prerequisites, installed once per cluster before the recipe: <a href="../../recipes/cnpg/"><code>cnpg</code></a></li>',
+                      self.page("recipes", "postgresql"))
         self.assertNotIn("Prerequisites", self.page("recipes", "strimzi"))
+        self.assertNotIn("Prerequisites", self.page("recipes", "cnpg"))
         both = ("Prerequisites, installed once per cluster before the recipe: ", "rabbitmq-cluster-operator", "cert-manager")  # the operator's own prerequisite follows it
         self.assertIn(f'<li>{both[0]}<a href="../../recipes/{both[1]}/"><code>{both[1]}</code></a>, <a href="../../recipes/{both[2]}/"><code>{both[2]}</code></a></li>',
                       self.page("recipes", "rabbitmq"))
