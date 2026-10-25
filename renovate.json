@@ -25,7 +25,7 @@
       "description": "REG-7: bump tag and commit SHA of marketplace entries",
       "customType": "regex",
       "managerFilePatterns": [
-        "/^generators/[^/]+\\.yaml$/"
+        "/^(generators|recipes)/[^/]+\\.yaml$/"
       ],
       "matchStrings": [
         "repo: (?<packageName>https://\\S+)\\n\\s+path: \\S+\\n\\s+tag: (?<currentValue>\\S+)\\n\\s+sha: (?<currentDigest>[0-9a-f]{40})"
@@ -106,7 +106,8 @@
     {
       "description": "Every entry bump is its own pull request for review (DEC-3)",
       "matchFileNames": [
-        "generators/*.yaml"
+        "generators/*.yaml",
+        "recipes/*.yaml"
       ],
       "groupName": null,
       "commitMessageTopic": "generator {{depName}}"
