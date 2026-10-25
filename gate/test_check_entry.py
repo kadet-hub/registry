@@ -19,6 +19,14 @@ ENTRY = """source:
   sha: {sha}
 owners: [{owners}]
 """
+RECIPE = """source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: {name}
+  tag: {name}-v{version}
+  sha: {sha}
+owners: [{owners}]
+exceptions: []
+"""
 MANIFEST = """name: {name}
 description: Demo generator
 license: Apache-2.0
@@ -40,13 +48,15 @@ TREE = {
 
 
 class Case:
-    def __init__(self, author=OWNER, base_entries=None, same_repo=False, author_id_bot=False):
+    def __init__(self, author=OWNER, base_entries=None, same_repo=False, author_id_bot=False, base_recipes=None):
         self.dir = tempfile.mkdtemp()
         self.base = os.path.join(self.dir, "base")
         os.makedirs(os.path.join(self.base, "generators"))
         shutil.copytree(POLICY, os.path.join(self.base, "policy"))
         for name, text in (base_entries or {}).items():
             self.write(f"base/generators/{name}.yaml", text)
+        for name, text in (base_recipes or {}).items():
+            self.write(f"base/recipes/{name}.yaml", text)
         head = {"full_name": "kadet-hub/registry" if same_repo else "someone/registry"}
         self.write("event.json", json.dumps({"pull_request": {
             "user": {"id": author}, "head": {"repo": head}, "base": {"repo": {"full_name": "kadet-hub/registry"}}}}))
@@ -91,6 +101,10 @@ class Case:
 
 def entry(tag="v1.0.0", owners=OWNER, sha=SHA):
     return ENTRY.format(tag=tag, sha=sha, owners=owners)
+
+
+def recipe(name="cert-manager", version="1.0.0", owners=OWNER, sha=SHA):
+    return RECIPE.format(name=name, version=version, sha=sha, owners=owners)
 
 
 def manifest(name="demo", owners=OWNER, kapitan=">=0.36.3,<0.37", binaries="", description="Demo generator"):
@@ -138,6 +152,16 @@ class Files(unittest.TestCase):
     def test_bad_path_fails(self):
         f, _ = Case().files({"filename": "generators/$(id).yaml", "status": "added"})
         self.assertTrue(has(f, "REG-2"))
+
+    def test_recipe_entry(self):  # REC-1: GI-2 as for a generator entry
+        path = "recipes/cert-manager.yaml"
+        self.assertEqual(Case().files({"filename": path, "status": "modified"}), ([], path))
+        self.assertEqual(Case(author=MAINTAINER).files({"filename": path, "status": "removed"}), ([], "removed:" + path))
+        self.assertTrue(has(Case().files({"filename": path, "status": "added"}, {"filename": "policy/imports.txt", "status": "modified"})[0], "GI-2"))
+        self.assertTrue(has(Case().files({"filename": path, "status": "removed"})[0], "GI-2"))
+        self.assertTrue(has(Case(author=MAINTAINER).files({"filename": path, "status": "added"},
+                                                          {"filename": "generators/demo.yaml", "status": "added"})[0], "GI-2: one entry"))
+        self.assertTrue(has(Case().files({"filename": "recipes/cert-manager/x.yaml", "status": "added"})[0], "REG-2"))
 
 
 class Entry(unittest.TestCase):
@@ -194,6 +218,50 @@ class Entry(unittest.TestCase):
         c = Case(author=MAINTAINER, base_entries={"demo": entry()})
         self.assertTrue(has(c.entry("removed:generators/demo.yaml", reserved="kapitan\n"), "REG-9"))
         self.assertEqual(c.entry("removed:generators/demo.yaml", reserved="kapitan\ndemo\n"), [])
+
+
+class Recipe(unittest.TestCase):
+    path = "recipes/cert-manager.yaml"
+
+    def test_new_entry_needs_a_maintainer(self):  # REC-3
+        self.assertEqual(Case(author=MAINTAINER).entry(self.path, recipe()), [])
+        self.assertTrue(has(Case().entry(self.path, recipe()), "REC-3"))
+        self.assertTrue(has(Case(author=check_entry.RENOVATE_BOT, same_repo=True).entry(self.path, recipe()), "REC-3"))
+
+    def test_source_and_exceptions(self):  # REC-1
+        c = Case(author=MAINTAINER)
+        exception = "exceptions:\n  - {rule: 'semgrep:x', path: x.py, sha256: " + "c" * 64 + "}"
+        for bad in (recipe().replace("kadet-hub/recipes.git", "example/recipes.git"),
+                    recipe().replace("path: cert-manager", "path: certmanager"),
+                    recipe().replace("path: cert-manager", "path: ."),
+                    recipe().replace("cert-manager-v1.0.0", "v1.0.0"),
+                    recipe().replace("cert-manager-v1.0.0", "cert-manager-1.0.0"),
+                    recipe().replace("cert-manager-v1.0.0", "certmanager-v1.0.0"),
+                    recipe().replace("exceptions: []", exception),
+                    recipe().replace("exceptions: []\n", "")):
+            self.assertTrue(has(c.entry(self.path, bad), "REC-1"), bad)
+
+    def test_names(self):  # REC-2
+        self.assertEqual(Case(author=MAINTAINER, base_entries={"certmanager": entry()}).entry(self.path, recipe()), [])
+        self.assertEqual(Case(base_recipes={"cert-manager": recipe()}).entry("generators/certmanager.yaml", entry()), [])
+        self.assertTrue(has(Case(author=MAINTAINER, base_recipes={"certmanager": recipe("certmanager")}).entry(self.path, recipe()), "REG-3"))
+        for name in ("recipes", "kapitan"):
+            self.assertTrue(has(Case(author=MAINTAINER).entry(f"recipes/{name}.yaml", recipe(name)), "REG-2"), name)
+        self.assertTrue(has(Case().entry("generators/recipes.yaml", entry()), "REG-2"))
+
+    def test_removal_reserves_name(self):  # REC-2, REG-9
+        c = Case(author=MAINTAINER, base_recipes={"cert-manager": recipe()})
+        self.assertTrue(has(c.entry("removed:" + self.path, reserved="kapitan\n"), "REG-9"))
+        self.assertEqual(c.entry("removed:" + self.path, reserved="kapitan\ncert-manager\n"), [])
+
+    def test_changes_follow_reg5(self):  # REC-1, REC-3
+        base = {"cert-manager": recipe()}
+        bump = recipe(version="1.1.0")
+        self.assertEqual(Case(base_recipes=base).entry(self.path, bump), [])
+        self.assertEqual(Case(author=check_entry.RENOVATE_BOT, same_repo=True, base_recipes=base).entry(self.path, bump), [])
+        self.assertTrue(has(Case(author=STRANGER, base_recipes=base).entry(self.path, bump), "REG-5"))
+        self.assertTrue(has(Case(base_recipes=base).entry(self.path, recipe(version="0.9.0")), "REG-6"))
+        self.assertTrue(has(Case(base_recipes=base).entry(self.path, bump.replace("kadet-hub/recipes.git", "attacker/recipes.git")), "REG-8"))
 
 
 class Manifest(unittest.TestCase):

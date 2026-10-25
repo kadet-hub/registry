@@ -1,7 +1,7 @@
-"""GI-14: check_entry.py's entry step on a fuzzed generators/<name>.yaml.
+"""GI-14: check_entry.py's entry step on a fuzzed generators/<name>.yaml or recipes/<name>.yaml.
 
-The last input byte picks the author and whether main already holds the
-entry, so the bump rules run too.
+The last input byte picks the author, whether main already holds the
+entry and the entry's directory, so the bump and recipe rules run too.
 """
 
 import json
@@ -35,12 +35,13 @@ def write(rel, text):
 for base in ("new", "old"):
     os.makedirs(os.path.join(WORK, base, "generators"))
     shutil.copytree(POLICY, os.path.join(WORK, base, "policy"))
-write("old/generators/demo.yaml", OLD)
-write("new/generators/demo-x.yaml", OLD)
+for kind in ("generators", "recipes"):
+    write(f"old/{kind}/demo.yaml", OLD)
+    write(f"new/{kind}/demo-x.yaml", OLD)
 for i, author in enumerate(AUTHORS):
     repo = {"full_name": "kadet-hub/registry"}
     write(f"event{i}.json", json.dumps({"pull_request": {"user": {"id": author}, "head": {"repo": repo}, "base": {"repo": repo}}}))
-PATH = write("path", "generators/demo.yaml")
+PATHS = [write(f"path-{kind}", f"{kind}/demo.yaml") for kind in ("generators", "recipes")]
 HEAD = os.path.join(WORK, "head.yaml")
 
 
@@ -51,7 +52,7 @@ def TestOneInput(data):
         f.write(data)
     mode = data[-1]
     check_entry.step_entry(SimpleNamespace(
-        event=os.path.join(WORK, f"event{mode % 4}.json"), path_file=PATH, head=HEAD,
+        event=os.path.join(WORK, f"event{mode % 4}.json"), path_file=PATHS[mode >> 3 & 1], head=HEAD,
         base=os.path.join(WORK, ("new", "old")[mode >> 2 & 1]), reserved=os.path.join(WORK, "reserved.txt"),
         policy=POLICY, out=os.path.join(WORK, "entry.json")))
 

@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Recipes
 
 Status: Draft
-Code: `recipes/`, `policy/reserved-names.txt`, `gate/`, `sandbox/`, `release/`, `.github/workflows/{gate,release}.yml`, `.github/actions/setup-gate/` (none implemented yet)
+Code: `recipes/`, `policy/reserved-names.txt`, `gate/`, `sandbox/`, `release/`, `.github/workflows/{gate,release}.yml`, `.github/actions/setup-gate/` (REC-1 to REC-3 implemented in `gate/` and `policy/reserved-names.txt`, the rest not yet)
 Verified against: main @ aa7e00c
 
 Related: [marketplace.md](marketplace.md) holds the threat model, acceptance
@@ -140,8 +140,8 @@ recipe's README and class files hold what the index lists (REC-13).
   SEC-14 exceptions cover scanner findings in code, which a recipe does not
   have.
 
-  - Test: `gate/test_check_entry.py` (not written)
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py` (`Recipe.test_source_and_exceptions`, `Recipe.test_changes_follow_reg5`, `Files.test_recipe_entry`) (partial: REG-1 runs in `gate/run` without a test, as for generators)
+  - Since: #377
 
 - REC-2: A recipe name MUST pass REG-2 and REG-3 against the recipe names on
   `main` and `policy/reserved-names.txt`, not against generator names. A
@@ -151,8 +151,8 @@ recipe's README and class files hold what the index lists (REC-13).
   A reserved name blocks both namespaces, so a removed recipe name cannot
   be reused as a generator name and the other way round.
 
-  - Test: `gate/test_check_entry.py` (not written)
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py` (`Recipe.test_names`, `Recipe.test_removal_reserves_name`)
+  - Since: #377
 
 - REC-3: A pull request adding a recipe entry MUST be a maintainer pull
   request (DEC-18). Changes to an existing entry follow REG-5.
@@ -161,8 +161,8 @@ recipe's README and class files hold what the index lists (REC-13).
   `owners`; a recipe has no manifest. `owners` names who may open bumps
   and yanks besides the maintainer and Renovate. That answers RCP OQ-4.
 
-  - Test: `gate/test_check_entry.py` (not written)
-  - Since: not implemented
+  - Test: `gate/test_check_entry.py` (`Recipe.test_new_entry_needs_a_maintainer`, `Recipe.test_changes_follow_reg5`)
+  - Since: #377
 
 ## Gate
 
@@ -173,6 +173,10 @@ checks (REC-4), `check lint` on the files (REC-5), the generator pins
 `renders` proof (REC-9). The previous version, on a bump, is compiled for
 the output diff (REC-10). Only the source fetch, the index and generator
 pulls and the chart pull or manifest download have network.
+
+REC-4 onward are not implemented yet. The gate runs REC-1 to REC-3 and
+REG-1 on a recipe entry and then fails it with `REC-4: the recipe checks
+from REC-4 on are not implemented yet, so no recipe entry passes the gate`.
 
 `check` comes from a `check-vX.Y.Z` release of kadet-hub/recipes (RCP-22),
 pinned by commit SHA in `.github/actions/setup-gate/` like the other gate

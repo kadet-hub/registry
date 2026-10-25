@@ -1,4 +1,4 @@
-"""Checks on a pull request's entry and the generator manifest (GI-2, REG-*, QA-1, QA-1a, QA-2, QA-5).
+"""Checks on a pull request's entry and the generator manifest (GI-2, REG-*, REC-1 to REC-3, QA-1, QA-1a, QA-2, QA-5).
 
 Runs in the sandbox image (yaml, jsonschema, packaging). Three steps, each
 reading only files the gate wrote and printing findings, exit 1 on any:
@@ -6,7 +6,7 @@ reading only files the gate wrote and printing findings, exit 1 on any:
   files    --event E --files F --policy P --out O
            GI-2 on the changed files; writes the validated entry path or "".
   entry    --event E --head H --base B --reserved R --policy P --out O
-           GI-1/QA-5 schema, layout, REG-2/3/5/6/8/9; writes entry.json.
+           GI-1/QA-5 schema, layout, REG-2/3/5/6/8/9, REC-1/3; writes entry.json.
   manifest --event E --entry J --manifest M --policy P [--root-license L]
            QA-5 schema, REG-4, CMP-3, SEC-7, name match, QA-1, QA-1a, QA-2.
 """
@@ -24,7 +24,8 @@ from packaging.specifiers import InvalidSpecifier, SpecifierSet
 
 KAPITAN = "0.36.3"
 RENOVATE_BOT = 29139614
-ENTRY_PATH = re.compile(r"^generators/([a-z][a-z0-9-]{1,38})\.yaml$")
+ENTRY_PATH = re.compile(r"^(?:generators|recipes)/([a-z][a-z0-9-]{1,38})\.yaml$")
+RECIPES_REPO = "https://github.com/kadet-hub/recipes.git"
 NAME = re.compile(r"^[a-z][a-z0-9-]{1,38}$")
 TAG = re.compile(r"^(?P<prefix>[A-Za-z0-9._-]*?)v?(?P<version>\d+\.\d+\.\d+)$")
 # Same layout the Renovate regex manager relies on (REG-7).
@@ -81,7 +82,8 @@ def step_files(a):
     with open(a.files, encoding="utf-8") as f:
         files = [json.loads(line) for line in f if line.strip()]
     findings = []
-    entries = [f for f in files if f["filename"].startswith("generators/") or (f.get("previous_filename") or "").startswith("generators/")]
+    dirs = ("generators/", "recipes/")
+    entries = [f for f in files if f["filename"].startswith(dirs) or (f.get("previous_filename") or "").startswith(dirs)]
     pins = renovate and files and all(f["status"] == "modified" and RENOVATE_PINS.fullmatch(f["filename"]) for f in files)
     if not maintainer and not pins:
         if len(files) != 1 or len(entries) != 1:
@@ -99,7 +101,7 @@ def step_files(a):
         elif e["status"] == "renamed":
             findings.append("GI-2: renaming an entry is a removal plus a new entry")
         elif not ENTRY_PATH.match(e["filename"]):
-            findings.append(f"REG-2: entry path must match generators/<name>.yaml: {e['filename'][:100]!r}")
+            findings.append(f"REG-2: entry path must match generators/<name>.yaml or recipes/<name>.yaml: {e['filename'][:100]!r}")
         else:
             path = e["filename"]
     with open(a.out, "w", encoding="utf-8") as f:
@@ -121,6 +123,7 @@ def step_entry(a):
             json.dump({"removed": name}, f)
         return [] if name in reserved_head else [f"REG-9: removing {name} must add it to policy/reserved-names.txt"]
     name = ENTRY_PATH.match(path).group(1)
+    kind = os.path.dirname(path)
     if os.path.getsize(a.head) > MAX_ENTRY:
         return ["GI-1: entry file too large"]
     try:
@@ -142,9 +145,15 @@ def step_entry(a):
         with open(base_path, encoding="utf-8") as f:
             old = yaml.safe_load(f)
     tag = TAG.match(entry["source"]["tag"])
+    src = entry["source"]
+    if kind == "recipes" and (src["repo"], src["path"], src["tag"], entry.get("exceptions")) \
+            != (RECIPES_REPO, name, f"{name}-v{tag.group('version')}", []):
+        findings.append(f"REC-1: a recipe entry sets source.repo {RECIPES_REPO}, source.path {name}, source.tag {name}-vX.Y.Z and exceptions []")
     if old is None:
-        others = {os.path.splitext(n)[0] for n in os.listdir(os.path.join(a.base, "generators"))} \
-            if os.path.isdir(os.path.join(a.base, "generators")) else set()
+        if kind == "recipes" and not maintainer:
+            findings.append("REC-3: a new recipe entry is a maintainer pull request")
+        others = {os.path.splitext(n)[0] for n in os.listdir(os.path.join(a.base, kind))} \
+            if os.path.isdir(os.path.join(a.base, kind)) else set()
         for other in sorted(others | reserved_main):
             if squash(other) == squash(name):
                 findings.append(f"REG-3: {name} equals {other} without separators")

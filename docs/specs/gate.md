@@ -198,7 +198,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   | Target | Code | Input |
   |---|---|---|
-  | `fuzz_entry` | `check_entry.step_entry` | `generators/<name>.yaml`, new or a bump, from an owner, a stranger, a maintainer or Renovate |
+  | `fuzz_entry` | `check_entry.step_entry` | `generators/<name>.yaml` or `recipes/<name>.yaml`, new or a bump, from an owner, a stranger, a maintainer or Renovate |
   | `fuzz_manifest` | `check_entry.step_manifest`, `schema_diff.sources` | `kapitan-generator.yaml`, for a new entry and a bump |
   | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | `kapitan inventory` output, including the tag before the digest |
   | `fuzz_documents` | `tag_check.kinds`, `schema_check.check`, `schema_diff.sources` | a compiled output file, as YAML and as JSON, and `schemas/sources.yaml` |
@@ -249,7 +249,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: #243, #244
+  - Since: #243, #244; recipe entries: #377
 
 - GI-15: A job that holds `contents`, `packages`, `id-token`,
   `attestations` or `pages` write, or reads a secret other than
