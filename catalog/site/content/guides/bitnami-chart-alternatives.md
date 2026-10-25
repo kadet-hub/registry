@@ -2,7 +2,7 @@
 title: Bitnami chart alternatives, chart by chart
 layout: prose
 description: What replaces the frozen Bitnami charts for PostgreSQL, RabbitMQ, Kafka, Keycloak, Grafana, Loki, Thanos, Argo CD, cert-manager and kube-prometheus.
-lastmod: 2026-10-24
+lastmod: 2026-10-25
 ---
 
 Bitnami stopped publishing new images and charts to Docker Hub on 28
@@ -77,11 +77,12 @@ the kube-prometheus Helm chart by prometheus-community.
 ## Charts without a generator yet
 
 `redis`, `mongodb` and `mysql` have no generator on kadet-hub yet. For
-them and `external-dns`, the [Valkey](/recipes/valkey/),
-[MongoDB](/recipes/mongodb/), [MySQL](/recipes/mysql/) and
+them and `external-dns`, the [MongoDB](/recipes/mongodb/), [MySQL](/recipes/mysql/) and
 [external-dns with PowerDNS](/recipes/external-dns-powerdns/) [recipes](/glossary/#recipe)
 render plain workloads with the [kubernetes](/generators/kubernetes/) generator: one StatefulSet per
-database, without replication. MySQL Community Server is GPL-2.0 and the
+database, without replication. The [Valkey](/recipes/valkey/) recipe uses the same generator
+to rebuild the Valkey project's own Helm chart in its standalone mode: one
+Deployment with a PersistentVolumeClaim, without replication. MySQL Community Server is GPL-2.0 and the
 recipe uses Oracle's image `container-registry.oracle.com/mysql/community-server`.
 MongoDB Community Server is licensed SSPLv1, which the OSI does not
 approve as open source; the recipe uses MongoDB Inc's image

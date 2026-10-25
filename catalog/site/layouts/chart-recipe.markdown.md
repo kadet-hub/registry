@@ -15,7 +15,11 @@
 {{ range $r.classes }}- {{ if .option }}Option{{ else }}Class{{ end }} {{ .class }} ({{ .file }}){{ with .components }}: {{ delimit . ", " }}{{ end }}
 {{ end }}- Source: {{ $r.folder }}
 - Page: {{ .Permalink }}
+{{ with $r.replaces }}
+## Replaces
 
+{{ . }}
+{{ end }}
 ## Required parameters
 
 {{ $r.required }}
