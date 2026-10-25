@@ -191,7 +191,10 @@ CON-1 checks, fetches and verifies them like any generator.
      `dependencies`, and each dependency is an `oci` source
      `ghcr.io/<owner>/recipes/<name>[:<version>]@sha256:<digest>` with
      `output_path: inventory/classes/recipes/<name>`;
-  3. fetch these outside the sandbox and verify them (CON-5);
+  3. fetch these outside the sandbox and verify them (CON-5), then fail
+     unless, for each recipe whose record lists `includes` (REC-13), the
+     fetch inventory pins every included recipe at exactly the listed
+     digest;
   4. unpack each into the project at its `output_path`, replacing what the
      checkout holds there.
 
@@ -200,13 +203,17 @@ CON-1 checks, fetches and verifies them like any generator.
 
   A recipe pinned in the main inventory would be fetched after Kapitan
   loaded the inventory, so the workflow would verify the new recipe and
-  compile the old one. `fetch_inventory` is a path relative to the
-  repository root without `..`, as `output_path` is. The Renovate preset
-  `github>kadet-hub/renovate-config` matches `**/inventory/**` only and
-  needs a pattern for the fetch inventory (kadet-hub/renovate-config,
-  follow-up).
+  compile the old one. All recipes of a project share
+  `inventory/classes/recipes/`, so two parents that include the same recipe
+  at different digests cannot both be satisfied, and step 3 names both.
+  The included recipes stay in the fetch inventory because the local
+  compile of CON-6 fetches only what it lists. `fetch_inventory` is a path
+  relative to the repository root without `..`, as `output_path` is. The
+  Renovate preset `github>kadet-hub/renovate-config` matches
+  `**/inventory/**` only and needs a pattern for the fetch inventory
+  (kadet-hub/renovate-config, follow-up).
 
-  - Test: `consumer/test_consumer.py`; `consumer-selftest` (AC-12) (not written)
+  - Test: `consumer/test_consumer.py`; `consumer-selftest` (AC-12, AC-14) (not written)
   - Since: not implemented
 
 - CON-5: Verification of a recipe MUST check the artifact attestation as
