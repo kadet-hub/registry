@@ -1,11 +1,11 @@
 name: request review
 
 # neat-bot reads this repository only. CODEOWNERS would request it only with
-# write access, so this repository's own token requests it instead. Nothing
-# from the pull request is checked out or run, which keeps pull_request_target
-# safe for pull requests from forks.
+# write access, so this repository's own token requests it instead. Pull
+# requests from forks get a read-only token and are skipped; request the bot
+# on those by hand after a look at them.
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, ready_for_review]
 
 permissions:
@@ -15,6 +15,7 @@ jobs:
   request:
     if: >-
       !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.type != 'Bot' &&
       github.event.pull_request.user.login != 'neat-bot'
     runs-on: ubuntu-24.04
