@@ -1402,7 +1402,8 @@ Related: CAT-15, CAT-30, CON-2.
 - CAT-37c: The site MUST have a page at `/recipes/<name>/` for every
   recipe of kadet-hub/recipes that has a content page with
   `layout: chart-recipe`. The page MUST show the source pinned by digest
-  (a chart, or a compose file as CAT-37e says), the proof level, the
+  (a chart, a compose file as CAT-37e says, or an image as CAT-37f says),
+  the proof level, the
   README section "Replaces" when the README has one, the components and options the recipe deploys,
   the README section "Required parameters" before the include snippet,
   the include snippet, a fetch inventory pinned to the commit the page was
@@ -1475,8 +1476,8 @@ Related: CAT-15, CAT-30, CON-2.
 
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
-  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347
+  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
+  - Since: #342, #344, #347, #349
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1484,11 +1485,12 @@ Related: CAT-15, CAT-30, CON-2.
 
   The two kinds were checked differently. A kadet-hub/recipes recipe is
   compared with the chart it rebuilds, or deployed and smoke tested when
-  its source is a compose file (CAT-37e). A kadet-hub/examples recipe is
-  deployed to kind and checked by its assertions (EX-5).
+  its source is a compose file or an image (CAT-37e, CAT-37f). A
+  kadet-hub/examples recipe is deployed to kind and checked by its
+  assertions (EX-5).
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #342
+  - Since: #342, #349
 
 - CAT-37e: A CAT-37c page whose README `Source:` line is a GitHub file URL
   MUST show the source as a Docker Compose file with its repository,
@@ -1503,8 +1505,9 @@ Related: CAT-15, CAT-30, CON-2.
   compose file has no Kubernetes objects to compare with, so the proof is
   the deploy on kind and the smoke test (DEC-8, RCP-38, RCP-39 there). The
   "Mapping" section is the compose counterpart of "Settings" for what the
-  file sets but the recipe renders differently. A `Source:` line of
-  neither form stops the build as a missing one does.
+  file sets but the recipe renders differently. A `Source:` line in none
+  of the forms of CAT-37c, CAT-37e and CAT-37f stops the build as a
+  missing one does.
 
   Titles lead with the application and "without Docker Compose" and name
   Kapitan, such as "Miniflux on Kubernetes without Docker Compose, with
@@ -1515,6 +1518,27 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
   - Since: #343
+
+- CAT-37f: A CAT-37c page whose README `Source:` line is an image
+  reference MUST show the source as the container image the recipe is
+  designed on, with its tag and digest. It MUST NOT say that the recipe
+  is compared with a chart, and the `/recipes/` entry of CAT-37d MUST NOT
+  either.
+
+  A recipe designed in kadet-hub, for a project that ships no chart,
+  Kustomize base or compose file, has the project's image as its source,
+  written as `<registry>/<repository>:<tag>@sha256:<digest>` (DEC-9,
+  DEC-11, RCP-23 there). It is at level `deploys` only, proven by the
+  deploy on kind and the smoke test (RCP-44, RCP-45 there). Titles and
+  descriptions follow CAT-37c. mysql, the first such recipe, replaces the
+  kadet-hub/examples stand-in for Bitnami's `mysql` chart, so it keeps
+  "MySQL on Kubernetes without Bitnami, with Kapitan" and a description
+  that leads with "Bitnami mysql Helm chart alternative:".
+
+  Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
+
+  - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
+  - Since: #349
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
@@ -1549,10 +1573,10 @@ Related: CAT-15, CAT-30, CON-2.
   merges together with the kadet-hub/examples pull request that removes
   the recipe there, after the recipe is on `main` of kadet-hub/recipes,
   because the build fetches each page's files from the repository its
-  layout names (CAT-37a, CAT-37c). valkey moved this way.
+  layout names (CAT-37a, CAT-37c). valkey and mysql moved this way.
 
   - Test: `catalog/test_catalog.py` (not written)
-  - Since: not implemented; valkey moved: #345
+  - Since: not implemented; valkey moved: #345; mysql moved: #349
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
