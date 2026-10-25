@@ -41,16 +41,20 @@ if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
   offline=(--offline)
   recipes=$CATALOG_RECIPES
 else
-  # CAT-37a: the recipe classes from kadet-hub/examples@main; one that is not fetched fails the build.
+  # CAT-37a: the recipe classes from kadet-hub/examples@main, for the pages that are its recipes; one that is not fetched fails the build.
+  mkdir -p -- "$recipes/inventory/classes"
   fetch() {
     mkdir -p -- "$(dirname -- "$recipes/inventory/classes/$1")"
     curl -fsSL --max-time 20 "https://raw.githubusercontent.com/$OWNER/examples/main/recipes/inventory/classes/$1" -o "$recipes/inventory/classes/$1" \
       || { echo "::error::recipes: $1 not fetched from $OWNER/examples"; exit 1; }
   }
-  fetch generators.yml
-  for page in $(grep -Lx 'layout: chart-recipe' -- "$here"/site/content/recipes/*.md); do fetch "recipes/$(basename -- "$page" .md).yml"; done
-  # The compile and operator classes the recipe classes include; mutate, used by operator classes, has no compile class.
-  for c in $(sed -nE 's/^ *- recipes\.(lib|operators)\.([a-z0-9-]+)$/\1\/\2/p' -- "$recipes"/inventory/classes/recipes/*.yml | sort -u); do fetch "recipes/$c.yml"; done
+  examples=$(grep -Lx 'layout: chart-recipe' -- "$here"/site/content/recipes/*.md || true)
+  if [[ -n $examples ]]; then
+    fetch generators.yml
+    for page in $examples; do fetch "recipes/$(basename -- "$page" .md).yml"; done
+    # The compile and operator classes the recipe classes include; mutate, used by operator classes, has no compile class.
+    for c in $(sed -nE 's/^ *- recipes\.(lib|operators)\.([a-z0-9-]+)$/\1\/\2/p' -- "$recipes"/inventory/classes/recipes/*.yml | sort -u); do fetch "recipes/$c.yml"; done
+  fi
   # CAT-37c: the recipes of kadet-hub/recipes at the commit main points to, so the files and the page's pin agree.
   sha=$(git ls-remote "https://github.com/$OWNER/recipes.git" refs/heads/main | cut -f1)
   [[ $sha =~ ^[0-9a-f]{40}$ ]] || { echo "::error::recipes: main of $OWNER/recipes not resolved"; exit 1; }
