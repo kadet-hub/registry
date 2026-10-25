@@ -105,6 +105,12 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   locks are for its Python, and actionlint 1.7.12 does not know newer
   labels.
 
+  Each entry bump gets its own branch and pull request, named after the
+  entry file: `renovate/generators/argocd.yaml`, titled `chore(deps): update
+  generator argocd to argocd-v1.0.4`. A recipe entry says `recipe` instead of
+  `generator`. The default branch name would be shared by every entry of one
+  source repository and major version.
+
   Renovate also bumps the tool pins and, where the source allows it, the
   checksum in the same pull request. Each pin uses one of three
   mechanisms:
@@ -167,7 +173,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     `timestamp-optional` proposed. Checksums: lookup with tool pins set
     one release back; `checksum-pins` workflow.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
-    #306; recipe entries: #378
+    #306; recipe entries: #378; branch and title per entry: #381
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
