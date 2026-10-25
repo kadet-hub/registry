@@ -1349,8 +1349,9 @@ Related: CAT-15, CAT-30, CON-2.
   the classes of recipes that have one.
 
   As CAT-11a asks, every recipe title and the index title lead with the
-  searched term and name Kapitan, such as "PostgreSQL on Kubernetes without
-  Bitnami, with Kapitan", and every description leads with "Bitnami
+  searched term and name Kapitan, such as "PostgreSQL on Kubernetes with
+  Kapitan". Titles MUST NOT say "without Bitnami". Every description
+  leads with "Bitnami
   <chart> Helm chart alternative:" and names Kapitan with Kubernetes. A title that leaves no room for the " · kadet-hub" suffix
   within CAT-11's 65 characters stands alone; the template counts bytes,
   so the suffix's "·" counts twice.
@@ -1465,12 +1466,13 @@ Related: CAT-15, CAT-30, CON-2.
   for one.
 
   Such a recipe keeps the queries CAT-11f routes to the examples page, so
-  its title and description lead with them. valkey replaces the stand-in
-  for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes without
-  Bitnami, with Kapitan", with a description that leads with "Bitnami
-  redis Helm chart alternative:". The title "Valkey on Kubernetes without
-  Helm" named neither Redis nor Bitnami, although CAT-11f sends the
-  Redis queries and "valkey helm chart not bitnami" to the page. Moving those queries to the
+  its description leads with them. The title names the project and the
+  searched term without "without Bitnami". valkey replaces the stand-in
+  for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes with
+  Kapitan", with a description that leads with "Bitnami redis Helm chart
+  alternative:". The title "Valkey on Kubernetes without Helm" named
+  neither Redis nor Bitnami, although CAT-11f sends the Redis queries and
+  "valkey helm chart not bitnami" to the page. Moving those queries to the
   Bitnami guide was considered, but the guide only links the recipe, and
   the recipe page is what answers them.
 
@@ -1532,10 +1534,10 @@ Related: CAT-15, CAT-30, CON-2.
   deploy on kind and the smoke test (RCP-44, RCP-45 there). Titles and
   descriptions follow CAT-37c. mysql, the first such recipe, replaces the
   kadet-hub/examples stand-in for Bitnami's `mysql` chart, so it keeps
-  "MySQL on Kubernetes without Bitnami, with Kapitan" and a description
+  "MySQL on Kubernetes with Kapitan" and a description
   that leads with "Bitnami mysql Helm chart alternative:". mongodb, the
   stand-in for Bitnami's `mongodb` chart, moved the same way and keeps
-  "MongoDB on Kubernetes without Bitnami, with Kapitan" and "Bitnami
+  "MongoDB on Kubernetes with Kapitan" and "Bitnami
   mongodb Helm chart alternative:".
 
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
