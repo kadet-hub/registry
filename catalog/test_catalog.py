@@ -158,7 +158,7 @@ def artifact(path, files):
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
 RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"],
-                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": [], "mongodb": []}
+                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": []}
 # The operator classes and whether each runs mutate, which has a pin and no compile class.
 RECIPE_OPERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cert-manager", "cloudnative-pg", "keycloak"], "kafka": ["strimzi"],
                     "rabbitmq": ["cert-manager"]}
@@ -225,12 +225,22 @@ MYSQL_RECIPE_FILES = {
     "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .mysql\n"),
     "mysql.yml": "parameters:\n  components:\n    mysql:\n      application: mysql\n",
 }
+MONGODB_RECIPE_FILES = {
+    "README.md": "# mongodb\n\nMongoDB Community Server as a single instance, designed in kadet-hub on MongoDB's image.\n\n"
+                 f"Source: `docker.io/mongodb/mongodb-community-server:9.0.4-ubi9-slim@sha256:{'e' * 64}`\n\nLevel: `deploys`\n\n"
+                 "## Replaces\n\nThis recipe replaces the `mongodb` recipe of kadet-hub/examples.\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.mongodb\n```\n\n"
+                 "## Required parameters\n\n`applications.mongodb.password` must be set.\n\n"
+                 "## Proof\n\n`check mongodb --level deploys` on kind.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .mongodb\n"),
+    "mongodb.yml": "parameters:\n  components:\n    mongodb:\n      application: mongodb\n",
+}
 
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
     for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES), ("valkey", VALKEY_RECIPE_FILES),
-                          ("mysql", MYSQL_RECIPE_FILES)):
+                          ("mysql", MYSQL_RECIPE_FILES), ("mongodb", MONGODB_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
             with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
@@ -547,7 +557,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 4)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 5)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -654,7 +664,7 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
         self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart or a Docker Compose file, or designed on an image</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
@@ -665,6 +675,8 @@ class Site(unittest.TestCase):
         self.assertNotIn("recipes/valkey/", examples)
         self.assertRegex(chart, r'recipes/mysql/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
         self.assertNotIn("recipes/mysql/", examples)
+        self.assertRegex(chart, r'recipes/mongodb/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
+        self.assertNotIn("recipes/mongodb/", examples)
         self.assertIn("recipes/kafka/", examples)
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
@@ -691,11 +703,11 @@ class Site(unittest.TestCase):
         rabbitmq = self.page("recipes", "rabbitmq")  # cert-manager's class runs no mutate
         self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', rabbitmq)
         self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/rabbitmq/">rabbitmq</a></li>', rabbitmq)
-        self.assertNotIn("Operator classes", self.page("recipes", "mongodb"))
+        self.assertNotIn("Operator classes", self.page("recipes", "external-dns-powerdns"))
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
         self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
-        self.assertIn('<li>Operators: none</li>', self.page("recipes", "mongodb"))
+        self.assertIn('<li>Operators: none</li>', self.page("recipes", "external-dns-powerdns"))
         md = self.markdown("recipes", "keycloak")
         self.assertTrue(md.startswith("# Keycloak on Kubernetes without Bitnami, with Kapitan\n\n> keycloak <script>"))
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
@@ -703,7 +715,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n## inventory/classes/recipes/operators/strimzi.yml\n\n```yaml\n# Installs strimzi.", self.markdown("recipes", "kafka"))
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql"]:
+        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb"]:
             self.assertIn(f'href="../../recipes/{name}/"', guide)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
@@ -790,6 +802,8 @@ class Site(unittest.TestCase):
         self.assertIn(f"\n- Source: container image {DESIGN_SOURCE}, recipe designed in kadet-hub\n"
                       "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
         self.assertNotIn("compared with", md)
+        self.assertIn(f"<li>Source: container image <code>docker.io/mongodb/mongodb-community-server:9.0.4-ubi9-slim@sha256:{'e' * 64}</code>,"
+                      " recipe designed in kadet-hub</li>", self.page("recipes", "mongodb"))
 
     def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c, CAT-37e
         for missing in ("lib", "operators"):
