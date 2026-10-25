@@ -112,8 +112,9 @@ the build job (RISK-10).
   generator would mostly rename the chart's values. `docs/authors.md` shows
   instead how to render a pinned chart with the `helm` input and patch the
   output in a kadet step of the consumer's own project (#104).
-- DEC-17 to DEC-23: recipes from kadet-hub/recipes only are registered,
-  gated and published here, under their own names and package path
+- DEC-17 to DEC-23, DEC-28: recipes from kadet-hub/recipes only are
+  registered, gated and published here, under their own names and package
+  path, and a recipe's commit pins the recipes it includes
   ([recipes.md](recipes.md)).
 - DEC-24 to DEC-27: kadet-hub/kapitan builds `next` from open upstream
   PRs with the workflow of kapicorp/kapitan#1637
@@ -288,7 +289,8 @@ cover none of the changed files.
 
 - AC-12 (REC-1 to REC-15, CON-4, CON-5): recipe samples fail the gate with
   a `${oc.env:...}` resolver, a `vendor/x.yml` included as `.vendor.x`, a
-  class `recipes.<other>`, a Python file, a generator pinned by a digest the
+  class `recipes.<other>` whose tree no listed version of `<other>` has, a
+  Python file, a generator pinned by a digest the
   index does not list, a yanked generator, a chart whose version differs
   from the `Source` line, an image without digest, a vendored file without
   `.LICENSE`, and an object diff
@@ -298,6 +300,17 @@ cover none of the changed files.
   a digest the index does not list, and on its webhooks without
   `admission-webhook` in `output_capabilities`. Check: `gate-selftest`,
   `consumer-selftest` (not written).
+
+- AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4): a sample parent
+  fails the gate when its included recipe's tree at `source.sha` matches no
+  listed version, and when that version is yanked. A sample parent whose
+  included recipe matches a listed version passes, compiles with it, and
+  its record lists it under `includes`. A sample that requires a recipe
+  rendering a CRD passes the `renders` proof with that CRD applied. A
+  consumer sample fails when the fetch inventory pins the included recipe
+  at another digest or not at all, and when two parents include it at
+  different digests. Check: `gate-selftest`, `consumer-selftest` (not
+  written).
 
 ## Residual risk
 
@@ -430,12 +443,6 @@ coverage is named at each:
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
-
-- OQ-12: How does a recipe pin the recipes it includes (DEC-4 in
-  kadet-hub/recipes)? REC-5 rejects such includes until it is settled. A
-  dependency in the parent's classes is fetched too late (CON-4), so the
-  record would list the children and CON-4 would check that the fetch
-  inventory pins exactly them.
 
 ## Implementation inventory
 
