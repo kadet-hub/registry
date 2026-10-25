@@ -757,6 +757,27 @@ review go into the review comment and do not fail the gate.
   - Test: `gate/test_check_entry.py` (`Quality`)
   - Since: #25
 
+- QA-1a: When the generator tree's `__init__.py` assigns `__version__` at
+  module level, the value MUST be the version from `source.tag` as a string
+  literal.
+
+  When this check was added, three listed versions shipped a stale value:
+  cloudnative-pg 1.1.0 sets `1.0.1`, kubernetes 1.9.0 sets `1.1.1` and
+  kubevirt 1.3.1 sets `1.1.1`. The kubernetes value has not changed since
+  1.2.0, the kubevirt value since 1.1.2. The check runs when an entry is
+  gated, so these three fail on their next bump until the value is fixed.
+
+  The gate parses the file with `ast` and runs nothing from it. Every
+  top-level `__version__ = ...` statement counts. A value other than a
+  string literal is a finding, because the gate does not evaluate
+  expressions. Assignments inside a block, annotated assignments and
+  imports are not seen. A tree without such a statement passes: mutate and
+  the four terraform generators define no `__version__`. An `__init__.py`
+  that does not parse is a finding.
+
+  - Test: `gate/test_check_entry.py` (`Quality.test_version_matches_the_tag`)
+  - Since: #373
+
 - QA-2: `license` MUST be the SPDX identifier of an OSI-approved license
   (`policy/licenses.txt`), and `LICENSE` MUST match it.
 
