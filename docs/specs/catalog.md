@@ -984,7 +984,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   A group without an entry names nothing, and neither does a generator
   whose layer the build could not fetch, so such a group shows alone
-  unless another generator names it. Until this change the label was
+  unless another generator names it. Before #370 the label was
   inferred from `compatibility` when it named one software other than
   `Kubernetes`. That lent the software of one used group to every group
   of the generator, and the generators with two or more CRD sources left
@@ -1004,7 +1004,7 @@ Related: CAT-15, CAT-30, CON-2.
   the name the inference gave them and 22 that the inference left bare.
 
   - Test: `catalog/test_catalog.py`, `sandbox/test_apiserver_check.py`
-  - Since: #247, this change
+  - Since: #247, #370
 
 - CAT-29d: Under "Custom resources and other APIs" (CAT-29c), `/kinds/`
   MUST group the sections by domain, the last two DNS labels of the group,
