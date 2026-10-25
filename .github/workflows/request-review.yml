@@ -1,0 +1,28 @@
+name: request review
+
+# neat-bot reads this repository only. CODEOWNERS would request it only with
+# write access, so this repository's own token requests it instead. Pull
+# requests from forks get a read-only token and are skipped; request the bot
+# on those by hand after a look at them.
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  request:
+    if: >-
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot' &&
+      github.event.pull_request.user.login != 'neat-bot'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Request neat-bot as reviewer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/requested_reviewers" -f "reviewers[]=neat-bot" > /dev/null
