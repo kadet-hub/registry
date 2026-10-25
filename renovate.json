@@ -34,7 +34,7 @@
       "versioningTemplate": "regex:^(?<compatibility>.*?)v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     },
     {
-      "description": "REG-7: tool versions marked with a renovate comment; release-asset and image pins carry their checksum along",
+      "description": "REG-7: tool versions marked with a renovate comment; release-asset and image pins carry their checksum along, tag pins their commit SHA",
       "customType": "regex",
       "managerFilePatterns": [
         "/^sandbox/Dockerfile$/",
@@ -45,7 +45,8 @@
       "matchStrings": [
         "# renovate: datasource=(?<datasource>github-releases) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?",
         "# renovate: datasource=(?<datasource>github-release-attachments) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?\\n\\s*(?:ARG )?[A-Z_]+_SHA(?:256|512)[=:] ?\"?(?<currentDigest>[0-9a-f]{64,128})\"?",
-        "# renovate: datasource=(?<datasource>docker) depName=(?<depName>\\S+)\\n\\s*[A-Z_]+[=:] ?\"?\\S+?:(?<currentValue>[^@\"\\s:]+)@(?<currentDigest>sha256:[0-9a-f]{64})\"?"
+        "# renovate: datasource=(?<datasource>docker) depName=(?<depName>\\S+)\\n\\s*[A-Z_]+[=:] ?\"?\\S+?:(?<currentValue>[^@\"\\s:]+)@(?<currentDigest>sha256:[0-9a-f]{64})\"?",
+        "# renovate: datasource=(?<datasource>github-tags) depName=(?<depName>\\S+) versioning=(?<versioning>\\S+)\\n\\s*[A-Z_]+: (?<currentValue>\\S+)\\n\\s*[A-Z_]+_SHA: (?<currentDigest>[0-9a-f]{40})"
       ]
     },
     {

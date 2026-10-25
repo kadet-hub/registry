@@ -1,0 +1,7 @@
+classes:
+  - recipes.demo
+parameters:
+  namespace: demo
+  kapitan:
+    vars:
+      target: demo

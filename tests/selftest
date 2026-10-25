@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # gate-selftest: run the static checks and the sandbox compile over every
-# sample. pass-* must pass; fail-* must fail; both must report the line in
+# sample, and the recipe checks over every recipe sample in recipes/.
+# pass-* must pass; fail-* must fail; both must report the line in
 # their expect file, which fail-* need. Samples that cannot live in the
 # repository are generated here.
 #
 # Usage: tests/selftest
+# Needs GH_TOKEN for the recipe samples (REC-6).
 set -euo pipefail
 
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -99,12 +101,41 @@ sed -i 's/import BaseObj$/import BaseObj, inventory/; s/{"a": "b"}/{"a": invento
 derive fail-big-file-eval "semgrep: dynamic-code: big.py"
 python3 -c 'print("x = 1\n" * 166_700 + "eval(\"1\")")' >"$work/fail-big-file-eval/big.py"
 
+# Copy the recipe sample pass-recipe under a new name and record the expected finding.
+derive_recipe() {
+  cp -R -- "$work/recipes/pass-recipe" "$work/recipes/$1"
+  printf '%s\n' "$2" >"$work/recipes/$1/expect"
+}
+derive_recipe fail-recipe-python "REC-4: vendor/x.py: the shipped tree holds no Python file"
+: >"$work/recipes/fail-recipe-python/demo/vendor/x.py"
+derive_recipe fail-recipe-vendor-class "REC-4: vendor/x.yml: YAML below vendor/ that no copy entry names would be a class file"
+printf 'parameters: {}\n' >"$work/recipes/fail-recipe-vendor-class/demo/vendor/x.yml"
+yq -i '.classes += [".vendor.x"]' "$work/recipes/fail-recipe-vendor-class/demo/init.yml"
+derive_recipe fail-recipe-no-license "REC-15: vendor/demo.crds.yaml is vendored by a copy entry and has no demo.crds.yaml.LICENSE next to it"
+rm -- "$work/recipes/fail-recipe-no-license/demo/vendor/demo.crds.yaml.LICENSE"
+derive_recipe fail-recipe-token "gitleaks: aws-access-token: tests/values.yaml"
+printf 'aws_access_key_id: %s\n' "$key" >>"$work/recipes/fail-recipe-token/demo/tests/values.yaml"
+derive_recipe fail-recipe-oc-env "REC-5: init.yml: uses the resolver oc.env (RCP-17)"
+sed -i 's/version: 1.0.0/version: ${oc.env:HOME}/' "$work/recipes/fail-recipe-oc-env/demo/init.yml"
+derive_recipe fail-recipe-include "REC-5: init.yml: class recipes.other.vendor.x is neither"
+yq -i '.classes += ["recipes.other.vendor.x"]' "$work/recipes/fail-recipe-include/demo/init.yml"
+zeros=sha256:$(printf '0%.0s' {1..64})
+derive_recipe fail-recipe-unlisted-digest "REC-6: CON-2: ghcr.io/kadet-hub/kubernetes:1.9.0@$zeros: the index does not list this digest for kubernetes"
+sed -i "s/@sha256:987694d4[0-9a-f]*/@$zeros/" "$work/recipes/fail-recipe-unlisted-digest/demo/init.yml"
+derive_recipe fail-recipe-yanked "REC-6: CON-2: calico-resources 1.0.0 is yanked"
+yq -i '.parameters.kapitan.dependencies += [{"type": "oci", "output_path": "lib/calico-resources",
+  "source": "ghcr.io/kadet-hub/calico-resources:1.0.0@sha256:b02a55f91b631f43c358974f7a872c0d05726c57bf65b68959585b22cf4c992f"}]' \
+  "$work/recipes/fail-recipe-yanked/demo/init.yml"
+
 failed=0
-for dir in "$work"/*/; do
+for dir in "$work"/*/ "$work"/recipes/*/; do
   name=$(basename -- "$dir")
+  [[ $name != recipes ]] || continue
   report=$work/$name.txt
   got=pass
-  if "$root/gate/fetch-charts" "$dir" "$work/$name.charts" >"$report" 2>&1; then
+  if [[ $dir == "$work"/recipes/* ]]; then
+    "$root/gate/recipe-static" "$dir" demo >"$report" 2>&1 || got=fail
+  elif "$root/gate/fetch-charts" "$dir" "$work/$name.charts" >"$report" 2>&1; then
     "$root/scan/static-scan" "$dir" >>"$report" 2>&1 || got=fail
     if [[ -n $(ls -A -- "$work/$name.charts") ]]; then "$root/scan/static-scan" "$work/$name.charts" >>"$report" 2>&1 || got=fail; fi
     "$root/sandbox/gate-compile" "$dir" "$name" "$work/$name.charts" >>"$report" 2>&1 || got=fail

@@ -40,6 +40,7 @@ if [[ $path == removed:* ]]; then
 fi
 # $path matched ^(generators|recipes)/[a-z][a-z0-9-]{1,38}\.yaml$ in the files step.
 raw "$path" >"$work/head.yaml"
+token=$GH_TOKEN  # only gate/recipe-static gets it back, for gh attestation verify (REC-6)
 unset GH_TOKEN
 
 check entry --path-file /work/path --head /work/head.yaml --base /base --out /work/entry.json
@@ -56,15 +57,21 @@ if [[ $resolved != "$sha" ]]; then
   echo "REG-1: tag $tag resolves to ${resolved:-nothing}, entry pins $sha"
   status=1
 fi
-if [[ $path == recipes/* ]]; then
-  echo "REC-4: the recipe checks from REC-4 on are not implemented yet, so no recipe entry passes the gate"
-  exit 1
-fi
 
 echo "## Source"
 # Fetch the pinned commit and write source.sha:source.path without checkout.
 "${gitc[@]}" init -q --bare -- "$work/src.git"
 "${gitc[@]}" --git-dir="$work/src.git" fetch -q --depth=1 --no-tags -- "$src_repo" "$sha"
+if [[ $path == recipes/* ]]; then
+  # Every recipe of the commit without tests/, as check lint resolves includes and Requires (REC-4, REC-5).
+  python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --recipe "$name" --out "$work/recipes" || status=1
+  "${gitc[@]}" --git-dir="$work/src.git" cat-file blob "$sha:LICENSE" >"$work/recipes/LICENSE" 2>/dev/null \
+    || rm -f -- "$work/recipes/LICENSE"
+  echo "## Static checks"
+  GH_TOKEN=$token "$root/gate/recipe-static" "$work/recipes" "$name" || status=1
+  echo "REC-7: the recipe checks from REC-7 on are not implemented yet, so no recipe entry passes the gate"
+  exit 1
+fi
 gen=$work/generator
 python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --path "$src_path" --out "$gen" || status=1
 
