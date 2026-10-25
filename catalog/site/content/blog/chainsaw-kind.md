@@ -309,6 +309,11 @@ recipe's pinned image are not tested, and neither is anything that needs
 more than one kind node.
 
 To run one recipe yourself, clone the examples repository and call
-`recipes/check valkey`. It needs gh (authenticated), jq, oras, uv,
-kubeconform, kind, kubectl, chainsaw and Docker; Valkey needs no operator
-and is the fastest to try.
+`recipes/check external-dns-powerdns`. It needs gh (authenticated), jq, oras, uv,
+kubeconform, kind, kubectl, chainsaw and Docker; external-dns with PowerDNS
+needs no operator.
+
+Since [examples#66](https://github.com/kadet-hub/examples/pull/66) the
+Valkey recipe lives in [kadet-hub/recipes](https://github.com/kadet-hub/recipes/tree/main/valkey),
+where `check valkey --level deploys` compares it with the upstream chart on
+kind and runs a smoke test script instead of a Chainsaw test.

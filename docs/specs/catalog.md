@@ -1402,7 +1402,8 @@ Related: CAT-15, CAT-30, CON-2.
 - CAT-37c: The site MUST have a page at `/recipes/<name>/` for every
   recipe of kadet-hub/recipes that has a content page with
   `layout: chart-recipe`. The page MUST show the source pinned by digest
-  (a chart, or a compose file as CAT-37e says), the proof level, the components and options the recipe deploys,
+  (a chart, or a compose file as CAT-37e says), the proof level, the
+  README section "Replaces" when the README has one, the components and options the recipe deploys,
   the README section "Required parameters" before the include snippet,
   the include snippet, a fetch inventory pinned to the commit the page was
   built from with the commands that use it, the README sections "Settings",
@@ -1449,15 +1450,33 @@ Related: CAT-15, CAT-30, CON-2.
   own heading before "Include", so it is read before the snippet is
   copied.
 
+  "Replaces" is the section a recipe that took over a kadet-hub/examples
+  recipe has, with the objects and settings a target moving from that
+  recipe gets differently (RCP-41 there). The page shows it right after
+  the source and the level, because a reader who comes from the examples
+  recipe needs it before anything else.
+
   Titles lead with the chart and "without Helm" and name Kapitan, such as
   "cert-manager on Kubernetes without Helm, with Kapitan". Descriptions
   lead with "<chart> Helm chart alternative:" and name Kapitan with
-  Kubernetes. "Bitnami" appears only where the chart is a Bitnami chart.
+  Kubernetes. "Bitnami" appears only where the chart is a Bitnami chart,
+  or where the recipe replaces a kadet-hub/examples recipe that stood in
+  for one.
 
-  Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37a.
+  Such a recipe keeps the queries CAT-11f routes to the examples page, so
+  its title and description lead with them. valkey replaces the stand-in
+  for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes without
+  Bitnami, with Kapitan", with a description that leads with "Bitnami
+  redis Helm chart alternative:". The title "Valkey on Kubernetes without
+  Helm" named neither Redis nor Bitnami, although CAT-11f sends the
+  Redis queries and "valkey helm chart not bitnami" to the page. Moving those queries to the
+  Bitnami guide was considered, but the guide only links the recipe, and
+  the recipe page is what answers them.
+
+  Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344
+  - Since: #342, #344, #347
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
