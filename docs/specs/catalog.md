@@ -1373,35 +1373,13 @@ Related: CAT-15, CAT-30, CON-2.
     `navigator.share` present and absent
   - Since: #307
 
-- CAT-37: The site MUST have a page at `/recipes/<name>/` for every recipe
-  of kadet-hub/examples and an index of them at `/recipes/`. A recipe page
-  MUST show the Bitnami charts it replaces, its generators linked to their
-  pages, the operators it needs, its inventory class, the compile classes
-  and operator classes that class includes, the pins of those generators,
-  what the examples CI asserts after deploying it, and a link to the
-  recipe's folder. The site navigation MUST link `/recipes/`.
+- CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
+  the site navigation MUST link it. Each recipe has a page at
+  `/recipes/<name>/` (CAT-37c).
 
-  A recipe is an inventory class that replaces one or more Bitnami charts
-  with kadet-hub generators and is deployed and checked on a kind cluster
-  by the examples CI (EX-5, EX-6). The page is where a reader copies it
-  from, so the class, the compile classes and the pins are the files on
-  the `main` branch of kadet-hub/examples at build time, and the page shows
-  what that CI last checked. The lead is the comment at the top of the
-  class. The generators are the `recipes.lib.<generator>` classes the class
-  includes and the generators its `recipes.operators.<operator>` classes
-  compile from `lib/<generator>`, such as mutate, which patches a chart
-  and has no compile class of its own (EX-5a). The pins are the entries of
-  `generators.yml` whose `output_path` is `lib/<generator>`.
-
-  What the page states around the files lives in the front matter of
-  `content/recipes/<name>.md`: title, description, the replaced charts,
-  the operators and the check, taken from the Recipes table of the
-  examples spec. A new recipe needs that page here; the build fetches only
-  the classes of recipes that have one.
-
-  keycloak was the last recipe of kadet-hub/examples (CAT-38a), so no page
-  of the site is one any more. The layout stays, and its tests build a copy
-  of the site with a synthetic page.
+  The first recipes were inventory classes in kadet-hub/examples, deployed
+  and checked on kind by that repository's CI (EX-5). All of them moved to
+  kadet-hub/recipes (CAT-38a), and the layout for their pages was removed.
 
   As CAT-11a asks, every recipe title and the index title lead with the
   searched term and name Kapitan, such as "PostgreSQL on Kubernetes with
@@ -1415,28 +1393,27 @@ Related: CAT-15, CAT-30, CON-2.
   CAT-11a: each recipe page carries its own tested class, not the same text
   under another search term.
 
-  Related: EX-5, EX-5a, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
+  Related: CAT-11, CAT-37c.
 
-  - Test: `catalog/test_catalog.py` (`test_examples_recipe`, `test_recipe_without_operator`)
-  - Since: #283, #299, #300, #354, #363, #368
+  - Test: `catalog/test_catalog.py` (`test_recipes`)
+  - Since: #283, #299, #300, #354, #363, #368; examples layout removed: #372
 
-- CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
-  is missing.
+- CAT-37a: The build MUST fail when a file of a CAT-37c page cannot be
+  fetched or is missing.
 
-  `catalog/build` fetches `generators.yml`, the class of every recipe page
-  of CAT-37 and every compile and operator class those classes include from
-  `raw.githubusercontent.com` with `curl -f`, as it reads the previous
-  `catalog.json`, and copies them into the site's `assets/classes/`;
-  the recipe templates stop the build with `errorf` when one is missing.
-  With no such page it fetches nothing from kadet-hub/examples, so that
-  repository can drop its `recipes/` folder. The API lookups of the build
-  degrade to a warning because the page stays usable without a star count
-  or a README; a recipe page without its class has nothing to copy. A
-  failed build stops the release's catalog job before the Pages upload, so
-  the previous site stays live, as with CAT-11d. With `CATALOG_OFFLINE=1`
-  the build reads the files from `$CATALOG_RECIPES/inventory/classes/`,
-  laid out as in the examples repository's `recipes/` folder, so the tests
-  use fixtures and a local checkout can be previewed.
+  `catalog/build` resolves `main` of kadet-hub/recipes to a commit and
+  fetches each recipe's README, `init.yml` and the classes they name from
+  `raw.githubusercontent.com` at that commit with `curl -f`, as it reads
+  the previous `catalog.json`, and copies them into the site's
+  `assets/classes/`; the recipe templates stop the build with `errorf`
+  when one is missing. The API lookups of the build degrade to a warning
+  because the page stays usable without a star count or a README; a
+  recipe page without its class has nothing to copy. A failed build stops
+  the release's catalog job before the Pages upload, so the previous site
+  stays live, as with CAT-11d. With `CATALOG_OFFLINE=1` the build reads
+  the files from `$CATALOG_RECIPES/inventory/classes/`, with `recipes.sha`
+  and a `recipes/<name>/` directory per recipe, so the tests use fixtures
+  and a local checkout can be previewed.
 
   Hugo's `resources.GetRemote` would fetch from the templates instead. Its
   file cache keeps a fetched file without expiry unless `maxAge` is set,
@@ -1445,8 +1422,8 @@ Related: CAT-15, CAT-30, CON-2.
   access and the offline fixtures. Neither variant uses `actions/cache`
   (GI-10).
 
-  - Test: `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`, `test_build_fetches_examples_only_for_their_pages`)
-  - Since: #283, #300, #368
+  - Test: `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`, `test_build_fetches_recipes_at_main`)
+  - Since: #283, #300, #368; kadet-hub/examples no longer fetched: #372
 
 - CAT-37b: Every recipe page MUST have a Markdown variant (CAT-28) with
   the same facts and files, `/llms.txt` (CAT-16) MUST list it in a section
@@ -1579,20 +1556,15 @@ Related: CAT-15, CAT-30, CON-2.
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
     recipes' prerequisites: #368
 
-- CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
-  CAT-37 under separate headings, each recipe of CAT-37c with its proof
-  level.
+- CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
+  proof level.
 
-  The two kinds were checked differently. A kadet-hub/recipes recipe is
-  compared with the chart or release manifest it rebuilds (CAT-37g), or
-  deployed and smoke tested when its source is a compose file or an image
-  (CAT-37e, CAT-37f). A
-  kadet-hub/examples recipe is deployed to kind and checked by its
-  assertions (EX-5). The heading of the second kind is left out while no
-  page is one.
+  A recipe is compared with the chart or release manifest it rebuilds
+  (CAT-37g), or deployed and smoke tested when its source is a compose
+  file or an image (CAT-37e, CAT-37f).
 
-  - Test: `catalog/test_catalog.py` (`test_recipes`, `test_examples_recipe`)
-  - Since: #342, #349, #368
+  - Test: `catalog/test_catalog.py` (`test_recipes`)
+  - Since: #342, #349, #368; one list: #372
 
 - CAT-37e: A CAT-37c page whose README `Source:` line is a GitHub file URL
   MUST show the source as a Docker Compose file with its repository,
@@ -1718,28 +1690,20 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented
 
-- CAT-38a: Under the kadet-hub/recipes heading of CAT-37d, a listed recipe
-  MUST show its latest version, and the build MUST fail when a
-  kadet-hub/recipes recipe and a kadet-hub/examples recipe share a name.
+- CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 
-  Both kinds live under `/recipes/<name>/`. The failing build makes the
-  pull request that adds a kadet-hub/recipes page also retire the examples
-  page of the same name, with an alias from the old page to the new.
-
-  A recipe that moves from kadet-hub/examples to kadet-hub/recipes under
-  the same name keeps its content page, which switches to
-  `layout: chart-recipe`. The URL stays, so no alias is needed. The switch
-  merges together with the kadet-hub/examples pull request that removes
-  the recipe there, after the recipe is on `main` of kadet-hub/recipes,
-  because the build fetches each page's files from the repository its
-  layout names (CAT-37a, CAT-37c). valkey, mysql, mongodb,
-  external-dns-powerdns, kafka, rabbitmq, postgresql and keycloak moved
-  this way.
+  valkey, mysql, mongodb, external-dns-powerdns, kafka, rabbitmq,
+  postgresql and keycloak moved from kadet-hub/examples to
+  kadet-hub/recipes under the same name. Each kept its content page, which
+  switched to `layout: chart-recipe`, so its URL stayed. kadet-hub/examples
+  has no recipes left, so two recipes of the same name from both
+  repositories can no longer occur.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented; valkey moved: #345; mysql moved: #349;
     mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364;
-    rabbitmq moved: #367; postgresql moved: #366; keycloak moved: #368
+    rabbitmq moved: #367; postgresql moved: #366; keycloak moved: #368;
+    name clash check dropped: #372
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
