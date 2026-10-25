@@ -115,6 +115,9 @@ the build job (RISK-10).
 - DEC-17 to DEC-23: recipes from kadet-hub/recipes only are registered,
   gated and published here, under their own names and package path
   ([recipes.md](recipes.md)).
+- DEC-24 to DEC-27: kadet-hub/kapitan builds `next` from open upstream
+  PRs with the workflow of kapicorp/kapitan#1637
+  ([kapitan-next.md](kapitan-next.md)).
 
 ## Area specs
 
@@ -129,6 +132,7 @@ Requirements live in the spec of their area; IDs are unchanged by the split.
 | [catalog.md](catalog.md) | Catalog | CAT |
 | [legal.md](legal.md) | Legal | LEG |
 | [recipes.md](recipes.md) | Recipes: registration, gate, artifact and index | REC |
+| [kapitan-next.md](kapitan-next.md) | The kadet-hub/kapitan `next` build and its image | NXT |
 
 ## Verification
 
