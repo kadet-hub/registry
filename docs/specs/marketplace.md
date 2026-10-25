@@ -292,7 +292,8 @@ cover none of the changed files.
   class `recipes.<other>` whose tree no listed version of `<other>` has, a
   Python file, a generator pinned by a digest the
   index does not list, a yanked generator, a chart whose version differs
-  from the `Source` line, an image without digest, a vendored file without
+  from the `Source` line, a release manifest whose SHA-256 differs from
+  it, an image without digest, a vendored file without
   `.LICENSE`, and an object diff
   against the chart outside the RCP-12 classes; cert-manager at its first
   tag passes. A consumer sample with a fetch inventory compiles
@@ -306,7 +307,8 @@ cover none of the changed files.
   listed version, and when that version is yanked. A sample parent whose
   included recipe matches a listed version passes, compiles with it, and
   its record lists it under `includes`. A sample that requires a recipe
-  rendering a CRD passes the `renders` proof with that CRD applied. A
+  rendering a CRD passes the `renders` proof with that CRD applied, and so
+  does one that reaches the recipe only through another required recipe. A
   consumer sample fails when the fetch inventory pins the included recipe
   at another digest or not at all, and when two parents include it at
   different digests. Check: `gate-selftest`, `consumer-selftest` (not

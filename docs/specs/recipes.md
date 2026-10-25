@@ -172,7 +172,7 @@ checks (REC-4), `check lint` on the files (REC-5), the generator pins
 (REC-6) and the chart (REC-7), the sandboxed compile (REC-8) and the
 `renders` proof (REC-9). The previous version, on a bump, is compiled for
 the output diff (REC-10). Only the source fetch, the index and generator
-pulls and the chart pull have network.
+pulls and the chart pull or manifest download have network.
 
 `check` comes from a `check-vX.Y.Z` release of kadet-hub/recipes (RCP-22),
 pinned by commit SHA in `.github/actions/setup-gate/` like the other gate
@@ -232,10 +232,13 @@ rules it is judged by.
   `helm pull` by digest, fail unless its `Chart.yaml` version is the
   line's version, and render it with `helm template` and
   `tests/values.yaml` in the sandbox, with the release name and namespace
-  of RCP-23.
+  of RCP-23. For a release manifest (RCP-23, RCP-59) it MUST instead
+  download the release asset of the line and fail unless its SHA-256 is
+  the line's digest. The manifest's documents then take the rendered
+  chart's place in REC-9, and helm does not run.
 
-  The chart is not scanned (SEC-8) and not shipped. It never reaches a
-  consumer: it is only the other side of the comparison. DEC-15 is
+  The chart or manifest is not scanned (SEC-8) and not shipped. It never
+  reaches a consumer: it is only the other side of the comparison. DEC-15 is
   therefore unaffected, since a recipe renders no chart at compile time. `helm template`
   runs under the SEC-10 trace with `helm template` allowed as for a declared
   binary.
@@ -276,7 +279,7 @@ rules it is judged by.
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
-  included recipes, chart source and level before and after.
+  included recipes, chart or manifest source and level before and after.
 
   A chart update with an unchanged object diff can still bring a new
   admission webhook or `hostPath`. RCP-21 shows that to the reviewer of the
@@ -325,14 +328,17 @@ rules it is judged by.
   - Test: workflow job `gate-selftest` (not written)
   - Since: not implemented
 
-- REC-17: For each recipe on a recipe's `Requires:` line (RCP-54) and on
-  those of its included recipes, the gate MUST resolve the required recipe
-  at `source.sha` as REC-16 does, compile it from its own
-  `tests/target.yml` in the sandbox as REC-8 does, and pass that output to
-  `check`, which applies its CRDs before the proof (RCP-55).
+- REC-17: For each recipe on a recipe's `Requires:` line (RCP-54), on
+  those of its included recipes and, in turn, on those of the required
+  recipes, the gate MUST resolve the required recipe at `source.sha` as
+  REC-16 does, compile it from its own `tests/target.yml` in the sandbox
+  as REC-8 does, and pass that output to `check`, which applies the CRDs
+  before the proof in the order of RCP-55.
 
   A dry run of a CloudNativePG Cluster or an HTTPRoute fails without its
-  CRD. `gateway-api` is no recipe: `check` installs it with its pinned
+  CRD. The RabbitMQ operator's Certificates need cert-manager's CRDs, and
+  `rabbitmq` reaches `cert-manager` only through `rabbitmq-cluster-operator`.
+  `gateway-api` is no recipe: `check` installs it with its pinned
   cloud-provider-kind, which `.github/actions/setup-gate/` pins with the
   other gate tools. The required recipe is not recorded, since the
   consumer installs it in a target of its own.
@@ -387,7 +393,8 @@ parameters:
   `{<name>: {<version>: <record>}}`, with the same `serial`. A record MUST
   hold digest, tree ID, description, license, owners, source repository,
   tag and SHA, `level` from the README, `chart` (`repo`, `version`,
-  `digest`) from its `Source` line, `generators` (`name`, `version`,
+  `digest`), or for a release manifest `manifest` (`url`, `digest`), from
+  its `Source` line, `generators` (`name`, `version`,
   `digest`) for each pin, `includes` (`name`, `version`, `digest`) for each
   included recipe (REC-16), `output_capabilities` (the SEC-12 matches,
   DEC-23), `kinds` (PUB-10), `scan`, `output_diff`, `published`, `yanked`
