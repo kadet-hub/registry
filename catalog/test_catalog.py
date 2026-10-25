@@ -17,7 +17,7 @@ from html import unescape as _unescape
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEO_CHECK = os.path.join(HERE, "seo_check.py")
 sys.path.insert(0, HERE)
-from view import README_MAX, readme, releases, schema_kinds, view
+from view import README_MAX, readme, releases, schema_kinds, schema_sources, view
 
 OWNER = "kadet-hub"
 
@@ -154,6 +154,16 @@ def artifact(path, files):
             info = tarfile.TarInfo(name)
             info.size = len(data)
             t.addfile(info, __import__("io").BytesIO(data))
+
+
+def sources_layers(tmp, layers):
+    """CAT-29c: <tmp>/artifacts/<name>.tar whose schemas/sources.yaml maps each key to its software, in the QA-7 form."""
+    path = os.path.join(tmp, "artifacts")
+    os.makedirs(path)
+    for name, entries in layers.items():
+        artifact(os.path.join(path, f"{name}.tar"), {"./schemas/sources.yaml": "# QA-7\n" + "".join(
+            f"{key}:\n  software: {software}\n  version: 1.0.0\n  copyright:\n    - x\n" for key, software in entries.items())})
+    return path
 
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
@@ -1364,12 +1374,16 @@ class Site(unittest.TestCase):
             prev = os.path.join(tmp, "catalog.json")
             digest = INDEX["generators"]["demo"]["1.10.0"]["digest"]
             with open(prev, "w", encoding="utf-8") as f:
-                json.dump({"generators": [{"name": "demo", "latest": {"digest": digest}, "readme": "# Kept", "changelog": {"1.10.0": "- kept", "1.2.0": 1}},
+                json.dump({"generators": [{"name": "demo", "latest": {"digest": digest}, "readme": "# Kept", "changelog": {"1.10.0": "- kept", "1.2.0": 1},
+                                           "sources": {"gateway.networking.k8s.io": "Gateway API", "x.io": 1}},
                                           {"name": "big", "latest": {"digest": "sha256:x"}, "readme": "x" * (README_MAX + 1)}]}, f)
             previous = load_previous(prev)
-        self.assertEqual(previous, {("demo", digest): {"readme": "# Kept", "changelog": {"1.10.0": "- kept"}}})  # oversized README dropped
-        g = view(INDEX, OWNER, lambda _: None, previous=previous)["generators"][0]
+        self.assertEqual(previous, {("demo", digest): {"readme": "# Kept", "changelog": {"1.10.0": "- kept"},
+                                                       "sources": {"gateway.networking.k8s.io": "Gateway API", "x.io": None}}})  # oversized README dropped
+        result = view(INDEX, OWNER, lambda _: None, previous=previous)
+        g = result["generators"][0]
         self.assertEqual((g["readme"], g["changelog"]), ("# Kept", {"1.10.0": "- kept"}))  # CAT-36b
+        self.assertEqual(result["software"], {"gateway.networking.k8s.io": "Gateway API"})  # CAT-29c
         moved = {"generators": dict(INDEX["generators"], demo=dict(INDEX["generators"]["demo"], **{"1.11.0": record("f")}))}
         self.assertIsNone(view(moved, OWNER, lambda _: None, previous=previous)["generators"][0]["readme"])  # new digest
         with open(os.path.join(self.out, "catalog.json"), encoding="utf-8") as f:
@@ -1691,8 +1705,11 @@ class Site(unittest.TestCase):
             "talos-b": gen("d", [("", "v1alpha1", "ConfigMap")], "Talos"),
             "kyv": gen("e", [("kyverno.io", "v1", "ClusterPolicy")], "Kyverno"),
             "multi": gen("f", [("kyverno.io", "v1", "Policy"), ("cert-manager.io", "v1", "Certificate")], "Kyverno", "cert-manager")}}
+        layers = {"k8s-a": {"core": "Kubernetes", "apps": "Kubernetes", "gateway.networking.k8s.io": "Gateway API"}, "k8s-b": {"core": "Kubernetes"},
+                  "talos-a": {"core": "Kubernetes", "core/v1alpha1": "Talos"}, "talos-b": {"core/v1alpha1": "Talos"}, "kyv": {"kyverno.io": "Kyverno"},
+                  "multi": {"kyverno.io": "Kyverno", "cert-manager.io": "cert-manager"}}
         with tempfile.TemporaryDirectory() as tmp:
-            out = build(index, tmp)
+            out = build(index, tmp, artifacts=sources_layers(tmp, layers))
             result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
             read = lambda *parts: open(os.path.join(out, "kinds", *parts, "index.html"), encoding="utf-8").read()
             kinds, core, talos = read(), read("core", "configmap"), read("v1alpha1", "configmap")
@@ -1711,14 +1728,14 @@ class Site(unittest.TestCase):
         headings = re.findall(r'<h([23]) id="([^"]+)">(.*?)</h[23]>', kinds)
         self.assertEqual(headings, [
             ("2", "builtin", "Kubernetes built-in APIs"), ("3", "apps", "apps"), ("3", "core", "core (v1)"),
-            ("2", "custom", "Custom resources and other APIs"), ("3", "cert-manager.io", "cert-manager.io"),
+            ("2", "custom", "Custom resources and other APIs"), ("3", "cert-manager.io", "cert-manager.io · cert-manager"),
             ("3", "gateway.networking.k8s.io", "gateway.networking.k8s.io · Gateway API"), ("3", "kyverno.io", "kyverno.io · Kyverno"),
             ("3", "v1alpha1", "v1alpha1 · Talos")])
         for url in ("kinds/core/configmap/", "kinds/v1alpha1/configmap/"):
             self.assertIn(f'href="../{url}"', kinds)
             self.assertIn(f"<loc>https://kadet-hub.org/{url}</loc>", sitemap)
 
-    def test_custom_sections_group_by_domain(self):  # CAT-29d, CAT-29b
+    def test_custom_sections_group_by_domain(self):  # CAT-29d, CAT-29b, CAT-29c
         def gen(d, kinds, *software):
             return {"1.0.0": dict(record(d, tags=()), kinds=[dict(zip(("group", "version", "kind"), k)) for k in kinds],
                                   compatibility=[{"software": s, "version": "1", "source": "tbd"} for s in software])}
@@ -1726,21 +1743,33 @@ class Site(unittest.TestCase):
         index = {"serial": 1, "generators": {
             "k8s": gen("a", [("apps", "v1", "Deployment"), ("networking.k8s.io", "v1", "Ingress"), ("autoscaling.k8s.io", "v1", "VerticalPodAutoscaler"),
                              ("gateway.networking.k8s.io", "v1", "HTTPRoute"), ("snapshot.storage.k8s.io", "v1", "VolumeSnapshot")]),
-            "kv-a": gen("b", [("kubevirt.io", "v1", "VirtualMachine"), pool, ("cdi.kubevirt.io", "v1beta1", "DataVolume")], "KubeVirt", "CDI"),
+            "kv-a": gen("b", [("kubevirt.io", "v1", "VirtualMachine"), pool, ("cdi.kubevirt.io", "v1beta1", "DataVolume"),
+                              ("snapshot.storage.k8s.io", "v1", "VolumeSnapshotClass")], "KubeVirt", "CDI", "Kubernetes CSI external-snapshotter"),
             "kv-b": gen("c", [pool]),
             "iron": gen("d", [("compute.ironcore.dev", "v1alpha1", "Machine"), ("storage.ironcore.dev", "v1alpha1", "Volume")], "IronCore"),
             "cm": gen("e", [("cert-manager.io", "v1", "Certificate")], "cert-manager"),
             "tm": gen("f", [("trust.cert-manager.io", "v1alpha1", "Bundle")], "trust-manager"),
             "multus": gen("g", [("k8s.cni.cncf.io", "v1", "NetworkAttachmentDefinition")], "Multus CNI"),
-            "calico": gen("h", [("projectcalico.org", "v3", "IPPool")]),
+            "calico": gen("h", [("projectcalico.org", "v3", "IPPool")], "Calico"),
             "talos": gen("i", [("", "v1alpha1", "MachineConfig")], "Talos")}}
+        # kv-a ships no entry for pool.kubevirt.io and calico no sources.yaml: their groups name nothing.
+        layers = {"k8s": {"apps": "Kubernetes", "gateway.networking.k8s.io": "Gateway API"},
+                  "kv-a": {"kubevirt.io": "KubeVirt", "cdi.kubevirt.io": "CDI", "snapshot.storage.k8s.io": "Kubernetes CSI external-snapshotter"},
+                  "iron": {"compute.ironcore.dev": "IronCore", "storage.ironcore.dev": "IronCore"}, "cm": {"cert-manager.io": "cert-manager"},
+                  "tm": {"trust.cert-manager.io": "trust-manager"}, "multus": {"k8s.cni.cncf.io": "Multus CNI"}, "talos": {"core/v1alpha1": "Talos"}}
         with tempfile.TemporaryDirectory() as tmp:
-            out = build(index, tmp)
+            out = build(index, tmp, artifacts=sources_layers(tmp, layers))
             result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
             with open(os.path.join(out, "kinds", "index.html"), encoding="utf-8") as f:
                 kinds = f.read()
+            with open(os.path.join(out, "catalog.json"), encoding="utf-8") as f:
+                software = json.load(f)["software"]
             pool_page = os.path.isfile(os.path.join(out, "kinds", "pool.kubevirt.io", "virtualmachinepool", "index.html"))
         self.assertEqual((result.returncode, result.stdout), (0, ""))
+        self.assertEqual(software, {"cdi.kubevirt.io": "CDI", "cert-manager.io": "cert-manager", "compute.ironcore.dev": "IronCore",
+                                    "gateway.networking.k8s.io": "Gateway API", "k8s.cni.cncf.io": "Multus CNI", "kubevirt.io": "KubeVirt",
+                                    "snapshot.storage.k8s.io": "Kubernetes CSI external-snapshotter", "storage.ironcore.dev": "IronCore",
+                                    "trust.cert-manager.io": "trust-manager", "v1alpha1": "Talos"})
         headings = re.findall(r'<h([234]) id="([^"]+)">(.*?)</h[234]>', kinds)
         self.assertEqual(headings, [
             ("2", "builtin", "Kubernetes built-in APIs"), ("3", "apps", "apps"), ("3", "networking.k8s.io", "networking.k8s.io"),
@@ -1750,9 +1779,9 @@ class Site(unittest.TestCase):
             ("3", "k8s.cni.cncf.io", "k8s.cni.cncf.io · Multus CNI"),
             ("3", "domain-ironcore.dev", "ironcore.dev · IronCore"),
             ("4", "compute.ironcore.dev", "compute.ironcore.dev"), ("4", "storage.ironcore.dev", "storage.ironcore.dev"),
-            ("3", "domain-k8s.io", "k8s.io"), ("4", "autoscaling.k8s.io", "autoscaling.k8s.io"),
+            ("3", "domain-k8s.io", "k8s.io · Gateway API, Kubernetes CSI external-snapshotter"), ("4", "autoscaling.k8s.io", "autoscaling.k8s.io"),
             ("4", "gateway.networking.k8s.io", "gateway.networking.k8s.io"), ("4", "snapshot.storage.k8s.io", "snapshot.storage.k8s.io"),
-            ("3", "domain-kubevirt.io", "kubevirt.io"), ("4", "cdi.kubevirt.io", "cdi.kubevirt.io"), ("4", "kubevirt.io", "kubevirt.io"),
+            ("3", "domain-kubevirt.io", "kubevirt.io · CDI, KubeVirt"), ("4", "cdi.kubevirt.io", "cdi.kubevirt.io"), ("4", "kubevirt.io", "kubevirt.io"),
             ("4", "pool.kubevirt.io", "pool.kubevirt.io"), ("3", "projectcalico.org", "projectcalico.org"), ("3", "v1alpha1", "v1alpha1 · Talos")])
         ids = [h[1] for h in headings]
         self.assertEqual(len(ids), len(set(ids)))
@@ -1960,6 +1989,15 @@ class View(unittest.TestCase):
                     f.write(text)
                 self.assertEqual(schema_kinds(path), [], text)
             self.assertEqual(schema_kinds(os.path.join(tmp, "missing.json")), [])
+
+    def test_schema_sources_in_the_qa7_form(self):  # CAT-29c
+        text = ("# QA-7\nkubevirt.io:\n  software: KubeVirt (CDI) / x\n  copyright:\n    - x\n    software: nested\n"
+                "core/v1alpha1:\n  software: Talos\r\n  version: 1.14.3\nnone.io:\n  version: 1\n")
+        self.assertEqual(schema_sources(text), {"kubevirt.io": "KubeVirt (CDI) / x", "core/v1alpha1": "Talos", "none.io": None})
+        for bad in ('"quoted.io":\n  software: X\n', "flow.io: {software: X}\n", "a.io:\n  software: 'X'\n", "a.io:\n  software: X # note\n",
+                    "a.io:\n  software: X\u202e\n", "---\na.io:\n  software: X\n"):
+            self.assertEqual(schema_sources(text + bad), {}, bad)  # nothing named rather than a name for the wrong group
+        self.assertEqual(schema_sources(None), {})
 
     def test_kinds_from_the_record_or_the_sbom(self):  # CAT-29, CAT-26
         index = {"generators": dict(INDEX["generators"], alpha={"1.0.0": record("e")}, zulu={"1.0.0": record("f")})}

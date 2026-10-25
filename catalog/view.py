@@ -7,7 +7,8 @@ and adds display data from the GitHub API: owner logins and source stars.
 A failed lookup leaves the user ID or no stars; --offline skips the API.
 DIR/<name>.tar is the latest version's artifact layer; its README.md is
 shown on the generator page (CAT-7), its CHANGELOG.md sections in the
-weekly digest (CAT-36b). DIR/<name>/<version>.spdx.json marks a
+weekly digest (CAT-36b), its schemas/sources.yaml the software of its
+groups on /kinds/ (CAT-29c). DIR/<name>/<version>.spdx.json marks a
 version whose SBOM the site offers (CAT-14); the schemas it lists give the
 kinds of a latest listed version without a kinds record (CAT-29); --rekor
 maps name and version to the transparency log index of the verified
@@ -48,6 +49,8 @@ BUILTIN = {"core", "admissionregistration.k8s.io", "apiextensions.k8s.io", "apir
            "authorization.k8s.io", "autoscaling", "batch", "certificates.k8s.io", "coordination.k8s.io", "discovery.k8s.io",
            "events.k8s.io", "flowcontrol.apiserver.k8s.io", "networking.k8s.io", "node.k8s.io", "policy", "rbac.authorization.k8s.io",
            "resource.k8s.io", "scheduling.k8s.io", "storage.k8s.io", "storagemigration.k8s.io"}
+SOURCE_KEY = re.compile(r"[a-z0-9][a-z0-9./-]*:")  # CAT-29c: a QA-7 sources.yaml entry, <group> or <group>/<version>
+SOURCE_SOFTWARE = re.compile(r"  software: ([A-Za-z0-9][^\"'#:{}\[\]]*?)[ \t]*")
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")  # Cc but tab and newline, Bidi_Control
 
 
@@ -99,6 +102,23 @@ def schema_kinds(path):
     except (OSError, ValueError, KeyError, TypeError):
         return []
     return sorted({m.groups() for m in map(SCHEMA.match, names) if m and m.group(1) != "terraform"})  # QA-8 extracts
+
+
+def schema_sources(text):
+    """CAT-29c: {entry: its software or None} of a sources.yaml in the QA-7 block form, {} for a file in any other form."""
+    found, key = {}, None
+    for line in (text or "").splitlines():
+        if line.startswith("  software:"):
+            m = SOURCE_SOFTWARE.fullmatch(line)
+            if not m or key is None or CONTROL.search(m.group(1)):
+                return {}
+            found[key] = m.group(1)
+        elif line[:1] not in ("", " ", "#"):
+            if not SOURCE_KEY.fullmatch(line.rstrip()):
+                return {}
+            key = line.rstrip()[:-1]
+            found[key] = None
+    return found
 
 
 def rendered_kinds(record):
@@ -201,10 +221,12 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
         rendered = rendered_kinds(latest) if latest else None
         kinds = rendered if rendered is not None else (
             schema_kinds(os.path.join(sboms, name, f"{latest['version']}.spdx.json")) if sboms and latest else [])
-        software = {c["software"] for c in (latest or {}).get("compatibility") or []} - {"Kubernetes"}
+        sources = schema_sources(readme(tar, "schemas/sources.yaml")) if tar and os.path.isfile(tar) else kept.get("sources")
+        entries = sources or {}
         for group, kind, version in kinds:
             section = version if group == "core" and version != "v1" else group  # CAT-29: Talos's v1alpha1 is no core kind
-            named.setdefault(section, set()).update(software if len(software) == 1 else ())
+            entry = f"{group}/{version}" if f"{group}/{version}" in entries else group  # QA-7: the versioned entry takes precedence
+            named.setdefault(section, set()).update({entries.get(entry)} - {None, "Kubernetes"})
             e = by_kind.setdefault(section, {}).setdefault(kind.lower(), {"name": kind, "page": False, "rendered": [], "schema": [], "versions": {}})
             if rendered is None:
                 if name not in e["schema"]:
@@ -227,6 +249,7 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
             "description": shown.get("description", ""),
             "tags": shown.get("tags", []),
             "kinds": sorted({k for _, k, _ in kinds}),
+            "sources": sources,  # CAT-29c, kept for the next build
             "license": shown.get("license"),
             "latest": latest,
             "stars": stars,
@@ -398,7 +421,7 @@ def stats(generators, gate):
 
 
 def load_previous(path):
-    """{(name, latest digest): {"readme": README, "changelog": CHANGELOG sections}} from the last build's catalog.json."""
+    """{(name, latest digest): {"readme": README, "changelog": CHANGELOG sections, "sources": group software}} from the last build's catalog.json."""
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
@@ -406,7 +429,8 @@ def load_previous(path):
         return {}
     return {(g["name"], g["latest"]["digest"]): {
                 "readme": g["readme"],
-                "changelog": {v: t for v, t in g["changelog"].items() if isinstance(t, str)} if isinstance(g.get("changelog"), dict) else None}
+                "changelog": {v: t for v, t in g["changelog"].items() if isinstance(t, str)} if isinstance(g.get("changelog"), dict) else None,
+                "sources": {k: s if isinstance(s, str) else None for k, s in g["sources"].items()} if isinstance(g.get("sources"), dict) else None}
             for g in data.get("generators", [])
             if isinstance(g, dict) and isinstance(g.get("latest"), dict) and isinstance(g.get("readme"), str)
             and len(g["readme"].encode()) <= README_MAX}
