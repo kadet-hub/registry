@@ -16,6 +16,11 @@
 {{- end -}}
 {{- /* CAT-37f: the image of a designed recipe, with its registry host, by tag and digest. */ -}}
 {{- $image := "" }}{{ with findRESubmatch "(?m)^Source: `([a-z0-9.-]+\\.[a-z]+/[^`:@\\s]+:[^`@\\s]+@sha256:[0-9a-f]{64})`$" $md 1 }}{{ $image = index (index . 0) 1 }}{{ $source = $image }}{{ end -}}
+{{- /* CAT-37g: a release manifest as a GitHub release asset URL, then the file's digest. */ -}}
+{{- $manifest := false -}}
+{{- with findRESubmatch "(?m)^Source: `(https://github\\.com/([^/`]+/[^/`]+)/releases/download/([^/`]+)/([^/`@]+))@(sha256:[0-9a-f]{64})`$" $md 1 -}}
+  {{- $m := index . 0 }}{{ $manifest = dict "url" (index $m 1) "repo" (index $m 2) "tag" (index $m 3) "file" (index $m 4) "digest" (index $m 5) }}{{ $source = index $m 1 -}}
+{{- end -}}
 {{- $level := "" }}{{ with findRESubmatch "(?m)^Level: `([a-z]+)`$" $md 1 }}{{ $level = index (index . 0) 1 }}{{ end -}}
 {{- $lead := "" }}{{ with findRESubmatch `(?s)\A# [^\n]*\n+(.*?)\n\n` $md 1 }}{{ $lead = index (index . 0) 1 | replaceRE `\s+` " " | strings.TrimSpace | replaceRE `:$` "." }}{{ end -}}
 {{- $sections := slice -}}
@@ -27,8 +32,7 @@
 {{- with where $sections "heading" "Include" }}{{ with findRESubmatch "(?s)```yaml\n(.*?)\n```" (index . 0).body 1 }}{{ $include = index (index . 0) 1 }}{{ end }}{{ end -}}
 {{- $required := "" }}{{ with where $sections "heading" "Required parameters" }}{{ $required = (index . 0).body }}{{ end -}}
 {{- $replaces := "" }}{{ with where $sections "heading" "Replaces" }}{{ $replaces = (index . 0).body }}{{ end -}}
-{{- /* The prerequisites of the README's Requires: line, each entry in backticks. */ -}}
-{{- $requires := slice }}{{ with findRESubmatch "(?m)^Requires: (.+)$" $md 1 }}{{ range findRESubmatch "`([^`]+)`" (index (index . 0) 1) -1 }}{{ $requires = $requires | append (index . 1) }}{{ end }}{{ end -}}
+{{- $requires := partial "recipe-requires.html" $name -}}
 {{- range slice (slice "Source:" $source) (slice "Level:" $level) (slice "Include snippet" $include) (slice `section "Required parameters"` $required) -}}
   {{- if not (index . 1) }}{{ errorf "CAT-37c: recipe %s: README.md has no %s" $name (index . 0) }}{{ end -}}
 {{- end -}}
@@ -70,7 +74,7 @@
         subdir: %s
         output_path: inventory/classes/recipes/%s` $fetch $owner $sha . . -}}
 {{- end -}}
-{{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "image" $image "level" $level "include" $include
+{{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "manifest" $manifest "image" $image "level" $level "include" $include
   "replaces" $replaces "requires" $requires "required" $required "classes" $classes "generators" $generators "fetch" $fetch
   "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"
   "sections" (where $sections "heading" "in" (slice "Settings" "Mapping" "Left out" "Renamed RBAC objects" "Proof"))
