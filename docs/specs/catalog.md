@@ -1403,6 +1403,7 @@ Related: CAT-15, CAT-30, CON-2.
   recipe of kadet-hub/recipes that has a content page with
   `layout: chart-recipe`. The page MUST show the source pinned by digest
   (a chart, or a compose file as CAT-37e says), the proof level, the components and options the recipe deploys,
+  the README section "Required parameters" before the include snippet,
   the include snippet, a fetch inventory pinned to the commit the page was
   built from with the commands that use it, the README sections "Settings",
   "Left out", "Renamed RBAC objects" and "Proof", the generators the recipe
@@ -1436,19 +1437,27 @@ Related: CAT-15, CAT-30, CON-2.
   renders content, which drops raw HTML, so the content page does not
   repeat the tables. The lead is the README's first paragraph. The
   template stops the build with `errorf` when a class, the `Source:` or
-  `Level:` line or the Include snippet is missing. The content page's
-  front matter holds title, description, `layout` and `lastmod`, and
-  CAT-37b and CAT-11g apply as to every recipe page.
+  `Level:` line, the Include snippet or the section "Required parameters"
+  is missing. The content page's front matter holds title, description,
+  `layout` and `lastmod`, and CAT-37b and CAT-11g apply as to every recipe
+  page.
+
+  "Required parameters" names the values the target must set, such as
+  miniflux's two password refs, or says that there are none (RCP-40
+  there). A recipe leaves such a value unset, so the compile stops until
+  the target sets it (RCP-19 there). The page shows the section as its
+  own heading before "Include", so it is read before the snippet is
+  copied.
 
   Titles lead with the chart and "without Helm" and name Kapitan, such as
   "cert-manager on Kubernetes without Helm, with Kapitan". Descriptions
   lead with "<chart> Helm chart alternative:" and name Kapitan with
   Kubernetes. "Bitnami" appears only where the chart is a Bitnami chart.
 
-  Related: RCP-1, RCP-15, RCP-23 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37a.
+  Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37a.
 
-  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342
+  - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_recipe_file_missing_fails_the_build`)
+  - Since: #342, #344
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
