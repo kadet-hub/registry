@@ -181,16 +181,31 @@ CHART_RECIPE_FILES = {
     "webhook.yml": "parameters:\n  components:\n    cert-manager-webhook:\n      application: cert-manager\n",
     "crds.yml": "parameters:\n  kapitan:\n    compile: []\n",
 }
+# CAT-37e: a kadet-hub/recipes recipe migrated from a Docker Compose file.
+COMPOSE_SOURCE = f"https://github.com/miniflux/v2/blob/{'2' * 40}/contrib/docker-compose/basic.yml"
+COMPOSE_RECIPE_FILES = {
+    "README.md": "# miniflux\n\nMiniflux and its PostgreSQL database, from the Docker Compose file.\n\n"
+                 f"Source: `{COMPOSE_SOURCE}@sha256:{'f' * 64}`\n\nLevel: `deploys`\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.miniflux\n```\n\n"
+                 "## Settings\n\n| Compose | Inventory |\n|---|---|\n| `ADMIN_USERNAME` | `applications.miniflux.admin.username` |\n\n"
+                 "## Mapping\n\n| Compose | Recipe |\n|---|---|\n| service `db` | StatefulSet `miniflux-db` |\n\n"
+                 "## Proof\n\n`check miniflux --level deploys` on kind.\n",
+    "init.yml": "classes:\n  - .miniflux\n  - .db\nparameters:\n  kapitan:\n    dependencies:\n      - type: oci\n"
+                f"        source: ghcr.io/{OWNER}/kubernetes:1.7.0@sha256:{'d' * 64}\n        output_path: lib/kubernetes\n",
+    "miniflux.yml": "parameters:\n  components:\n    miniflux:\n      application: miniflux\n",
+    "db.yml": "parameters:\n  components:\n    miniflux-db:\n      application: miniflux\n",
+}
 
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
-    os.makedirs(os.path.join(root, "recipes", "cert-manager"), exist_ok=True)
+    for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES)):
+        os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
+        for name, text in files.items():
+            with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
+                f.write(text)
     with open(os.path.join(root, "recipes.sha"), "w", encoding="utf-8") as f:
         f.write(CHART_RECIPE_SHA + "\n")
-    for name, text in CHART_RECIPE_FILES.items():
-        with open(os.path.join(root, "recipes", "cert-manager", name), "w", encoding="utf-8") as f:
-            f.write(text)
     os.makedirs(os.path.join(root, "recipes", "lib"), exist_ok=True)
     os.makedirs(os.path.join(root, "recipes", "operators"), exist_ok=True)
     pins = sorted({g for gs in RECIPE_GENERATORS.values() for g in gs} | {"kubernetes", "mutate"})
@@ -501,7 +516,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 1)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 2)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -608,11 +623,13 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
-        self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
+        self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart or a Docker Compose file</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
+        self.assertRegex(chart, r'recipes/miniflux/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37e
         self.assertNotIn("recipes/cert-manager/", examples)
+        self.assertNotIn("recipes/miniflux/", examples)
         self.assertIn("recipes/kafka/", examples)
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
@@ -688,7 +705,25 @@ class Site(unittest.TestCase):
         self.assertIn("\n## Settings\n\n| Chart value | Inventory |\n", md)
         self.assertIn("\n## Proof\n\n`check cert-manager --level deploys` on kind.\n", md)
 
-    def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c
+    def test_compose_recipe(self):  # CAT-37e
+        page = self.page("recipes", "miniflux")
+        self.assertIn("<title>Miniflux on Kubernetes without Docker Compose, with Kapitan</title>", page)
+        self.assertIn(f'<li>Source: Docker Compose file <a href="{COMPOSE_SOURCE}"><code>miniflux/v2@{"2" * 40}</code></a> '
+                      f"(<code>contrib/docker-compose/basic.yml</code>), <code>sha256:{'f' * 64}</code></li>", page)
+        self.assertIn("<li>Proof level: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
+        self.assertNotIn("Source chart", page)
+        self.assertNotIn("compared with", page)
+        self.assertIn("<li><code>recipes.miniflux.db</code> (<code>db.yml</code>): <code>miniflux-db</code></li>", page)
+        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page), ["What it deploys", "Include", "Fetching it", "Settings", "Mapping", "Proof"])
+        self.assertIn("<td>service <code>db</code></td>", page)
+        self.assertIn("        subdir: miniflux\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1)))
+        md = self.markdown("recipes", "miniflux")
+        self.assertIn(f"\n- Source: Docker Compose file miniflux/v2@{'2' * 40} (contrib/docker-compose/basic.yml), sha256:{'f' * 64}: {COMPOSE_SOURCE}\n"
+                      "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
+        self.assertIn("\n## Mapping\n\n| Compose | Recipe |\n", md)
+        self.assertNotIn("compared with", md)
+
+    def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c, CAT-37e
         for missing in ("lib", "operators"):
             with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
                 recipes = os.path.join(tmp, "recipes")
@@ -699,15 +734,17 @@ class Site(unittest.TestCase):
                 self.assertIn(f"recipes/{missing}/strimzi.yml missing", failed.exception.stderr)  # CAT-1: Hugo's error is printed
         for missing, error in (("webhook.yml", "classes/recipes/cert-manager/webhook.yml missing"),
                                ("crds.yml", "classes/recipes/cert-manager/crds.yml missing"),
-                               ("Level", "README.md has no Level:")):
+                               ("Level", "README.md has no Level:"), ("Source", "README.md has no Source:")):
             with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
                 recipes = os.path.join(tmp, "recipes")
                 recipe_classes(os.path.join(recipes, "inventory", "classes"))
                 path = os.path.join(recipes, "inventory", "classes", "recipes", "cert-manager", missing)
-                if missing == "Level":
+                if missing in ("Level", "Source"):
                     path = os.path.join(os.path.dirname(path), "README.md")
-                    with open(path, "w", encoding="utf-8") as f:
-                        f.write(CHART_RECIPE_FILES["README.md"].replace("Level: `deploys`", "Level: deploys"))
+                    with open(path, "w", encoding="utf-8") as f:  # Source: a compose file not pinned to a commit
+                        f.write(CHART_RECIPE_FILES["README.md"].replace("Level: `deploys`", "Level: deploys") if missing == "Level" else
+                                CHART_RECIPE_FILES["README.md"].replace("oci://quay.io/jetstack/charts/cert-manager:v1.21.2",
+                                                                        "https://github.com/miniflux/v2/blob/main/basic.yml"))
                 else:
                     os.remove(path)
                 with self.assertRaises(subprocess.CalledProcessError) as failed:

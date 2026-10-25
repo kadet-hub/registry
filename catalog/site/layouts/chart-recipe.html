@@ -4,8 +4,13 @@
 <h1>{{ .Title }}</h1>
 <p class="lead">{{ $r.lead | markdownify }}</p>
 <ul>
+{{ with $r.compose -}}
+<li>Source: Docker Compose file <a href="{{ .url }}"><code>{{ .repo }}@{{ .commit }}</code></a> (<code>{{ .path }}</code>), <code>{{ .digest }}</code></li>
+<li>Proof level: <code>{{ $r.level }}</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>
+{{- else -}}
 <li>Source chart: <code>{{ $r.source }}</code></li>
 <li>Proof level: <code>{{ $r.level }}</code>, compared with the chart by the kadet-hub/recipes CI</li>
+{{- end }}
 <li>Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/#v%s" $g.name $g.version | relURL }}">{{ $g.name }} {{ $g.version }}</a> <code>{{ $g.digest }}</code>{{ end }}</li>
 </ul>
 <h2>What it deploys</h2>

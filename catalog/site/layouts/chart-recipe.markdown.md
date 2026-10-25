@@ -4,8 +4,13 @@
 
 > {{ $r.lead }}
 
+{{ with $r.compose -}}
+- Source: Docker Compose file {{ .repo }}@{{ .commit }} ({{ .path }}), {{ .digest }}: {{ .url }}
+- Proof level: {{ $r.level }}, deployed on kind and smoke tested by the kadet-hub/recipes CI
+{{ else -}}
 - Source chart: {{ $r.source }}
 - Proof level: {{ $r.level }}, compared with the chart by the kadet-hub/recipes CI
+{{ end -}}
 - Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}{{ $g.name }} {{ $g.version }} ({{ $g.digest }}){{ end }}
 {{ range $r.classes }}- {{ if .option }}Option{{ else }}Class{{ end }} {{ .class }} ({{ .file }}){{ with .components }}: {{ delimit . ", " }}{{ end }}
 {{ end }}- Source: {{ $r.folder }}
