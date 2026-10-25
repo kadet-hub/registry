@@ -1954,10 +1954,12 @@ index is refused (CON-2).
 
   The glossary defines Kapitan and its concepts first (inventory, class,
   target, interpolation, ref, kadet), then kadet-hub's own (generator,
-  recipe, kind, custom resource and CRD, gate, server-side dry run, output
-  capability, output diff, krab), then the supply chain (OCI artifact,
-  digest, SBOM, provenance, attestation, index, yanked). A Kapitan concept
-  links its page in the Kapitan documentation. Entries live in the front
+  fixture, recipe, proof level, kind, custom resource and CRD, operator,
+  gate, server-side dry run, output capability, output diff, krab), then
+  the supply chain (OCI artifact, digest, SBOM, provenance, attestation,
+  index, yanked). A Kapitan concept links its page in the Kapitan
+  documentation, a Kubernetes concept its page in the Kubernetes
+  documentation. Entries live in the front
   matter of `content/glossary.md`, so the list and the JSON-LD come from
   the same text; each `DefinedTerm` has the entry's name, its definition
   as plain text and its URL with the anchor.
@@ -1973,7 +1975,8 @@ index is refused (CON-2).
   Related: CAT-11, CAT-11a, CAT-37.
 
   - Test: `catalog/test_catalog.py` (`test_glossary`)
-  - Since: #286
+  - Since: #286; fixture, proof level, operator and the recipe entry for
+    kadet-hub/recipes: #371
 
 - CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none

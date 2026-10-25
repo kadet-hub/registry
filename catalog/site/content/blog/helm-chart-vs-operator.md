@@ -6,7 +6,7 @@ description: "Helm chart vs operator, measured: PostgreSQL from the Bitnami char
 ---
 
 A Helm chart writes objects when you run `helm install` or `helm upgrade`,
-and then it is done. An operator runs in the cluster, watches a custom
+and then it is done. An [operator](/glossary/#operator) runs in the cluster, watches a custom
 resource and keeps acting on it. For a stateless app the difference
 hardly matters. For a database it decides what happens when the primary
 goes away at night.

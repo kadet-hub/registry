@@ -61,20 +61,38 @@ terms:
       A reusable kadet module that turns a block of inventory parameters into many output files, for example every
       resource of an operator. Each listed generator ships a manifest, `kapitan-generator.yaml`, and a fixture
       project the gate compiles.
+  - id: fixture
+    name: Fixture
+    text: >-
+      The Kapitan project a generator ships for checks, with a `minimal` target that loads the generator. The gate
+      compiles it, the output diff compares its output across versions, and the kinds page lists the kinds it
+      renders.
+    url: docs/authors.md
+    label: What a generator ships
   - id: recipe
     name: Recipe
     text: >-
-      An inventory class that replaces one or more Bitnami charts with kadet-hub generators. The examples CI
-      deploys each recipe to a new kind cluster and checks it, and its page shows the class, the generator pins and
-      what the CI asserts.
+      Inventory classes from kadet-hub/recipes that install one application or operator with kadet-hub generators.
+      A recipe rebuilds the project's Helm chart, release manifest or Docker Compose file, or is designed on its
+      container image when the project ships none of these. Many replace a Bitnami chart.
     url: /recipes/
     label: Recipes
+  - id: proof-level
+    name: Proof level
+    text: >-
+      How far the kadet-hub/recipes CI proves a recipe. At `renders` it compares the recipe's objects and
+      permissions with those of its source. At `deploys` it also installs the recipe on a kind cluster and runs its
+      smoke test. At `migrates` it also replaces a running Helm release with the recipe. A recipe from a compose
+      file or designed on an image has nothing to compare and is at `deploys`.
+    url: /recipes/
+    label: Recipes and their levels
   - id: kind
     name: Kind
     text: >-
       The type of a Kubernetes resource, such as Deployment or HTTPRoute, named by `kind` and the API group of its
-      `apiVersion`. The kinds page lists every kind the latest version of each generator renders. kind, the tool
-      that runs a Kubernetes cluster in containers, is a different thing.
+      `apiVersion`. The kinds page lists every kind the latest version of each generator renders, by API group,
+      and groups that share a domain, such as `kubevirt.io` and `pool.kubevirt.io`, together. kind, the tool that
+      runs a Kubernetes cluster in containers, is a different thing.
     url: /kinds/
     label: Kubernetes kinds
   - id: crd
@@ -86,6 +104,14 @@ terms:
       them.
     url: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
     label: Custom resources in the Kubernetes docs
+  - id: operator
+    name: Operator
+    text: >-
+      A controller that runs in the cluster, watches custom resources and keeps the application they describe in
+      the state they ask for, for example CloudNativePG for PostgreSQL clusters. Several recipes install an
+      operator, and recipes that need one name it as a prerequisite.
+    url: https://kubernetes.io/docs/concepts/extend-kubernetes/operator/
+    label: Operator pattern in the Kubernetes docs
   - id: gate
     name: Gate
     text: >-

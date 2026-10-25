@@ -904,7 +904,7 @@ class Site(unittest.TestCase):
     def test_http_chart_recipe(self):  # CAT-37c
         page = self.page("recipes", "external-dns-powerdns")
         self.assertIn(f"<li>Source chart: <code>{HTTP_CHART_SOURCE}</code></li>", page)
-        self.assertIn("<li>Proof level: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
+        self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
         fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["external-dns-powerdns", "powerdns"])  # the recipe it includes, REC-16
         self.assertEqual(re.findall(r"output_path: inventory/classes/recipes/(\S+)", fetch), ["external-dns-powerdns", "powerdns"])
@@ -914,7 +914,7 @@ class Site(unittest.TestCase):
     def test_recipe_prerequisite(self):  # CAT-37c
         page = self.page("recipes", "kafka")
         self.assertIn('<li>Prerequisites, installed once per cluster before the recipe: <a href="../../recipes/strimzi/"><code>strimzi</code></a></li>', page)
-        self.assertRegex(page, r"(?s)Proof level: .*Prerequisites, .*<li>Generators: ")
+        self.assertRegex(page, r"(?s)Proof level</a>: .*Prerequisites, .*<li>Generators: ")
         fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["kafka"])  # strimzi has its own target and page
         self.assertIn("\n- Prerequisites, installed once per cluster before the recipe: strimzi\n- Generators: ", self.markdown("recipes", "kafka"))
@@ -940,7 +940,7 @@ class Site(unittest.TestCase):
         page = self.page("recipes", "rabbitmq-cluster-operator")
         self.assertIn(f'<li>Source: release manifest <a href="{RABBITMQ_MANIFEST}"><code>rabbitmq/cluster-operator@v2.23.1</code></a> '
                       f'(<code>cluster-operator.yml</code>), <code>sha256:{"7" * 64}</code></li>', page)
-        self.assertIn("<li>Proof level: <code>deploys</code>, compared with the manifest by the kadet-hub/recipes CI</li>", page)
+        self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the manifest by the kadet-hub/recipes CI</li>", page)
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with the chart", page)
         self.assertIn(f"\n- Source: release manifest rabbitmq/cluster-operator@v2.23.1 (cluster-operator.yml), sha256:{'7' * 64}: {RABBITMQ_MANIFEST}\n"
@@ -951,7 +951,7 @@ class Site(unittest.TestCase):
         self.assertIn("<title>cert-manager on Kubernetes without Helm, with Kapitan</title>", page)  # no room for the suffix
         self.assertIn('<p class="lead">The controller and the webhook, rendered by the kadet-hub <code>kubernetes</code> generator. Derived from the chart.</p>', page)
         self.assertIn(f"<li>Source chart: <code>oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}</code></li>", page)
-        self.assertIn("<li>Proof level: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
+        self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
         self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.0">kubernetes 1.7.0</a> <code>sha256:{"d" * 64}</code></li>', page)
         self.assertIn("<li><code>recipes.cert-manager.controller</code> (<code>controller.yml</code>): <code>cert-manager</code></li>", page)
         self.assertIn("<li><code>recipes.cert-manager.webhook</code> (<code>webhook.yml</code>): <code>cert-manager-webhook</code></li>", page)
@@ -985,7 +985,7 @@ class Site(unittest.TestCase):
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>valkey</code> recipe of kadet-hub/examples.", page)
         self.assertIn("<td>StatefulSet <code>valkey</code></td>", page)
         self.assertNotIn("alert(9)</script>", page)
-        self.assertRegex(page, r"(?s)Proof level: .*</ul>\n<h2>Replaces</h2>.*<h2>What it deploys</h2>")
+        self.assertRegex(page, r"(?s)Proof level</a>: .*</ul>\n<h2>Replaces</h2>.*<h2>What it deploys</h2>")
         md = self.markdown("recipes", "valkey")
         self.assertRegex(md, r"\n- Page: \S+\n\n## Replaces\n\nThis recipe replaces the `valkey` recipe of kadet-hub/examples\..*\n\n"
                              r"\| kadet-hub/examples \| This recipe \|\n\|---\|---\|\n\| StatefulSet `valkey` \| Deployment `valkey` \|\n\n## Required parameters\n")
@@ -995,7 +995,7 @@ class Site(unittest.TestCase):
         self.assertIn("<title>Miniflux on Kubernetes without Docker Compose, with Kapitan</title>", page)
         self.assertIn(f'<li>Source: Docker Compose file <a href="{COMPOSE_SOURCE}"><code>miniflux/v2@{"2" * 40}</code></a> '
                       f"(<code>contrib/docker-compose/basic.yml</code>), <code>sha256:{'f' * 64}</code></li>", page)
-        self.assertIn("<li>Proof level: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
+        self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with", page)
         self.assertIn("<li><code>recipes.miniflux.db</code> (<code>db.yml</code>): <code>miniflux-db</code></li>", page)
@@ -1017,7 +1017,7 @@ class Site(unittest.TestCase):
         page = self.page("recipes", "mysql")
         self.assertIn("<title>MySQL on Kubernetes with Kapitan · kadet-hub</title>", page)
         self.assertIn(f"<li>Source: container image <code>{DESIGN_SOURCE}</code>, recipe designed in kadet-hub</li>", page)
-        self.assertIn("<li>Proof level: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
+        self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with", page)
         self.assertIn("<li><code>recipes.mysql.mysql</code> (<code>mysql.yml</code>): <code>mysql</code></li>", page)
