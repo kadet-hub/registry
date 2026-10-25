@@ -1403,8 +1403,8 @@ Related: CAT-15, CAT-30, CON-2.
 - CAT-37c: The site MUST have a page at `/recipes/<name>/` for every
   recipe of kadet-hub/recipes that has a content page with
   `layout: chart-recipe`. The page MUST show the source pinned by digest
-  (a chart, a compose file as CAT-37e says, or an image as CAT-37f says),
-  the proof level, the
+  (a chart, a compose file as CAT-37e says, an image as CAT-37f says, or a
+  release manifest as CAT-37g says), the proof level, the
   README section "Replaces" when the README has one, the prerequisites of
   its `Requires:` line when it has one, the components and options the recipe deploys,
   the README section "Required parameters" before the include snippet,
@@ -1436,7 +1436,11 @@ Related: CAT-15, CAT-30, CON-2.
   A recipe names what the cluster needs once on its `Requires:` line
   (RCP-54 there), such as `strimzi` for kafka. The page lists these among
   the facts at the top, each linked to its own page when the site has one,
-  because a reader has to install them before the recipe. The fetch
+  because a reader has to install them before the recipe. The list goes on
+  with the `Requires:` entries of each prerequisite in turn, so rabbitmq
+  lists `rabbitmq-cluster-operator` and then `cert-manager`, which the
+  operator requires. A prerequisite without a page ends its branch,
+  because the build fetches a README only for a recipe that has one. The fetch
   inventory does not pin them: the recipe does not include them, and
   their pages give the inventory for their own target.
 
@@ -1500,15 +1504,17 @@ Related: CAT-15, CAT-30, CON-2.
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41, RCP-54 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_recipe_prerequisite`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364
+  - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364;
+    transitive prerequisites: #367
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
   level.
 
   The two kinds were checked differently. A kadet-hub/recipes recipe is
-  compared with the chart it rebuilds, or deployed and smoke tested when
-  its source is a compose file or an image (CAT-37e, CAT-37f). A
+  compared with the chart or release manifest it rebuilds (CAT-37g), or
+  deployed and smoke tested when its source is a compose file or an image
+  (CAT-37e, CAT-37f). A
   kadet-hub/examples recipe is deployed to kind and checked by its
   assertions (EX-5).
 
@@ -1529,8 +1535,8 @@ Related: CAT-15, CAT-30, CON-2.
   the deploy on kind and the smoke test (DEC-8, RCP-38, RCP-39 there). The
   "Mapping" section is the compose counterpart of "Settings" for what the
   file sets but the recipe renders differently. A `Source:` line in none
-  of the forms of CAT-37c, CAT-37e and CAT-37f stops the build as a
-  missing one does.
+  of the forms of CAT-37c, CAT-37e, CAT-37f and CAT-37g stops the build as
+  a missing one does.
 
   Titles lead with the application and "without Docker Compose" and name
   Kapitan, such as "Miniflux on Kubernetes without Docker Compose, with
@@ -1576,10 +1582,41 @@ Related: CAT-15, CAT-30, CON-2.
   whose page is "Strimzi on Kubernetes without Helm, with Kapitan"
   (CAT-37c).
 
+  rabbitmq, the stand-in for Bitnami's `rabbitmq` chart, moved the same
+  way. It is designed on the Docker Official Image and keeps "RabbitMQ on
+  Kubernetes with Kapitan" with a description that leads with "Bitnami
+  rabbitmq Helm chart alternative:". It requires
+  `rabbitmq-cluster-operator`, whose page is described in CAT-37g and which
+  requires `cert-manager`.
+
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349, #352, #354; powerdns: #357; kafka: #364
+  - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367
+
+- CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
+  MUST show the source as the project's release manifest with its
+  repository, tag and file, linked to the release asset, and its sha256.
+  It MUST say that the recipe is compared with the manifest, not with a
+  chart.
+
+  A project that publishes a manifest with each release and no chart, such
+  as `cluster-operator.yml` of rabbitmq/cluster-operator, gives the asset's
+  URL as the source, `https://github.com/<owner>/<repository>/releases/download/<tag>/<file>`
+  followed by `@sha256:` and the digest of the file (RCP-23 there). Its
+  recipe is at level `deploys`, and `check` compares it with the
+  manifest's objects at `renders` (RCP-59 there).
+
+  Titles lead with the application and name Kapitan, such as "RabbitMQ
+  Cluster Operator on Kubernetes with Kapitan". They leave out "without
+  Helm", which the source does not use and which would take the title past
+  CAT-11's 65 characters. Descriptions lead with "<application> release
+  manifest alternative:" and name Kapitan with Kubernetes.
+
+  Related: RCP-23, RCP-59 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c.
+
+  - Test: `catalog/test_catalog.py` (`test_release_manifest_recipe`, `test_recipes`)
+  - Since: #367
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
@@ -1615,11 +1652,12 @@ Related: CAT-15, CAT-30, CON-2.
   the recipe there, after the recipe is on `main` of kadet-hub/recipes,
   because the build fetches each page's files from the repository its
   layout names (CAT-37a, CAT-37c). valkey, mysql, mongodb,
-  external-dns-powerdns and kafka moved this way.
+  external-dns-powerdns, kafka and rabbitmq moved this way.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented; valkey moved: #345; mysql moved: #349;
-    mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364
+    mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364;
+    rabbitmq moved: #367
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
