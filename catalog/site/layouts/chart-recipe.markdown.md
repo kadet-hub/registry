@@ -10,6 +10,9 @@
 {{ else with $r.image -}}
 - Source: container image {{ . }}, recipe designed in kadet-hub
 - Proof level: {{ $r.level }}, deployed on kind and smoke tested by the kadet-hub/recipes CI
+{{ else with $r.manifest -}}
+- Source: release manifest {{ .repo }}@{{ .tag }} ({{ .file }}), {{ .digest }}: {{ .url }}
+- Proof level: {{ $r.level }}, compared with the manifest by the kadet-hub/recipes CI
 {{ else -}}
 - Source chart: {{ $r.source }}
 - Proof level: {{ $r.level }}, compared with the chart by the kadet-hub/recipes CI

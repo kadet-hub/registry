@@ -1,0 +1,11 @@
+{{- /* CAT-37c: the prerequisites of the recipe named ., nearest first and then those of each in turn, from the READMEs catalog/build copied; a recipe without a page ends its branch. */ -}}
+{{- $all := slice -}}
+{{- with resources.Get (printf "classes/recipes/%s/README.md" .) -}}
+  {{- with findRESubmatch "(?m)^Requires: (.+)$" .Content 1 -}}
+    {{- range findRESubmatch "`([^`]+)`" (index (index . 0) 1) -1 }}{{ $all = $all | append (index . 1) }}{{ end -}}
+  {{- end -}}
+{{- end -}}
+{{- range $all -}}
+  {{- range partial "recipe-requires.html" . }}{{ if not (in $all .) }}{{ $all = $all | append . }}{{ end }}{{ end -}}
+{{- end -}}
+{{- return $all -}}
