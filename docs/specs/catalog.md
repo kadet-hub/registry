@@ -1348,6 +1348,10 @@ Related: CAT-15, CAT-30, CON-2.
   examples spec. A new recipe needs that page here; the build fetches only
   the classes of recipes that have one.
 
+  keycloak was the last recipe of kadet-hub/examples (CAT-38a), so no page
+  of the site is one any more. The layout stays, and its tests build a copy
+  of the site with a synthetic page.
+
   As CAT-11a asks, every recipe title and the index title lead with the
   searched term and name Kapitan, such as "PostgreSQL on Kubernetes with
   Kapitan". Titles MUST NOT say "without Bitnami". Every description
@@ -1362,25 +1366,26 @@ Related: CAT-15, CAT-30, CON-2.
 
   Related: EX-5, EX-5a, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
 
-  - Test: `catalog/test_catalog.py` (`test_recipes`, `test_recipe_without_operator`)
-  - Since: #283, #299, #300, #354, #363
+  - Test: `catalog/test_catalog.py` (`test_examples_recipe`, `test_recipe_without_operator`)
+  - Since: #283, #299, #300, #354, #363, #368
 
 - CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
   is missing.
 
   `catalog/build` fetches `generators.yml`, the class of every recipe page
-  and every compile and operator class those classes include from
+  of CAT-37 and every compile and operator class those classes include from
   `raw.githubusercontent.com` with `curl -f`, as it reads the previous
   `catalog.json`, and copies them into the site's `assets/classes/`;
   the recipe templates stop the build with `errorf` when one is missing.
-  The API lookups of the build degrade to a warning because the page
-  stays usable without a star count or a README; a recipe page without its
-  class has nothing to copy. A failed build stops the release's catalog
-  job before the Pages upload, so the previous site stays live, as with
-  CAT-11d. With `CATALOG_OFFLINE=1` the build reads the files from
-  `$CATALOG_RECIPES/inventory/classes/`, laid out as in the examples
-  repository's `recipes/` folder, so the tests use fixtures and a local
-  checkout can be previewed.
+  With no such page it fetches nothing from kadet-hub/examples, so that
+  repository can drop its `recipes/` folder. The API lookups of the build
+  degrade to a warning because the page stays usable without a star count
+  or a README; a recipe page without its class has nothing to copy. A
+  failed build stops the release's catalog job before the Pages upload, so
+  the previous site stays live, as with CAT-11d. With `CATALOG_OFFLINE=1`
+  the build reads the files from `$CATALOG_RECIPES/inventory/classes/`,
+  laid out as in the examples repository's `recipes/` folder, so the tests
+  use fixtures and a local checkout can be previewed.
 
   Hugo's `resources.GetRemote` would fetch from the templates instead. Its
   file cache keeps a fetched file without expiry unless `maxAge` is set,
@@ -1389,8 +1394,8 @@ Related: CAT-15, CAT-30, CON-2.
   access and the offline fixtures. Neither variant uses `actions/cache`
   (GI-10).
 
-  - Test: `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`)
-  - Since: #283, #300
+  - Test: `catalog/test_catalog.py` (`test_recipe_file_missing_fails_the_build`, `test_build_fetches_examples_only_for_their_pages`)
+  - Since: #283, #300, #368
 
 - CAT-37b: Every recipe page MUST have a Markdown variant (CAT-28) with
   the same facts and files, `/llms.txt` (CAT-16) MUST list it in a section
@@ -1406,8 +1411,8 @@ Related: CAT-15, CAT-30, CON-2.
   (a chart, a compose file as CAT-37e says, an image as CAT-37f says, or a
   release manifest as CAT-37g says), the proof level, the
   README section "Replaces" when the README has one, the prerequisites of
-  its `Requires:` line when it has one, the components and options the recipe deploys,
-  the README section "Required parameters" before the include snippet,
+  its `Requires:` line and of the recipes it includes, the components and
+  options the recipe deploys, the README section "Required parameters" before the include snippet,
   the include snippet, a fetch inventory pinned to the commit the page was
   built from with the commands that use it, the README sections "Settings",
   "Left out", "Renamed RBAC objects" and "Proof", the generators the recipe
@@ -1436,8 +1441,11 @@ Related: CAT-15, CAT-30, CON-2.
   A recipe names what the cluster needs once on its `Requires:` line
   (RCP-54 there), such as `strimzi` for kafka. The page lists these among
   the facts at the top, each linked to its own page when the site has one,
-  because a reader has to install them before the recipe. The list goes on
-  with the `Requires:` entries of each prerequisite in turn, so rabbitmq
+  because a reader has to install them before the recipe. Those of a
+  recipe it includes as `recipes.<other>` follow (RCP-55 there), so keycloak
+  lists `keycloak-operator`, `cert-manager` and `cnpg`, which its included
+  `postgresql` requires. The list goes on with the `Requires:` entries of
+  each prerequisite in turn, so rabbitmq
   lists `rabbitmq-cluster-operator` and then `cert-manager`, which the
   operator requires. A prerequisite without a page ends its branch,
   because the build fetches a README only for a recipe that has one. The fetch
@@ -1501,17 +1509,24 @@ Related: CAT-15, CAT-30, CON-2.
   Kubernetes with Kapitan" with a description that leads with "Bitnami
   postgresql Helm chart alternative:". It requires `cnpg`, the operator
   from the project's chart, whose page is "CloudNativePG on Kubernetes
-  without Helm, with Kapitan". The title "Valkey on Kubernetes without Helm" named
-  neither Redis nor Bitnami, although CAT-11f sends the Redis queries and
-  "valkey helm chart not bitnami" to the page. Moving those queries to the
-  Bitnami guide was considered, but the guide only links the recipe, and
-  the recipe page is what answers them.
+  without Helm, with Kapitan". keycloak replaces the stand-in for
+  Bitnami's `keycloak` chart, designed on Keycloak's image (CAT-37f), and
+  keeps "Keycloak on Kubernetes with Kapitan" with a description that leads
+  with "Bitnami keycloak Helm chart alternative:". It requires
+  `keycloak-operator`, whose page is "Keycloak Operator on Kubernetes
+  without Helm, with Kapitan", and `cert-manager`. The title "Valkey on
+  Kubernetes without Helm" named neither Redis nor Bitnami, although
+  CAT-11f sends the Redis queries and "valkey helm chart not bitnami" to
+  the page. Moving those queries to the Bitnami guide was considered, but
+  the guide only links the recipe, and the recipe page is what answers
+  them.
 
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41, RCP-54 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_recipe_prerequisite`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
   - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364;
-    transitive prerequisites: #367; cnpg: #366
+    transitive prerequisites: #367; cnpg: #366; keycloak and its included
+    recipes' prerequisites: #368
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1522,10 +1537,11 @@ Related: CAT-15, CAT-30, CON-2.
   deployed and smoke tested when its source is a compose file or an image
   (CAT-37e, CAT-37f). A
   kadet-hub/examples recipe is deployed to kind and checked by its
-  assertions (EX-5).
+  assertions (EX-5). The heading of the second kind is left out while no
+  page is one.
 
-  - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #342, #349
+  - Test: `catalog/test_catalog.py` (`test_recipes`, `test_examples_recipe`)
+  - Since: #342, #349, #368
 
 - CAT-37e: A CAT-37c page whose README `Source:` line is a GitHub file URL
   MUST show the source as a Docker Compose file with its repository,
@@ -1595,10 +1611,18 @@ Related: CAT-15, CAT-30, CON-2.
   `rabbitmq-cluster-operator`, whose page is described in CAT-37g and which
   requires `cert-manager`.
 
+  keycloak, the stand-in for Bitnami's `keycloak` chart, moved the same
+  way. It is designed on Keycloak's image as a resource of the Keycloak
+  Operator, and keeps "Keycloak on Kubernetes with Kapitan" with a
+  description that leads with "Bitnami keycloak Helm chart alternative:".
+  It requires `keycloak-operator` and `cert-manager` and includes
+  `postgresql` (CAT-37c).
+
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367
+  - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
+    keycloak: #368
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
@@ -1658,12 +1682,13 @@ Related: CAT-15, CAT-30, CON-2.
   the recipe there, after the recipe is on `main` of kadet-hub/recipes,
   because the build fetches each page's files from the repository its
   layout names (CAT-37a, CAT-37c). valkey, mysql, mongodb,
-  external-dns-powerdns, kafka, rabbitmq and postgresql moved this way.
+  external-dns-powerdns, kafka, rabbitmq, postgresql and keycloak moved
+  this way.
 
   - Test: `catalog/test_catalog.py` (not written)
   - Since: not implemented; valkey moved: #345; mysql moved: #349;
     mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364;
-    rabbitmq moved: #367; postgresql moved: #366
+    rabbitmq moved: #367; postgresql moved: #366; keycloak moved: #368
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
