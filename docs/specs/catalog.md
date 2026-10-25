@@ -1551,7 +1551,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349, #352, #354; powerdns: this change
+  - Since: #349, #352, #354; powerdns: #357
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
