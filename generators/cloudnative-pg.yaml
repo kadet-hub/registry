@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: cloudnative-pg
-  tag: cloudnative-pg-v1.1.0
-  sha: 5d11df444024d1f2598b3cad1d6f5553195fd4a3
+  tag: cloudnative-pg-v1.1.1
+  sha: 5e4335d164d811f9f896063c948cae3e5712ab5c
 owners: [3042152]
