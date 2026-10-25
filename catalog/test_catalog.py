@@ -158,7 +158,7 @@ def artifact(path, files):
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
 RECIPE_GENERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cloudnative-pg", "certmanager", "keycloak"],
-                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": [], "mysql": [], "mongodb": []}
+                     "kafka": ["strimzi"], "rabbitmq": ["rabbitmq"], "external-dns-powerdns": [], "mongodb": []}
 # The operator classes and whether each runs mutate, which has a pin and no compile class.
 RECIPE_OPERATORS = {"postgresql": ["cloudnative-pg"], "keycloak": ["cert-manager", "cloudnative-pg", "keycloak"], "kafka": ["strimzi"],
                     "rabbitmq": ["cert-manager"]}
@@ -212,10 +212,25 @@ VALKEY_RECIPE_FILES = {
     "valkey.yml": "parameters:\n  components:\n    valkey:\n      application: valkey\n",
 }
 
+# CAT-37f: mysql, designed on its project's image and moved from kadet-hub/examples under the same name.
+DESIGN_SOURCE = f"container-registry.oracle.com/mysql/community-server:9.7.4@sha256:{'b' * 64}"
+MYSQL_RECIPE_FILES = {
+    "README.md": "# mysql\n\nMySQL Community Server as a single instance, designed in kadet-hub on Oracle's image.\n\n"
+                 f"Source: `{DESIGN_SOURCE}`\n\nLevel: `deploys`\n\n"
+                 "## Replaces\n\nThis recipe replaces the `mysql` recipe of kadet-hub/examples.\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.mysql\n```\n\n"
+                 "## Required parameters\n\n`applications.mysql.password` must be set.\n\n"
+                 "## Settings\n\n| Setting | Inventory |\n|---|---|\n| MySQL version | `applications.mysql.version` |\n\n"
+                 "## Proof\n\n`check mysql --level deploys` on kind.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .mysql\n"),
+    "mysql.yml": "parameters:\n  components:\n    mysql:\n      application: mysql\n",
+}
+
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
-    for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES), ("valkey", VALKEY_RECIPE_FILES)):
+    for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES), ("valkey", VALKEY_RECIPE_FILES),
+                          ("mysql", MYSQL_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
             with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
@@ -532,7 +547,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes without Bitnami, with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: a Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 3)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 4)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -639,15 +654,17 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
-        self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart or a Docker Compose file</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
+        self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart or a Docker Compose file, or designed on an image</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
         self.assertRegex(chart, r'recipes/miniflux/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37e
         self.assertNotIn("recipes/cert-manager/", examples)
         self.assertNotIn("recipes/miniflux/", examples)
         self.assertRegex(chart, r'recipes/valkey/">.*?Proof level: <code>deploys</code>')  # CAT-38a: same URL, now a chart recipe
         self.assertNotIn("recipes/valkey/", examples)
+        self.assertRegex(chart, r'recipes/mysql/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f
+        self.assertNotIn("recipes/mysql/", examples)
         self.assertIn("recipes/kafka/", examples)
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         self.assertIn("<title>PostgreSQL on Kubernetes without Bitnami, with Kapitan</title>", self.page("recipes", "postgresql"))  # no room for the suffix
@@ -674,11 +691,11 @@ class Site(unittest.TestCase):
         rabbitmq = self.page("recipes", "rabbitmq")  # cert-manager's class runs no mutate
         self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', rabbitmq)
         self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/rabbitmq/">rabbitmq</a></li>', rabbitmq)
-        self.assertNotIn("Operator classes", self.page("recipes", "mysql"))
+        self.assertNotIn("Operator classes", self.page("recipes", "mongodb"))
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
         self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
-        self.assertIn('<li>Operators: none</li>', self.page("recipes", "mysql"))
+        self.assertIn('<li>Operators: none</li>', self.page("recipes", "mongodb"))
         md = self.markdown("recipes", "keycloak")
         self.assertTrue(md.startswith("# Keycloak on Kubernetes without Bitnami, with Kapitan\n\n> keycloak <script>"))
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
@@ -686,7 +703,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n## inventory/classes/recipes/operators/strimzi.yml\n\n```yaml\n# Installs strimzi.", self.markdown("recipes", "kafka"))
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey"]:
+        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql"]:
             self.assertIn(f'href="../../recipes/{name}/"', guide)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
@@ -756,6 +773,22 @@ class Site(unittest.TestCase):
                       "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
         self.assertIn("\n## Mapping\n\n| Compose | Recipe |\n", md)
         self.assertIn("\n## Required parameters\n\nThe password must be set as a ref.", md)
+        self.assertNotIn("compared with", md)
+
+    def test_designed_recipe(self):  # CAT-37f
+        page = self.page("recipes", "mysql")
+        self.assertIn("<title>MySQL on Kubernetes without Bitnami, with Kapitan · kadet-hub</title>", page)
+        self.assertIn(f"<li>Source: container image <code>{DESIGN_SOURCE}</code>, recipe designed in kadet-hub</li>", page)
+        self.assertIn("<li>Proof level: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
+        self.assertNotIn("Source chart", page)
+        self.assertNotIn("compared with", page)
+        self.assertIn("<li><code>recipes.mysql.mysql</code> (<code>mysql.yml</code>): <code>mysql</code></li>", page)
+        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+                         ["Replaces", "What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Proof"])
+        self.assertIn("        subdir: mysql\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1)))
+        md = self.markdown("recipes", "mysql")
+        self.assertIn(f"\n- Source: container image {DESIGN_SOURCE}, recipe designed in kadet-hub\n"
+                      "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
         self.assertNotIn("compared with", md)
 
     def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c, CAT-37e

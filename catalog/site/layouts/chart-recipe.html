@@ -7,6 +7,9 @@
 {{ with $r.compose -}}
 <li>Source: Docker Compose file <a href="{{ .url }}"><code>{{ .repo }}@{{ .commit }}</code></a> (<code>{{ .path }}</code>), <code>{{ .digest }}</code></li>
 <li>Proof level: <code>{{ $r.level }}</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>
+{{- else with $r.image -}}
+<li>Source: container image <code>{{ . }}</code>, recipe designed in kadet-hub</li>
+<li>Proof level: <code>{{ $r.level }}</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>
 {{- else -}}
 <li>Source chart: <code>{{ $r.source }}</code></li>
 <li>Proof level: <code>{{ $r.level }}</code>, compared with the chart by the kadet-hub/recipes CI</li>
