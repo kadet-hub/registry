@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: rabbitmq
-  tag: rabbitmq-v1.0.3
-  sha: 93fd55e50e2552ed10b2ef02f33b5cdae62b6e95
+  tag: rabbitmq-v1.1.0
+  sha: 0011e4cdc40b7386730065784204bf22768b4b27
 owners: [3042152]
