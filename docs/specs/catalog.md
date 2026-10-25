@@ -1486,7 +1486,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: DEC-8, DEC-9, RCP-37 to RCP-39 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c.
 
   - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
-  - Since: this change
+  - Since: #343
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
