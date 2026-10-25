@@ -13,6 +13,9 @@
 {{- end }}
 <li>Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/#v%s" $g.name $g.version | relURL }}">{{ $g.name }} {{ $g.version }}</a> <code>{{ $g.digest }}</code>{{ end }}</li>
 </ul>
+{{ with $r.replaces }}<h2>Replaces</h2>
+{{ $.RenderString (dict "display" "block") . }}
+{{ end -}}
 <h2>What it deploys</h2>
 <ul>
 {{ range $r.classes }}<li><code>{{ .class }}</code> (<code>{{ .file }}</code>){{ if .option }}, an option{{ end }}{{ with .components }}: {{ range $i, $c := . }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ end }}{{ end }}</li>

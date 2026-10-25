@@ -202,7 +202,10 @@ COMPOSE_RECIPE_FILES = {
 VALKEY_RECIPE_FILES = {
     "README.md": "# valkey\n\nValkey, rendered by the kadet-hub `kubernetes` generator from the valkey-io chart.\n\n"
                  f"Source: `oci://ghcr.io/valkey-io/valkey-helm/valkey:0.12.0@sha256:{'a' * 64}`\n\nLevel: `deploys`\n\n"
+                 "## Replaces\n\nThis recipe replaces the `valkey` recipe of kadet-hub/examples. <script>alert(9)</script>\n\n"
+                 "| kadet-hub/examples | This recipe |\n|---|---|\n| StatefulSet `valkey` | Deployment `valkey` |\n\n"
                  "## Include\n\n```yaml\nclasses:\n  - recipes.valkey\n```\n\n"
+                 "## Required parameters\n\n`applications.valkey.password` must be set.\n\n"
                  "## Settings\n\n| Chart value | Inventory |\n|---|---|\n| `valkeyConfig` | `applications.valkey.config` |\n\n"
                  "## Proof\n\n`check valkey --level deploys` on kind.\n",
     "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .valkey\n"),
@@ -721,6 +724,16 @@ class Site(unittest.TestCase):
         self.assertIn("\n## Required parameters\n\nNo parameter has to be set.\n\n## Include\n", md)
         self.assertIn("\n## Settings\n\n| Chart value | Inventory |\n", md)
         self.assertIn("\n## Proof\n\n`check cert-manager --level deploys` on kind.\n", md)
+        self.assertNotIn("## Replaces", md)
+        page = self.page("recipes", "valkey")  # Replaces after the source and the level
+        self.assertIn("<title>Valkey (Redis) on Kubernetes without Bitnami, with Kapitan</title>", page)
+        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>valkey</code> recipe of kadet-hub/examples.", page)
+        self.assertIn("<td>StatefulSet <code>valkey</code></td>", page)
+        self.assertNotIn("alert(9)</script>", page)
+        self.assertRegex(page, r"(?s)Proof level: .*</ul>\n<h2>Replaces</h2>.*<h2>What it deploys</h2>")
+        md = self.markdown("recipes", "valkey")
+        self.assertRegex(md, r"\n- Page: \S+\n\n## Replaces\n\nThis recipe replaces the `valkey` recipe of kadet-hub/examples\..*\n\n"
+                             r"\| kadet-hub/examples \| This recipe \|\n\|---\|---\|\n\| StatefulSet `valkey` \| Deployment `valkey` \|\n\n## Required parameters\n")
 
     def test_compose_recipe(self):  # CAT-37e
         page = self.page("recipes", "miniflux")
