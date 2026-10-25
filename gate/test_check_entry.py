@@ -248,6 +248,13 @@ class Quality(unittest.TestCase):
         for text in ("- fixed 1.0.0 bug\n", "## 1.0.0-rc1\n", "## 11.0.0\n", "## 1.0.01\n"):
             self.assertTrue(has(self.c.manifest(manifest(), {"CHANGELOG.md": text}), "QA-1"), text)
 
+    def test_version_matches_the_tag(self):  # QA-1a
+        for text in ('__version__ = "1.0.0"\n', 'x = __version__ = "1.0.0"\n', "import os\n", "def f():\n    __version__ = 1\n"):
+            self.assertEqual(self.c.manifest(manifest(), {"__init__.py": text}), [], text)
+        for text in ('__version__ = "0.9.0"\n', '__version__ = "1.0.0"\n__version__ = "1.0.1"\n', '__version__ = VERSION\n',
+                     "__version__ = '1.0.0\n", "x = " + "+".join(["1"] * 100000) + "\n"):
+            self.assertTrue(has(self.c.manifest(manifest(), {"__init__.py": text}), "QA-1a"), text[:40])
+
     def test_license_from_the_repository_root(self):
         self.assertTrue(has(self.c.manifest(manifest(), {"LICENSE": None}), "QA-1"))
         c = Case()
