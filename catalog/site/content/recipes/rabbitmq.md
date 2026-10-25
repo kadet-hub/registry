@@ -1,8 +1,6 @@
 ---
 title: "RabbitMQ on Kubernetes with Kapitan"
-description: "Bitnami rabbitmq Helm chart alternative: a Kapitan inventory class for RabbitMQ on Kubernetes with the RabbitMQ Cluster Operator, checked on kind."
-replaces: [rabbitmq]
-operators: [RabbitMQ Cluster Operator, cert-manager]
-check: the RabbitmqCluster reports `AllReplicasReady`
-lastmod: 2026-10-19
+description: "Bitnami rabbitmq Helm chart alternative: Kapitan inventory classes for RabbitMQ on Kubernetes with the RabbitMQ Cluster Operator, designed on RabbitMQ's image."
+layout: chart-recipe
+lastmod: 2026-10-25
 ---

@@ -157,9 +157,9 @@ def artifact(path, files):
 
 
 # CAT-37: the recipe files as in kadet-hub/examples recipes/inventory/classes, a comment with markup.
-RECIPE_GENERATORS = {"keycloak": ["cloudnative-pg", "certmanager", "keycloak"], "rabbitmq": ["rabbitmq"]}
+RECIPE_GENERATORS = {"keycloak": ["cloudnative-pg", "certmanager", "keycloak"]}
 # The operator classes and whether each runs mutate, which has a pin and no compile class.
-RECIPE_OPERATORS = {"keycloak": ["cert-manager", "cloudnative-pg", "keycloak"], "rabbitmq": ["cert-manager"]}
+RECIPE_OPERATORS = {"keycloak": ["cert-manager", "cloudnative-pg", "keycloak"]}
 OPERATOR_MUTATES = {"cloudnative-pg": True, "cert-manager": False, "keycloak": False}
 
 
@@ -303,13 +303,38 @@ CNPG_RECIPE_FILES = {
     "operator.yml": "parameters:\n  components:\n    cnpg:\n      application: cnpg\n",
 }
 
+# CAT-37f: rabbitmq, designed on the official image and moved from kadet-hub/examples under the same name, with the prerequisite rabbitmq-cluster-operator.
+RABBITMQ_SOURCE = f"docker.io/library/rabbitmq:4.3.6-management@sha256:{'5' * 64}"
+RABBITMQ_RECIPE_FILES = {
+    "README.md": "# rabbitmq\n\nRabbitMQ as a cluster of three nodes, designed in kadet-hub on the RabbitMQ Cluster Operator.\n\n"
+                 f"Source: `{RABBITMQ_SOURCE}`\n\nLevel: `deploys`\n\nRequires: `rabbitmq-cluster-operator`\n\n"
+                 "## Replaces\n\nThis recipe replaces the `rabbitmq` recipe of kadet-hub/examples.\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.rabbitmq\n```\n\n"
+                 "## Required parameters\n\nNo parameter has to be set.\n\n"
+                 "## Proof\n\n`check rabbitmq --level deploys` on kind, with `cert-manager` and then `rabbitmq-cluster-operator` installed first.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .rabbitmq\n"),
+    "rabbitmq.yml": "parameters:\n  components:\n    rabbitmq:\n      application: rabbitmq\n",
+}
+# CAT-37g: rabbitmq-cluster-operator, rebuilt from the project's release manifest, which requires cert-manager.
+RABBITMQ_MANIFEST = "https://github.com/rabbitmq/cluster-operator/releases/download/v2.23.1/cluster-operator.yml"
+RABBITMQ_OPERATOR_RECIPE_FILES = {
+    "README.md": "# rabbitmq-cluster-operator\n\nThe RabbitMQ Cluster Operator, rendered by the kadet-hub `kubernetes` generator from the project's release manifest.\n\n"
+                 f"Source: `{RABBITMQ_MANIFEST}@sha256:{'7' * 64}`\n\nLevel: `deploys`\n\nRequires: `cert-manager`\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.rabbitmq-cluster-operator\n```\n\n"
+                 "## Required parameters\n\nNo parameter has to be set.\n\n"
+                 "## Proof\n\n`check rabbitmq-cluster-operator --level deploys` on kind, with `cert-manager` installed first.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - .operator\n"),
+    "operator.yml": "parameters:\n  components:\n    rabbitmq-cluster-operator:\n      application: rabbitmq-cluster-operator\n",
+}
+
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
     for recipe, files in (("cert-manager", CHART_RECIPE_FILES), ("miniflux", COMPOSE_RECIPE_FILES), ("valkey", VALKEY_RECIPE_FILES),
                           ("mysql", MYSQL_RECIPE_FILES), ("mongodb", MONGODB_RECIPE_FILES), ("powerdns", POWERDNS_RECIPE_FILES),
                           ("external-dns-powerdns", EXTERNAL_DNS_RECIPE_FILES), ("kafka", KAFKA_RECIPE_FILES), ("strimzi", STRIMZI_RECIPE_FILES),
-                          ("postgresql", POSTGRESQL_RECIPE_FILES), ("cnpg", CNPG_RECIPE_FILES)):
+                          ("postgresql", POSTGRESQL_RECIPE_FILES), ("cnpg", CNPG_RECIPE_FILES),
+                          ("rabbitmq", RABBITMQ_RECIPE_FILES), ("rabbitmq-cluster-operator", RABBITMQ_OPERATOR_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
             with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
@@ -626,7 +651,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 11)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), len(RECIPE_GENERATORS) + 13)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -733,10 +758,10 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted([*RECIPE_GENERATORS, "cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "rabbitmq", "rabbitmq-cluster-operator"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         chart, examples = index.split("<h2>Replacing Bitnami charts</h2>")  # CAT-37d
-        self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart or a Docker Compose file, or designed on an image</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
+        self.assertRegex(chart, r'(?s)<h2>Rebuilt from a Helm chart, a release manifest or a Docker Compose file, or designed on an image</h2>.*recipes/cert-manager/">.*Proof level: <code>deploys</code>')
         self.assertRegex(chart, r'recipes/miniflux/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37e
         self.assertNotIn("recipes/cert-manager/", examples)
         self.assertNotIn("recipes/miniflux/", examples)
@@ -755,6 +780,9 @@ class Site(unittest.TestCase):
         self.assertRegex(chart, r'recipes/postgresql/">.*?Proof level: <code>deploys</code>')  # CAT-38a: same URL, now a chart recipe
         self.assertNotIn("recipes/postgresql/", examples)
         self.assertRegex(chart, r'recipes/cnpg/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37c
+        self.assertRegex(chart, r'recipes/rabbitmq/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37f, CAT-38a
+        self.assertNotIn("recipes/rabbitmq/", examples)
+        self.assertRegex(chart, r'recipes/rabbitmq-cluster-operator/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37g
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         page = self.page("recipes", "postgresql")
         self.assertIn("<title>PostgreSQL on Kubernetes with Kapitan · kadet-hub</title>", page)
@@ -767,6 +795,8 @@ class Site(unittest.TestCase):
         self.assertIn("<title>external-dns and PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "external-dns-powerdns"))
         self.assertIn("<title>Kafka on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "kafka"))
         self.assertIn("<title>Strimzi on Kubernetes without Helm, with Kapitan · kadet-hub</title>", self.page("recipes", "strimzi"))
+        self.assertIn("<title>RabbitMQ on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq"))
+        self.assertIn("<title>RabbitMQ Cluster Operator on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq-cluster-operator"))
         page = self.page("recipes", "keycloak")
         self.assertIn("<title>Keycloak on Kubernetes with Kapitan · kadet-hub</title>", page)
         self.assertIn('<p class="lead">keycloak &lt;script&gt;alert(7)&lt;/script&gt; in place of a Bitnami chart.</p>', page)
@@ -786,9 +816,7 @@ class Site(unittest.TestCase):
         self.assertIn('<h2>Operator classes</h2>', page)
         self.assertIn('<p><code>inventory/classes/recipes/operators/keycloak.yml</code></p>', page)
         self.assertIn('<pre id="operator-2"><code># Installs keycloak.', page)
-        rabbitmq = self.page("recipes", "rabbitmq")  # cert-manager's class runs no mutate
-        self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', rabbitmq)
-        self.assertIn('<li>Generators: <a href="../../generators/kubernetes/">kubernetes</a>, <a href="../../generators/rabbitmq/">rabbitmq</a></li>', rabbitmq)
+        self.assertIn('<pre id="operator-0"><code># Installs cert-manager.', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/blob/main/recipes/tests/keycloak/chainsaw-test.yaml">', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/examples/tree/main/recipes">kadet-hub/examples</a>', page)
         self.assertIn("fails unless the Keycloak is <code>Ready</code> and", page)
@@ -797,7 +825,7 @@ class Site(unittest.TestCase):
         self.assertIn(f"\n## inventory/classes/recipes/keycloak.yml\n\n```yaml\n{cls.strip()}\n```\n", md)
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
-        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns", "kafka", "postgresql"]:
+        for name in [*RECIPE_GENERATORS, "cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns", "kafka", "postgresql", "rabbitmq"]:
             self.assertIn(f'href="../../recipes/{name}/"', guide)
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
@@ -840,7 +868,22 @@ class Site(unittest.TestCase):
                       self.page("recipes", "postgresql"))
         self.assertNotIn("Prerequisites", self.page("recipes", "strimzi"))
         self.assertNotIn("Prerequisites", self.page("recipes", "cnpg"))
+        both = ("Prerequisites, installed once per cluster before the recipe: ", "rabbitmq-cluster-operator", "cert-manager")  # the operator's own prerequisite follows it
+        self.assertIn(f'<li>{both[0]}<a href="../../recipes/{both[1]}/"><code>{both[1]}</code></a>, <a href="../../recipes/{both[2]}/"><code>{both[2]}</code></a></li>',
+                      self.page("recipes", "rabbitmq"))
+        self.assertIn(f"\n- {both[0]}{both[1]}, {both[2]}\n- Generators: ", self.markdown("recipes", "rabbitmq"))
+        self.assertIn(f'<li>{both[0]}<a href="../../recipes/{both[2]}/"><code>{both[2]}</code></a></li>', self.page("recipes", "rabbitmq-cluster-operator"))
         self.assertNotIn("Prerequisites", self.markdown("recipes", "mysql"))
+
+    def test_release_manifest_recipe(self):  # CAT-37g
+        page = self.page("recipes", "rabbitmq-cluster-operator")
+        self.assertIn(f'<li>Source: release manifest <a href="{RABBITMQ_MANIFEST}"><code>rabbitmq/cluster-operator@v2.23.1</code></a> '
+                      f'(<code>cluster-operator.yml</code>), <code>sha256:{"7" * 64}</code></li>', page)
+        self.assertIn("<li>Proof level: <code>deploys</code>, compared with the manifest by the kadet-hub/recipes CI</li>", page)
+        self.assertNotIn("Source chart", page)
+        self.assertNotIn("compared with the chart", page)
+        self.assertIn(f"\n- Source: release manifest rabbitmq/cluster-operator@v2.23.1 (cluster-operator.yml), sha256:{'7' * 64}: {RABBITMQ_MANIFEST}\n"
+                      "- Proof level: deploys, compared with the manifest by the kadet-hub/recipes CI\n", self.markdown("recipes", "rabbitmq-cluster-operator"))
 
     def test_chart_recipe(self):  # CAT-37c
         page = self.page("recipes", "cert-manager")
@@ -935,6 +978,10 @@ class Site(unittest.TestCase):
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>kafka</code> recipe of kadet-hub/examples.", kafka)
         self.assertNotIn("compared with", kafka)
         self.assertNotIn("without Bitnami", kafka)
+        rabbitmq = self.page("recipes", "rabbitmq")
+        self.assertIn(f"<li>Source: container image <code>{RABBITMQ_SOURCE}</code>, recipe designed in kadet-hub</li>", rabbitmq)
+        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>rabbitmq</code> recipe of kadet-hub/examples.", rabbitmq)
+        self.assertNotIn("without Bitnami", rabbitmq)
 
     def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c, CAT-37e
         for missing in ("lib", "operators"):
