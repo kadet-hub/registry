@@ -22,7 +22,8 @@
 {{- end -}}
 {{- $include := "" -}}
 {{- with where $sections "heading" "Include" }}{{ with findRESubmatch "(?s)```yaml\n(.*?)\n```" (index . 0).body 1 }}{{ $include = index (index . 0) 1 }}{{ end }}{{ end -}}
-{{- range slice (slice "Source:" $source) (slice "Level:" $level) (slice "Include snippet" $include) -}}
+{{- $required := "" }}{{ with where $sections "heading" "Required parameters" }}{{ $required = (index . 0).body }}{{ end -}}
+{{- range slice (slice "Source:" $source) (slice "Level:" $level) (slice "Include snippet" $include) (slice `section "Required parameters"` $required) -}}
   {{- if not (index . 1) }}{{ errorf "CAT-37c: recipe %s: README.md has no %s" $name (index . 0) }}{{ end -}}
 {{- end -}}
 {{- /* The component classes init.yml includes as .<component>, then the options the Include snippet names. */ -}}
@@ -62,7 +63,7 @@
         subdir: %s
         output_path: inventory/classes/recipes/%s` $owner $sha $name $name -}}
 {{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "level" $level "include" $include
-  "classes" $classes "generators" $generators "fetch" $fetch
+  "required" $required "classes" $classes "generators" $generators "fetch" $fetch
   "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"
   "sections" (where $sections "heading" "in" (slice "Settings" "Mapping" "Left out" "Renamed RBAC objects" "Proof"))
   "folder" (printf "https://github.com/%s/recipes/tree/%s/%s" $owner $sha $name)

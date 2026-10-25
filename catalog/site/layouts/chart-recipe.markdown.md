@@ -16,6 +16,10 @@
 {{ end }}- Source: {{ $r.folder }}
 - Page: {{ .Permalink }}
 
+## Required parameters
+
+{{ $r.required }}
+
 ## Include
 
 ```yaml

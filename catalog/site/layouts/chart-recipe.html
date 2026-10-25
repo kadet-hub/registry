@@ -17,6 +17,8 @@
 <ul>
 {{ range $r.classes }}<li><code>{{ .class }}</code> (<code>{{ .file }}</code>){{ if .option }}, an option{{ end }}{{ with .components }}: {{ range $i, $c := . }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ end }}{{ end }}</li>
 {{ end }}</ul>
+<h2>Required parameters</h2>
+{{ $.RenderString (dict "display" "block") $r.required }}
 <h2>Include</h2>
 <p>A <a href="{{ "/glossary/#target" | relURL }}">target</a> includes the recipe and its options as <a href="{{ "/glossary/#class" | relURL }}">classes</a> and can override anything the recipe sets:</p>
 {{ partial "snippet.html" (dict "id" "include" "label" "include snippet" "text" $r.include) }}

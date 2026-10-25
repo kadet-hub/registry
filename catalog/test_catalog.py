@@ -171,7 +171,7 @@ CHART_RECIPE_FILES = {
     "README.md": "# cert-manager\n\nThe controller and the webhook, rendered by the kadet-hub `kubernetes`\ngenerator. Derived from the chart:\n\n"
                  f"Source: `oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}`\n\nLevel: `deploys`\n\n"
                  "## Include\n\n```yaml\nclasses:\n  - recipes.cert-manager\n  - recipes.cert-manager.crds   # the chart's crds.enabled\n```\n\n"
-                 "## Settings\n\n| Chart value | Inventory |\n|---|---|\n| `replicaCount` | `components.cert-manager.replicas` |\n\n"
+                 "## Required parameters\n\nNo parameter has to be set.\n\n## Settings\n\n| Chart value | Inventory |\n|---|---|\n| `replicaCount` | `components.cert-manager.replicas` |\n\n"
                  "## Left out\n\nThe hook <script>alert(8)</script> `Job/cert-manager-startupapicheck`.\n\n"
                  "## Renamed RBAC objects\n\n| Chart | Recipe |\n|---|---|\n| `cert-manager:leaderelection` | `cert-manager-leaderelection` |\n\n"
                  "## Proof\n\n`check cert-manager --level deploys` on kind.\n\n## Replacing a Helm release\n\nNot tested.\n",
@@ -186,7 +186,9 @@ COMPOSE_SOURCE = f"https://github.com/miniflux/v2/blob/{'2' * 40}/contrib/docker
 COMPOSE_RECIPE_FILES = {
     "README.md": "# miniflux\n\nMiniflux and its PostgreSQL database, from the Docker Compose file.\n\n"
                  f"Source: `{COMPOSE_SOURCE}@sha256:{'f' * 64}`\n\nLevel: `deploys`\n\n"
-                 "## Include\n\n```yaml\nclasses:\n  - recipes.miniflux\n```\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.miniflux\nparameters:\n  applications:\n    miniflux:\n      admin:\n        password: <ref>\n```\n\n"
+                 "## Required parameters\n\nThe password must be set as a ref. Without it the compile stops with\n"
+                 "`Interpolation key 'applications.miniflux.admin.password' not found`.\n\n"
                  "## Settings\n\n| Compose | Inventory |\n|---|---|\n| `ADMIN_USERNAME` | `applications.miniflux.admin.username` |\n\n"
                  "## Mapping\n\n| Compose | Recipe |\n|---|---|\n| service `db` | StatefulSet `miniflux-db` |\n\n"
                  "## Proof\n\n`check miniflux --level deploys` on kind.\n",
@@ -690,7 +692,8 @@ class Site(unittest.TestCase):
         self.assertIn('<pre id="commands"><code>kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch</code></pre>', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes#using-a-recipe">Using a recipe</a>', page)
         self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
-                         ["What it deploys", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
+                         ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
+        self.assertIn("<h2>Required parameters</h2>\n<p>No parameter has to be set.</p>", page)
         self.assertIn("<td><code>replicaCount</code></td>", page)  # rendered from the README
         self.assertIn("<td><code>cert-manager:leaderelection</code></td>", page)
         self.assertNotIn("alert(8)</script>", page)  # raw HTML is dropped
@@ -702,6 +705,7 @@ class Site(unittest.TestCase):
         self.assertIn(f"\n- Generators: kubernetes 1.7.0 (sha256:{'d' * 64})\n", md)
         self.assertIn("\n- Option recipes.cert-manager.crds (crds.yml)\n", md)
         self.assertIn(f"ref: {CHART_RECIPE_SHA}\n", md)
+        self.assertIn("\n## Required parameters\n\nNo parameter has to be set.\n\n## Include\n", md)
         self.assertIn("\n## Settings\n\n| Chart value | Inventory |\n", md)
         self.assertIn("\n## Proof\n\n`check cert-manager --level deploys` on kind.\n", md)
 
@@ -714,13 +718,18 @@ class Site(unittest.TestCase):
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with", page)
         self.assertIn("<li><code>recipes.miniflux.db</code> (<code>db.yml</code>): <code>miniflux-db</code></li>", page)
-        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page), ["What it deploys", "Include", "Fetching it", "Settings", "Mapping", "Proof"])
+        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+                         ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Mapping", "Proof"])
+        self.assertIn("<h2>Required parameters</h2>\n<p>The password must be set as a ref. Without it the compile stops with\n"
+                      "<code>Interpolation key 'applications.miniflux.admin.password' not found</code>.</p>", page)
+        self.assertIn("        password: &lt;ref&gt;</code></pre>", page)
         self.assertIn("<td>service <code>db</code></td>", page)
         self.assertIn("        subdir: miniflux\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1)))
         md = self.markdown("recipes", "miniflux")
         self.assertIn(f"\n- Source: Docker Compose file miniflux/v2@{'2' * 40} (contrib/docker-compose/basic.yml), sha256:{'f' * 64}: {COMPOSE_SOURCE}\n"
                       "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
         self.assertIn("\n## Mapping\n\n| Compose | Recipe |\n", md)
+        self.assertIn("\n## Required parameters\n\nThe password must be set as a ref.", md)
         self.assertNotIn("compared with", md)
 
     def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c, CAT-37e
@@ -734,15 +743,17 @@ class Site(unittest.TestCase):
                 self.assertIn(f"recipes/{missing}/strimzi.yml missing", failed.exception.stderr)  # CAT-1: Hugo's error is printed
         for missing, error in (("webhook.yml", "classes/recipes/cert-manager/webhook.yml missing"),
                                ("crds.yml", "classes/recipes/cert-manager/crds.yml missing"),
-                               ("Level", "README.md has no Level:"), ("Source", "README.md has no Source:")):
+                               ("Level", "README.md has no Level:"), ("Source", "README.md has no Source:"),
+                               ("Required", 'README.md has no section "Required parameters"')):
             with self.subTest(missing), tempfile.TemporaryDirectory() as tmp:
                 recipes = os.path.join(tmp, "recipes")
                 recipe_classes(os.path.join(recipes, "inventory", "classes"))
                 path = os.path.join(recipes, "inventory", "classes", "recipes", "cert-manager", missing)
-                if missing in ("Level", "Source"):
+                if missing in ("Level", "Source", "Required"):
                     path = os.path.join(os.path.dirname(path), "README.md")
                     with open(path, "w", encoding="utf-8") as f:  # Source: a compose file not pinned to a commit
                         f.write(CHART_RECIPE_FILES["README.md"].replace("Level: `deploys`", "Level: deploys") if missing == "Level" else
+                                CHART_RECIPE_FILES["README.md"].replace("## Required parameters", "## Required") if missing == "Required" else
                                 CHART_RECIPE_FILES["README.md"].replace("oci://quay.io/jetstack/charts/cert-manager:v1.21.2",
                                                                         "https://github.com/miniflux/v2/blob/main/basic.yml"))
                 else:
