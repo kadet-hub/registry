@@ -1349,8 +1349,9 @@ Related: CAT-15, CAT-30, CON-2.
   the classes of recipes that have one.
 
   As CAT-11a asks, every recipe title and the index title lead with the
-  searched term and name Kapitan, such as "PostgreSQL on Kubernetes without
-  Bitnami, with Kapitan", and every description leads with "Bitnami
+  searched term and name Kapitan, such as "PostgreSQL on Kubernetes with
+  Kapitan". Titles MUST NOT say "without Bitnami". Every description
+  leads with "Bitnami
   <chart> Helm chart alternative:" and names Kapitan with Kubernetes. A title that leaves no room for the " · kadet-hub" suffix
   within CAT-11's 65 characters stands alone; the template counts bytes,
   so the suffix's "·" counts twice.
@@ -1362,7 +1363,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: EX-5, EX-5a, EX-6 (kadet-hub/examples `docs/specs/examples.md`), CAT-11.
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #283, #299, #300
+  - Since: #283, #299, #300, #354
 
 - CAT-37a: The build MUST fail when a file of CAT-37 cannot be fetched or
   is missing.
@@ -1465,19 +1466,20 @@ Related: CAT-15, CAT-30, CON-2.
   for one.
 
   Such a recipe keeps the queries CAT-11f routes to the examples page, so
-  its title and description lead with them. valkey replaces the stand-in
-  for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes without
-  Bitnami, with Kapitan", with a description that leads with "Bitnami
-  redis Helm chart alternative:". The title "Valkey on Kubernetes without
-  Helm" named neither Redis nor Bitnami, although CAT-11f sends the
-  Redis queries and "valkey helm chart not bitnami" to the page. Moving those queries to the
+  its description leads with them. The title names the project and the
+  searched term without "without Bitnami". valkey replaces the stand-in
+  for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes with
+  Kapitan", with a description that leads with "Bitnami redis Helm chart
+  alternative:". The title "Valkey on Kubernetes without Helm" named
+  neither Redis nor Bitnami, although CAT-11f sends the Redis queries and
+  "valkey helm chart not bitnami" to the page. Moving those queries to the
   Bitnami guide was considered, but the guide only links the recipe, and
   the recipe page is what answers them.
 
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347, #349
+  - Since: #342, #344, #347, #349, #354
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1532,16 +1534,16 @@ Related: CAT-15, CAT-30, CON-2.
   deploy on kind and the smoke test (RCP-44, RCP-45 there). Titles and
   descriptions follow CAT-37c. mysql, the first such recipe, replaces the
   kadet-hub/examples stand-in for Bitnami's `mysql` chart, so it keeps
-  "MySQL on Kubernetes without Bitnami, with Kapitan" and a description
+  "MySQL on Kubernetes with Kapitan" and a description
   that leads with "Bitnami mysql Helm chart alternative:". mongodb, the
   stand-in for Bitnami's `mongodb` chart, moved the same way and keeps
-  "MongoDB on Kubernetes without Bitnami, with Kapitan" and "Bitnami
+  "MongoDB on Kubernetes with Kapitan" and "Bitnami
   mongodb Helm chart alternative:".
 
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349, #352
+  - Since: #349, #352, #354
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the

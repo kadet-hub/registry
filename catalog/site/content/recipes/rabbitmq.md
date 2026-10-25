@@ -1,5 +1,5 @@
 ---
-title: "RabbitMQ on Kubernetes without Bitnami, with Kapitan"
+title: "RabbitMQ on Kubernetes with Kapitan"
 description: "Bitnami rabbitmq Helm chart alternative: a Kapitan inventory class for RabbitMQ on Kubernetes with the RabbitMQ Cluster Operator, checked on kind."
 replaces: [rabbitmq]
 operators: [RabbitMQ Cluster Operator, cert-manager]

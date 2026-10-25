@@ -1,5 +1,5 @@
 ---
-title: "Kafka on Kubernetes without Bitnami, with Kapitan"
+title: "Kafka on Kubernetes with Kapitan"
 description: "Bitnami kafka Helm chart alternative: a Kapitan inventory class for Apache Kafka on Kubernetes in KRaft mode with the Strimzi operator, checked on kind."
 replaces: [kafka]
 operators: [Strimzi]
