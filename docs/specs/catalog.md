@@ -1401,8 +1401,8 @@ Related: CAT-15, CAT-30, CON-2.
 
 - CAT-37c: The site MUST have a page at `/recipes/<name>/` for every
   recipe of kadet-hub/recipes that has a content page with
-  `layout: chart-recipe`. The page MUST show the source chart pinned by
-  digest, the proof level, the components and options the recipe deploys,
+  `layout: chart-recipe`. The page MUST show the source pinned by digest
+  (a chart, or a compose file as CAT-37e says), the proof level, the components and options the recipe deploys,
   the include snippet, a fetch inventory pinned to the commit the page was
   built from with the commands that use it, the README sections "Settings",
   "Left out", "Renamed RBAC objects" and "Proof", the generators the recipe
@@ -1455,11 +1455,38 @@ Related: CAT-15, CAT-30, CON-2.
   level.
 
   The two kinds were checked differently. A kadet-hub/recipes recipe is
-  compared with the chart it rebuilds. A kadet-hub/examples recipe is
+  compared with the chart it rebuilds, or deployed and smoke tested when
+  its source is a compose file (CAT-37e). A kadet-hub/examples recipe is
   deployed to kind and checked by its assertions (EX-5).
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
   - Since: #342
+
+- CAT-37e: A CAT-37c page whose README `Source:` line is a GitHub file URL
+  MUST show the source as a Docker Compose file with its repository,
+  commit and path, linked to the file at that commit, and its sha256. It
+  MUST show the README section "Mapping" and MUST NOT say that the recipe
+  is compared with a chart. The `/recipes/` entry of CAT-37d MUST NOT
+  either.
+
+  The source type follows from the form of the `Source:` line, `oci://`
+  for a chart and a GitHub blob URL pinned to a commit for a compose file
+  (DEC-9, RCP-23 there). A compose recipe is at level `deploys` only: a
+  compose file has no Kubernetes objects to compare with, so the proof is
+  the deploy on kind and the smoke test (DEC-8, RCP-38, RCP-39 there). The
+  "Mapping" section is the compose counterpart of "Settings" for what the
+  file sets but the recipe renders differently. A `Source:` line of
+  neither form stops the build as a missing one does.
+
+  Titles lead with the application and "without Docker Compose" and name
+  Kapitan, such as "Miniflux on Kubernetes without Docker Compose, with
+  Kapitan". Descriptions lead with "<application> Docker Compose to
+  Kubernetes" and name Kapitan.
+
+  Related: DEC-8, DEC-9, RCP-37 to RCP-39 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c.
+
+  - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
+  - Since: this change
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
