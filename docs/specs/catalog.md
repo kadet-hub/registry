@@ -1476,7 +1476,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #346
+  - Since: #342, #344, #347
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
