@@ -489,6 +489,7 @@ coverage is named at each:
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `.github/ruleset-branches.json`, `.github/ruleset-renovate.json` | REV-3; applied with `gh api` |
+| `.github/workflows/request-review.yml` | REV-4 |
 | `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11, GI-15 |
 | `.github/workflows/scorecard.yml` | GI-12 |
 | `.github/workflows/codeql.yml` | GI-13 |
