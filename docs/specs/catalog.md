@@ -1477,7 +1477,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: RCP-1, RCP-15, RCP-19, RCP-23, RCP-40, RCP-41 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-11f, CAT-37a.
 
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #342, #344, #347, this change
+  - Since: #342, #344, #347, #349
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c and those of
   CAT-37 under separate headings, each recipe of CAT-37c with its proof
@@ -1490,7 +1490,7 @@ Related: CAT-15, CAT-30, CON-2.
   assertions (EX-5).
 
   - Test: `catalog/test_catalog.py` (`test_recipes`)
-  - Since: #342, this change
+  - Since: #342, #349
 
 - CAT-37e: A CAT-37c page whose README `Source:` line is a GitHub file URL
   MUST show the source as a Docker Compose file with its repository,
@@ -1538,7 +1538,7 @@ Related: CAT-15, CAT-30, CON-2.
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: this change
+  - Since: #349
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
@@ -1576,7 +1576,7 @@ Related: CAT-15, CAT-30, CON-2.
   layout names (CAT-37a, CAT-37c). valkey and mysql moved this way.
 
   - Test: `catalog/test_catalog.py` (not written)
-  - Since: not implemented; valkey moved: #345; mysql moved: this change
+  - Since: not implemented; valkey moved: #345; mysql moved: #349
 
 - CAT-38b: `catalog.json` MUST carry `recipes[]` with `name`, `description`
   and `versions[]` holding `version`, `digest`, `yanked`, `level`, `chart`
