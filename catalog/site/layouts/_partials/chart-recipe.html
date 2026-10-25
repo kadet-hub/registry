@@ -8,6 +8,11 @@
 {{- if not $readme }}{{ errorf "CAT-37c: recipe %s: classes/recipes/%s/README.md missing" $name $name }}{{ end -}}
 {{- $md := $readme.Content -}}
 {{- $source := "" }}{{ with findRESubmatch "(?m)^Source: `(oci://[^`]+@sha256:[0-9a-f]{64})`$" $md 1 }}{{ $source = index (index . 0) 1 }}{{ end -}}
+{{- /* CAT-37e: a compose file as a GitHub blob URL pinned to a commit, then the file's digest. */ -}}
+{{- $compose := false -}}
+{{- with findRESubmatch "(?m)^Source: `(https://github\\.com/([^/`]+/[^/`]+)/blob/([0-9a-f]{40})/([^`@]+))@(sha256:[0-9a-f]{64})`$" $md 1 -}}
+  {{- $m := index . 0 }}{{ $compose = dict "url" (index $m 1) "repo" (index $m 2) "commit" (index $m 3) "path" (index $m 4) "digest" (index $m 5) }}{{ $source = index $m 1 -}}
+{{- end -}}
 {{- $level := "" }}{{ with findRESubmatch "(?m)^Level: `([a-z]+)`$" $md 1 }}{{ $level = index (index . 0) 1 }}{{ end -}}
 {{- $lead := "" }}{{ with findRESubmatch `(?s)\A# [^\n]*\n+(.*?)\n\n` $md 1 }}{{ $lead = index (index . 0) 1 | replaceRE `\s+` " " | strings.TrimSpace | replaceRE `:$` "." }}{{ end -}}
 {{- $sections := slice -}}
@@ -56,9 +61,9 @@
         ref: %s
         subdir: %s
         output_path: inventory/classes/recipes/%s` $owner $sha $name $name -}}
-{{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "level" $level "include" $include
+{{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "level" $level "include" $include
   "classes" $classes "generators" $generators "fetch" $fetch
   "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"
-  "sections" (where $sections "heading" "in" (slice "Settings" "Left out" "Renamed RBAC objects" "Proof"))
+  "sections" (where $sections "heading" "in" (slice "Settings" "Mapping" "Left out" "Renamed RBAC objects" "Proof"))
   "folder" (printf "https://github.com/%s/recipes/tree/%s/%s" $owner $sha $name)
   "guide" (printf "https://github.com/%s/recipes#using-a-recipe" $owner) -}}
