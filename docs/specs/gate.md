@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Gate
 
 Status: Approved
-Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `tests/fuzz/`, `.clusterfuzzlite/`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql,fuzz}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset*.json`
+Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `tests/fuzz/`, `.clusterfuzzlite/`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql,fuzz,request-review}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset*.json`
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -1385,3 +1385,21 @@ code diff and the output diff, not only the verdict.
 
   - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset-branches.json` and `.github/ruleset-renovate.json`
   - Since: #259
+
+- REV-4: Every pull request MUST request a review from `neat-bot`. That
+  review MUST NOT be a condition for merging.
+
+  The `request review` workflow requests `neat-bot` with the repository's
+  own token when a pull request is opened, reopened or marked ready. It skips
+  drafts, pull requests opened by bots, and pull requests from forks, whose
+  token is read-only; on a fork the bot is requested by hand after a look at
+  the pull request. `neat-bot` has read access only (terraform-homezone
+  GHO-6a), so CODEOWNERS, which requests a code owner only with write access,
+  cannot do it, and an approval by `neat-bot` counts toward no approval a
+  ruleset requires.
+
+  - Test: manual: on a new pull request the `request review` run succeeds and
+    `gh pr view <n> --json reviewRequests` lists `neat-bot`;
+    `gh api repos/kadet-hub/registry/collaborators/neat-bot/permission` reports
+    `read`
+  - Since: #353
