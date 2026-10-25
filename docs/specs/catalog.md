@@ -1540,10 +1540,18 @@ Related: CAT-15, CAT-30, CON-2.
   "MongoDB on Kubernetes with Kapitan" and "Bitnami
   mongodb Helm chart alternative:".
 
+  powerdns is the PowerDNS part of the kadet-hub/examples recipe
+  `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
+  chart. PowerDNS itself replaces no Bitnami chart, so its new page is
+  "PowerDNS on Kubernetes with Kapitan" with a description that leads with
+  "PowerDNS Helm chart alternative:". The examples page
+  `/recipes/external-dns-powerdns/` stays until the external-dns part
+  moves to kadet-hub/recipes under that name (CAT-38a).
+
   Related: DEC-11, RCP-23, RCP-44, RCP-45 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c, CAT-37e.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
-  - Since: #349, #352, #354
+  - Since: #349, #352, #354; powerdns: this change
 
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
