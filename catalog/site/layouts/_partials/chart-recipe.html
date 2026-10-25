@@ -27,6 +27,8 @@
 {{- with where $sections "heading" "Include" }}{{ with findRESubmatch "(?s)```yaml\n(.*?)\n```" (index . 0).body 1 }}{{ $include = index (index . 0) 1 }}{{ end }}{{ end -}}
 {{- $required := "" }}{{ with where $sections "heading" "Required parameters" }}{{ $required = (index . 0).body }}{{ end -}}
 {{- $replaces := "" }}{{ with where $sections "heading" "Replaces" }}{{ $replaces = (index . 0).body }}{{ end -}}
+{{- /* The prerequisites of the README's Requires: line, each entry in backticks. */ -}}
+{{- $requires := slice }}{{ with findRESubmatch "(?m)^Requires: (.+)$" $md 1 }}{{ range findRESubmatch "`([^`]+)`" (index (index . 0) 1) -1 }}{{ $requires = $requires | append (index . 1) }}{{ end }}{{ end -}}
 {{- range slice (slice "Source:" $source) (slice "Level:" $level) (slice "Include snippet" $include) (slice `section "Required parameters"` $required) -}}
   {{- if not (index . 1) }}{{ errorf "CAT-37c: recipe %s: README.md has no %s" $name (index . 0) }}{{ end -}}
 {{- end -}}
@@ -69,7 +71,7 @@
         output_path: inventory/classes/recipes/%s` $fetch $owner $sha . . -}}
 {{- end -}}
 {{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "image" $image "level" $level "include" $include
-  "replaces" $replaces "required" $required "classes" $classes "generators" $generators "fetch" $fetch
+  "replaces" $replaces "requires" $requires "required" $required "classes" $classes "generators" $generators "fetch" $fetch
   "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"
   "sections" (where $sections "heading" "in" (slice "Settings" "Mapping" "Left out" "Renamed RBAC objects" "Proof"))
   "folder" (printf "https://github.com/%s/recipes/tree/%s/%s" $owner $sha $name)
