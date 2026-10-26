@@ -40,8 +40,8 @@ kadet-hub-compile:
     HELM_VERSION: v4.3.1
     HELM_SHA256: 0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
     # renovate: datasource=github-release-attachments depName=cli/cli
-    GH_VERSION: v2.102.0
-    GH_SHA256: bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386
+    GH_VERSION: v2.103.0
+    GH_SHA256: fdd768eb70f6409f80fcfa9f3a1c0adf0fc98d827ab3ce0bed2ac22762c5d786
   script:
     - '[ -n "$GH_TOKEN" ] || { echo "CON-1a: set the CI variable GH_TOKEN"; exit 1; }'
     - apk add --no-cache bash coreutils curl findutils git jq python3 yq-go
