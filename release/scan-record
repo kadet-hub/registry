@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # The scan record of one published version (PUB-7): which checks the build
-# job ran, with which tool versions, in which run.
+# job ran, with which tool versions, in which run. A recipe's adds check's
+# file and output rules and its renders proof on kind (REC-12).
 #
-# Usage: scan-record <number of exceptions applied>
+# Usage: scan-record <number of exceptions applied> [recipe]
 # Needs: gitleaks on PATH, the main checkout, GITHUB_SHA, GITHUB_SERVER_URL,
 # GITHUB_REPOSITORY, GITHUB_RUN_ID. Prints the record as JSON.
 set -euo pipefail
@@ -22,7 +23,10 @@ jq -n -S \
   --arg gvisor "$(sed -n 's/^ *GVISOR_RELEASE: "\([0-9]*\)"$/\1/p' -- "$root/.github/actions/setup-gvisor/action.yml")" \
   --arg kapitan "$(pin kapitan "$root/sandbox/requirements.txt")" \
   --arg conftest "$(arg CONFTEST_VERSION)" \
-  '{at: $at, gate: $gate, run: $run, exceptions: $exceptions, checks: [
+  --argjson recipe "$([[ ${2:-} == recipe ]] && echo true || echo false)" \
+  --arg check "$(sed -n 's/^ *CHECK_VERSION: check-v//p' -- "$root/.github/actions/setup-check/action.yml")" \
+  --arg kind "$(sed -n 's/^ *KIND_VERSION: //p' -- "$root/.github/actions/setup-kind/action.yml")" \
+  '{at: $at, gate: $gate, run: $run, exceptions: $exceptions, checks: ([
     {id: "secrets", tool: "gitleaks \($gitleaks)"},
     {id: "malware", tool: "ClamAV \($clamav)"},
     {id: "package", tool: "GuardDog \($guarddog)"},
@@ -31,4 +35,5 @@ jq -n -S \
     {id: "tree", tool: "tree_check.py"},
     {id: "sandbox", tool: "gVisor \($gvisor), Kapitan \($kapitan)"},
     {id: "output", tool: "Conftest \($conftest)"},
-    {id: "ci-env", tool: "Kapitan \($kapitan)"}]}'
+    {id: "ci-env", tool: "Kapitan \($kapitan)"}]
+    + if $recipe then [{id: "lint", tool: "check \($check)"}, {id: "renders", tool: "check \($check), kind \($kind)"}] else [] end)}'

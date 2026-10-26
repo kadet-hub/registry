@@ -1,22 +1,28 @@
 #!/usr/bin/env bash
-# Build job (PUB-1, PUB-7, PUB-9, CMP-4): fetch every entry's source without
-# checkout, validate and build in the sandbox image without network, then
-# rerun the static checks and the compile gate for versions not yet
-# published and record the run, the krab result, the output diff, the
-# kinds of the output and the backends it compiled on in meta.json.
+# Build job (PUB-1, PUB-7, PUB-9, CMP-4, REC-11, REC-12): fetch every entry's
+# source without checkout, validate and build in the sandbox image without
+# network, then rerun the static checks and the compile gate for versions not
+# yet published and record the run, the krab result, the output diff, the
+# kinds of the output and the backends it compiled on in meta.json. For a
+# recipe version, rerun the gate's recipe checks and renders proof and record
+# what REC-13 lists instead.
 #
 # Usage: build-all <out dir>
 # Needs: the sandbox image $SANDBOX_IMAGE, yq, jq, oras, REGISTRY, what
 # scan/static-scan, sandbox/gate-compile, release/scan-record and
-# release/output-diff need, the main checkout. Writes the artifacts, their
-# output.diff and names.json to <out dir>.
+# release/output-diff need, the main checkout; for a recipe GH_TOKEN, which
+# only gate/recipe-checks gets, and what it and gate/recipe-renders need.
+# Writes the artifacts, their output.diff and names.json to <out dir>, a
+# recipe's below <out dir>/recipes/.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
 out=$1
+token=${GH_TOKEN:-}
+unset GH_TOKEN
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
-mkdir -p -- "$work/src" "$out"
+mkdir -p -- "$work/src/recipes" "$work/recipes" "$out"
 
 export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
 for f in "$root"/generators/*.yaml; do
@@ -28,6 +34,16 @@ for f in "$root"/generators/*.yaml; do
   "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha"
   python3 "$root/gate/fetch_tree.py" --git-dir "$work/$name.git" --rev "$sha" --path "$path" --out "$work/src/$name"
 done
+# REC-11: a recipe's directories as the gate fetches them (REC-4); build.py ships <name>/ without tests/.
+for f in "$root"/recipes/*.yaml; do
+  [[ -e $f ]] || continue
+  name=$(basename -- "$f" .yaml)
+  repo=$(yq -r .source.repo "$f") sha=$(yq -r .source.sha "$f")
+  gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$work/recipes/$name.git")
+  "${gitc[@]}" init -q --bare
+  "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha"
+  python3 "$root/gate/fetch_tree.py" --git-dir "$work/recipes/$name.git" --rev "$sha" --recipe "$name" --out "$work/src/recipes/$name"
+done
 
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
   --mount "type=bind,src=$root,dst=/base,readonly" \
@@ -37,6 +53,48 @@ docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
 
 # shellcheck source=release/common.sh
 . "$root/release/common.sh"
+
+# REC-12: the recipe checks of the gate job and the renders proof of its renders job on
+# recipes/<name> <version>, then the record of REC-13, with the scan record and the output diff.
+build_recipe() {
+  local name=$1 version=$2 dir=$work/recipes/$1 dest=$out/recipes/$1 check caps
+  check=$(cd -- "${RECIPES_CHECK:-$root/gate/.check}" && pwd)
+  echo "## recipe $name $version: checks"
+  GH_TOKEN=$token "$root/gate/recipe-checks" "$work/recipes/$name.git" "$(yq -r .source.sha "$root/recipes/$name.yaml")" "$name" "$dir" \
+    | tee "$work/compile.txt" || { echo "REC-12: recipe $name $version: the checks failed"; exit 1; }
+  # PUB-9: before the renders proof copies the required recipes' output next to the recipe's (REC-10).
+  GH_TOKEN=$token "$root/release/output-diff" "recipes/$name" "$dir/proof/out" "$work/compile.txt" "$dest" >"$work/diff.json" \
+    || { rm -f -- "$dest/output.diff"; echo '{"base": null, "error": "output diff failed"}' >"$work/diff.json"; }
+  echo "PUB-9: recipe $name $version: $(cat -- "$work/diff.json")"
+  echo "## recipe $name $version: renders"
+  "$root/gate/recipe-renders" "$dir/recipes" "$name" "$dir/proof" || { echo "REC-12: recipe $name $version: the renders proof failed"; exit 1; }
+  # REC-13: the Source and Level lines as the pinned check reads them (REC-7), the kinds of the recipe's own output (PUB-10).
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" --mount "type=bind,src=$check,dst=/check,readonly" \
+    --mount "type=bind,src=$dir,dst=/recipe,readonly" \
+    "$image" python -I -c 'import json, sys
+sys.path[:0] = ["/check", "/base/sandbox"]
+import lint, tag_check
+source, level = lint.readme_fields("/recipe/recipes/" + sys.argv[1])
+print(json.dumps({"source": source, "level": level, "kinds": tag_check.kinds("/recipe/proof/out/compiled/" + sys.argv[1])}))' \
+    "$name" >"$work/fields.json"
+  # DEC-23: the capabilities of the SEC-12 matches in the recipe's own output.
+  caps=$(sed -nE "s#^SEC-12: ([a-z-]+): compiled/$name/.*#\1#p" -- "$work/compile.txt" | sort -u | jq -cnR '[inputs]')
+  "$root/release/scan-record" 0 recipe >"$work/scan.json"
+  jq -c -S --slurpfile r "$dir/static/recipe.json" --slurpfile f "$work/fields.json" --slurpfile scan "$work/scan.json" \
+    --slurpfile diff "$work/diff.json" --argjson caps "$caps" \
+    '$r[0] as $r | $f[0] as $f | ($f.source // ["none", []]) as [$kind, $s]
+    | .description = $r.description | .license = $r.license | .level = $f.level
+    | .generators = [$r.pins[] | capture("^ghcr\\.io/kadet-hub/(?<name>[^:]+):(?<version>[^@]+)@(?<digest>.+)$")]
+    | .includes = [$r.recipes | to_entries[] | select(.value.rule == "REC-16") | {name: .key, version: .value.version, digest: .value.digest}]
+    | .output_capabilities = $caps | .kinds = $f.kinds | .scan = $scan[0] | .output_diff = $diff[0]
+    | if $kind == "chart" then .chart = {repo: $s[0], version: $s[1], digest: $s[2]}
+      elif $kind == "http" then .chart = {repo: "\($s[0])/\($s[1])", version: $s[2], digest: $s[3]}
+      elif $kind == "manifest" then .manifest = {url: "https://github.com/\($s[0])/releases/download/\($s[1])/\($s[2])", digest: $s[3]}
+      else . end' -- "$dest/meta.json" >"$work/meta.json"
+  cp -- "$work/meta.json" "$dest/meta.json"
+}
+
 while IFS= read -r name; do
   meta=$out/$name/meta.json
   version=$(jq -r .version -- "$meta")
@@ -44,6 +102,10 @@ while IFS= read -r name; do
   ((rc < 2)) || exit 1
   if ((rc == 0)); then
     echo "$name $version: published, not compiled"
+    continue
+  fi
+  if [[ $name == recipes/* ]]; then
+    build_recipe "${name#recipes/}" "$version"
     continue
   fi
   echo "## $name $version: compile gate"

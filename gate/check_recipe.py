@@ -1,4 +1,4 @@
-"""Checks on a recipe's files (REC-4, the include rule of REC-5, REC-6, REC-15 to REC-17).
+"""Checks on a recipe's files (REC-4, the include rule of REC-5, REC-6, REC-15 to REC-17, REC-13).
 
 Usage: check_recipe.py --tree DIR --index FILE --policy DIR [--license FILE] [--requires FILE] --out FILE
 
@@ -9,8 +9,9 @@ repository's root LICENSE and for --requires the JSON list of recipes it
 requires (REC-17). Writes to --out as JSON the generators whose
 attestation the gate verifies with where they unpack, the binaries the
 index lists for them, the included and required recipes and the
-published versions they resolve to (REC-8, REC-16, REC-17), and what
-REC-10 shows. Prints findings; exits 1 on any.
+published versions they resolve to (REC-8, REC-16, REC-17), what REC-10
+shows, and the description and license the index records (REC-13).
+Prints findings; exits 1 on any.
 """
 
 import argparse
@@ -31,6 +32,8 @@ GENERATOR = re.compile(r"^ghcr\.io/kadet-hub/(?P<name>[a-z][a-z0-9-]{1,38}):(?P<
                        r"@(?P<digest>sha256:[0-9a-f]{64})$")
 INCLUDED = re.compile(r"^recipes\.(?P<other>[a-z][a-z0-9-]{1,38})(\.[A-Za-z0-9_-]+)?$")
 README_LINE = {"source": re.compile(r"^Source: .*$", re.M), "level": re.compile(r"^Level: .*$", re.M)}
+# QA-5a: the characters manifest.schema.json bans from a description; tab, line feed and carriage return are whitespace here.
+CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")
 
 
 def get(data, *keys):
@@ -79,6 +82,29 @@ def generators(index, classes, lib, findings):
     return deps, [list(p) for p in pull], binaries
 
 
+def description(readme, findings):
+    """REC-13: the first paragraph after the README's heading (RCP-32), its whitespace collapsed; QA-5a applies."""
+    lines_ = (readme or "").split("\n")
+    start = next((i + 1 for i, ln in enumerate(lines_) if ln.startswith("#")), len(lines_))
+    para = []
+    for ln in lines_[start:]:
+        if ln.strip(" \t\r"):
+            para.append(ln)
+        elif para:
+            break
+    if not para or para[0].startswith("#"):
+        findings.append("REC-13: README.md has no paragraph after its heading for the description (RCP-32)")
+        return None
+    if any(CONTROL.search(ln) for ln in para):
+        findings.append("QA-5a: README.md: the first paragraph holds a control or bidirectional formatting character")
+        return None
+    text = re.sub(r"[ \t\r]+", " ", " ".join(para)).strip()
+    if len(text) > 300:
+        findings.append(f"REC-13: README.md: the description has {len(text)} characters, RCP-32 allows 300")
+        return None
+    return text
+
+
 def published(index, recipe, rule, findings):
     """REC-16: the oldest version the index lists, not yanked, with the tree of the recipe's directory without tests."""
     name = os.path.basename(recipe)
@@ -96,7 +122,8 @@ def published(index, recipe, rule, findings):
 
 
 def check(tree, index, policy, license_path, required=()):
-    """Findings, and the generators to verify, their binaries, the included and required recipes and their versions."""
+    """Findings, and the generators to verify, their binaries, the included and required recipes and their versions,
+    the description and the license."""
     name = os.path.basename(os.path.normpath(tree))
     prefix = f"inventory/classes/recipes/{name}/"
     files = sorted(os.path.relpath(os.path.join(r, f), tree) for r, _, fs in os.walk(tree) for f in fs)
@@ -121,10 +148,11 @@ def check(tree, index, policy, license_path, required=()):
     for c in sorted(copies):
         if c + ".LICENSE" not in shipped:
             findings.append(f"REC-15: {c} is vendored by a copy entry and has no {os.path.basename(c)}.LICENSE next to it")
-    # REC-4: the license of the repository root's LICENSE, as QA-2 matches it.
+    # REC-4: the license of the repository root's LICENSE, as QA-2 matches it; REC-13 records its identifier.
     text = read_text(license_path, LICENSE_HEAD) if license_path else None
-    patterns = [ln.split(None, 1)[1] for ln in lines(os.path.join(policy, "licenses.txt"))]
-    if text is None or not any(re.search(p, " ".join(text.split())) for p in patterns):
+    licenses = [ln.split(None, 1) for ln in lines(os.path.join(policy, "licenses.txt"))]
+    spdx = next((i for i, p in licenses if text is not None and re.search(p, " ".join(text.split()))), None)
+    if spdx is None:
         findings.append("REC-4: the source repository's root LICENSE is missing or matches no license on policy/licenses.txt")
 
     included = set()
@@ -151,9 +179,10 @@ def check(tree, index, policy, license_path, required=()):
         return out
 
     deps, pull, binaries = generators(index, {**classes, **classes_of(sorted(included))}, "lib", findings)
+    readme = read_text(os.path.join(tree, "README.md"))
     result = {"pull": pull, "binaries": binaries, "included": sorted(included), "required": {}, "recipes": {},
-              "pins": sorted(deps), **{k: r.findall(read_text(os.path.join(tree, "README.md")) or "")[:1]
-                                       for k, r in README_LINE.items()}}
+              "pins": sorted(deps), **{k: r.findall(readme or "")[:1] for k, r in README_LINE.items()},
+              "description": description(readme, findings), "license": spdx}
     for r in required:
         _, pull, result["required"][r] = generators(index, classes_of([r]), f"requires/{r}/lib", findings)
         result["pull"] += pull

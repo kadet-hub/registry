@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Index job, before the attestation (PUB-4, PUB-5): collect every attested
-# version from the registry, build the index, push it by digest when it
-# changed.
+# Index job, before the attestation (PUB-4, PUB-5, REC-13): collect every
+# attested generator and recipe version from the registry, build the index,
+# push it by digest when it changed.
 #
 # Usage: publish-index
 # Needs: REGISTRY (ghcr.io/<owner>), IDENTITY, GITHUB_REPOSITORY, GH_TOKEN,
@@ -20,38 +20,49 @@ ref=$REGISTRY/index
 out() { echo "$1" >>"$GITHUB_OUTPUT"; }
 public() {
   local visibility
-  visibility=$(gh api "$PACKAGES_API/packages/container/$1" --jq .visibility 2>/dev/null) || visibility=unknown
+  visibility=$(gh api "$PACKAGES_API/packages/container/${1//\//%2F}" --jq .visibility 2>/dev/null) || visibility=unknown
   [[ $visibility == public ]] || echo "::warning::package $1 is $visibility; make it public in the web UI"
 }
 out "ref=$ref"
 
-# Entries on main, and every name that may still have a package.
-echo '{}' >"$work/entries.json"
-names=()
-for f in "$root"/generators/*.yaml; do
-  [[ -e $f ]] || continue
-  name=$(basename -- "$f" .yaml)
-  names+=("$name")
-  yq -o json "$f" | jq --arg n "$name" --slurpfile all "$work/entries.json" '$all[0] + {($n): .}' >"$work/e.json"
-  mv -- "$work/e.json" "$work/entries.json"
-done
-mapfile -t -O "${#names[@]}" names < <(sed 's/#.*//; /^[[:space:]]*$/d; s/[[:space:]]//g' "$root/policy/reserved-names.txt")
-
-: >"$work/versions.jsonl"
-for name in "${names[@]}"; do
-  pkg=$REGISTRY/$name
-  rc=0; tags=$(lookup oras repo tags -- "$pkg") || rc=$?
+# entries <dir> <prefix>: the entries of <dir> on main as <prefix>entries.json, and in
+# names every name that may still have a package: those and the reserved ones.
+entries() {
+  local f name
+  echo '{}' >"$work/$2entries.json"
+  names=()
+  for f in "$root/$1"/*.yaml; do
+    [[ -e $f ]] || continue
+    name=$(basename -- "$f" .yaml)
+    names+=("$name")
+    yq -o json "$f" | jq --arg n "$name" --slurpfile all "$work/$2entries.json" '$all[0] + {($n): .}' >"$work/e.json"
+    mv -- "$work/e.json" "$work/$2entries.json"
+  done
+  mapfile -t -O "${#names[@]}" names < <(sed 's/#.*//; /^[[:space:]]*$/d; s/[[:space:]]//g' "$root/policy/reserved-names.txt")
+}
+# collect <package> <artifact type> <file>: each attested version of the package, appended to <file>.
+collect() {
+  local pkg=$1 type=$2 rc=0 tags version digest cfg
+  tags=$(lookup oras repo tags -- "$pkg") || rc=$?
   ((rc < 2)) || exit 1
-  ((rc == 0)) || continue
+  ((rc == 0)) || return 0
   while read -r version; do
     digest=$(oras resolve -- "$pkg:$version")
     attested "$pkg@$digest" || { echo "PUB-4: $pkg:$version ($digest) has no marketplace attestation"; exit 1; }
-    cfg=$(oras manifest fetch -- "$pkg@$digest" | jq -er 'select(.artifactType == "application/vnd.kadet-hub.generator.v1") | .config.digest') \
+    cfg=$(oras manifest fetch -- "$pkg@$digest" | jq -er --arg t "application/vnd.kadet-hub.$type.v1" 'select(.artifactType == $t) | .config.digest') \
       || { echo "PUB-4: $pkg:$version is not a marketplace artifact"; exit 1; }
-    oras blob fetch --output - -- "$pkg@$cfg" | jq -c --arg d "$digest" '{digest: $d, meta: .}' >>"$work/versions.jsonl"
+    oras blob fetch --output - -- "$pkg@$cfg" | jq -c --arg d "$digest" '{digest: $d, meta: .}' >>"$3"
   done < <(printf '%s\n' "$tags" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; })
-  public "$name"
-done
+  public "${pkg#"$REGISTRY"/}"
+}
+
+: >"$work/versions.jsonl"
+entries generators ""
+for name in "${names[@]}"; do collect "$REGISTRY/$name" generator "$work/versions.jsonl"; done
+# REC-13: recipes publish to recipes/<name>; a reserved name blocks both namespaces (REC-2).
+: >"$work/recipe-versions.jsonl"
+entries recipes recipe-
+for name in "${names[@]}"; do collect "$REGISTRY/recipes/$name" recipe "$work/recipe-versions.jsonl"; done
 
 previous=()
 rc=0; latest=$(lookup oras resolve -- "$ref:latest") || rc=$?
@@ -65,6 +76,7 @@ fi
 
 rc=0
 python3 "$root/release/index.py" --versions "$work/versions.jsonl" --entries "$work/entries.json" \
+  --recipe-versions "$work/recipe-versions.jsonl" --recipe-entries "$work/recipe-entries.json" \
   "${previous[@]}" --out "$work/index.json" --notes "$NOTES_OUT" || rc=$?
 if ((rc == 3)); then cp -- "$work/previous.json" "$INDEX_OUT"; public index; out "publish=false"; exit 0; fi
 ((rc == 0)) || exit 1

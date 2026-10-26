@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Recipes
 
 Status: Draft
-Code: `recipes/`, `policy/reserved-names.txt`, `gate/`, `sandbox/`, `release/`, `.github/workflows/{gate,release}.yml`, `.github/actions/{setup-gate,setup-check,setup-kind}/` (REC-1 to REC-10 and REC-15 to REC-17 implemented in `gate/`, `sandbox/run`, `policy/reserved-names.txt`, `.github/workflows/gate.yml` and `.github/actions/`, the rest not yet)
+Code: `recipes/`, `policy/reserved-names.txt`, `gate/`, `sandbox/`, `release/`, `scan/rescan`, `.github/workflows/{gate,release,scheduled}.yml`, `.github/actions/{setup-gate,setup-check,setup-kind}/`
 Verified against: main @ aa7e00c
 
 Related: [marketplace.md](marketplace.md) holds the threat model, acceptance
@@ -101,7 +101,7 @@ recipe cannot be fetched the way a generator is (kapicorp/kapitan#1638).
   gate looks up the tree of each included recipe at that commit among the
   published versions (REC-16), and the parent's record lists the versions
   it found. The consumer workflow checks that the fetch inventory pins
-  exactly those (CON-4). Decided with this change, formerly OQ-12.
+  exactly those (CON-4). Decided with #350, formerly OQ-12.
 
   A pin line in the parent's README was considered. It would repeat what
   the commit already fixes, and the two could disagree. A dependency in the
@@ -178,17 +178,18 @@ source fetch, the index and generator pulls, the attestation checks and
 the chart pull or manifest download have network.
 
 The gate job runs REC-1 to REC-8, REC-10, REC-15 to REC-17 and REG-1 on a
-recipe entry, in `gate/recipe-static` from REC-4 on and in
-`gate/recipe-compile` from REC-7 on. The `renders` job runs REC-9 after
-it. The gate job then fails the entry with `REC-11: the release publishes
-no recipe yet (REC-11 to REC-13), so no recipe entry passes the gate`.
+recipe entry. `gate/recipe-checks` fetches the recipe and runs
+`gate/recipe-static` from REC-4 on and `gate/recipe-compile` from REC-7
+on. The `renders` job runs REC-9 after it. The release build job runs the
+same scripts on every recipe version it publishes (REC-12).
 
-REC-11 to REC-13 are steps of the release workflow, not checks of the
-gate, and `release/build-all` and `release/publish-index` read only
-`generators/*.yaml`. Without the stop line a recipe entry that passes the
-gate would merge and never be published, and no parent that includes it
-could pass REC-16. The stop line goes with the change that implements
-REC-11 to REC-13. REC-14 is not implemented yet either.
+Until this change the gate job failed every recipe entry after its checks
+with `REC-11: the release publishes no recipe yet (REC-11 to REC-13), so
+no recipe entry passes the gate`. The release read only
+`generators/*.yaml`, so a recipe entry that passed would have merged
+without being published. No check replaces the stop line: the gate job's
+result is that of its checks, and the release publishes what merges
+(REC-11 to REC-13).
 
 `check` comes from a `check-vX.Y.Z` release of kadet-hub/recipes (RCP-22),
 pinned by commit SHA in `.github/actions/setup-check/` like the other gate
@@ -246,7 +247,7 @@ the rules it is judged by.
   parent's (RCP-49).
 
   - Test: workflow job `gate-selftest`, samples under `tests/samples/recipes/` (`fail-recipe-python`, `fail-recipe-vendor-class`, `fail-recipe-token`); `gate/test_check_recipe.py` (`Recipe.test_passes`, `Recipe.test_layout`, `Recipe.test_license`); `gate/test_fetch_tree.py` (`FetchTree.test_recipe_reads_only_its_tests_files`)
-  - Since: #382; `tests/target.yml` of included recipes: #385; SEC-5 for cnpg: #389; `tests/target.yml` of required recipes: this change
+  - Since: #382; `tests/target.yml` of included recipes: #385; SEC-5 for cnpg: #389; `tests/target.yml` of required recipes: #390
 
 - REC-5: `check lint`'s file rules MUST pass on the recipe, run in the
   sandbox image without network. Every class a recipe file includes MUST
@@ -268,7 +269,7 @@ the rules it is judged by.
   `source.sha`, the trees REC-16 looks up among the published versions.
 
   - Test: workflow job `gate-selftest` (`fail-recipe-oc-env`, `fail-recipe-include`); `gate/test_check_recipe.py` (`Recipe.test_includes`)
-  - Since: #382; the included recipe resolved (REC-16): this change
+  - Since: #382; the included recipe resolved (REC-16): #390
 
 - REC-6: Every `oci` dependency of a recipe and of each recipe it
   includes or requires (REC-17) MUST name a generator as
@@ -299,7 +300,7 @@ the rules it is judged by.
   `gate/recipe-static`, which passes it to `gh attestation verify` only.
 
   - Test: workflow job `gate-selftest` (`pass-recipe`, `fail-recipe-unlisted-digest`, `fail-recipe-yanked`); `gate/test_check_recipe.py` (`Recipe.test_pins`, `Recipe.test_included`, `Recipe.test_required`)
-  - Since: #382; included recipes and the `binaries` in the compile: #385; required recipes: this change
+  - Since: #382; included recipes and the `binaries` in the compile: #385; required recipes: #390
 
 - REC-7: The gate MUST pull the chart of the README's `Source` line with
   `helm pull` by digest, fail unless its `Chart.yaml` version is the
@@ -359,7 +360,8 @@ the rules it is judged by.
   applies the output rules with `owned` and `lint_output` of the pinned
   `check` in the sandbox image without network, with the object names of
   the REC-7 render as the chart's, as `check lint` does. The SEC-12
-  matches are lines of the gate report until REC-13 records them.
+  matches are lines of the gate report, and the release records them
+  (REC-13).
 
   Recipes are written for omegaconf (RCP DEC-3), so `inventory_backends`
   has no counterpart. krab (CMP-4) is not run: whether krab reads omegaconf
@@ -368,7 +370,7 @@ the rules it is judged by.
   does not have; vendored CRDs are output and go through QA-10.
 
   - Test: workflow job `gate-selftest` (`pass-recipe`, `fail-recipe-unpinned-image`); `gate/test_check_recipe.py` (`Recipe.test_included`); `gate/test_fetch_tree.py` (`FetchTree.test_recipe_reads_only_its_tests_files`)
-  - Since: #385; the included recipe resolved (REC-16): this change
+  - Since: #385; the included recipe resolved (REC-16): #390
 
 - REC-9: The gate MUST run the pinned `check` as
   `check <name> --level renders` on the outputs of REC-7 and REC-8
@@ -426,7 +428,7 @@ the rules it is judged by.
   job is skipped.
 
   - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`)
-  - Since: #389; required recipes and `gateway-api` (REC-17): this change
+  - Since: #389; required recipes and `gateway-api` (REC-17): #390
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
@@ -453,13 +455,21 @@ the rules it is judged by.
   shows none of this.
 
   - Test: `gate/test_output_diff.py` (`OutputDiff.test_recipe_before_and_after`) (partial: `gate/run` on a bump pull request first runs once a recipe entry is on `main`, after REC-11 to REC-13); manual: `gate/run` on bumps of valkey from `e54cf9f` and of cnpg from `dc9ea15` to `a4c9945` of kadet-hub/recipes, with `gh` and `git ls-remote` stubbed (2026-10-26)
-  - Since: this change
+  - Since: #390
 
 - REC-14: The scheduled workflow MUST cover recipe entries: SEC-15 with the
   scans of REC-4 and SEC-16 for their tags.
 
-  - Test: `scan/test_rescan_issues.py` (not written for recipes)
-  - Since: not implemented
+  `scan/rescan` fetches a recipe entry's `source.sha` with
+  `gate/fetch_tree.py --recipe` and runs `scan/static-scan` over the
+  directory REC-4 scans: the shipped tree with `tests/target.yml`,
+  `tests/values.yaml` and the empty `tests/smoke`. A recipe and a generator
+  may have the same name (DEC-19), so the findings name a recipe as
+  `recipe <name>`. Its issues are titled `rescan: recipe <name> <version>:
+  <rule>` and `tag drift: recipe <name> <tag>`.
+
+  - Test: `scan/test_rescan.py` (`Rescan.test_recipe_entry`)
+  - Since: this change
 
 - REC-15: For every file a recipe's `copy` entries vendor, the shipped tree
   MUST hold the upstream license as `vendor/<file>.LICENSE`, and the
@@ -503,7 +513,7 @@ the rules it is judged by.
   <tree> only yanked` and `REC-16: <ref> has no marketplace attestation
   (CON-5)`.
 
-  Revised in this change: the first version also pulled that version by
+  Revised in #390: the first version also pulled that version by
   digest. The compile uses the directory at `source.sha`, and the release
   compared the artifact with that tree before it signed the artifact and
   the index (REC-11), so a pull would check what the attestation already
@@ -514,7 +524,7 @@ the rules it is judged by.
   `nextcloud`.
 
   - Test: workflow job `gate-selftest` (`fail-recipe-include-unpublished`; `pass-recipe-published` and `fail-recipe-include-yanked` against an index and attestations that `tests/selftest` stubs); `gate/test_check_recipe.py` (`Recipe.test_published`); `gate/test_fetch_tree.py` (`FetchTree.test_recipe_tree_without_tests`) (partial: the lookup of a real published version first runs with the first release of a recipe that includes one, such as `nextcloud`)
-  - Since: this change
+  - Since: #390
 
 - REC-17: For each recipe on a recipe's `Requires:` line (RCP-54), on
   those of its included recipes and, in turn, on those of the required
@@ -552,7 +562,7 @@ the rules it is judged by.
   runs only on a CI runner.
 
   - Test: workflow job `gate-selftest` (`fail-recipe-requires-unpublished`, `pass-recipe-gateway-api`; `pass-recipe-published` against the stubbed index of REC-16, which reaches a recipe with a CRD through its included recipe's `Requires:` line and a required recipe's); `gate/test_check_recipe.py` (`Recipe.test_required`) (partial: the lookup of a real published version first runs with the first release of a recipe that requires one, such as `nextcloud` through `postgresql`)
-  - Since: this change
+  - Since: #390
 
 ## Artifact and index
 
@@ -581,8 +591,21 @@ parameters:
   Kapitan's `oci` dependency extracts it into `output_path` the same way.
   The tag drops the `<name>-v` prefix, as generator tags drop theirs.
 
-  - Test: `release/test_release.py` (not written)
-  - Since: not implemented
+  `release/build.py` writes the tar from the recipe directory that
+  `gate/fetch_tree.py --recipe` wrote, without `tests/`, so the release
+  reads no file below `tests/` that the gate does not read. The sign job
+  fetches blobless, as for a generator, and passes `--missing` to `git
+  mktree`, because the listing names blobs it did not fetch. The build and
+  sign jobs name a recipe `recipes/<name>` in the matrix and in their
+  directories. No generator can take that path, since `recipes` is
+  reserved (REC-2).
+
+  The first push creates the package `recipes/<name>` as private, as for a
+  generator. The index job warns about every package that is not public,
+  and a maintainer makes it public in the organisation's package settings.
+
+  - Test: `release/test_release.py` (`Recipe.test_sign`); `release/test_build.py` (`Build.test_recipe_artifact`, `Build.test_recipe_names`, `Build.test_yanked_recipe_is_not_built`)
+  - Since: this change
 
 - REC-12: For every recipe version it publishes, the release workflow MUST
   rerun REC-4 to REC-9 in the build job, record the run as `scan` (PUB-7),
@@ -590,17 +613,49 @@ parameters:
 
   The `renders` proof of the release run is the one the catalog shows
   (DEC-20), since PUB-7 records what the publishing run checked. kind runs in
-  the build job, which holds `contents: read` and `packages: read` only. The
-  SBOM lists the tar's files; the vendored files keep the source URL from
-  their SHA-256 comment, which RCP-17 requires.
+  the build job, which holds `contents: read`, `packages: read` and
+  `attestations: read` only. The SBOM lists the tar's files; the vendored
+  files keep the source URL from their SHA-256 comment, which RCP-17
+  requires.
 
-  - Test: manual: fork rehearsal (not run)
-  - Since: not implemented
+  For each recipe version without a published tag, `release/build-all`
+  runs `gate/recipe-checks` and `gate/recipe-renders`, the scripts of the
+  gate job and the `renders` job, and fails the build with `REC-12: recipe
+  <name> <version>: the checks failed` or `... the renders proof failed`.
+  `.github/actions/setup-kind/` installs kind for it, as in the `renders`
+  job. The job's timeout is 60 minutes instead of 30, since each recipe
+  version adds about what a gate run takes. The rehearsal in the Test line
+  took 126 seconds for cert-manager without gVisor; the time on a runner
+  is not measured yet.
+
+  `attestations: read` serves `gh attestation verify` of the index, the
+  generators and the included and required recipes (REC-6, REC-16,
+  REC-17). `release/build-all` unsets `GH_TOKEN` and hands it to
+  `gate/recipe-checks`, which passes it to `gh attestation verify` only,
+  as `gate/run` does. The registry login of `setup-oras` is read-only like
+  the token and stays on the runner's disk, which neither the sandbox nor
+  the kind node containers mount. An object of the proof that makes the
+  API server call out reaches the runner's network, as in the `renders`
+  job.
+
+  The scan record has the checks of a generator's record and adds `lint`
+  (REC-5, REC-8) and `renders` (REC-9), with the versions of `check` and
+  kind. The output diff's base is the newest version the latest index
+  lists under `recipes` that neither the index nor the entry marks yanked.
+  `release/output-diff` runs `gate/recipe-checks` on it and compares the two
+  compiles before the renders proof copies the required recipes' output
+  next to the recipe's, so neither side holds it (REC-10). A base whose
+  checks fail is still compared once `gate/recipe-compile` wrote its
+  output, as REC-10 does. Without that output the record is `{base,
+  error}` with `base did not compile`.
+
+  - Test: `release/test_release.py` (`BuildAll.test_recipe_record`, `BuildAll.test_recipe_checks_and_renders_fail_the_build`, `ScanRecord.test_recipe_checks`, `OutputDiff.test_recipe_base`); manual: `release/build-all`, `release/sign` and `release/publish-index` on cert-manager at kadet-hub/recipes `a4c9945` against a local registry, with the attestations of its artifacts stubbed, then a bump to 1.1.0 on the same commit and a second run of each (2026-10-26)
+  - Since: this change
 
 - REC-13: The index MUST list recipes under a top-level `recipes` key,
   `{<name>: {<version>: <record>}}`, with the same `serial`. A record MUST
-  hold digest, tree ID as `tree`, description, license, owners, source repository,
-  tag and SHA, `level` from the README, `chart` (`repo`, `version`,
+  hold digest, tree ID as `tree`, description, license, owners, `source`
+  (`repo`, `path`, `tag`, `sha`), `level` from the README, `chart` (`repo`, `version`,
   `digest`), or for a release manifest `manifest` (`url`, `digest`), from
   its `Source` line, `generators` (`name`, `version`,
   `digest`) for each pin, `includes` (`name`, `version`, `digest`) for each
@@ -610,20 +665,48 @@ parameters:
 
   For a chart from an HTTP repository `repo` is the line's
   `https://<repository>/<chart>` with its scheme, so a reader tells it from
-  an OCI reference, and `digest` is the SHA-256 of the archive.
+  an OCI reference, and `digest` is the SHA-256 of the archive. An OCI
+  chart's `repo` is the reference without `oci://`. A compose source or a
+  designed recipe has neither key; its `Source` line is in the artifact's
+  README.
 
   `generators` stays as it is, so a consumer workflow or `check` that reads
-  only that key keeps working. The description is the first paragraph of
-  the README (RCP-32), with QA-5a applied. PUB-5 (yanking), INC-1 and the
+  only that key keeps working. PUB-5 (yanking), INC-1 and the
   release notes of PUB-12 apply to recipe versions, named `recipe <name>
   <version>` in the notes.
+
+  The record's `generators` are the pins of the recipe and of the recipes
+  it includes, which REC-10 shows as `generator pins`, since the
+  consumer's compile fetches all of them. `output_capabilities` lists the
+  capabilities of the SEC-12 matches below `compiled/<name>/`, the output
+  of the recipe's own target, once each and sorted, in the shape of a
+  generator's. The paths depend on the gate's target name and are not
+  recorded. `kinds` are those of the same directory. The Source and Level
+  lines are read by `lint.readme_fields` of the pinned `check`, as REC-7
+  reads them.
+
+  The description is the first paragraph after the README's heading
+  (RCP-32), with its whitespace collapsed, and the license is the
+  identifier on `policy/licenses.txt` whose pattern REC-4 matched.
+  `gate/check_recipe.py` takes both, in the gate as in the build job, so
+  the gate fails what would stop the release: `REC-13: README.md has no
+  paragraph after its heading for the description (RCP-32)` and `QA-5a:
+  README.md: the first paragraph holds a control or bidirectional
+  formatting character` and `REC-13: README.md: the description has <n>
+  characters, RCP-32 allows 300`. `check lint` checks RCP-32 as well, so
+  the limit is enforced before the recipe is tagged.
+
+  The index carries `recipes` also when it lists no recipe, as `{}`. An
+  index without the key counts as equal to one with an empty `recipes`,
+  so the first release run after this change publishes no new serial
+  unless a generator version changes.
 
   A yanked generator does not yank the recipes that pin it. The consumer
   workflow rejects that generator in the main inventory anyway (CON-2), so
   each such recipe fails closed, and the catalog marks it (CAT-38).
 
-  - Test: `release/test_release.py` (not written)
-  - Since: not implemented
+  - Test: `release/test_release.py` (`Index.test_recipes`, `Index.test_release_notes`, `BuildAll.test_recipe_record`); `gate/test_check_recipe.py` (`Recipe.test_passes`, `Recipe.test_description`, `Recipe.test_license`)
+  - Since: this change
 
 Consumer workflow commits from before CON-4 reject a
 `ghcr.io/kadet-hub/recipes/<name>` source with `is not a marketplace
@@ -636,8 +719,9 @@ REG-2. They fail closed.
 |---|---|
 | `recipes/<name>.yaml` | Recipe entry (REC-1 to REC-3) |
 | `policy/reserved-names.txt` | `recipes` (REC-2) |
-| `gate/check_entry.py`, `gate/run` | REC-1 to REC-3, REC-10, the hand-over to REC-9, the stop line before REC-11 |
-| `gate/fetch_tree.py`, `gate/recipe-static`, `gate/check_recipe.py`, `release/tree.py` | REC-4 to REC-6, REC-15 to REC-17, the included and required recipes' targets and generators (REC-8, REC-17) |
+| `gate/check_entry.py`, `gate/run` | REC-1 to REC-3, REC-10, the hand-over to REC-9 |
+| `gate/recipe-checks` | REC-4 to REC-8 and REC-15 to REC-17 on one version, for the gate job, the build job and the output diff (REC-10, REC-12) |
+| `gate/fetch_tree.py`, `gate/recipe-static`, `gate/check_recipe.py`, `release/tree.py` | REC-4 to REC-6, REC-15 to REC-17, the included and required recipes' targets and generators (REC-8, REC-17), the description and license (REC-13) |
 | `gate/recipe-compile`, `sandbox/run` | REC-7, REC-8, REC-17 |
 | `gate/recipe-renders` | REC-9, the required recipes' output next to the recipe's (REC-17) |
 | `gate/output_diff.py` | REC-10 |
@@ -646,7 +730,8 @@ REG-2. They fail closed.
 | `.github/actions/setup-check/` | `check` pin (REC-5, REC-7 to REC-9) |
 | `.github/actions/setup-kind/` | kind, kubectl and uv (REC-9), cloud-provider-kind (REC-17) |
 | `.github/workflows/gate.yml` | `attestations: read` (REC-6), the `renders` job (REC-9) |
-| `release/build-all`, `release/build.py`, `release/tree.py`, `release/index.py` | REC-11 to REC-13 |
+| `release/build-all`, `release/build.py`, `release/tree.py`, `release/sign`, `release/publish-index`, `release/index.py`, `release/output-diff`, `release/scan-record` | REC-11 to REC-13 |
+| `.github/workflows/release.yml` | The build job's `attestations: read` and kind (REC-12) |
 | `tests/samples/recipes/`, `tests/selftest` | AC-12, AC-14 |
 
 | Value | Setting |
@@ -654,6 +739,7 @@ REG-2. They fail closed.
 | Source repository | `https://github.com/kadet-hub/recipes.git` |
 | Tag in the source repository | `<name>-vX.Y.Z` |
 | Package | `ghcr.io/kadet-hub/recipes/<name>`, tag `X.Y.Z` |
+| Name in the release matrix and directories | `recipes/<name>` |
 | Artifact type | `application/vnd.kadet-hub.recipe.v1` |
 | Config media type | `application/vnd.kadet-hub.recipe.config.v1+json` |
 | Consumer path | `inventory/classes/recipes/<name>/` |

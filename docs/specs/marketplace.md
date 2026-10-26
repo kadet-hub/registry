@@ -315,7 +315,8 @@ cover none of the changed files.
   at another digest or not at all, and when two parents include it at
   different digests. Check: `gate-selftest` (written for the gate, against
   an index and attestations that `tests/selftest` stubs until a recipe is
-  published; the record not written), `consumer-selftest` (not written).
+  published), `release/test_release.py` (`BuildAll.test_recipe_record` for
+  the record), `consumer-selftest` (not written).
 
 ## Residual risk
 

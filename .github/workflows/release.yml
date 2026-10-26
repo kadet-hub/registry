@@ -1,6 +1,6 @@
 name: release
 
-# PUB-1 to PUB-13, CMP-4, CAT-1, CAT-7, CAT-14, CAT-20, CAT-27. Only this workflow holds publishing permissions:
+# PUB-1 to PUB-13, CMP-4, REC-11 to REC-13, CAT-1, CAT-7, CAT-14, CAT-20, CAT-27. Only this workflow holds publishing permissions:
 # its sign, sandbox, mirror, index and github-release jobs in the release environment,
 # and its pages job in the github-pages environment (GI-8).
 on:
@@ -42,10 +42,11 @@ jobs:
   build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60 # REC-12: a recipe version runs the gate's checks and renders proof here
     permissions:
       contents: read
       packages: read # which versions are published (CMP-4), the latest index (PUB-9)
+      attestations: read # gh attestation verify in a recipe version's checks (REC-12)
     outputs:
       names: ${{ steps.build.outputs.names }}
     steps:
@@ -59,8 +60,12 @@ jobs:
         with:
           token: ${{ github.token }}
 
+      - uses: ./.github/actions/setup-kind # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
       - name: Fetch, validate and build
         id: build
+        env:
+          GH_TOKEN: ${{ github.token }} # only gate/recipe-checks gets it (REC-12)
         run: |
           release/build-all "$RUNNER_TEMP/out"
           echo "names=$(cat "$RUNNER_TEMP/out/names.json")" >>"$GITHUB_OUTPUT"

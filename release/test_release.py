@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -113,6 +114,34 @@ class Index(unittest.TestCase):
                       {"gen": {"yanked": {"1.0.0": "broken"}, "advisories": {"1.0.0": ["GHSA-2345-6789-cfgh"]}}},
                       second, LATER)
         self.assertEqual(notes(second, third), "Index serial 3, changes since serial 2.\n\nNo version added or yanked.\n")
+        fourth = build([version("gen", "1.0.0"), version("gen", "1.1.0")], {"gen": {}}, third, LATER,
+                       [version("gen", "2.0.0"), version("gen", "2.1.0")], {"gen": {"yanked": {"2.0.0": "broken"}}})
+        self.assertEqual(notes(third, fourth), "Index serial 4, changes since serial 3.\n\nAdded:\n\n- recipe gen 2.0.0"
+                                               "\n- recipe gen 2.1.0\n\nYanked:\n\n- recipe gen 2.0.0: broken\n")
+
+    def test_recipes(self):  # REC-13
+        gens, entries = [version("gen", "1.0.0"), version("old", "0.1.0")], {"gen": {"yanked": {"1.0.0": "broken"}}}
+        first = build(gens, entries, None, NOW)
+        self.assertEqual(first["recipes"], {})
+        # An index from before REC-13, without the key, equals one without recipes.
+        before = {k: v for k, v in first.items() if k != "recipes"}
+        self.assertIsNone(build(gens, entries, before, LATER))
+        # Recipes in a section of their own: a recipe of a generator's name has its own entry, yank and records.
+        recipes = [version("gen", "1.0.0", "sha256:" + "c" * 64), version("gen", "1.1.0"), version("gone", "1.0.0")]
+        second = build(gens, entries, before, LATER, recipes, {"gen": {"yanked": {"1.1.0": "pins a broken generator"},
+                                                                       "advisories": {"1.1.0": ["GHSA-2345-6789-cfgh"]}}})
+        self.assertEqual(second["serial"], 2)
+        self.assertEqual(json.dumps(second["generators"], sort_keys=True, indent=1), json.dumps(first["generators"], sort_keys=True, indent=1))
+        self.assertEqual(second["recipes"]["gen"]["1.0.0"], {"tree": "t", "license": "MIT", "digest": "sha256:" + "c" * 64,
+                                                             "yanked": None, "advisories": [], "published": LATER})
+        self.assertEqual((second["recipes"]["gen"]["1.1.0"]["yanked"], second["recipes"]["gen"]["1.1.0"]["advisories"]),
+                         ("pins a broken generator", ["GHSA-2345-6789-cfgh"]))
+        self.assertEqual(second["recipes"]["gone"]["1.0.0"]["yanked"], "entry removed")
+        # published is kept, and a deleted yanked recipe version stays listed, as does a removed recipe's (INC-1).
+        third = build(gens, entries, second, "2026-10-11T00:00:00Z", recipes[:1], {"gen": {"yanked": {"1.1.0": "deleted"}}})
+        self.assertEqual(third["recipes"]["gen"]["1.0.0"]["published"], LATER)
+        self.assertEqual(third["recipes"]["gen"]["1.1.0"]["yanked"], "deleted")
+        self.assertEqual(third["recipes"]["gone"]["1.0.0"]["yanked"], "entry removed")
 
 
 if __name__ == "__main__":
@@ -154,7 +183,8 @@ FAKES = {
 case "$1 $2" in
   "manifest fetch") [[ -n ${FAKE_INDEX:-} ]] || { echo "$4: not found" >&2; exit 1; }; echo '{"layers": [{"digest": "sha256:1"}]}' ;;
   "blob fetch") cp -- "$FAKE_INDEX" "$4" ;;
-  "blob push" | "manifest push") ;;
+  "blob push") ;;
+  "manifest push") [[ -z ${FAKE_PUSHED:-} ]] || cp -- "${@: -1}" "$FAKE_PUSHED" ;;
   *) echo "$*: not found" >&2; exit 1 ;;
 esac
 """,
@@ -175,6 +205,18 @@ mkdir -p -- "$OUTPUT_DIR/compiled/t"
 printf 'rev: %s\\nport: 80\\n' "$rev" >"$OUTPUT_DIR/compiled/t/svc.yml"
 """,
     "root/generators/demo.yaml": f"source:\n  repo: {REPO}\n  path: .\n  tag: v1.13.0\n  sha: {'c' * 40}\nyanked:\n  1.12.0: broken\n",
+    # A recipe of the generator's name (DEC-19). Its checks compile the rev; broken writes no output, failing fails after it.
+    "root/recipes/demo.yaml": f"source:\n  repo: {REPO}\n  path: demo\n  tag: demo-v1.0.0\n  sha: {'d' * 40}\nyanked:\n  0.3.0: broken\n",
+    "root/gate/recipe-checks": """#!/usr/bin/env bash
+echo "recipe-checks $2 GH_TOKEN=${GH_TOKEN:-unset}" >>"${FAKE_LOG:-/dev/null}"
+mkdir -- "$4" "$4/static" "$4/proof"
+[[ $2 != broken ]] || exit 1
+mkdir -p -- "$4/proof/out/compiled/$3"
+printf 'rev: %s\\nport: 80\\n' "$2" >"$4/proof/out/compiled/$3/svc.yml"
+if [[ -n ${FAKE_RECIPE_JSON:-} ]]; then cp -- "$FAKE_RECIPE_JSON" "$4/static/recipe.json"; fi
+printf '%s' "${FAKE_SEC12:-}"
+[[ $2 != failing ]]
+""",
 }
 
 
@@ -234,6 +276,33 @@ class OutputDiff(unittest.TestCase):
         self.assertEqual(self.output_diff({"1.0.0": listed("s1", "broken")}), (none, None))
         self.assertEqual(self.output_diff({"1.0.0": listed("unreachable")}), ({"base": "1.0.0", "error": "base not fetched"}, None))
         self.assertEqual(self.output_diff({"1.0.0": listed("broken")}), ({"base": "1.0.0", "error": "base did not compile"}, None))
+
+    def test_recipe_base(self):  # PUB-9 for a recipe (REC-12)
+        def run(recipes):
+            out = tempfile.mkdtemp(dir=self.tmp)
+            index = os.path.join(out, "index.json")
+            with open(index, "w", encoding="utf-8") as f:
+                json.dump({"serial": 1, "generators": {"demo": {"9.0.0": listed("gen")}}, "recipes": {"demo": recipes}}, f)
+            os.makedirs(os.path.join(out, "new", "compiled", "demo"))
+            with open(os.path.join(out, "new", "compiled", "demo", "svc.yml"), "w", encoding="utf-8") as f:
+                f.write("port: 8080\n")
+            open(os.path.join(out, "compile.txt"), "w").close()
+            p = subprocess.run([os.path.join(self.root, "release", "output-diff"), "recipes/demo", os.path.join(out, "new"),
+                                os.path.join(out, "compile.txt"), out], env=dict(self.env, FAKE_INDEX=index),
+                               capture_output=True, text=True, check=True)
+            if not os.path.exists(os.path.join(out, "output.diff")):
+                return json.loads(p.stdout), None
+            with open(os.path.join(out, "output.diff"), "rb") as f:
+                return json.loads(p.stdout), f.read()
+        # The newest listed recipe version that neither the index nor the entry yanks, not the generator's.
+        record, diff = run({"0.1.0": listed("r1"), "0.2.0": listed("r2"), "0.3.0": listed("r3"), "0.4.0": listed("r4", "broken")})
+        self.assertEqual(record, {"base": "0.2.0", "files": 1, "hunks": 1, "sha256": hashlib.sha256(diff).hexdigest()})
+        self.assertIn(b"-rev: r2\n-port: 80\n+port: 8080\n", diff)
+        # A base whose checks fail after its compile is compared (REC-10); one without output is not.
+        self.assertEqual(run({"0.1.0": listed("failing")})[0]["base"], "0.1.0")
+        self.assertEqual(run({"0.1.0": listed("failing")})[0].get("error"), None)
+        self.assertEqual(run({"0.1.0": listed("broken")}), ({"base": "0.1.0", "error": "base did not compile"}, None))
+        self.assertEqual(run({}), ({"base": None, "error": "no earlier listed version"}, None))
 
     def sign(self, record, diff):
         built = os.path.join(self.tmp, "built")
@@ -358,6 +427,186 @@ class BuildAll(unittest.TestCase):
                 "output_diff": {"base": None, "error": "no earlier listed version"},
                 "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
                 "backends": ["reclass-rs", "omegaconf"]})
+
+    def build_recipe(self, source, renders_rc=0, rev="d" * 40):  # REC-12, REC-13
+        recipe = {"pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:{'a' * 64}", f"ghcr.io/kadet-hub/certmanager:1.0.2@sha256:{'b' * 64}"],
+                  "recipes": {"other": {"rule": "REC-16", "version": "1.0.0", "digest": "sha256:" + "d" * 64},
+                              "req": {"rule": "REC-17", "version": "2.0.0", "digest": "sha256:" + "e" * 64}},
+                  "included": ["other"], "required": {"req": []}, "source": ["Source: x"], "level": ["Level: x"],
+                  "description": "Demo recipe.", "license": "Apache-2.0"}
+        fields = {"source": source, "level": "deploys", "kinds": [{"group": "", "version": "v1", "kind": "Service"}]}
+        sec12 = (f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole x\nSEC-12: admission-webhook: compiled/demo/w.yml: x\n"
+                 f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole y\nSEC-12: host-path: compiled/other/x.yml: x\n"
+                 f"SEC-12: unparsed output compiled/demo/notes.txt (*)\n")
+        log = os.path.join(self.tmp, "log")
+        fakes = {
+            "bin/docker": """#!/usr/bin/env bash
+for a; do
+  [[ $a == -c ]] && { cat -- "$FAKE_FIELDS"; exit; }
+  [[ $a == type=bind,src=*,dst=/out ]] && out=${a#type=bind,src=} && out=${out%,dst=/out}
+done
+mkdir -p -- "$out/recipes/demo"
+echo "{\\"name\\": \\"demo\\", \\"version\\": \\"1.0.0\\", \\"tree\\": \\"t\\", \\"owners\\": [1]}" >"$out/recipes/demo/meta.json"
+echo '["recipes/demo"]' >"$out/names.json"
+""",
+            "root/gate/recipe-renders": f"""#!/usr/bin/env bash
+echo "recipe-renders $1 $2 $3 GH_TOKEN=${{GH_TOKEN:-unset}}" >>"$FAKE_LOG"
+exit {renders_rc}
+""",
+            "root/release/scan-record": "#!/usr/bin/env bash\necho '{\"exceptions\": '\"$1\"', \"for\": \"'\"$2\"'\"}'\n",
+        }
+        for rel, text in fakes.items():
+            with open(os.path.join(self.tmp, rel), "w", encoding="utf-8") as f:
+                f.write(text)
+            os.chmod(os.path.join(self.tmp, rel), 0o755)
+        with open(os.path.join(self.root, "recipes", "demo.yaml"), "w", encoding="utf-8") as f:
+            f.write(f"source:\n  repo: {REPO}\n  path: demo\n  tag: demo-v1.0.0\n  sha: {rev}\n")
+        for name, data in (("recipe.json", recipe), ("fields.json", fields)):
+            with open(os.path.join(self.tmp, name), "w", encoding="utf-8") as f:
+                json.dump(data, f)
+        out = os.path.join(self.tmp, "out")
+        shutil.rmtree(out, ignore_errors=True)
+        open(log, "w").close()
+        p = subprocess.run([os.path.join(self.root, "release", "build-all"), out], capture_output=True, text=True,
+                           env=dict(self.env, FAKE_LOG=log, FAKE_RECIPE_JSON=os.path.join(self.tmp, "recipe.json"),
+                                    FAKE_FIELDS=os.path.join(self.tmp, "fields.json"), FAKE_SEC12=sec12, RECIPES_CHECK=self.tmp))
+        with open(log, encoding="utf-8") as f:
+            calls = f.read().splitlines()
+        if p.returncode:
+            return p, calls, None
+        with open(os.path.join(out, "recipes", "demo", "meta.json"), encoding="utf-8") as f:
+            return p, calls, json.load(f)
+
+    def test_recipe_record(self):
+        chart = ["chart", ["quay.io/jetstack/charts/cert-manager", "v1.21.2", "sha256:" + "c" * 64]]
+        p, calls, meta = self.build_recipe(chart)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertEqual(meta, {
+            "name": "demo", "version": "1.0.0", "tree": "t", "owners": [1], "description": "Demo recipe.", "license": "Apache-2.0",
+            "level": "deploys", "chart": {"repo": "quay.io/jetstack/charts/cert-manager", "version": "v1.21.2", "digest": "sha256:" + "c" * 64},
+            # The pins of the recipe and its included recipes; the included recipes, not the required ones (AC-14).
+            "generators": [{"name": "kubernetes", "version": "1.9.0", "digest": "sha256:" + "a" * 64},
+                           {"name": "certmanager", "version": "1.0.2", "digest": "sha256:" + "b" * 64}],
+            "includes": [{"name": "other", "version": "1.0.0", "digest": "sha256:" + "d" * 64}],
+            # DEC-23: the matches in the recipe's own output, once each.
+            "output_capabilities": ["admission-webhook", "rbac-admin"],
+            "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
+            "scan": {"exceptions": 0, "for": "recipe"}, "output_diff": {"base": None, "error": "no earlier listed version"}})
+        # Only the recipe checks get the token; the renders proof runs on what they wrote.
+        dirs = calls[1].split()[1:4]
+        self.assertEqual((calls[0], dirs[1], calls[1].split()[-1]), (f"recipe-checks {'d' * 40} GH_TOKEN=x", "demo", "GH_TOKEN=unset"))
+        self.assertEqual((os.path.basename(dirs[0]), os.path.basename(dirs[2])), ("recipes", "proof"))
+        http = ["http", ["https://kubernetes-sigs.github.io/external-dns", "external-dns", "1.23.0", "sha256:" + "c" * 64]]
+        self.assertEqual(self.build_recipe(http)[2]["chart"], {"repo": "https://kubernetes-sigs.github.io/external-dns/external-dns",
+                                                                "version": "1.23.0", "digest": "sha256:" + "c" * 64})
+        manifest = ["manifest", ["rabbitmq/cluster-operator", "v2.23.1", "cluster-operator.yml", "sha256:" + "c" * 64]]
+        self.assertEqual(self.build_recipe(manifest)[2]["manifest"], {
+            "url": "https://github.com/rabbitmq/cluster-operator/releases/download/v2.23.1/cluster-operator.yml", "digest": "sha256:" + "c" * 64})
+        for source in (["design", ["docker.io/library/rabbitmq", "4.3.6-management", "sha256:" + "c" * 64]], None):
+            meta = self.build_recipe(source)[2]
+            self.assertEqual(("chart" in meta, "manifest" in meta, meta["level"]), (False, False, "deploys"))
+
+    def test_recipe_checks_and_renders_fail_the_build(self):  # REC-12
+        p, _, _ = self.build_recipe(None, renders_rc=1)
+        self.assertEqual(p.returncode, 1)
+        self.assertIn("REC-12: recipe demo 1.0.0: the renders proof failed", p.stdout)
+        p, calls, _ = self.build_recipe(None, rev="failing")
+        self.assertEqual(p.returncode, 1)
+        self.assertIn("REC-12: recipe demo 1.0.0: the checks failed", p.stdout)
+        self.assertEqual(len(calls), 1)
+
+
+class ScanRecord(unittest.TestCase):
+    """PUB-7, REC-12: release/scan-record lists the checks of the run, a recipe's with check and kind."""
+
+    def record(self, *args):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "gitleaks"), "w", encoding="utf-8") as f:
+                f.write("#!/usr/bin/env bash\necho 8.30.1\n")
+            os.chmod(os.path.join(tmp, "gitleaks"), 0o755)
+            p = subprocess.run([os.path.join(ROOT, "release", "scan-record"), *args], capture_output=True, text=True, check=True,
+                               env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], GITHUB_SHA="c" * 40,
+                                        GITHUB_SERVER_URL="https://github.com", GITHUB_REPOSITORY="kadet-hub/registry", GITHUB_RUN_ID="1"))
+        return json.loads(p.stdout)["checks"]
+
+    def test_recipe_checks(self):
+        generator, recipe = self.record("0"), self.record("0", "recipe")
+        with open(os.path.join(ROOT, ".github", "actions", "setup-check", "action.yml"), encoding="utf-8") as f:
+            check = re.search(r"CHECK_VERSION: check-v(\S+)", f.read()).group(1)
+        with open(os.path.join(ROOT, ".github", "actions", "setup-kind", "action.yml"), encoding="utf-8") as f:
+            kind = re.search(r"KIND_VERSION: (\S+)", f.read()).group(1)
+        self.assertEqual(recipe, generator + [{"id": "lint", "tool": f"check {check}"},
+                                              {"id": "renders", "tool": f"check {check}, kind {kind}"}])
+        self.assertEqual([c["id"] for c in generator][-1], "ci-env")
+
+
+class Recipe(unittest.TestCase):
+    """REC-11: release/sign on a recipe, with git on a real repository and a fake registry."""
+
+    setUp = OutputDiff.setUp
+
+    def test_sign(self):
+        repo = os.path.join(self.tmp, "repo")
+        files = {"demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n", "demo/vendor/crds.yaml": "kind: CRD\n",
+                 "demo/tests/target.yml": "classes: [recipes.demo]\n", "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n"}
+        for rel, text in files.items():
+            os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
+            with open(os.path.join(repo, rel), "w", encoding="utf-8") as f:
+                f.write(text)
+        os.chmod(os.path.join(repo, "demo/tests/smoke"), 0o755)
+        git_tree(repo)
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "t"], cwd=repo,
+                       check=True, env=GIT_ENV)
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, env=GIT_ENV, capture_output=True, text=True).stdout.strip()
+        with open(os.path.join(self.root, "recipes", "demo.yaml"), "w", encoding="utf-8") as f:
+            f.write(f"source:\n  repo: {REPO}\n  path: demo\n  tag: demo-v1.0.0\n  sha: {sha}\n")
+        # init and fetch do nothing; every other git call reads the repository.
+        with open(os.path.join(self.tmp, "bin", "git"), "w", encoding="utf-8") as f:
+            f.write(f"""#!/usr/bin/env bash
+args=()
+for a; do
+  case $a in init | fetch) exit 0 ;; --git-dir=*) a=--git-dir={repo}/.git ;; esac
+  args+=("$a")
+done
+exec {shutil.which("git")} "${{args[@]}}"
+""")
+
+        def sign(with_tests):
+            built = os.path.join(self.tmp, "built", "recipes", "demo")
+            shutil.rmtree(os.path.join(self.tmp, "built"), ignore_errors=True)
+            os.makedirs(built)
+            content = {p[5:]: (False, t.encode()) for p, t in files.items() if p.startswith("demo/") and (with_tests or "/tests/" not in p)}
+            write_tar(content, os.path.join(built, "demo.tar"))
+            meta = {"name": "demo", "version": "1.0.0", "tree": tree_id(content), "license": "Apache-2.0", "description": "Demo",
+                    "source": {"repo": REPO, "path": "demo", "tag": "demo-v1.0.0", "sha": sha}}
+            with open(os.path.join(built, "meta.json"), "w", encoding="utf-8") as f:
+                json.dump(meta, f)
+            outputs, pushed = os.path.join(self.tmp, "outputs"), os.path.join(self.tmp, "manifest.json")
+            open(outputs, "w").close()
+            if os.path.exists(pushed):
+                os.remove(pushed)
+            p = subprocess.run([os.path.join(self.root, "release", "sign"), "recipes/demo", built], capture_output=True, text=True,
+                               env=dict(self.env, GITHUB_OUTPUT=outputs, FAKE_PUSHED=pushed), cwd=self.root)
+            with open(outputs, encoding="utf-8") as f:
+                out = dict(line.rstrip("\n").split("=", 1) for line in f)
+            if not os.path.exists(pushed):
+                return p, out, None
+            with open(pushed, encoding="utf-8") as f:
+                return p, out, json.load(f)
+
+        p, out, manifest = sign(with_tests=False)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertEqual((out["publish"], out["ref"], out["version"]), ("true", "ghcr.io/kadet-hub/recipes/demo", "1.0.0"))
+        self.assertEqual((manifest["artifactType"], manifest["config"]["mediaType"], manifest["layers"][0]["mediaType"],
+                          manifest["layers"][0]["annotations"]["org.opencontainers.image.title"]),
+                         ("application/vnd.kadet-hub.recipe.v1", "application/vnd.kadet-hub.recipe.config.v1+json",
+                          "application/vnd.oci.image.layer.v1.tar", "demo.tar"))
+        with open(out["sbom"], encoding="utf-8") as f:
+            self.assertEqual(sorted(x["fileName"] for x in json.load(f)["files"]), ["./README.md", "./init.yml", "./vendor/crds.yaml"])
+        # A tar that ships tests/ is not the tree without its tests entry, and nothing is pushed.
+        p, out, manifest = sign(with_tests=True)
+        self.assertEqual((p.returncode, manifest), (1, None))
+        self.assertIn("PUB-1: recipes/demo 1.0.0: tar tree", p.stdout)
 
 
 class Mirror(unittest.TestCase):

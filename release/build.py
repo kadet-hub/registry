@@ -1,11 +1,13 @@
-"""Validate every entry on main and build its artifact (GI-9, REG-2, REG-3, PUB-1).
+"""Validate every entry on main and build its artifact (GI-9, REG-2, REG-3, PUB-1, REC-11).
 
 Usage: build.py --base MAIN --sources DIR --out DIR
 
 Runs in the sandbox image without network. DIR/<name> holds the fetched tree
-`source.sha:source.path` of each entry. Writes <out>/<name>/<name>.tar and
-meta.json for every entry whose current version is not yanked, and
-<out>/names.json. Prints findings and exits 1 on any.
+`source.sha:source.path` of each generator entry, DIR/recipes/<name> what
+`fetch_tree.py --recipe <name>` wrote for each recipe entry. Writes
+<out>/<name>/<name>.tar and meta.json for every entry whose current version
+is not yanked, <out>/recipes/<name>/ for a recipe, and <out>/names.json, which
+names a recipe recipes/<name>. Prints findings and exits 1 on any.
 """
 
 import argparse
@@ -83,6 +85,41 @@ def main():
         with open(os.path.join(out, "meta.json"), "w", encoding="utf-8") as f:
             f.write(json.dumps(meta, sort_keys=True, separators=(",", ":")))
         names.append(name)
+    # REC-11: recipe entries, named against the recipes and the reserved names (REC-2).
+    rec_dir = os.path.join(a.base, "recipes")
+    seen = {squash(r): r for r in reserved}
+    for fname in sorted(os.listdir(rec_dir)) if os.path.isdir(rec_dir) else []:
+        m = ENTRY_PATH.match("recipes/" + fname)
+        if not m:
+            findings.append(f"REG-2: {fname}: entry path must match recipes/<name>.yaml")
+            continue
+        name = m.group(1)
+        if name in reserved:
+            findings.append(f"REG-2: recipe {name} is reserved")
+        if squash(name) in seen:
+            findings.append(f"REG-3: recipe {name} equals {seen[squash(name)]} without separators")
+        seen.setdefault(squash(name), name)
+        with open(os.path.join(rec_dir, fname), encoding="utf-8") as f:
+            entry = yaml.safe_load(f)
+        errors = schema_errors(entry, os.path.join(policy, "entry.schema.json"))
+        if errors:
+            findings += [f"GI-9: recipe {name}: entry: {e}" for e in errors]
+            continue
+        src = entry["source"]
+        version = TAG.match(src["tag"]).group("version")
+        if version in entry.get("yanked", {}):
+            print(f"recipe {name} {version}: yanked, not built")
+            continue
+        # The shipped tree: the recipe directory without tests/ (REC-4).
+        content = {p: f for p, f in read_dir(os.path.join(a.sources, "recipes", name, name)).items() if p.split("/")[0] != "tests"}
+        meta = {"name": name, "version": version, "tree": tree_id(content),
+                "source": {k: src[k] for k in ("repo", "path", "tag", "sha")}, "owners": entry["owners"]}
+        out = os.path.join(a.out, "recipes", name)
+        os.makedirs(out)
+        write_tar(content, os.path.join(out, f"{name}.tar"))
+        with open(os.path.join(out, "meta.json"), "w", encoding="utf-8") as f:
+            f.write(json.dumps(meta, sort_keys=True, separators=(",", ":")))
+        names.append(f"recipes/{name}")
     with open(os.path.join(a.out, "names.json"), "w", encoding="utf-8") as f:
         json.dump(names, f)
     if findings:

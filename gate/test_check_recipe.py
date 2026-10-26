@@ -29,7 +29,7 @@ parameters:
         output_path: manifests/
 """
 FILES = {
-    "README.md": "# demo\n\nSource: `oci://ghcr.io/x/demo:1.0.0@sha256:0`\n\nLevel: `renders`\n",
+    "README.md": "# demo\n\nThe demo recipe, rendered by\n  the `kubernetes` generator.\n\nSource: `oci://ghcr.io/x/demo:1.0.0@sha256:0`\n\nLevel: `renders`\n",
     "init.yml": INIT,
     "demo.yml": "parameters: {}\n",
     "demo.yml.LICENSE": "Apache License\n",
@@ -84,12 +84,14 @@ class Recipe(unittest.TestCase):
         findings, _ = check(changes, **kwargs)
         self.assertTrue(any(f.startswith(prefix) for f in findings), (changes, findings))
 
-    def test_passes(self):  # REC-4, REC-5, REC-6, REC-15, REC-16, and what REC-10 shows
+    def test_passes(self):  # REC-4, REC-5, REC-6, REC-15, REC-16, what REC-10 shows and REC-13 records
         self.assertEqual(check(), ([], {"pull": [[f"ghcr.io/kadet-hub/kubernetes@{LISTED}", "lib/kubernetes"]], "binaries": [],
                                         "included": ["other"], "required": {},
                                         "recipes": {"other": {"rule": "REC-16", "version": "1.0.0", "digest": PUBLISHED}},
                                         "pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@{LISTED}"],
-                                        "source": ["Source: `oci://ghcr.io/x/demo:1.0.0@sha256:0`"], "level": ["Level: `renders`"]}))
+                                        "source": ["Source: `oci://ghcr.io/x/demo:1.0.0@sha256:0`"], "level": ["Level: `renders`"],
+                                        "description": "The demo recipe, rendered by the `kubernetes` generator.",
+                                        "license": "Apache-2.0"}))
         # Nothing below tests/ is judged.
         self.assertEqual(check({"tests/run.py": "", "tests/x.yml": "classes: [kapitan]\n"})[0], [])
 
@@ -99,9 +101,25 @@ class Recipe(unittest.TestCase):
                         {"vendor/x.yaml": ""}, {"tests/target.yml": None, "tests/smoke": None, "tests": ""}):
             self.assert_finding("REC-4", changes)
 
-    def test_license(self):  # REC-4
+    def test_license(self):  # REC-4, REC-13
         self.assert_finding("REC-4: the source repository's root LICENSE", license_text="All rights reserved.\n")
         self.assert_finding("REC-4: the source repository's root LICENSE", license_text=None)
+        mit = "Permission is hereby granted, free of charge, to any person\nobtaining a copy of this software\n"
+        self.assertEqual(check(license_text=mit)[1]["license"], "MIT")
+        self.assertIsNone(check(license_text=None)[1]["license"])
+
+    def test_description(self):  # REC-13, QA-5a
+        readme = "# demo\r\n\r\nThe demo\trecipe.\r\nSecond line.\r\n\r\n## Include\n"
+        self.assertEqual(check({"README.md": readme})[1]["description"], "The demo recipe. Second line.")
+        self.assertEqual(check({"README.md": "# demo\nText right below.\n"})[1]["description"], "Text right below.")
+        self.assertEqual(len(check({"README.md": "# demo\n\n" + "a" * 300 + "\n"})[1]["description"]), 300)
+        self.assert_finding("REC-13: README.md: the description has 301 characters, RCP-32 allows 300",
+                            {"README.md": "# demo\n\n" + "a" * 150 + "\n" + "a" * 150 + "\n"})
+        for readme in ("# demo\n\n## Include\n", "# demo\n", "", None, "No heading.\n"):
+            self.assert_finding("REC-13: README.md has no paragraph after its heading", {"README.md": readme})
+        for char in ("\x1b", "\x00", "\x0c", "\x85", "\u202e", "\u2066", "\u061c"):
+            self.assert_finding("QA-5a: README.md: the first paragraph", {"README.md": f"# demo\n\nThe {char}demo recipe.\n"})
+            self.assertIsNone(check({"README.md": f"# demo\n\nThe {char}demo recipe.\n"})[1]["description"])
 
     def test_vendored_license(self):  # REC-15
         self.assert_finding("REC-15: vendor/crds.yaml", {"vendor/crds.yaml.LICENSE": None})

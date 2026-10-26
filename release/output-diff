@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 # The output diff of one version to publish (PUB-9): fetch the newest listed
 # version that is not yanked and compile its fixture as gate/run does for
-# SEC-13, then diff its output with the new version's.
+# SEC-13, then diff its output with the new version's. For recipes/<recipe>
+# as <name>, the base is a listed recipe version, run through the gate's
+# recipe checks as gate/run does for REC-10 (REC-12).
 #
 # Usage: output-diff <name> <new output dir> <compile log> <out dir>
 # Needs: REGISTRY, oras, yq, jq, git, what gate/fetch-charts and
-# sandbox/gate-compile need, the main checkout. Prints the record for
+# sandbox/gate-compile need, the main checkout; for a recipe GH_TOKEN, which
+# only gate/recipe-checks gets, and what it needs. Prints the record for
 # meta.json and writes the diff to <out dir>/output.diff. A missing base or a
 # failed read, fetch or compile is recorded as {base, error}, not fatal.
 set -euo pipefail
 name=$1 new=$2 log=$3 dir=$4
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+token=${GH_TOKEN:-}
+unset GH_TOKEN
+section=generators key=$name entry=$root/generators/$name.yaml
+if [[ $name == recipes/* ]]; then section=recipes key=${name#recipes/} entry=$root/$name.yaml; fi
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 # shellcheck source=release/common.sh
@@ -25,8 +32,8 @@ elif ((rc == 2)) || ! layer=$(jq -er '.layers[0].digest' <<<"$manifest") \
   || ! oras blob fetch --output "$work/index.json" -- "$REGISTRY/index@$layer" >/dev/null; then
   fail "index not read"
 fi
-yanked=$(yq -o json '.yanked // {} | keys' "$root/generators/$name.yaml")
-pick=$(jq -c --arg n "$name" --argjson y "$yanked" '.generators[$n] // {} | to_entries
+yanked=$(yq -o json '.yanked // {} | keys' "$entry")
+pick=$(jq -c --arg s "$section" --arg n "$key" --argjson y "$yanked" '.[$s][$n] // {} | to_entries
   | map(select(.value.yanked == null and (.key | IN($y[]) | not)))
   | max_by(.key | split(".") | map(tonumber)) | select(.) | .value.source + {version: .key}' -- "$work/index.json") \
   || fail "index not read"
@@ -37,15 +44,23 @@ base=$(field version) repo=$(field repo) path=$(field path) sha=$(field sha)
 export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
 gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$work/src.git")
 "${gitc[@]}" init -q --bare
-if ! "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha" \
+if [[ $section == recipes ]]; then
+  "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha" || fail "base not fetched"
+  # REC-10: compared once the compile wrote its output, even if a check of the base failed.
+  GH_TOKEN=$token "$root/gate/recipe-checks" "$work/src.git" "$sha" "$key" "$work/base" >"$work/compile.txt" 2>&1 || true
+  [[ -d $work/base/proof/out ]] || { head -n 20 -- "$work/compile.txt" >&2; fail "base did not compile"; }
+  old=$work/base/proof/out
+elif ! "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha" \
   || ! python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --path "$path" --out "$work/base" >&2 \
   || ! "$root/gate/fetch-charts" "$work/base" "$work/charts" >&2; then
   fail "base not fetched"
+else
+  old=$work/out
+  mkdir -- "$old"
+  COMPILE_ONLY=1 OUTPUT_DIR=$work/out "$root/sandbox/gate-compile" "$work/base" "$name" "$work/charts" >"$work/compile.txt" 2>&1 \
+    || { head -n 20 -- "$work/compile.txt" >&2; fail "base did not compile"; }
 fi
-mkdir -- "$work/out"
-COMPILE_ONLY=1 OUTPUT_DIR=$work/out "$root/sandbox/gate-compile" "$work/base" "$name" "$work/charts" >"$work/compile.txt" 2>&1 \
-  || { head -n 20 -- "$work/compile.txt" >&2; fail "base did not compile"; }
-python3 -I "$root/gate/output_diff.py" --old "$work/out" --new "$new" --compile-log "$log" \
+python3 -I "$root/gate/output_diff.py" --old "$old" --new "$new" --compile-log "$log" \
   --full "$work/output.diff" --max-bytes 1048576 --json "$work/summary.json" >/dev/null
 cp -- "$work/output.diff" "$dir/output.diff"
 jq -c --arg b "$base" '{base: $b} + .' -- "$work/summary.json"

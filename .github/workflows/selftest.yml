@@ -10,6 +10,8 @@ on:
       - policy/**
       - consumer/unpack.py
       - release/tree.py
+      - release/build.py
+      - release/test_build.py
       - tests/selftest
       - tests/samples/**
       - .github/actions/setup-gate/**
@@ -38,13 +40,14 @@ jobs:
           python3 -m unittest discover -s sandbox -p 'test_check.py' -v
           python3 -m unittest discover -s gate -p 'test_fetch*.py' -v
           python3 -m unittest discover -s gate -p 'test_output*.py' -v
+          python3 -m unittest discover -s scan -p 'test_rescan.py' -v
 
       - uses: ./.github/actions/setup-gate # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
       - name: Unit tests in the sandbox image
         run: |
           docker run --rm --network none -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox \
-            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && python -m unittest discover -p "test_schema*.py" -v && cd ../sandbox && python -m unittest discover -p "test_output*.py" -v && python -m unittest discover -p "test_tag*.py" -v && python -m unittest discover -p "test_schema*.py" -v && python -m unittest discover -p "test_tf_schema*.py" -v && python -m unittest discover -p "test_apiserver*.py" -v'
+            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && python -m unittest discover -p "test_schema*.py" -v && cd ../sandbox && python -m unittest discover -p "test_output*.py" -v && python -m unittest discover -p "test_tag*.py" -v && python -m unittest discover -p "test_schema*.py" -v && python -m unittest discover -p "test_tf_schema*.py" -v && python -m unittest discover -p "test_apiserver*.py" -v && cd ../release && python -m unittest discover -p "test_build.py" -v'
 
       - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
