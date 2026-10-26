@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# The recipe's chart and its sandbox compile (REC-7, REC-8).
+# The recipe's chart and its sandbox compile (REC-7, REC-8), and each
+# required recipe's (REC-17).
 #
 # Usage: recipe-compile <recipes dir> <name> <static dir> [<proof dir>]
 # <recipes dir> is what gate/run fetched: the recipes of source.sha with the
-# tests files of <name> and the tests/target.yml of each recipe it includes.
-# <static dir> is what gate/recipe-static wrote: the verified generators in
-# lib/ and recipe.json. Needs: what sandbox/run needs, network for the chart
-# or manifest, and the pinned check of kadet-hub/recipes in $RECIPES_CHECK
-# (.github/actions/setup-gate). Prints findings; exits 1 on any. With
-# <proof dir> and no finding, writes there what gate/recipe-renders reads
-# (REC-9): the compile as out/ and, for a chart or manifest, the render as
-# rendered.yaml.
+# tests files of <name> and the tests/target.yml of each recipe it includes
+# or requires. <static dir> is what gate/recipe-static wrote: the verified
+# generators in lib/ and requires/<recipe>/lib/, and recipe.json. Needs:
+# what sandbox/run needs, network for the chart or manifest, and the pinned
+# check of kadet-hub/recipes in $RECIPES_CHECK (.github/actions/setup-gate).
+# Prints findings; exits 1 on any. With <proof dir>, writes there what
+# gate/recipe-renders reads (REC-9) and REC-10 compares: the compile as
+# out/, each required recipe's as requires/<recipe>/ and, for a chart or
+# manifest, the render as rendered.yaml.
 set -euo pipefail
 
 recipes=$(cd -- "$1" && pwd)
@@ -93,18 +95,24 @@ included=()
 while IFS= read -r r; do included+=("$r"); done < <(jq -r '.included[]' -- "$static/recipe.json")
 allow=()
 while IFS= read -r binary; do allow+=(--allow "${binary// /-}"); done < <(jq -r '.binaries[]' -- "$static/recipe.json")
+# project <dir> <lib> <recipe>...: the recipes without tests/ and their own targets, the generators of <lib>.
+project() {
+  local dir=$1 lib=$2 r
+  shift 2
+  mkdir -p -- "$dir/inventory/classes/recipes" "$dir/inventory/targets" "$dir/lib"
+  if [[ -d $lib ]]; then cp -R -- "$lib/." "$dir/lib/"; fi
+  for r in "$@"; do
+    if [[ ! -f $recipes/$r/tests/target.yml ]]; then
+      echo "REC-8: $r has no tests/target.yml at source.sha"
+      exit 1
+    fi
+    cp -R -- "$recipes/$r" "$dir/inventory/classes/recipes/$r"
+    rm -rf -- "$dir/inventory/classes/recipes/$r/tests"
+    cp -- "$recipes/$r/tests/target.yml" "$dir/inventory/targets/$r.yml"
+  done
+}
 project=$work/project
-mkdir -p -- "$project/inventory/classes/recipes" "$project/inventory/targets"
-cp -R -- "$static/lib" "$project/lib"
-for r in "$name" "${included[@]}"; do
-  if [[ ! -f $recipes/$r/tests/target.yml ]]; then
-    echo "REC-8: $r has no tests/target.yml at source.sha"
-    exit 1
-  fi
-  cp -R -- "$recipes/$r" "$project/inventory/classes/recipes/$r"
-  rm -rf -- "$project/inventory/classes/recipes/$r/tests"
-  cp -- "$recipes/$r/tests/target.yml" "$project/inventory/targets/$r.yml"
-done
+project "$project" "$static/lib" "$name" "${included[@]}"
 compile() {
   local out=$1
   shift
@@ -162,8 +170,30 @@ if ! (cd -- "$work" && diff -r -- out out-cache) >"$work/cache.diff"; then
   head -n 20 -- "$work/cache.diff"
   status=1
 fi
-if [[ -n $proof ]] && ((status == 0)); then
+
+# REC-17: each required recipe on its own, from its own tests/target.yml, with the generators it pins.
+mapfile -t required < <(jq -r '.required | keys[]' -- "$static/recipe.json")
+for r in "${required[@]}"; do
+  echo "### compile of $r, which the recipe requires (REC-17)"
+  project "$work/requires/$r/project" "$static/requires/$r/lib" "$r"
+  r_allow=()
+  while IFS= read -r binary; do r_allow+=(--allow "${binary// /-}"); done < <(jq -r --arg r "$r" '.required[$r][]' -- "$static/recipe.json")
+  mkdir -- "$work/requires/$r/out"
+  "$root/sandbox/run" "${r_allow[@]}" --result "$work/requires/$r/out" "$work/requires/$r/project" \
+    compile --output-path /out --inventory-backend omegaconf || status=1
+  if ! find "$work/requires/$r/out/compiled/$r" -type f -print -quit 2>/dev/null | grep -q .; then
+    echo "CMP-1: target $r produced no file"
+    status=1
+  fi
+done
+
+# gate/run hands the proof to REC-9 only when no check failed.
+if [[ -n $proof ]]; then
   cp -R -- "$work/out" "$proof/out"
   if ((${#rendered[@]})); then cp -- "$work/rendered.yaml" "$proof/rendered.yaml"; fi
+  for r in "${required[@]}"; do
+    mkdir -p -- "$proof/requires"
+    if [[ -d $work/requires/$r/out/compiled/$r ]]; then cp -R -- "$work/requires/$r/out/compiled/$r" "$proof/requires/$r"; fi
+  done
 fi
 exit "$status"

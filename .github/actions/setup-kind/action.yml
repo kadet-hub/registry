@@ -1,9 +1,9 @@
 name: setup-kind
-description: Install kind, kubectl and uv pinned by sha256 for check's renders proof (REC-9, GI-6).
+description: Install kind, kubectl, uv and cloud-provider-kind pinned by sha256 for check's renders proof (REC-9, REC-17, GI-6).
 runs:
   using: composite
   steps:
-    - name: Install kind, kubectl and uv
+    - name: Install kind, kubectl, uv and cloud-provider-kind
       shell: bash
       env:
         # kind's release notes list check's node image for this version.
@@ -17,6 +17,10 @@ runs:
         # renovate: datasource=github-release-attachments depName=astral-sh/uv
         UV_VERSION: 0.13.5
         UV_SHA256: f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f
+        # gateway-api of check (REC-17, RCP-55): the version kadet-hub/recipes CI pins for check.
+        # renovate: datasource=github-release-attachments depName=kubernetes-sigs/cloud-provider-kind
+        CLOUD_PROVIDER_KIND_VERSION: v0.12.0
+        CLOUD_PROVIDER_KIND_SHA256: 5716aca8f01a85172c12f3b6329c70f151bec02c91b6f600c9f230845ee138e6
       run: |
         curl -fsSLo "$RUNNER_TEMP/kind" "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
         echo "${KIND_SHA256}  $RUNNER_TEMP/kind" | sha256sum -c -
@@ -24,6 +28,9 @@ runs:
         echo "${KUBECTL_SHA256}  $RUNNER_TEMP/kubectl" | sha256sum -c -
         curl -fsSLo "$RUNNER_TEMP/uv.tar.gz" "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz"
         echo "${UV_SHA256}  $RUNNER_TEMP/uv.tar.gz" | sha256sum -c -
+        curl -fsSLo "$RUNNER_TEMP/cpk.tar.gz" "https://github.com/kubernetes-sigs/cloud-provider-kind/releases/download/${CLOUD_PROVIDER_KIND_VERSION}/cloud-provider-kind_${CLOUD_PROVIDER_KIND_VERSION#v}_linux_amd64.tar.gz"
+        echo "${CLOUD_PROVIDER_KIND_SHA256}  $RUNNER_TEMP/cpk.tar.gz" | sha256sum -c -
         # /usr/local/bin replaces the runner image's kind and comes before its /usr/bin/kubectl.
         sudo install -m 0755 "$RUNNER_TEMP/kind" "$RUNNER_TEMP/kubectl" /usr/local/bin/
         sudo tar -xzf "$RUNNER_TEMP/uv.tar.gz" -C /usr/local/bin --strip-components=1 uv-x86_64-unknown-linux-gnu/uv
+        sudo tar -xzf "$RUNNER_TEMP/cpk.tar.gz" -C /usr/local/bin cloud-provider-kind

@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# The recipe's renders proof on kind (REC-9).
+# The recipe's renders proof on kind (REC-9), with the recipes it requires installed first (REC-17).
 #
 # Usage: recipe-renders <recipes dir> <name> <proof dir>
 # <recipes dir> and <name> as for gate/recipe-compile, <proof dir> what it
 # wrote there. Runs the pinned check of kadet-hub/recipes in $RECIPES_CHECK
 # (.github/actions/setup-check) with uv, kind, kubectl and Docker
 # (.github/actions/setup-kind) on the host: check reads the files as data
-# and applies the objects to its kind clusters. Prints check's report and
-# the findings; exits 1 on any.
+# and applies the objects to its kind clusters, and runs cloud-provider-kind
+# for a recipe that requires gateway-api. Prints check's report and the
+# findings; exits 1 on any.
 set -euo pipefail
 
 recipes=$(cd -- "$1" && pwd)
@@ -18,6 +19,8 @@ check=$(cd -- "${RECIPES_CHECK:-$root/gate/.check}" && pwd)
 err=$(mktemp)
 trap 'rm -f -- "$err"' EXIT
 
+# REC-17: each required recipe's compile next to the recipe's, where check reads it (RCP-34).
+if [[ -d $proof/requires ]]; then cp -R -- "$proof/requires/." "$proof/out/compiled/"; fi
 # A chart or a release manifest has its render, a compose source or a designed recipe none (RCP-34).
 rendered=()
 if [[ -f $proof/rendered.yaml ]]; then rendered=(--rendered "$proof/rendered.yaml"); fi

@@ -9,8 +9,8 @@
 # repository are generated here.
 #
 # Usage: tests/selftest
-# Needs GH_TOKEN for the recipe samples (REC-6), and kind, kubectl and uv
-# (.github/actions/setup-kind) for REC-9.
+# Needs GH_TOKEN for the recipe samples (REC-6), and kind, kubectl, uv and
+# cloud-provider-kind (.github/actions/setup-kind) for REC-9 and REC-17.
 set -euo pipefail
 
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -147,6 +147,88 @@ printf -- '---\napiVersion: example.com/v1\nkind: Demo\nmetadata:\n  name: demo_
 sed -i "s/c90177b685ae8ba316d05f756492d579f6d599ba2b6c25a9659c9dc1bdca0b7c/$(sha256sum <"$crds" | cut -d' ' -f1)/" \
   "$work/recipes/fail-recipe-dry-run/demo/init.yml"
 
+# peer <sample> <name> [<kind>]: pass-recipe's demo as the recipe <name> next to it, vendoring its CRD
+# as kind <kind>, or without a CRD (REC-16, REC-17).
+peer() {
+  local d=$work/recipes/$1/$2 f
+  cp -R -- "$work/recipes/pass-recipe/demo" "$d"
+  for f in "$d"/demo.* "$d"/vendor/demo.*; do mv -- "$f" "${f%/*}/$2.${f##*/demo.}"; done
+  grep -rlZ -e demo -e Demo -- "$d" | xargs -0 -r sed -i "s/demo/$2/g; s/Demo/${3:-Demo}/g"
+  if [[ -z ${3:-} ]]; then
+    rm -r -- "$d/vendor"
+    yq -i 'del(.parameters.kapitan.compile[1])' "$d/init.yml"
+  else
+    sed -i "s/c90177b685ae8ba316d05f756492d579f6d599ba2b6c25a9659c9dc1bdca0b7c/$(sha256sum <"$d/vendor/$2.crds.yaml" | cut -d' ' -f1)/" "$d/init.yml"
+  fi
+}
+# requires <recipe dir> <entry>: a Requires line in the README (RCP-54).
+requires() { sed -i "s/^Level: .*/&\n\nRequires: \`$2\`/" "$1/README.md"; }
+derive_recipe fail-recipe-include-unpublished "REC-16: the index lists no version of other with tree"
+peer fail-recipe-include-unpublished other
+yq -i '.classes += ["recipes.other"]' "$work/recipes/fail-recipe-include-unpublished/demo/init.yml"
+derive_recipe fail-recipe-requires-unpublished "REC-17: the index lists no version of req with tree"
+peer fail-recipe-requires-unpublished req Req
+requires "$work/recipes/fail-recipe-requires-unpublished/demo" req
+derive_recipe pass-recipe-gateway-api "requires: gateway-api, cloud-provider-kind"
+requires "$work/recipes/pass-recipe-gateway-api/demo" gateway-api
+
+# AC-14: the allowed paths of REC-16 and REC-17 need published recipes, and none is published yet. A
+# sample with $work/<sample>.index.json runs recipe-static against that index, through stubs of oras
+# and gh that serve it and accept its recipes' attestations; the generators are the real ones.
+# pass-recipe-published includes other, which requires mid, which requires req, and renders a
+# custom resource whose CRD only req has: the dry run accepts it once req is installed (RCP-55).
+derive_recipe pass-recipe-published "requires: req, "
+sample=$work/recipes/pass-recipe-published
+peer pass-recipe-published other
+peer pass-recipe-published mid
+peer pass-recipe-published req Req
+yq -i '.classes += ["recipes.other"]' "$sample/demo/init.yml"
+requires "$sample/other" mid
+requires "$sample/mid" req
+crds=$sample/demo/vendor/demo.crds.yaml
+printf -- '---\napiVersion: example.com/v1\nkind: Req\nmetadata:\n  name: demo-req\n' >>"$crds"
+sed -i "s/c90177b685ae8ba316d05f756492d579f6d599ba2b6c25a9659c9dc1bdca0b7c/$(sha256sum <"$crds" | cut -d' ' -f1)/" "$sample/demo/init.yml"
+cp -R -- "$sample" "$work/recipes/fail-recipe-include-yanked"
+printf '%s\n' "REC-16: the index lists other 1.0.0 with tree" >"$work/recipes/fail-recipe-include-yanked/expect"
+# Below dot directories, which the sample loop's globs leave out.
+oras pull -o "$work/.index" ghcr.io/kadet-hub/index:latest >/dev/null
+# published <sample> <jq>: the real index, listing other, mid and req of the sample as version 1.0.0
+# with the tree REC-11 records, git mktree of the listing without tests, then changed by <jq>.
+published() {
+  local dir=$work/recipes/$1 tree recipes='{}' r
+  g() { GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$dir" "$@"; }
+  g init -q
+  g add -A
+  for r in other mid req; do
+    tree=$(g ls-tree "$(g write-tree):$r" | grep -v $'\ttests$' | g mktree)
+    recipes=$(jq --arg r "$r" --arg t "$tree" --arg d "$zeros" '.[$r] = {"1.0.0": {tree: $t, digest: $d}}' <<<"$recipes")
+  done
+  rm -rf -- "$dir/.git"
+  jq --argjson r "$recipes" ".recipes = \$r | $2" "$work/.index/index.json" >"$work/$1.index.json"
+}
+published pass-recipe-published .
+published fail-recipe-include-yanked '.recipes.other["1.0.0"].yanked = "selftest"'
+stubs=$work/.stubs
+mkdir -- "$stubs"
+cat >"$stubs/oras" <<'STUB'
+#!/usr/bin/env bash
+digest=sha256:$(sha256sum <"$STUB_INDEX" | cut -d' ' -f1)
+case "$1 ${*: -1}" in
+  "resolve ghcr.io/kadet-hub/index:latest") echo "$digest" && exit 0 ;;
+  "pull ghcr.io/kadet-hub/index@$digest") mkdir -p -- "$3" && cp -- "$STUB_INDEX" "$3/index.json" && exit 0 ;;
+esac
+exec "$REAL_ORAS" "$@"
+STUB
+cat >"$stubs/gh" <<'STUB'
+#!/usr/bin/env bash
+digest=sha256:$(sha256sum <"$STUB_INDEX" | cut -d' ' -f1)
+case $3 in
+  "oci://ghcr.io/kadet-hub/index@$digest" | oci://ghcr.io/kadet-hub/recipes/*) exit 0 ;;
+esac
+exec "$REAL_GH" "$@"
+STUB
+chmod +x -- "$stubs/oras" "$stubs/gh"
+
 failed=0
 for dir in "$work"/*/ "$work"/recipes/*/; do
   name=$(basename -- "$dir")
@@ -157,7 +239,11 @@ for dir in "$work"/*/ "$work"/recipes/*/; do
     dirs=("$dir"*/)
     recipe=$(basename -- "${dirs[0]}")
     mkdir -- "$work/$name.static" "$work/$name.proof"
-    if "$root/gate/recipe-static" "$dir" "$recipe" "$work/$name.static" >"$report" 2>&1 \
+    stub=()
+    if [[ -f $work/$name.index.json ]]; then
+      stub=(env "PATH=$stubs:$PATH" "STUB_INDEX=$work/$name.index.json" "REAL_ORAS=$(command -v oras)" "REAL_GH=$(command -v gh)")
+    fi
+    if "${stub[@]}" "$root/gate/recipe-static" "$dir" "$recipe" "$work/$name.static" >"$report" 2>&1 \
       && "$root/gate/recipe-compile" "$dir" "$recipe" "$work/$name.static" "$work/$name.proof" >>"$report" 2>&1; then
       "$root/gate/recipe-renders" "$dir" "$recipe" "$work/$name.proof" >>"$report" 2>&1 || got=fail
     else

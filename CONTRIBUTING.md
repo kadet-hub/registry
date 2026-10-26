@@ -46,10 +46,14 @@ docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/gate kadet-hub/sandbo
   python -m unittest discover -p 'test_check*.py'
 docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/consumer kadet-hub/sandbox \
   python -m unittest discover
-tests/selftest            # every gate sample, needs gVisor (runsc), and kind, kubectl and uv for the recipe samples
+tests/selftest            # every gate sample, needs gVisor (runsc), and kind, kubectl, uv and cloud-provider-kind for the recipe samples
 tests/consumer-selftest   # the consumer workflow against its samples
 tests/workflow-policy     # pinned actions and permissions
 ```
+
+The recipe sample `pass-recipe-gateway-api` runs cloud-provider-kind, which
+manages every kind cluster on the Docker host, so run the selftest where no
+other kind cluster runs.
 
 A new requirement or a changed behaviour comes with a test that fails without
 the change, named in the requirement's `Test:` line.
