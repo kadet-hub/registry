@@ -16,7 +16,8 @@ already has them. The workflow takes the registry namespace and the
 certificate identity from its own repository, so the same file runs in the
 rehearsal fork (AC-6); the documented verification names `kadet-hub`.
 
-The build job has `contents: read` and `packages: read` only. It fetches
+The build job has `contents: read`, `packages: read` and
+`attestations: read` only. It fetches
 each source without checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
 (GI-9), repeats REG-2 and REG-3 across all entries on `main`, and writes a
 normalized tar of the tree `source.sha:source.path` with its metadata: the
@@ -69,9 +70,13 @@ since the documented package API has no visibility call.
   `meta.json` comes from the build job's own compiles, not from the gate's
   `output.diff`.
 
+  It holds `attestations: read` for `gh attestation verify` in the checks
+  of a recipe version (REC-12), which verify the index, the pinned
+  generators and the included and required recipes.
+
   - Test: `release/test_release.py` (partial: reproducibility and tree ID;
     the sign job's comparison by AC-6)
-  - Since: #13, #226
+  - Since: #13, #226; `attestations: read`: this change
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
   existing `<version>` tag, MUST fail when an existing tag points to a digest
@@ -414,7 +419,7 @@ equals upstream's.
   - Test: `release/test_release.py::Mirror`; manual: the first release run
     after the merge tags `mirror/kubevirt-csi-driver:3a1a099330045754011803e3d53cd8276ff21723`
     at `sha256:44c98353e6137455d6a393ad13e04f60e10ee49fdcd00cf078f7f7084714f409`
-  - Since: this change
+  - Since: #337
 
 The first push creates the package as private. A maintainer sets it to
 public once in the organisation's package settings, so the generator
@@ -450,14 +455,14 @@ fixtures and the end-to-end runs can pull it without credentials.
   summary names the repository without a commit and says so.
 
   - Test: `release/test_release.py::Mirror`
-  - Since: this change
+  - Since: #337
 
 - PUB-13b: `docs/consumers.md` MUST state for each mirrored image the
   upstream image, the source repository, where the base image's source RPMs
   are published, and that kadet-hub does not modify or rebuild it (DEC-16).
 
   - Test: none
-  - Since: this change
+  - Since: #337
 
 ## Incident response
 
