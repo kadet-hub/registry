@@ -6,7 +6,7 @@
 <h2>Rebuilt from a Helm chart, a release manifest or a Docker Compose file, or designed on an image</h2>
 <p>From <a href="https://github.com/{{ site.Data.catalog.owner }}/recipes">kadet-hub/recipes</a>. Its CI compares each chart recipe with the chart or release manifest it rebuilds. At level <code>renders</code> it compares the objects and permissions, at <code>deploys</code> it also installs the recipe on kind and runs its smoke test. A compose file has no objects to compare with, so a compose recipe is at <code>deploys</code> and proven by the install and its smoke test alone. So is a recipe designed in kadet-hub on the image of a project that ships neither.</p>
 <ul class="guide-list">
-{{ range $pages }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p><p>Proof level: <code>{{ (partial "chart-recipe.html" .).level }}</code></p></li>{{ end }}
+{{ range $pages }}{{ $r := partial "chart-recipe.html" . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p><p>Proof level: <code>{{ $r.level }}</code>{{ with $r.latest }}, version <code>{{ .version }}</code>{{ end }}</p></li>{{ end }}
 </ul>
 </section>
 {{ end }}

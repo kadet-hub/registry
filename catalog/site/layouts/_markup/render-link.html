@@ -6,10 +6,12 @@ CAT-36b: CHANGELOG sections likewise, every link nofollow ugc. */ -}}
 {{- with .Page.Params.generator }}{{ with index (where site.Data.catalog.generators "name" .) 0 }}{{ $base = .blob_url }}{{ end }}{{ end -}}
 {{- $cl := .Page.Store.Get "changelog" | default "" -}}
 {{- with $cl }}{{ $base = . }}{{ end -}}
+{{- $recipe := .Page.Store.Get "recipe-blob" | default "" -}}{{/* CAT-38: a listed recipe's README at source.sha */}}
+{{- with $recipe }}{{ $base = . }}{{ end -}}
 {{- $href := "" -}}
 {{- if in (slice "http" "https" "mailto") $u.Scheme -}}{{ $href = .Destination }}
 {{- else if and (eq $u.Scheme "") (strings.HasPrefix .Destination "#") $cl -}}{{ $href = printf "%sCHANGELOG.md%s" $base .Destination }}
-{{- else if and (eq $u.Scheme "") (strings.HasPrefix .Destination "#") -}}{{ $href = cond (ne $base "") (printf "#readme-%s" (strings.TrimPrefix "#" .Destination)) .Destination }}
+{{- else if and (eq $u.Scheme "") (strings.HasPrefix .Destination "#") -}}{{ $href = cond (and (ne $base "") (not $recipe)) (printf "#readme-%s" (strings.TrimPrefix "#" .Destination)) .Destination }}
 {{- else if and (eq $u.Scheme "") (ne $u.Host "") -}}{{ $href = "" }}
 {{- else if eq $u.Scheme "" -}}{{ $href = cond (ne $base "") (printf "%s%s" $base (strings.TrimPrefix "/" (strings.TrimPrefix "./" .Destination))) .Destination }}
 {{- end -}}

@@ -370,6 +370,56 @@ def recipe_classes(root):
         f.write(CHART_RECIPE_SHA + "\n")
 
 
+# CAT-38: recipe records as release/index.py writes them (REC-13), with the renders check of REC-12.
+RECIPE_SCAN = dict(SCAN, checks=SCAN["checks"] + [{"id": "lint", "tool": "check 0.11.0"}, {"id": "renders", "tool": "check 0.11.0, kind v0.33.0"}])
+RECIPE_SHA = "2" * 40
+
+
+def recipe_record(name, d, version="1.0.0", yanked=None, generators=(("kubernetes", "1.7.0", "d"),), includes=(), capabilities=(), scan=RECIPE_SCAN):
+    return {"digest": "sha256:" + d * 64, "yanked": yanked, "advisories": [], "published": "2026-10-26T15:53:43Z",
+            "description": f"The {name} recipe {version}.", "license": "Apache-2.0", "owners": [331675722], "tree": "0" * 40, "level": "deploys",
+            "chart": {"repo": "quay.io/jetstack/charts/cert-manager", "version": "v1.22.0", "digest": "sha256:" + "c" * 64},
+            "generators": [{"name": n, "version": v, "digest": "sha256:" + x * 64} for n, v, x in generators],
+            "includes": [{"name": n, "version": v, "digest": "sha256:" + x * 64} for n, v, x in includes],
+            "output_capabilities": list(capabilities), "kinds": [{"group": "cert-manager.io", "version": "v1", "kind": "Certificate"}],
+            "scan": scan, "output_diff": {"base": None, "error": "no earlier listed version"},
+            "source": {"repo": "https://github.com/kadet-hub/recipes.git", "path": name, "tag": f"{name}-v{version}", "sha": RECIPE_SHA}}
+
+
+LISTED_INDEX = {"serial": 64, "generators": {
+    "kubernetes": {"1.7.0": record("d"), "1.7.1": record("e"), "1.9.0": record("9", yanked="renders a broken Service")}},
+    "recipes": {
+        "cert-manager": {"1.0.0": recipe_record("cert-manager", "a", yanked="wrong CRDs"),
+                         "1.1.0": recipe_record("cert-manager", "b", "1.1.0", generators=(("kubernetes", "1.7.1", "e"),), capabilities=("admission-webhook",))},
+        "valkey": {"1.0.0": recipe_record("valkey", "3", generators=(("kubernetes", "1.9.0", "9"),))},  # pins a yanked generator
+        "external-dns-powerdns": {"1.0.0": recipe_record("external-dns-powerdns", "4", includes=(("powerdns", "1.0.0", "5"),), scan=SCAN)},
+        "powerdns": {"1.0.0": {k: v for k, v in recipe_record("powerdns", "5").items() if k != "chart"}},  # designed: no chart
+        "mysql": {"1.0.0": recipe_record("mysql", "6", yanked="entry removed")},  # every version yanked
+        "nextcloud": {"1.0.0": recipe_record("nextcloud", "7")},  # no content page
+    }}
+# CAT-38: the cert-manager layer of 1.1.0, with another chart and generator pin than main, a relative link and a shortcode.
+ARTIFACT_CHART = f"oci://quay.io/jetstack/charts/cert-manager:v1.22.0@sha256:{'c' * 64}"
+CERT_MANAGER_LAYER = dict(CHART_RECIPE_FILES, **{
+    "README.md": CHART_RECIPE_FILES["README.md"]
+        .replace("oci://quay.io/jetstack/charts/cert-manager:v1.21.2", "oci://quay.io/jetstack/charts/cert-manager:v1.22.0")
+        .replace("Derived from the chart:", "Derived from the chart {{< nonexistent >}}:")
+        .replace("| `replicaCount` |", "| `webhook.timeoutSeconds` | `components.cert-manager-webhook.timeout` |\n| `replicaCount` |")
+        .replace("on kind.\n\n## Replacing", "on kind with [the values](tests/values.yaml). {{% nonexistent %}}\n\n## Replacing"),
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace(f"kubernetes:1.7.0@sha256:{'d' * 64}", f"kubernetes:1.7.1@sha256:{'e' * 64}"),
+    "vendor/cert-manager.crds.yaml": "# not shown\n"})
+LAYERS = {"cert-manager": CERT_MANAGER_LAYER, "valkey": VALKEY_RECIPE_FILES, "external-dns-powerdns": EXTERNAL_DNS_RECIPE_FILES,
+          "powerdns": POWERDNS_RECIPE_FILES}
+IDENTITY = f"https://github.com/{OWNER}/registry/.github/workflows/release.yml@refs/heads/main"
+
+
+def recipe_layers(root, layers=LAYERS):
+    """CAT-38: <root>/recipes/<name>.tar, each a recipe layer as release/build.py writes it (REC-11)."""
+    os.makedirs(os.path.join(root, "recipes"), exist_ok=True)
+    for name, files in layers.items():
+        artifact(os.path.join(root, "recipes", f"{name}.tar"), files)
+    return root
+
+
 def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False, root=HERE):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
@@ -1859,6 +1909,207 @@ class Match(unittest.TestCase):  # CAT-34
                       recipe["packageRules"])
         self.assertIn("not signed", section)
         self.assertIn("(specs/consumers.md)", section)  # CON-2
+
+
+class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.out = build(LISTED_INDEX, cls.tmp.name, recipe_layers(os.path.join(cls.tmp.name, "artifacts")))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts, name="index.html"):
+        with open(os.path.join(self.out, *parts, name), encoding="utf-8") as f:
+            return f.read()
+
+    def snippet(self, page, id):
+        return _unescape(re.search(rf'<pre id="{id}"><code>(.*?)</code></pre>', page, re.S).group(1))
+
+    def test_page_from_the_artifact(self):  # CAT-38: README sections, chart, level and generators of the latest listed version
+        page = self.page("recipes", "cert-manager")
+        self.assertIn("<title>cert-manager on Kubernetes without Helm, with Kapitan</title>", page)  # same URL and content page
+        self.assertIn(f"<li>Source chart: <code>{ARTIFACT_CHART}</code></li>", page)
+        self.assertNotIn("v1.21.2", page)  # main's chart
+        self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.1">kubernetes 1.7.1</a> <code>sha256:{"e" * 64}</code></li>', page)
+        self.assertIn("<td><code>webhook.timeoutSeconds</code></td>", page)
+        self.assertNotIn("alert(8)</script>", page)  # raw HTML is dropped
+        self.assertIn('<a href="#v1.1.0"><code>1.1.0</code></a>, published <time datetime="2026-10-26T15:53:43Z">2026-10-26</time></li>', page)
+        self.assertRegex(page, r"(?s)Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>\n"
+                               r"<li><code>renders</code> passed in the <a href=\"https://github.com/kadet-hub/registry/actions/runs/42\">release run</a> "
+                               r"of <time datetime=\"2026-10-10T08:00:00Z\">2026-10-10</time> with check 0.11.0, kind v0.33.0</li>\n"
+                               r"<li>Output capabilities: <code>admission-webhook</code></li>")
+        # CAT-7: no shortcode runs, relative links point into the source tree at source.sha.
+        self.assertIn("Derived from the chart {{&lt; nonexistent &gt;}}.", page)
+        self.assertIn("{{% nonexistent %}}", page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/blob/{RECIPE_SHA}/cert-manager/tests/values.yaml">the values</a>', page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{RECIPE_SHA}/cert-manager">kadet-hub/recipes</a>', page)
+        self.assertNotIn(CHART_RECIPE_SHA, page)
+        self.assertNotIn("vendor", os.listdir(os.path.join(self.out, "recipes", "cert-manager")))
+        md = self.page("recipes", "cert-manager", name="index.md")
+        self.assertIn(f"\n- Latest version: 1.1.0, published 2026-10-26\n- Source chart: {ARTIFACT_CHART}\n"
+                      "- Proof level: deploys, compared with the chart by the kadet-hub/recipes CI\n"
+                      "- renders passed in the release run of 2026-10-10 with check 0.11.0, kind v0.33.0: https://github.com/kadet-hub/registry/actions/runs/42\n"
+                      "- Output capabilities: admission-webhook\n- Generators: kubernetes 1.7.1", md)
+        self.assertNotIn("without Bitnami", self.page("recipes", "valkey"))
+
+    def test_fetch_inventory_and_verification(self):  # CAT-38, CON-4, CON-5
+        page = self.page("recipes", "cert-manager")
+        self.assertEqual(self.snippet(page, "fetch"), "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n"
+                         f"        source: ghcr.io/{OWNER}/recipes/cert-manager:1.1.0@sha256:{'b' * 64}\n"
+                         "        output_path: inventory/classes/recipes/cert-manager")
+        self.assertEqual(self.snippet(page, "verify"), f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/recipes/cert-manager@sha256:{'b' * 64} \\\n"
+                         f"  --owner {OWNER} \\\n  --cert-identity {IDENTITY}")
+        self.assertIn(f'<a href="https://github.com/{OWNER}/registry/blob/main/docs/consumers.md#verifying-by-hand">Verifying by hand</a>', page)
+        self.assertEqual(self.snippet(page, "policy"), 'output_capabilities:\n  "compiled/<target>/*": [admission-webhook]')
+        self.assertIn("This is <code>fetch/targets/recipes.yml</code> for version 1.1.0:", page)
+        self.assertNotIn("type: git", page)
+        md = self.page("recipes", "cert-manager", name="index.md")
+        self.assertIn(f"\n```yaml\n{self.snippet(page, 'fetch')}\n```\n", md)
+        self.assertIn(f"\n```sh\n{self.snippet(page, 'verify')}\n```\n", md)
+        self.assertIn('\n```yaml\noutput_capabilities:\n  "compiled/<target>/*": [admission-webhook]\n```\n', md)
+        # An included recipe is pinned and verified at the version the record lists (REC-16, CON-4).
+        page = self.page("recipes", "external-dns-powerdns")
+        self.assertEqual(re.findall(r"source: (\S+)\n", self.snippet(page, "fetch") + "\n"),
+                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns:1.0.0@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns:1.0.0@sha256:{'5' * 64}"])
+        self.assertEqual(re.findall(r"oci://(\S+)", self.snippet(page, "verify")),
+                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns@sha256:{'5' * 64}"])
+        self.assertIn("pins the recipe and the recipes it includes by version", page)
+        self.assertIn("<li>No <code>renders</code> result in the release run's record</li>", page)  # a scan record without it
+        self.assertIn("<li>Output capabilities: none</li>", page)
+        self.assertNotIn('id="policy"', page)
+
+    def test_yanked_versions_and_generators(self):  # CAT-38: the reason and no fetch inventory entry
+        page = self.page("recipes", "cert-manager")
+        versions = page[page.index("<h2>Versions</h2>"):]
+        self.assertLess(versions.index('id="v1.1.0"'), versions.index('id="v1.0.0"'))
+        self.assertIn(f'<li id="v1.0.0"><code>1.0.0</code>, <time datetime="2026-10-26T15:53:43Z">2026-10-26</time>: <code>sha256:{"a" * 64}</code>'
+                      '<br><span class="warning">Yanked: wrong CRDs</span></li>', versions)
+        self.assertEqual(page.count("a" * 64), 1)
+        self.assertIn(f"\n## Versions\n\n- 1.1.0, 2026-10-26: sha256:{'b' * 64}\n- 1.0.0, 2026-10-26: sha256:{'a' * 64}; yanked: wrong CRDs\n",
+                      self.page("recipes", "cert-manager", name="index.md"))
+        page = self.page("recipes", "valkey")
+        reason = "pins the generator kubernetes 1.9.0, which is yanked: renders a broken Service"
+        self.assertIn(f'<p class="warning">Version 1.0.0 {reason}</p>', page)
+        self.assertIn(f'<br><span class="warning">P{reason[1:]}</span></li>', page)
+        self.assertNotIn('<pre id="fetch">', page)
+        self.assertNotIn('<pre id="verify">', page)
+        self.assertNotIn(f"recipes/valkey:1.0.0@sha256:{'3' * 64}", page)
+        md = self.page("recipes", "valkey", name="index.md")
+        self.assertIn(f"\n## Fetching it\n\nVersion 1.0.0 {reason}\n\nThe consumer workflow rejects", md)
+        self.assertNotIn("```yaml\nparameters:", md)
+
+    def test_all_versions_yanked(self):  # CAT-38: no version to read, so the page stays built from main
+        page = self.page("recipes", "mysql")
+        self.assertIn(f"ref: {CHART_RECIPE_SHA}\n", self.snippet(page, "fetch"))
+        self.assertIn("Until this recipe is published as an OCI artifact", page)
+        self.assertNotIn("Latest version", page)
+        self.assertIn('<br><span class="warning">Yanked: entry removed</span></li>', page)
+        self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "nextcloud")))  # no content page, no page
+        page = self.page("recipes", "miniflux")  # unlisted
+        self.assertNotIn("<h2>Versions</h2>", page)
+        self.assertIn("        subdir: miniflux\n", self.snippet(page, "fetch"))
+
+    def test_layer_missing_fails_the_build(self):  # CAT-38, CAT-37a
+        for case, layers in (("missing", {k: v for k, v in LAYERS.items() if k != "valkey"}),
+                             ("escapes", dict(LAYERS, valkey=dict(VALKEY_RECIPE_FILES, **{"../../escaped.yml": "x"})))):
+            with self.subTest(case), tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaises(subprocess.CalledProcessError) as failed:
+                    build(LISTED_INDEX, tmp, recipe_layers(os.path.join(tmp, "artifacts"), layers), capture=True)
+                self.assertIn(f"::error::recipes: valkey: {tmp}/artifacts/recipes/valkey.tar not unpacked", failed.exception.stdout)
+
+    def test_build_fetches_the_layer_by_digest(self):  # CAT-38: the online build with curl, git, gh and oras faked
+        shims = {"curl": 'while (($#)); do case $1 in -o) out=$2; shift;; https://*) url=$1;; esac; shift; done\n'
+                         'echo "$url" >>"$LOG"\n'
+                         'case $url in\n'
+                         '  https://raw.githubusercontent.com/*/recipes/*/*) cp "$RECIPES/inventory/classes/recipes/${url#https://raw.githubusercontent.com/*/recipes/*/}" "$out";;\n'
+                         '  *) exit 22;;\n'
+                         'esac\n',
+                 "git": 'printf "%s\\trefs/heads/main\\n" "$RECIPES_SHA"\n',
+                 "gh": "exit 1\n",
+                 "oras": 'ref=${!#}; echo "oras $1 $ref" >>"$LOG"\n'
+                         'case $1 in\n'
+                         '  manifest) printf \'{"artifactType": "%s", "layers": [{"digest": "sha256:%s"}]}\' "$ORAS_TYPE" "$(printf "f%.0s" {1..64})";;\n'
+                         '  blob) while (($#)); do case $1 in --output) out=$2; shift;; esac; shift; done\n'
+                         '        name=${ref#ghcr.io/*/recipes/}; cp "$LAYERS/recipes/${name%@*}.tar" "$out";;\n'
+                         'esac\n'}
+        index = {"serial": 1, "generators": {}, "recipes": {"cert-manager": LISTED_INDEX["recipes"]["cert-manager"]}}
+        for artifact_type in ("application/vnd.kadet-hub.recipe.v1", "application/vnd.kadet-hub.generator.v1"):
+            with self.subTest(artifact_type), tempfile.TemporaryDirectory() as tmp:
+                os.mkdir(os.path.join(tmp, "bin"))
+                for name, script in shims.items():
+                    with open(os.path.join(tmp, "bin", name), "w", encoding="utf-8") as f:
+                        f.write("#!/usr/bin/env bash\n" + script)
+                    os.chmod(os.path.join(tmp, "bin", name), 0o755)
+                recipes, log = os.path.join(tmp, "recipes"), os.path.join(tmp, "fetch.log")
+                recipe_classes(os.path.join(recipes, "inventory", "classes"))
+                with open(os.path.join(tmp, "index.json"), "w", encoding="utf-8") as f:
+                    json.dump(index, f)
+                env = dict(os.environ, OWNER=OWNER, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], LOG=log, RECIPES=recipes,
+                           RECIPES_SHA=CHART_RECIPE_SHA, ORAS_TYPE=artifact_type, LAYERS=recipe_layers(os.path.join(tmp, "layers")))
+                env.pop("CATALOG_OFFLINE", None)
+                p = subprocess.run([os.path.join(HERE, "build"), os.path.join(tmp, "index.json"), os.path.join(tmp, "out")], env=env, capture_output=True, text=True)
+                with open(log, encoding="utf-8") as f:
+                    fetched = f.read()
+                self.assertIn(f"oras manifest ghcr.io/{OWNER}/recipes/cert-manager@sha256:{'b' * 64}\n", fetched)  # 1.1.0, not the yanked 1.0.0
+                self.assertNotIn("/cert-manager/", fetched)  # nothing from main
+                if artifact_type.endswith("generator.v1"):
+                    self.assertEqual(p.returncode, 1)
+                    self.assertIn(f"::error::recipes: ghcr.io/{OWNER}/recipes/cert-manager@sha256:{'b' * 64} not fetched", p.stdout)
+                    continue
+                self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+                self.assertIn(f"/{OWNER}/recipes/{CHART_RECIPE_SHA}/valkey/README.md\n", fetched)  # unlisted: from main
+                self.assertIn(f"oras blob ghcr.io/{OWNER}/recipes/cert-manager@sha256:{'f' * 64}\n", fetched)
+                with open(os.path.join(tmp, "out", "recipes", "cert-manager", "index.html"), encoding="utf-8") as f:
+                    self.assertIn(f"<li>Source chart: <code>{ARTIFACT_CHART}</code></li>", f.read())
+
+    def test_index_shows_the_latest_version(self):  # CAT-38a
+        index = self.page("recipes")
+        self.assertRegex(index, r'recipes/cert-manager/">.*?Proof level: <code>deploys</code>, version <code>1\.1\.0</code></p></li>')
+        self.assertRegex(index, r'recipes/valkey/">.*?Proof level: <code>deploys</code>, version <code>1\.0\.0</code></p></li>')
+        self.assertRegex(index, r'recipes/miniflux/">.*?Proof level: <code>deploys</code></p></li>')  # unlisted
+        self.assertRegex(index, r'recipes/mysql/">.*?Proof level: <code>deploys</code></p></li>')  # every version yanked
+
+    def test_catalog_json(self):  # CAT-38b
+        with open(os.path.join(self.out, "catalog.json"), encoding="utf-8") as f:
+            data = json.load(f)
+        recipes = {r["name"]: r for r in data["recipes"]}
+        self.assertEqual(list(recipes), ["cert-manager", "external-dns-powerdns", "mysql", "nextcloud", "powerdns", "valkey"])
+        fields = ("version", "digest", "yanked", "level", "chart", "generators")
+        self.assertEqual([{k: v[k] for k in fields} for v in recipes["cert-manager"]["versions"]], [
+            {"version": "1.1.0", "digest": "sha256:" + "b" * 64, "yanked": None, "level": "deploys",
+             "chart": {"repo": "quay.io/jetstack/charts/cert-manager", "version": "v1.22.0", "digest": "sha256:" + "c" * 64},
+             "generators": [{"name": "kubernetes", "version": "1.7.1", "digest": "sha256:" + "e" * 64, "yanked": None}]},
+            {"version": "1.0.0", "digest": "sha256:" + "a" * 64, "yanked": "wrong CRDs", "level": "deploys",
+             "chart": {"repo": "quay.io/jetstack/charts/cert-manager", "version": "v1.22.0", "digest": "sha256:" + "c" * 64},
+             "generators": [{"name": "kubernetes", "version": "1.7.0", "digest": "sha256:" + "d" * 64, "yanked": None}]}])
+        self.assertEqual(recipes["cert-manager"]["description"], "The cert-manager recipe 1.1.0.")  # the latest listed version's
+        self.assertEqual(recipes["valkey"]["versions"][0]["generators"][0]["yanked"], "renders a broken Service")
+        self.assertIsNone(recipes["powerdns"]["versions"][0]["chart"])
+        self.assertEqual(recipes["mysql"]["description"], "The mysql recipe 1.0.0.")  # every version yanked: the newest
+
+    def test_not_counted_with_generators(self):  # CAT-38b
+        home = self.page()
+        self.assertEqual(re.findall(r'data-name="([^"]+)"', home), ["kubernetes"])
+        self.assertRegex(home, r'data-tag="helm"[^>]*>.*?helm <span class="count">\(1\)</span>')
+        self.assertNotIn("Certificate", self.page("kinds"))
+        self.assertEqual(re.findall(r'<tr id="([^"]+)">', self.page("compatibility")), ["kubernetes"])
+
+    def test_seo(self):  # CAT-11d over the new markup
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_consumer_docs_lookup(self):  # CAT-38b, as CAT-34d
+        with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
+            doc = f.read()
+        command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq [^`]*?\.recipes\[\].*?)\n```", doc, re.S).group(1)
+        for name, expected in (("cert-manager", f"1.1.0 sha256:{'b' * 64}\n"), ("valkey", "")):  # not the yanked 1.0.0; valkey pins a yanked generator
+            result = subprocess.run(shlex.split(command.replace("cert-manager", name)) + [os.path.join(self.out, "catalog.json")],
+                                    capture_output=True, text=True, check=True)
+            self.assertEqual(result.stdout, expected)
+        self.assertIn("A recipe digest needs the same check against\nthe index's `recipes` (CON-5).", doc)
 
 
 class View(unittest.TestCase):
