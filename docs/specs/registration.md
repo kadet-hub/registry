@@ -116,7 +116,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   mechanisms:
 
   - Release asset: oras, gh, actionlint, zizmor, Hugo, gitleaks, conftest,
-    krab and etcd are GitHub release assets. Their comment names
+    krab, etcd, kind and uv are GitHub release assets. Their comment names
     `datasource=github-release-attachments`, which hashes the matching
     asset of the new release. The pinned value MUST be the exact release
     tag, because the datasource looks the release up by it; URLs that need
@@ -130,13 +130,15 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     Renovate's dockerfile manager updates; `tf-schema-verify` copies
     terraform out with `docker create` and `docker cp`. Both binaries are
     identical to the dl.k8s.io and releases.hashicorp.com downloads.
-  - Check: helm (`sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`) and gVisor
-    have neither a release asset nor an image published by the project.
-    Renovate bumps the version only. On pull requests from `renovate/`
-    branches the `checksum-pins` workflow runs `tests/checksum-pins` with
+  - Check: helm (`sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`), gVisor
+    and kubectl (`.github/actions/setup-kind/`) have neither a release
+    asset nor an image published by the project. Renovate bumps the
+    version only. On pull requests from `renovate/` branches the
+    `checksum-pins` workflow runs `tests/checksum-pins` with
     `contents: read` and no secrets; it compares each checksum with the
-    publisher's checksum file (helm `.sha256sum`, gVisor `.sha512`) and
-    fails with the line to paste.
+    publisher's checksum file (helm `.sha256sum`, gVisor `.sha512`,
+    kubectl `.sha256`, which holds the checksum alone) and fails with the
+    line to paste.
 
   The release-asset comments have their own match string: `github-releases`
   also returns digests, a commit SHA, which it would write into a
@@ -173,7 +175,8 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     `timestamp-optional` proposed. Checksums: lookup with tool pins set
     one release back; `checksum-pins` workflow.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
-    #306; recipe entries: #378; branch and title per entry: #381
+    #306; recipe entries: #378; branch and title per entry: #381; kind,
+    kubectl and uv: #389
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.

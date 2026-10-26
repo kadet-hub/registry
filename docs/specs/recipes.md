@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Recipes
 
 Status: Draft
-Code: `recipes/`, `policy/reserved-names.txt`, `gate/`, `sandbox/`, `release/`, `.github/workflows/{gate,release}.yml`, `.github/actions/setup-gate/` (REC-1 to REC-8 and REC-15 implemented in `gate/`, `sandbox/run`, `policy/reserved-names.txt` and `.github/actions/setup-gate/`, the rest not yet)
+Code: `recipes/`, `policy/reserved-names.txt`, `gate/`, `sandbox/`, `release/`, `.github/workflows/{gate,release}.yml`, `.github/actions/{setup-gate,setup-check,setup-kind}/` (REC-1 to REC-9 and REC-15 implemented in `gate/`, `sandbox/run`, `policy/reserved-names.txt`, `.github/workflows/gate.yml` and `.github/actions/`, the rest not yet)
 Verified against: main @ aa7e00c
 
 Related: [marketplace.md](marketplace.md) holds the threat model, acceptance
@@ -170,16 +170,18 @@ The gate fetches `source.sha` as data with `gate/fetch_tree.py --recipe`,
 which writes every recipe directory of the commit without its `tests/`
 (REC-4). It then runs, in this order: the tree and scanner
 checks (REC-4), `check lint` on the files (REC-5), the generator pins
-(REC-6) and the chart (REC-7), the sandboxed compile (REC-8) and the
-`renders` proof (REC-9). The previous version, on a bump, is compiled for
-the output diff (REC-10). Only the source fetch, the index and generator
-pulls and the chart pull or manifest download have network.
+(REC-6) and the chart (REC-7), the sandboxed compile (REC-8) and, in a
+job of its own, the `renders` proof (REC-9). The previous version, on a
+bump, is compiled for the output diff (REC-10). Only the source fetch, the
+index and generator pulls and the chart pull or manifest download have
+network.
 
-REC-9, REC-10, REC-14, REC-16 and REC-17 are not implemented yet. The
-gate runs REC-1 to REC-8, REC-15 and REG-1 on a recipe entry, in
+REC-10, REC-14, REC-16 and REC-17 are not implemented yet. The gate job
+runs REC-1 to REC-8, REC-15 and REG-1 on a recipe entry, in
 `gate/recipe-static` from REC-4 on and in `gate/recipe-compile` from REC-7
-on, and then fails it with `REC-9: the recipe checks from REC-9 on are not
-implemented yet, so no recipe entry passes the gate`. Until REC-16 is
+on, and then fails it with `REC-10: the recipe checks from REC-10 on are
+not implemented yet, so no recipe entry passes the gate`. The `renders`
+job runs REC-9 after it. Until REC-16 is
 implemented, the include rule of REC-5 accepts `recipes.<other>` and
 `recipes.<other>.<option>` by their form and resolves nothing, and REC-8
 compiles `<other>` from its directory at `source.sha`. REC-16 will
@@ -187,11 +189,12 @@ require that directory to be the tree of a published version, so the
 compile does not change with it.
 
 `check` comes from a `check-vX.Y.Z` release of kadet-hub/recipes (RCP-22),
-pinned by commit SHA in `.github/actions/setup-gate/` like the other gate
-tools (GI-6), and Renovate proposes its bumps (REG-7). `setup-gate`
-writes the release's `check/` directory to `gate/.check/` with
-`gate/fetch_tree.py`. The recipe's own copy of `check` at `source.sha` is
-not used, so a recipe tag cannot weaken the rules it is judged by.
+pinned by commit SHA in `.github/actions/setup-check/` like the other gate
+tools (GI-6), and Renovate proposes its bumps (REG-7). `setup-check`, which
+`setup-gate` and the `renders` job call, writes the release's `check/`
+directory to `gate/.check/` with `gate/fetch_tree.py`. The recipe's own
+copy of `check` at `source.sha` is not used, so a recipe tag cannot weaken
+the rules it is judged by.
 
 - REC-4: The shipped tree, `source.path` without `tests/`, MUST hold only
   `README.md`, class files `*.yml` at its root with their `.LICENSE` and
@@ -219,8 +222,10 @@ not used, so a recipe tag cannot weaken the rules it is judged by.
   tree contains no Python file. The gate runs `scan/static-scan` all the
   same, so GuardDog and the template check of SEC-3 run too. Neither
   reports anything on the 16 recipes of kadet-hub/recipes at `8a20838`.
-  SEC-5's limit of 1 MiB fails cnpg there, whose `vendor/cnpg.crds.yaml`
-  has 1,259,760 bytes (OQ-15). QA-1 does not apply: a recipe has no
+  SEC-5's limit of 1 MiB applies to recipes unchanged. cnpg vendors one
+  file per CRD since kadet-hub/recipes#44 (merge `0c0ab12`), and its
+  largest, `vendor/poolers.postgresql.cnpg.io.yml`, has 678,686 bytes.
+  Decided with #389, formerly OQ-15. QA-1 does not apply: a recipe has no
   CHANGELOG, and the gate comment shows the output diff (REC-10). The
   license is the one whose `policy/licenses.txt` pattern matches the
   repository root's `LICENSE`, as QA-2 matches it, and the gate fails when
@@ -239,7 +244,7 @@ not used, so a recipe tag cannot weaken the rules it is judged by.
   parent's (RCP-49).
 
   - Test: workflow job `gate-selftest`, samples under `tests/samples/recipes/` (`fail-recipe-python`, `fail-recipe-vendor-class`, `fail-recipe-token`); `gate/test_check_recipe.py` (`Recipe.test_passes`, `Recipe.test_layout`, `Recipe.test_license`); `gate/test_fetch_tree.py` (`FetchTree.test_recipe_reads_only_its_tests_files`)
-  - Since: #382; `tests/target.yml` of included recipes: #385
+  - Since: #382; `tests/target.yml` of included recipes: #385; SEC-5 for cnpg: #389
 
 - REC-5: `check lint`'s file rules MUST pass on the recipe, run in the
   sandbox image without network. Every class a recipe file includes MUST
@@ -312,7 +317,8 @@ not used, so a recipe tag cannot weaken the rules it is judged by.
   leaves the hooks out and lists them itself (RCP-25), and the CRDs are
   part of the comparison. The output rules of REC-8 take the chart's
   object names from it. A compose source or a designed recipe has nothing
-  to render, and `check` proves either only at `deploys` (RCP-38, RCP-44).
+  to render, and `check` proves either at `renders` without a comparison
+  (REC-9).
 
   The gate pulls, downloads and compares with `fetch_chart`,
   `fetch_http_chart` and `fetch_manifest` of the pinned `check`, in the
@@ -356,20 +362,68 @@ not used, so a recipe tag cannot weaken the rules it is judged by.
   - Test: workflow job `gate-selftest` (`pass-recipe`, `fail-recipe-unpinned-image`); `gate/test_check_recipe.py` (`Recipe.test_included`); `gate/test_fetch_tree.py` (`FetchTree.test_recipe_reads_only_its_tests_files`)
   - Since: #385 (partial: an included recipe comes from `source.sha` until REC-16)
 
-- REC-9: The gate MUST run `check <name> --level renders` with the outputs of
-  REC-7 and REC-8 (RCP-34), in a job with `contents: read` and no secrets,
-  and fail when `check` fails.
+- REC-9: The gate MUST run the pinned `check` as
+  `check <name> --level renders` on the outputs of REC-7 and REC-8
+  (RCP-34) in the job `renders` of `gate.yml`, and fail when `check`
+  fails. That job MUST hold `contents: read` and no other permission, read
+  no secret, and fetch or compile nothing of the pull request.
 
   At `renders` the kind clusters apply only Namespaces, CRDs,
   ServiceAccounts and RBAC objects for real and dry-run the rest (RCP-26),
-  so nothing from the recipe or the chart runs as a pod. The job needs
-  Docker on the GitHub-hosted runner for kind, which is why it runs outside
-  the sandbox. `check` 0.9.0 creates both kind clusters of RCP-8 with
-  `--compiled` and `--rendered` too, so the job also needs kind and
-  kubectl.
+  so nothing from the recipe or the chart runs as a pod. For a chart or a
+  release manifest `check` compares both sides, each on its own cluster
+  (RCP-8). A compose source or a designed recipe has nothing to compare
+  with, so `check` lints its output and dry-runs it on one cluster
+  (RCP-38, RCP-44).
 
-  - Test: workflow job `gate-selftest` (not written)
-  - Since: not implemented
+  kind needs Docker on the runner, so the job runs outside the sandbox and
+  receives data only (DEC-21). Once every check before REC-9 has passed,
+  the gate job hands over the artifact `recipe-proof`: a tar of the
+  recipes directory of REC-4, the output path of REC-8's compile and the
+  render of REC-7. A tar keeps the empty `tests/smoke`, which `check`
+  requires above `renders` (RCP-1). With these inputs `check` pulls
+  nothing (RCP-34). A cluster object that makes the API server call out,
+  such as a CRD conversion webhook, reaches the runner's network but no
+  secret.
+
+  The `renders` job checks out `main`, fetches `check` with
+  `.github/actions/setup-check/` and installs kind v0.33.0, kubectl v1.37.1
+  and uv 0.13.5 with `.github/actions/setup-kind/`, each pinned by sha256
+  (GI-6). The node image is the one `check` pins,
+  `kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5`,
+  which the release notes of kind v0.33.0 list. For a chart or a release
+  manifest `gate/recipe-renders` runs
+
+  ```sh
+  uv run --quiet --locked --project gate/.check gate/.check/check.py <recipes>/<name> \
+    --level renders --compiled <out> --rendered <render>
+  ```
+
+  and for a compose source or a designed recipe the same without
+  `--rendered`. `<recipes>` is what `gate/fetch_tree.py` wrote for REC-4
+  and REC-8, `<out>` holds `compiled/<name>/` and `compiled/<other>/` of
+  each included recipe, and `<render>` is `helm template`'s output or the
+  downloaded manifest.
+
+  The job prints `check`'s report under `## Renders`, and the gate
+  comment shows it after the gate job's report (REV-2). `check` exits 1
+  when the proof fails, after the report lines that name each failure,
+  such as `only in the chart: <object>`. The finding is then
+  `REC-9: check <name> --level renders failed`. `check` exits 2 with
+  `error: <message>` when a step fails, such as a dry run the API server
+  rejects. The finding is then `REC-9: <message>`, with the message's
+  further lines below it. When a check before REC-9 fails, the gate job
+  reports `REC-9: not run, a check before it failed`, and the `renders`
+  job is skipped.
+
+  Until REC-17, a recipe that requires a recipe, itself or through one it
+  includes, fails here with `no compiled output of <other> (RCP-34)`. The
+  nextcloud recipe does, through postgresql's `Requires: cnpg`. A recipe that
+  requires only `gateway-api` fails because the job has no
+  cloud-provider-kind.
+
+  - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`)
+  - Since: #389 (partial: required recipes until REC-17)
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
@@ -434,9 +488,9 @@ not used, so a recipe tag cannot weaken the rules it is judged by.
   CRD. The RabbitMQ operator's Certificates need cert-manager's CRDs, and
   `rabbitmq` reaches `cert-manager` only through `rabbitmq-cluster-operator`.
   `gateway-api` is no recipe: `check` installs it with its pinned
-  cloud-provider-kind, which `.github/actions/setup-gate/` pins with the
-  other gate tools. The required recipe is not recorded, since the
-  consumer installs it in a target of its own.
+  cloud-provider-kind, which `.github/actions/setup-kind/` pins next to
+  kind for the `renders` job (REC-9). The required recipe is not
+  recorded, since the consumer installs it in a target of its own.
 
   - Test: workflow job `gate-selftest` (not written)
   - Since: not implemented
@@ -523,13 +577,15 @@ REG-2. They fail closed.
 |---|---|
 | `recipes/<name>.yaml` | Recipe entry (REC-1 to REC-3) |
 | `policy/reserved-names.txt` | `recipes` (REC-2) |
-| `gate/check_entry.py`, `gate/run` | REC-1 to REC-3, REC-10, REC-16, REC-17 |
+| `gate/check_entry.py`, `gate/run` | REC-1 to REC-3, REC-10, REC-16, REC-17, the hand-over to REC-9 |
 | `gate/fetch_tree.py`, `gate/recipe-static`, `gate/check_recipe.py` | REC-4 to REC-6, REC-15, the included recipes' targets and generators (REC-8) |
 | `gate/recipe-compile`, `sandbox/run` | REC-7, REC-8, REC-17 |
+| `gate/recipe-renders` | REC-9 |
 | `consumer/plan.py` | `check_index`, the CON-2 check REC-6 runs |
 | `scan/rescan`, `.github/workflows/scheduled.yml` | REC-14 |
-| `.github/actions/setup-gate/` | `check` pin (REC-5, REC-9) |
-| `.github/workflows/gate.yml` | `attestations: read` (REC-6), REC-9 job |
+| `.github/actions/setup-check/` | `check` pin (REC-5, REC-7 to REC-9) |
+| `.github/actions/setup-kind/` | kind, kubectl and uv (REC-9), cloud-provider-kind (REC-17) |
+| `.github/workflows/gate.yml` | `attestations: read` (REC-6), the `renders` job (REC-9) |
 | `release/build-all`, `release/build.py`, `release/tree.py`, `release/index.py` | REC-11 to REC-13 |
 | `tests/samples/recipes/`, `tests/selftest` | AC-12 |
 
@@ -542,4 +598,4 @@ REG-2. They fail closed.
 | Config media type | `application/vnd.kadet-hub.recipe.config.v1+json` |
 | Consumer path | `inventory/classes/recipes/<name>/` |
 | Inventory backend | omegaconf |
-| `check` | kadet-hub/recipes `check-v0.9.0`, commit `89b14c087fafa3ca3de39c61680ef7d84da3d423`, in `gate/.check/` |
+| `check` | kadet-hub/recipes `check-v0.10.0`, commit `a4c9945b340ccfb5a10ae5a4bfac960ef7608408`, in `gate/.check/` |
