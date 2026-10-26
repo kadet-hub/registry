@@ -1,4 +1,4 @@
-"""GI-14: check_recipe.py on a fuzzed class file init.yml of a recipe that requires the recipe other."""
+"""GI-14: check_recipe.py on a fuzzed class file init.yml and README.md of a recipe that requires the recipe other."""
 
 import os
 import sys
@@ -28,8 +28,9 @@ with open(LICENSE, "w", encoding="utf-8") as f:
 
 
 def TestOneInput(data):
-    with open(os.path.join(TREE, "init.yml"), "wb") as f:
-        f.write(data)
+    for name in ("init.yml", "README.md"):
+        with open(os.path.join(TREE, name), "wb") as f:
+            f.write(data)
     check_recipe.check(TREE, INDEX, POLICY, LICENSE, ["other"])
 
 

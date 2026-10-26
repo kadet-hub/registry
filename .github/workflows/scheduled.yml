@@ -1,6 +1,6 @@
 name: scheduled
 
-# SEC-15, SEC-16: daily rescan of every listed version and its tag.
+# SEC-15, SEC-16, REC-14: daily rescan of every listed generator and recipe version and its tag.
 on:
   schedule:
     - cron: "23 4 * * *"

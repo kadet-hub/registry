@@ -42,7 +42,7 @@ if [[ $path == removed:* ]]; then
 fi
 # $path matched ^(generators|recipes)/[a-z][a-z0-9-]{1,38}\.yaml$ in the files step.
 raw "$path" >"$work/head.yaml"
-token=$GH_TOKEN  # only gate/recipe-static gets it back, for gh attestation verify (REC-6)
+token=$GH_TOKEN  # only gate/recipe-static gets it back through gate/recipe-checks, for gh attestation verify (REC-6)
 unset GH_TOKEN
 
 check entry --path-file /work/path --head /work/head.yaml --base /base --out /work/entry.json
@@ -65,24 +65,7 @@ echo "## Source"
 "${gitc[@]}" init -q --bare -- "$work/src.git"
 "${gitc[@]}" --git-dir="$work/src.git" fetch -q --depth=1 --no-tags -- "$src_repo" "$sha"
 # REC-4 to REC-8 and REC-15 to REC-17 on the recipe at <rev>, written below <dir>.
-recipe_checks() {
-  local rev=$1 dir=$2 rc=0 others=()
-  mkdir -- "$dir" "$dir/static" "$dir/proof"
-  # Every recipe of the commit without tests/, as check lint resolves includes and Requires (REC-4, REC-5).
-  python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$rev" --recipe "$name" --out "$dir/recipes" || rc=1
-  "${gitc[@]}" --git-dir="$work/src.git" cat-file blob "$rev:LICENSE" >"$dir/recipes/LICENSE" 2>/dev/null \
-    || rm -f -- "$dir/recipes/LICENSE"
-  echo "## Static checks"
-  GH_TOKEN=$token "$root/gate/recipe-static" "$dir/recipes" "$name" "$dir/static" || rc=1
-  echo "## Chart and sandbox compile"
-  # REC-4, REC-8, REC-17: each included and required recipe compiles from its own tests/target.yml.
-  if [[ -f $dir/static/recipe.json ]]; then mapfile -t others < <(jq -r '.included[], (.required | keys[])' -- "$dir/static/recipe.json"); fi
-  if ((${#others[@]})); then
-    python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$rev" --targets "${others[@]}" --out "$dir/recipes" || rc=1
-  fi
-  "$root/gate/recipe-compile" "$dir/recipes" "$name" "$dir/static" "$dir/proof" || rc=1
-  return "$rc"
-}
+recipe_checks() { GH_TOKEN=$token "$root/gate/recipe-checks" "$work/src.git" "$1" "$name" "$2"; }
 if [[ $path == recipes/* ]]; then
   recipe_checks "$sha" "$work/new" | tee "$work/new.txt" || status=1
   # REC-9 runs in the renders job of gate.yml, on what this job fetched and compiled.
@@ -112,8 +95,7 @@ if [[ $path == recipes/* ]]; then
       fi
     fi
   fi
-  echo "REC-11: the release publishes no recipe yet (REC-11 to REC-13), so no recipe entry passes the gate"
-  exit 1
+  exit "$status"
 fi
 gen=$work/generator
 python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --path "$src_path" --out "$gen" || status=1

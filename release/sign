@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Sign job, before the attestations (PUB-1, PUB-2, PUB-8, PUB-9): compare the
-# built tar with an own fetch of the source, check the existing tags, push by
-# digest and write the SBOM of what was pushed and the output diff predicate.
+# Sign job, before the attestations (PUB-1, PUB-2, PUB-8, PUB-9, REC-11):
+# compare the built tar with an own fetch of the source, check the existing
+# tags, push by digest and write the SBOM of what was pushed and the output
+# diff predicate.
 #
-# Usage: sign <name> <built dir>
+# Usage: sign <name> <built dir>, with recipes/<recipe> as <name> for a recipe
 # Needs: REGISTRY (ghcr.io/<owner>), IDENTITY (certificate identity),
 # GITHUB_REPOSITORY, GH_TOKEN, oras logged in, the main checkout as working
 # directory. Writes ref, digest, version, sbom, diff (when the build job
@@ -17,23 +18,29 @@ trap 'rm -rf -- "$work"' EXIT
 # shellcheck source=release/common.sh
 . "$root/release/common.sh"
 
-entry=$root/generators/$name.yaml
+type=generator entry=$root/generators/$name.yaml base=$name
+if [[ $name == recipes/* ]]; then type=recipe entry=$root/$name.yaml base=${name#recipes/}; fi
 repo=$(yq -r .source.repo "$entry") path=$(yq -r .source.path "$entry")
 tag=$(yq -r .source.tag "$entry") sha=$(yq -r .source.sha "$entry")
 [[ $tag =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]
 version=${BASH_REMATCH[1]}
-tar=$built/$name.tar meta=$built/meta.json
-jq -e --arg n "$name" --arg v "$version" --arg r "$repo" --arg p "$path" --arg s "$sha" \
+tar=$built/$base.tar meta=$built/meta.json
+jq -e --arg n "$base" --arg v "$version" --arg r "$repo" --arg p "$path" --arg s "$sha" \
   '.name == $n and .version == $v and .source.repo == $r and .source.path == $p and .source.sha == $s' "$meta" >/dev/null \
   || { echo "PUB-1: $name: metadata does not match the entry on main"; exit 1; }
 
-# PUB-1: the tree of the tar equals the tree of source.sha:source.path.
+# PUB-1: the tree of the tar equals the tree of source.sha:source.path, for a
+# recipe without its tests entry (REC-11); mktree --missing, as the fetch is blobless.
 export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
 gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$work/src.git")
 "${gitc[@]}" init -q --bare
 "${gitc[@]}" fetch -q --depth=1 --filter=blob:none --no-tags -- "$repo" "$sha"
 if [[ $path == . ]]; then rev="$sha^{tree}"; else rev=$sha:$path; fi
-expected=$("${gitc[@]}" rev-parse --verify --end-of-options "$rev")
+if [[ $type == recipe ]]; then
+  expected=$("${gitc[@]}" ls-tree -z --end-of-options "$rev" | { grep -zv $'\ttests$' || true; } | "${gitc[@]}" mktree -z --missing)
+else
+  expected=$("${gitc[@]}" rev-parse --verify --end-of-options "$rev")
+fi
 actual=$(python3 "$root/release/tree.py" "$tar")
 if [[ $actual != "$expected" || $(jq -r .tree "$meta") != "$expected" ]]; then
   echo "PUB-1: $name $version: tar tree $actual, source tree $expected"
@@ -61,9 +68,9 @@ if [[ -n $newest && $(printf '%s\n%s\n' "$newest" "$version" | sort -V | tail -n
   exit 1
 fi
 
-digest=$("$root/release/oci-push" "$ref" application/vnd.kadet-hub.generator.v1 \
-  application/vnd.kadet-hub.generator.config.v1+json "$meta" \
-  application/vnd.oci.image.layer.v1.tar "$tar" "$name.tar")
+digest=$("$root/release/oci-push" "$ref" "application/vnd.kadet-hub.$type.v1" \
+  "application/vnd.kadet-hub.$type.config.v1+json" "$meta" \
+  application/vnd.oci.image.layer.v1.tar "$tar" "$base.tar")
 echo "$name $version: pushed $digest"
 python3 -I "$root/release/sbom.py" --tar "$tar" --meta "$meta" --ref "$ref" --digest "$digest" --out "$built/sbom.spdx.json"
 out "digest=$digest"
