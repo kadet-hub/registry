@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Consumer flow (CON-1, CON-1b, CON-2): inventory in the sandbox, check and
-# fetch the dependencies outside it, compile in the sandbox, judge the output.
+# Consumer flow (CON-1, CON-1b, CON-2, CON-4, CON-5): recipes from the fetch
+# inventory, inventory in the sandbox, check and fetch the dependencies
+# outside it, compile in the sandbox, judge the output.
 #
 # Usage: run <project> <result dir>
 # Needs: OWNER (registry owner), GH_TOKEN, gVisor with the runsc-trace
@@ -41,76 +42,97 @@ backend=$(yq -r '.inventory_backend // ""' -- "$policy")
 [[ $backend =~ ^(|reclass|reclass-rs|omegaconf)$ ]] || { echo "policy: inventory_backend $backend is not allowed"; exit 1; }
 backend_args=()
 [[ -z $backend ]] || backend_args=(--inventory-backend "$backend")
+fetch_inventory=$(yq -r '.fetch_inventory // ""' -- "$policy")
 
 # The project without .git and .kapitan; Kapitan runs with fixed flags.
 mkdir -- "$work/project"
 cp -RP -- "$src/." "$work/project/"
 rm -rf -- "$work/project/.git" "$work/project/.kapitan"
 cp -- "$policy" "$work/policy.yaml"
+chmod 0777 -- "$work"
+
+# Dependencies of /work/<inventory> against the policy, and against the
+# attested index when the marketplace is involved (CON-2, CON-5); the plan
+# goes to /work/<plan>.
+check() {
+  docker run --rm --network none --read-only --user 10001:10001 --cap-drop ALL \
+    -v "$root:/registry:ro" -v "$work:/work" -e PYTHONDONTWRITEBYTECODE=1 "$SANDBOX_IMAGE" \
+    python -I /registry/consumer/plan.py --policy /work/policy.yaml --owner "$OWNER" "$@"
+}
+plan() {
+  local args=(--inventory "/work/$1" --out "/work/$2" "${@:3}")
+  check "${args[@]}"
+  jq -e '[.deps[] | select(.marketplace or .recipe)] | length > 0' "$work/$2" >/dev/null || return 0
+  if [[ ! -f $work/index.json ]]; then
+    index=$(oras resolve -- "$registry/index:latest")
+    attested "$registry/index@$index"
+    oras pull -o "$work/index" -- "$registry/index@$index" >/dev/null
+    cp -- "$work/index/index.json" "$work/index.json"
+  fi
+  check "${args[@]}" --index /work/index.json
+}
+
+# The dependencies of a plan, fetched outside the sandbox into the project copy.
+fetch() {
+  while IFS= read -r dep; do
+    get() { jq -r --arg k "$1" '.[$k] // ""' <<<"$dep"; }
+    kind=$(get type) source=$(get source) out=$work/project/$(get output_path) tmp=$(mktemp -d -p "$work")
+    rm -rf -- "$out"
+    mkdir -p -- "$(dirname -- "$out")"
+    case $kind in
+      oci)
+        ref=$(get host)/$(get repo)@$(get digest)  # the tag is checked by plan.py, not fetched
+        [[ -z $(get marketplace)$(get recipe) ]] || attested "$ref"
+        oras pull -o "$tmp" -- "$ref" >/dev/null
+        python3 -I "$root/consumer/unpack.py" "$tmp" "$out"
+        ;;
+      helm)
+        helm pull "$(get chart_name)" --repo "$source" --version "$(get version)" -d "$tmp" >/dev/null
+        chart=$(find "$tmp" -maxdepth 1 -name '*.tgz' -print -quit)
+        want=$(get sha256)
+        if [[ -n $want && $(sha256sum -- "$chart" | cut -d' ' -f1) != "$want" ]]; then
+          echo "CON-2: chart $(get chart_name) $(get version) differs from the index"
+          exit 1
+        fi
+        mkdir -- "$tmp/x"
+        tar -xzf "$chart" -C "$tmp/x" --no-same-owner --no-same-permissions
+        mv -- "$tmp/x/$(get chart_name)" "$out"
+        ;;
+      git)
+        gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$tmp/repo.git")
+        "${gitc[@]}" init -q --bare
+        "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$source" "$(get ref)"
+        python3 -I "$root/gate/fetch_tree.py" --git-dir "$tmp/repo.git" --rev "$(get ref)" --path "$(get subdir | sed 's/^$/./')" --out "$out"
+        ;;
+      https)
+        curl -fsSL --proto =https --max-filesize 104857600 -o "$tmp/download" -- "$source"
+        if [[ $(get unpack) == true ]]; then
+          python3 -I "$root/consumer/unpack.py" "$tmp" "$out"
+        else
+          mv -- "$tmp/download" "$out"
+        fi
+        ;;
+    esac
+    rm -rf -- "$tmp"
+  done < <(jq -c '.deps[]' "$work/$1")
+}
+
+# CON-4: the recipes of the fetch inventory, checked, verified and unpacked
+# into the project before Kapitan loads its inventory.
+if [[ -n $fetch_inventory ]]; then
+  "$root/sandbox/run" --stdout "$work/recipes.yml" "$work/project" inventory --inventory-path "$fetch_inventory" "${backend_args[@]}"
+  plan recipes.yml recipes.json --fetch
+  fetch recipes.json
+fi
 
 # 1. Inventory in the sandbox, with the trace and decoys.
 "$root/sandbox/run" --stdout "$work/inventory.yml" "$work/project" inventory "${backend_args[@]}"
 
-# 2. Dependencies against the policy, and against the index when the
-# marketplace is involved (CON-2).
-plan() {
-  docker run --rm --network none --read-only --user 10001:10001 --cap-drop ALL \
-    -v "$root:/registry:ro" -v "$work:/work" -e PYTHONDONTWRITEBYTECODE=1 "$SANDBOX_IMAGE" \
-    python -I /registry/consumer/plan.py --inventory /work/inventory.yml --policy /work/policy.yaml \
-    --owner "$OWNER" --out /work/plan.json "$@"
-}
-chmod 0777 -- "$work"
-plan
-if jq -e '[.deps[] | select(.marketplace)] | length > 0' "$work/plan.json" >/dev/null; then
-  index=$(oras resolve -- "$registry/index:latest")
-  attested "$registry/index@$index"
-  oras pull -o "$work/index" -- "$registry/index@$index" >/dev/null
-  cp -- "$work/index/index.json" "$work/index.json"
-  plan --index /work/index.json
-fi
+# 2. Dependencies against the policy and the index.
+plan inventory.yml plan.json
 
 # 3. Fetch outside the sandbox into the project copy.
-while IFS= read -r dep; do
-  get() { jq -r --arg k "$1" '.[$k] // ""' <<<"$dep"; }
-  kind=$(get type) source=$(get source) out=$work/project/$(get output_path) tmp=$(mktemp -d -p "$work")
-  rm -rf -- "$out"
-  mkdir -p -- "$(dirname -- "$out")"
-  case $kind in
-    oci)
-      ref=$(get host)/$(get repo)@$(get digest)  # the tag is checked by plan.py, not fetched
-      [[ -z $(get marketplace) ]] || attested "$ref"
-      oras pull -o "$tmp" -- "$ref" >/dev/null
-      python3 -I "$root/consumer/unpack.py" "$tmp" "$out"
-      ;;
-    helm)
-      helm pull "$(get chart_name)" --repo "$source" --version "$(get version)" -d "$tmp" >/dev/null
-      chart=$(find "$tmp" -maxdepth 1 -name '*.tgz' -print -quit)
-      want=$(get sha256)
-      if [[ -n $want && $(sha256sum -- "$chart" | cut -d' ' -f1) != "$want" ]]; then
-        echo "CON-2: chart $(get chart_name) $(get version) differs from the index"
-        exit 1
-      fi
-      mkdir -- "$tmp/x"
-      tar -xzf "$chart" -C "$tmp/x" --no-same-owner --no-same-permissions
-      mv -- "$tmp/x/$(get chart_name)" "$out"
-      ;;
-    git)
-      gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$tmp/repo.git")
-      "${gitc[@]}" init -q --bare
-      "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$source" "$(get ref)"
-      python3 -I "$root/gate/fetch_tree.py" --git-dir "$tmp/repo.git" --rev "$(get ref)" --path "$(get subdir | sed 's/^$/./')" --out "$out"
-      ;;
-    https)
-      curl -fsSL --proto =https --max-filesize 104857600 -o "$tmp/download" -- "$source"
-      if [[ $(get unpack) == true ]]; then
-        python3 -I "$root/consumer/unpack.py" "$tmp" "$out"
-      else
-        mv -- "$tmp/download" "$out"
-      fi
-      ;;
-  esac
-  rm -rf -- "$tmp"
-done < <(jq -c '.deps[]' "$work/plan.json")
+fetch plan.json
 
 # 4. Compile in the sandbox; the trace allows the consumer's and the
 # fetched generators' binaries.

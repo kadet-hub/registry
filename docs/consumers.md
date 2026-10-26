@@ -137,6 +137,135 @@ credentials are not detected, and `/out` is not `noexec`. Network
 isolation, the read-only root, decoy values in the output and the output
 rules still apply.
 
+## Recipes
+
+A recipe is a directory of Kapitan classes, published as
+`ghcr.io/kadet-hub/recipes/<name>`, whose classes pin the generators they
+use. Kapitan 0.36.3 loads the inventory before it fetches dependencies, so
+a recipe cannot be fetched by the inventory that includes it. A missing
+recipe stops `kapitan inventory` with `Class recipes.<name> not found`, and
+a changed one compiles in its old version (kapicorp/kapitan#1638). Pin
+recipes in a separate fetch inventory:
+
+```yaml
+# fetch/targets/recipes.yml
+parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/recipes/<name>:<version>@sha256:<digest>
+        output_path: inventory/classes/recipes/<name>
+```
+
+Take version and digest from the recipe's catalog page or from the index
+(see Verifying a recipe by hand). A fetch target sets `dependencies` and
+nothing else, and each dependency is a recipe at
+`inventory/classes/recipes/<name>`. The workflow fails on anything else,
+`kapitan.vars.target` included. The reclass backends also need a
+`classes/` directory next to `targets/`, which may hold only a `.gitkeep`.
+
+Your targets include the recipe as `recipes.<name>`. The recipe's README
+lists its options.
+
+```yaml
+# inventory/targets/cert-manager.yml
+classes:
+  - recipes.cert-manager
+parameters:
+  namespace: cert-manager
+  kapitan:
+    vars:
+      target: cert-manager
+```
+
+A recipe whose index record lists `includes` needs each included recipe in
+the fetch inventory at exactly the digest listed there. All recipes share
+`inventory/classes/recipes/`, so two recipes that include the same recipe
+at different digests cannot be used in one project.
+
+### Recipes in the workflow
+
+Name the fetch inventory in `.kapitan-sandbox.yaml`, as a path relative to
+the repository root without `..`:
+
+```yaml
+fetch_inventory: fetch
+```
+
+Before its first step, the workflow then runs
+`kapitan inventory --inventory-path fetch` in the sandbox and fails on any
+entry of the fetch inventory that is not a recipe pin. It verifies each
+recipe as it verifies a generator, against the index's `recipes` section:
+attestation, listed under its name with the version its tag names, not
+yanked. Included recipes must be pinned at the digests the record lists.
+It then unpacks each recipe into `inventory/classes/recipes/<name>`,
+replacing what your checkout holds there, and continues with step 1. The
+generators the recipes pin are dependencies of your inventory from then on
+and go through steps 2 and 3 like your own. A recipe source in the main
+inventory fails.
+
+`hosts.oci` must allow `ghcr.io`. A recipe adds no binaries to the trace
+policy. Its output capabilities are in the index record and on its catalog
+page. cert-manager renders admission webhooks, so the target above needs:
+
+```yaml
+output_capabilities:
+  "compiled/cert-manager/*": [admission-webhook]
+```
+
+The Renovate preset reads `**/inventory/**` only and does not update the
+fetch inventory yet.
+
+### Compiling a recipe locally
+
+```sh
+kapitan compile --inventory-path fetch --force-fetch --output-path .
+kapitan compile
+```
+
+The first command fetches the recipes into `inventory/classes/recipes/`
+and then exits with status 1 and `No such file or directory:
+.../compiled`, because the fetch target compiles nothing. Kapitan's `oci`
+fetch needs the `oras` package, so add `--with oras` to the install
+command above for it. `--force-fetch` writes a new version over the old one
+and keeps the files the new version removed. Delete
+`inventory/classes/recipes/<name>` before you change a pin.
+
+The second command compiles your inventory without fetching. Pull the
+generators the recipes pin by digest into `lib/<generator>` first, as shown
+under Kapitan's `--fetch` is not enough.
+
+The first command verifies nothing, and the second runs the generators
+with your credentials. Verify each recipe and each generator by hand
+before the second command.
+
+### Verifying a recipe by hand
+
+With the attested index from Verifying by hand in `index/index.json`:
+
+```sh
+gh attestation verify "oci://ghcr.io/kadet-hub/recipes/<name>@sha256:<digest>" --owner kadet-hub \
+  --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+jq --arg d sha256:<digest> '.recipes["<name>"] | to_entries[] | select(.value.digest == $d)
+  | {version: .key, yanked: .value.yanked, includes: .value.includes, generators: .value.generators}' index/index.json
+```
+
+The output must name the version of your tag and `yanked: null`. No output
+means the index does not list the digest under that name. Pin each entry
+of `includes` in the fetch inventory at its digest and verify it the same
+way. `generators` lists what the recipe and its included recipes pin.
+Verify each generator as Verifying by hand describes.
+
+To use only what you verified, pull the recipe by digest in place of the
+first command:
+
+```sh
+rm -rf inventory/classes/recipes/<name>
+oras pull -o "$tmp" "ghcr.io/kadet-hub/recipes/<name>@sha256:<digest>"
+mkdir -p inventory/classes/recipes/<name>
+tar -xf "$tmp/<name>.tar" -C inventory/classes/recipes/<name> --no-same-owner
+```
+
 ## Updates with Renovate
 
 The preset [kadet-hub/renovate-config](https://github.com/kadet-hub/renovate-config)

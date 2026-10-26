@@ -1,0 +1,8 @@
+parameters:
+  kapitan:
+    vars:
+      target: cert-manager
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/recipes/cert-manager:1.0.0@sha256:fba77d82cff08db6af5acf44b4ae73436d43f3eb8086d20c966fded27fb8024a
+        output_path: inventory/classes/recipes/cert-manager
