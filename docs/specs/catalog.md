@@ -1687,8 +1687,32 @@ Related: CAT-15, CAT-30, CON-2.
   A generator yank is shown because the recipe still lists as not yanked
   (REC-13) while the consumer workflow fails on it.
 
-  - Test: `catalog/test_catalog.py` (not written)
-  - Since: not implemented
+  `catalog/build` fetches the layer of that version from
+  `ghcr.io/<owner>/recipes/<name>` by digest, as it does for a generator
+  (CAT-7). It unpacks the layer into `assets/classes/recipes/<name>/` in
+  place of the files from `main`, with the `data` filter of Python's
+  `tarfile`, which refuses absolute paths, `..` and links that leave the
+  directory. A layer that cannot be fetched or unpacked stops the build,
+  as a missing file does (CAT-37a). With `CATALOG_OFFLINE=1` the build
+  reads it from `$CATALOG_ARTIFACTS/recipes/<name>.tar`. Relative links in
+  the README sections point into kadet-hub/recipes at `source.sha`.
+
+  The fetch inventory holds one `oci` dependency for the recipe and one for
+  each recipe its record lists under `includes`. It sets no `vars`, because
+  CON-4 accepts nothing but `dependencies` there. The verification commands
+  run `gh attestation verify` on each of these artifacts, and the page
+  links "Verifying by hand" in `docs/consumers.md` for the index check of
+  CON-5. The policy line names `compiled/<target>/*`, because the record
+  leaves out the output paths (REC-13).
+
+  The version list gives each version's date and digest, and the reason
+  when the version or a generator version it pins is yanked. Only the
+  latest version has a fetch inventory, the one under "Fetching it". A recipe whose versions are all yanked has no version to
+  read the files from, so its page stays built from `main` and adds the
+  version list.
+
+  - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`)
+  - Since: this change
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 
@@ -1699,8 +1723,12 @@ Related: CAT-15, CAT-30, CON-2.
   has no recipes left, so two recipes of the same name from both
   repositories can no longer occur.
 
-  - Test: `catalog/test_catalog.py` (not written)
-  - Since: not implemented; valkey moved: #345; mysql moved: #349;
+  The `/recipes/` entry of a recipe the index lists names its latest
+  version that is not yanked after the proof level, and the recipe page
+  names it among the facts at the top.
+
+  - Test: `catalog/test_catalog.py` (`ListedRecipe.test_index_shows_the_latest_version`)
+  - Since: this change; valkey moved: #345; mysql moved: #349;
     mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364;
     rabbitmq moved: #367; postgresql moved: #366; keycloak moved: #368;
     name clash check dropped: #372
@@ -1714,8 +1742,14 @@ Related: CAT-15, CAT-30, CON-2.
   tag filter, `/kinds/` or `/compatibility/`. Those pages describe
   generators, and a recipe has no tags.
 
-  - Test: `catalog/test_catalog.py` (not written)
-  - Since: not implemented
+  Each pin in `generators` also carries `yanked`, the reason the index
+  gives for that generator version, or `null`. A tool can then skip a
+  recipe version that the consumer workflow rejects (CAT-38), as the jq
+  example in `docs/consumers.md` does. A test runs that example against
+  the fixture build, as for CAT-34d.
+
+  - Test: `catalog/test_catalog.py` (`ListedRecipe.test_catalog_json`, `ListedRecipe.test_not_counted_with_generators`, `ListedRecipe.test_consumer_docs_lookup`)
+  - Since: this change
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
