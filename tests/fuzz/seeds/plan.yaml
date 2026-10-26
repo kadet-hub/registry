@@ -19,3 +19,11 @@ minimal:
         - type: https
           source: https://example.org/file.yaml
           output_path: lib/file.yaml
+recipes:
+  parameters:
+    kapitan:
+      dependencies:
+        - type: oci
+          source: ghcr.io/kadet-hub/recipes/app:1.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          output_path: inventory/classes/recipes/app
+          tls_verify: true

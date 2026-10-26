@@ -20,7 +20,9 @@ POLICY = {"index_serial": 5, "hosts": {"oci": ["ghcr.io"], "helm": ["charts.exam
 INDEX = {"serial": 5, "generators": {"gen": {
     "1.0.0": {"digest": DIGEST, "binaries": ["helm"],
               "charts": [{"repo": "https://charts.example.org/", "name": "app", "version": "1.0.0", "sha256": "a" * 64}]},
-    "0.9.0": {"digest": "sha256:" + "1" * 64, "yanked": "broken"}}}}
+    "0.9.0": {"digest": "sha256:" + "1" * 64, "yanked": "broken"}}},
+    "recipes": {"app": {"1.0.0": {"digest": DIGEST,
+                                  "includes": [{"name": "db", "version": "1.0.0", "digest": DIGEST}]}}}}
 
 
 def TestOneInput(data):
@@ -28,8 +30,9 @@ def TestOneInput(data):
         inventory = yaml.safe_load(data)
     except yaml.YAMLError:
         return
-    deps, _ = plan.dependencies(inventory, POLICY, "kadet-hub")
-    plan.check_index(INDEX, POLICY, deps)
+    for fetch in (False, True):  # the main and the fetch inventory (CON-4)
+        deps, _ = plan.dependencies(inventory, POLICY, "kadet-hub", fetch)
+        plan.check_index(INDEX, POLICY, deps)
 
 
 if __name__ == "__main__":

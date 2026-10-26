@@ -1,0 +1,3 @@
+index_serial: 0
+hosts:
+  oci: [ghcr.io]
