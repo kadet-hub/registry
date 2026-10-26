@@ -322,6 +322,8 @@ class Quality(unittest.TestCase):
         for text in ('__version__ = "0.9.0"\n', '__version__ = "1.0.0"\n__version__ = "1.0.1"\n', '__version__ = VERSION\n',
                      "__version__ = '1.0.0\n", "x = " + "+".join(["1"] * 100000) + "\n"):
             self.assertTrue(has(self.c.manifest(manifest(), {"__init__.py": text}), "QA-1a"), text[:40])
+        found = self.c.manifest(manifest(), {"__init__.py": "__version__ = 1\n" * 3})
+        self.assertEqual(sum("QA-1a" in f for f in found), 1)
 
     def test_license_from_the_repository_root(self):
         self.assertTrue(has(self.c.manifest(manifest(), {"LICENSE": None}), "QA-1"))
