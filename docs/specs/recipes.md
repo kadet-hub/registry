@@ -692,9 +692,9 @@ parameters:
   the gate fails what would stop the release: `REC-13: README.md has no
   paragraph after its heading for the description (RCP-32)` and `QA-5a:
   README.md: the first paragraph holds a control or bidirectional
-  formatting character`. RCP-32's limit of 300 characters belongs to
-  `check lint`, which does not check it yet. At `a4c9945` the first
-  paragraphs of keycloak and nextcloud exceed it.
+  formatting character` and `REC-13: README.md: the description has <n>
+  characters, RCP-32 allows 300`. `check lint` checks RCP-32 as well, so
+  the limit is enforced before the recipe is tagged.
 
   The index carries `recipes` also when it lists no recipe, as `{}`. An
   index without the key counts as equal to one with an empty `recipes`,
