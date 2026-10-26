@@ -469,7 +469,7 @@ the rules it is judged by.
   <rule>` and `tag drift: recipe <name> <tag>`.
 
   - Test: `scan/test_rescan.py` (`Rescan.test_recipe_entry`)
-  - Since: this change
+  - Since: #391
 
 - REC-15: For every file a recipe's `copy` entries vendor, the shipped tree
   MUST hold the upstream license as `vendor/<file>.LICENSE`, and the
@@ -605,7 +605,7 @@ parameters:
   and a maintainer makes it public in the organisation's package settings.
 
   - Test: `release/test_release.py` (`Recipe.test_sign`); `release/test_build.py` (`Build.test_recipe_artifact`, `Build.test_recipe_names`, `Build.test_yanked_recipe_is_not_built`)
-  - Since: this change
+  - Since: #391
 
 - REC-12: For every recipe version it publishes, the release workflow MUST
   rerun REC-4 to REC-9 in the build job, record the run as `scan` (PUB-7),
@@ -650,7 +650,7 @@ parameters:
   error}` with `base did not compile`.
 
   - Test: `release/test_release.py` (`BuildAll.test_recipe_record`, `BuildAll.test_recipe_checks_and_renders_fail_the_build`, `ScanRecord.test_recipe_checks`, `OutputDiff.test_recipe_base`); manual: `release/build-all`, `release/sign` and `release/publish-index` on cert-manager at kadet-hub/recipes `a4c9945` against a local registry, with the attestations of its artifacts stubbed, then a bump to 1.1.0 on the same commit and a second run of each (2026-10-26)
-  - Since: this change
+  - Since: #391
 
 - REC-13: The index MUST list recipes under a top-level `recipes` key,
   `{<name>: {<version>: <record>}}`, with the same `serial`. A record MUST
@@ -706,7 +706,7 @@ parameters:
   each such recipe fails closed, and the catalog marks it (CAT-38).
 
   - Test: `release/test_release.py` (`Index.test_recipes`, `Index.test_release_notes`, `BuildAll.test_recipe_record`); `gate/test_check_recipe.py` (`Recipe.test_passes`, `Recipe.test_description`, `Recipe.test_license`)
-  - Since: this change
+  - Since: #391
 
 Consumer workflow commits from before CON-4 reject a
 `ghcr.io/kadet-hub/recipes/<name>` source with `is not a marketplace
@@ -744,5 +744,5 @@ REG-2. They fail closed.
 | Config media type | `application/vnd.kadet-hub.recipe.config.v1+json` |
 | Consumer path | `inventory/classes/recipes/<name>/` |
 | Inventory backend | omegaconf |
-| `check` | kadet-hub/recipes `check-v0.11.0`, commit `82032aded0253f273c9ac227044be40b2dc687f8`, in `gate/.check/` |
+| `check` | kadet-hub/recipes `check-v0.12.0`, commit `50d2b645ab68bdf701d1f06c70e8584964298af2`, in `gate/.check/` |
 | cloud-provider-kind | v0.12.0 in `.github/actions/setup-kind/` (REC-17) |

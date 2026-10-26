@@ -808,7 +808,7 @@ silently.
   section.
 
   - Test: `catalog/test_catalog.py`
-  - Since: this change
+  - Since: #335
 
 Related: CAT-15, CAT-30, CON-2.
 
