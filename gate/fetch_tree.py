@@ -1,6 +1,6 @@
 """Write the git tree <rev>:<path> to a directory without git checkout (PUB-1, SEC-5, REC-4).
 
-Usage: fetch_tree.py --git-dir D --rev SHA (--path P | --recipe NAME) --out DIR
+Usage: fetch_tree.py --git-dir D --rev SHA (--path P | --recipe NAME | --targets NAME...) --out DIR
 
 Reads objects with `git ls-tree` and `git cat-file`, so no checkout,
 attributes, filters, hooks or LFS run. Symlinks and submodules are reported
@@ -8,7 +8,8 @@ instead of written; executables keep their mode so SEC-5 sees them.
 --recipe writes every recipe directory of the commit to DIR/<recipe>
 without tests/, and of NAME also tests/target.yml, tests/values.yaml and,
 when the commit has it, an empty tests/smoke; no other file below tests/
-is read.
+is read. --targets writes only NAME/tests/target.yml of each recipe, for
+the included recipes REC-8 compiles.
 Exits 1 on a finding or when the tree exceeds its limits.
 """
 
@@ -56,6 +57,13 @@ def recipe_entries(git_dir, rev, name):
     return out
 
 
+def target_entries(git_dir, rev, names):
+    """REC-4, REC-8: tests/target.yml of each recipe in names, from a listing of its tests/ only."""
+    return [(mode, kind, obj, n + b"/tests/" + p) for n in names if RECIPE.match(n)
+            for mode, kind, obj, p in ls_tree(git_dir, f"{rev}:{n.decode()}/tests", recursive=False)
+            if p == b"target.yml" and kind == "blob"]
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--git-dir", required=True)
@@ -63,14 +71,21 @@ def main():
     where = p.add_mutually_exclusive_group(required=True)
     where.add_argument("--path")
     where.add_argument("--recipe")
+    where.add_argument("--targets", nargs="+")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     tree = a.rev if a.path in (".", "") else f"{a.rev}:{a.path}"
     try:
-        entries = recipe_entries(a.git_dir, a.rev, a.recipe.encode()) if a.recipe else ls_tree(a.git_dir, tree)
+        if a.targets:
+            entries = target_entries(a.git_dir, a.rev, [t.encode() for t in a.targets])
+        else:
+            entries = recipe_entries(a.git_dir, a.rev, a.recipe.encode()) if a.recipe else ls_tree(a.git_dir, tree)
     except subprocess.CalledProcessError:
         entries = []
-    if not any(a.recipe is None or e[3].startswith(a.recipe.encode() + b"/") for e in entries):
+    if a.targets and len(entries) != len(a.targets):
+        print(f"fetch: not every recipe of {' '.join(a.targets)[:200]} has tests/target.yml at {a.rev}")
+        return 1
+    if not a.targets and not any(a.recipe is None or e[3].startswith(a.recipe.encode() + b"/") for e in entries):
         print(f"fetch: {a.recipe or a.path} is not a directory at {a.rev}")
         return 1
     if len(entries) > MAX_FILES:

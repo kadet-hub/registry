@@ -300,7 +300,7 @@ cover none of the changed files.
   cert-manager, and fails with the recipe pinned in the main inventory, with
   a digest the index does not list, and on its webhooks without
   `admission-webhook` in `output_capabilities`. Check: `gate-selftest`
-  (written for REC-4 to REC-6 and REC-15), `consumer-selftest` (not
+  (written for REC-4 to REC-8 and REC-15), `consumer-selftest` (not
   written).
 
 - AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4): a sample parent

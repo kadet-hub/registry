@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Run Kapitan over a project in the gVisor sandbox with decoy credentials and
-# judge the trace, the output and stdout (SEC-9, SEC-10, SEC-11).
+# Run Kapitan, or helm for a recipe's chart (REC-7), over a project in the gVisor
+# sandbox with decoy credentials and judge the trace, the output and stdout
+# (SEC-9, SEC-10, SEC-11).
 #
-# Usage: run [--allow NAME]... [--env NAME=VALUE]... [--program kapitan|krab] [--result DIR] [--stdout FILE]
+# Usage: run [--allow NAME]... [--env NAME=VALUE]... [--program kapitan|krab|helm] [--result DIR] [--stdout FILE]
 #            <project> <args>...
 # The project is mounted read-only at /project, a 50 MiB noexec tmpfs at
 # /out. --result receives /out and --stdout the command's stdout, both after
@@ -28,7 +29,7 @@ while (($#)); do
     *) break ;;
   esac
 done
-[[ $program =~ ^(kapitan|krab)$ ]] || { echo "run: unknown program $program"; exit 1; }
+[[ $program =~ ^(kapitan|krab|helm)$ ]] || { echo "run: unknown program $program"; exit 1; }
 project=$1
 shift
 

@@ -45,7 +45,8 @@ class FetchTree(unittest.TestCase):
             repo = os.path.join(d, "repo")
             files = {"demo/init.yml": "classes: []\n", "demo/vendor/crds.yaml": "kind: CRD\n", "demo/tests/target.yml": "t\n",
                      "demo/tests/values.yaml": "v\n", "demo/tests/smoke": "#!/bin/sh\n", "demo/tests/kind.yaml": "k\n",
-                     "other/init.yml": "classes: []\n", "other/tests/target.yml": "t\n", "docs/README.md": "d\n", "check/lint.py": "x = 1\n"}
+                     "other/init.yml": "classes: []\n", "other/tests/target.yml": "t\n", "docs/README.md": "d\n", "check/lint.py": "x = 1\n",
+                     "docs/sub/tests/target.yml": "t\n"}
             for rel, text in files.items():
                 os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
                 with open(os.path.join(repo, rel), "w") as f:
@@ -66,6 +67,15 @@ class FetchTree(unittest.TestCase):
             self.assertFalse(os.stat(os.path.join(out, "demo/tests/smoke")).st_mode & 0o111)
             r = subprocess.run([*fetch, "--recipe", "missing", "--out", os.path.join(d, "o")], capture_output=True, text=True, check=False)
             self.assertEqual(r.returncode, 1)
+            # REC-4, REC-8: --targets reads tests/target.yml of the named recipes and nothing else.
+            targets = os.path.join(d, "targets")
+            subprocess.run([*fetch, "--targets", "other", "demo", "--out", targets], check=True)
+            written = sorted(os.path.relpath(os.path.join(r, f), targets) for r, _, fs in os.walk(targets) for f in fs)
+            self.assertEqual(written, ["demo/tests/target.yml", "other/tests/target.yml"])
+            for names in (["docs"], ["other", "missing"], ["../demo"], ["demo/tests"], ["docs/sub"]):
+                r = subprocess.run([*fetch, "--targets", *names, "--out", os.path.join(d, "t")], capture_output=True, text=True, check=False)
+                self.assertEqual(r.returncode, 1, names)
+            self.assertFalse(os.path.exists(os.path.join(d, "t")))
 
     def test_missing_path_fails(self):
         with tempfile.TemporaryDirectory() as d:

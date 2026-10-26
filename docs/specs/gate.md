@@ -212,8 +212,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
   `apiserver_check.crd_files` is not fuzzed: importing it needs
   cryptography, which `.clusterfuzzlite/requirements.txt` does not
   install. `lint.lint_files` of kadet-hub/recipes' `check`, which REC-5
-  runs on the recipe files, is not fuzzed either: the fuzz build does not
-  fetch it, and an exception it raises fails the gate.
+  runs on the recipe files, and the functions of `check` that REC-7 and
+  REC-8 call are not fuzzed either: the fuzz build does not fetch them,
+  and an exception they raise fails the gate.
 
   The `fuzz` workflow runs code-change mode for 300 seconds on pull
   requests that touch a target's inputs (CI-1) and batch mode for 1800
