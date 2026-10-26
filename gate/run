@@ -68,8 +68,17 @@ if [[ $path == recipes/* ]]; then
   "${gitc[@]}" --git-dir="$work/src.git" cat-file blob "$sha:LICENSE" >"$work/recipes/LICENSE" 2>/dev/null \
     || rm -f -- "$work/recipes/LICENSE"
   echo "## Static checks"
-  GH_TOKEN=$token "$root/gate/recipe-static" "$work/recipes" "$name" || status=1
-  echo "REC-7: the recipe checks from REC-7 on are not implemented yet, so no recipe entry passes the gate"
+  mkdir -- "$work/static"
+  GH_TOKEN=$token "$root/gate/recipe-static" "$work/recipes" "$name" "$work/static" || status=1
+  echo "## Chart and sandbox compile"
+  # REC-4, REC-8: each included recipe compiles from its own tests/target.yml.
+  included=()
+  if [[ -f $work/static/recipe.json ]]; then mapfile -t included < <(jq -r '.included[]' -- "$work/static/recipe.json"); fi
+  if ((${#included[@]})); then
+    python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --targets "${included[@]}" --out "$work/recipes" || status=1
+  fi
+  "$root/gate/recipe-compile" "$work/recipes" "$name" "$work/static" || status=1
+  echo "REC-9: the recipe checks from REC-9 on are not implemented yet, so no recipe entry passes the gate"
   exit 1
 fi
 gen=$work/generator

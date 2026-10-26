@@ -7,7 +7,8 @@ import check_recipe
 
 POLICY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "policy")
 LISTED, YANKED = "sha256:" + "a" * 64, "sha256:" + "b" * 64
-INDEX = {"serial": 1, "generators": {"kubernetes": {"1.9.0": {"digest": LISTED}, "1.8.0": {"digest": YANKED, "yanked": "broken"}}}}
+INDEX = {"serial": 1, "generators": {"kubernetes": {"1.9.0": {"digest": LISTED}, "1.8.0": {"digest": YANKED, "yanked": "broken"}},
+                                     "cloudnative-pg": {"1.1.0": {"digest": LISTED, "binaries": ["helm template"]}}}}
 INIT = f"""classes:
   - .demo
   - recipes.demo.crds
@@ -42,10 +43,12 @@ FILES = {
 APACHE = "Apache License\n                           Version 2.0, January 2004\n"
 
 
-def check(changes=None, license_text=APACHE):
+def check(changes=None, license_text=APACHE, other=None):
+    """check_recipe.check on demo with changes, and the included recipe other as {path: text}."""
     d = tempfile.mkdtemp()
     try:
-        for rel, text in {**FILES, **(changes or {})}.items():
+        others = [(f"../other/{rel}", text) for rel, text in (other or {}).items()]
+        for rel, text in [*{**FILES, **(changes or {})}.items(), *others]:
             if text is not None:
                 path = os.path.join(d, "demo", rel)
                 os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -71,7 +74,8 @@ class Recipe(unittest.TestCase):
         self.assertTrue(any(f.startswith(prefix) for f in findings), (changes, findings))
 
     def test_passes(self):  # REC-4, REC-5, REC-6, REC-15
-        self.assertEqual(check(), ([], [f"ghcr.io/kadet-hub/kubernetes@{LISTED}"]))
+        self.assertEqual(check(), ([], {"generators": [f"ghcr.io/kadet-hub/kubernetes@{LISTED}"], "binaries": [],
+                                        "included": ["other"]}))
         # Nothing below tests/ is judged.
         self.assertEqual(check({"tests/run.py": "", "tests/x.yml": "classes: [kapitan]\n"})[0], [])
 
@@ -102,6 +106,26 @@ class Recipe(unittest.TestCase):
                          ("type: oci", "type: helm"), (source, f"ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:{'c' * 64}"),
                          (source, f"ghcr.io/kadet-hub/kubernetes:1.8.0@{LISTED}"), (source, f"ghcr.io/kadet-hub/kubernetes:1.8.0@{YANKED}")):
             self.assert_finding("REC-6", init(old, new))
+
+    def test_included(self):  # REC-6, REC-8
+        pin = f"""parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/cloudnative-pg:1.1.0@{LISTED}
+        output_path: lib/cloudnative-pg
+"""
+        findings, result = check(other={"init.yml": pin, "tests/target.yml": "x: [", "sub/x.yml": "["})
+        self.assertEqual((findings, result["generators"], result["binaries"]),
+                         ([], [f"ghcr.io/kadet-hub/cloudnative-pg@{LISTED}", f"ghcr.io/kadet-hub/kubernetes@{LISTED}"],
+                          ["helm template"]))
+        # Only the recipes demo includes pin generators of its compile.
+        alone = init("  - recipes.other\n  - recipes.other.route\n", "")
+        self.assertEqual(check(alone, other={"init.yml": pin})[1]["generators"], [f"ghcr.io/kadet-hub/kubernetes@{LISTED}"])
+        self.assert_finding("REC-6: CON-2: ghcr.io/kadet-hub/cloudnative-pg:1.1.0@sha256:ccc",
+                            other={"init.yml": pin.replace(LISTED, "sha256:" + "c" * 64)})
+        self.assert_finding("REC-6: other/init.yml is not YAML", other={"init.yml": "["})
+        self.assert_finding("REC-6: other/init.yml: dependency", other={"init.yml": pin.replace("lib/cloudnative-pg", "lib/x")})
 
 
 if __name__ == "__main__":

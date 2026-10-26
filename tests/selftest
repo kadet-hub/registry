@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # gate-selftest: run the static checks and the sandbox compile over every
-# sample, and the recipe checks over every recipe sample in recipes/.
+# sample, and the recipe checks over every recipe sample in recipes/, the
+# chart and compile (REC-7, REC-8) once its static checks pass.
 # pass-* must pass; fail-* must fail; both must report the line in
 # their expect file, which fail-* need. Samples that cannot live in the
 # repository are generated here.
@@ -126,6 +127,13 @@ derive_recipe fail-recipe-yanked "REC-6: CON-2: calico-resources 1.0.0 is yanked
 yq -i '.parameters.kapitan.dependencies += [{"type": "oci", "output_path": "lib/calico-resources",
   "source": "ghcr.io/kadet-hub/calico-resources:1.0.0@sha256:b02a55f91b631f43c358974f7a872c0d05726c57bf65b68959585b22cf4c992f"}]' \
   "$work/recipes/fail-recipe-yanked/demo/init.yml"
+derive_recipe fail-recipe-chart-version "is version 6.9.2, the README names 6.9.1"
+sed -i 's/podinfo:6.9.2@/podinfo:6.9.1@/' "$work/recipes/fail-recipe-chart-version/demo/README.md"
+derive_recipe fail-recipe-manifest-digest "REC-7: cluster-operator.yml of rabbitmq/cluster-operator release v2.23.1 has sha256:"
+sed -i "s|^Source: .*|Source: \`https://github.com/rabbitmq/cluster-operator/releases/download/v2.23.1/cluster-operator.yml@$zeros\`|" \
+  "$work/recipes/fail-recipe-manifest-digest/demo/README.md"
+derive_recipe fail-recipe-unpinned-image "REC-8: Deployment/demo: image docker.io/library/busybox:1.37.0 is not pinned by digest (RCP-6)"
+yq -i '.parameters.components.demo.image = "docker.io/library/busybox:1.37.0"' "$work/recipes/fail-recipe-unpinned-image/demo/tests/target.yml"
 
 failed=0
 for dir in "$work"/*/ "$work"/recipes/*/; do
@@ -134,7 +142,12 @@ for dir in "$work"/*/ "$work"/recipes/*/; do
   report=$work/$name.txt
   got=pass
   if [[ $dir == "$work"/recipes/* ]]; then
-    "$root/gate/recipe-static" "$dir" demo >"$report" 2>&1 || got=fail
+    mkdir -- "$work/$name.static"
+    if "$root/gate/recipe-static" "$dir" demo "$work/$name.static" >"$report" 2>&1; then
+      "$root/gate/recipe-compile" "$dir" demo "$work/$name.static" >>"$report" 2>&1 || got=fail
+    else
+      got=fail
+    fi
   elif "$root/gate/fetch-charts" "$dir" "$work/$name.charts" >"$report" 2>&1; then
     "$root/scan/static-scan" "$dir" >>"$report" 2>&1 || got=fail
     if [[ -n $(ls -A -- "$work/$name.charts") ]]; then "$root/scan/static-scan" "$work/$name.charts" >>"$report" 2>&1 || got=fail; fi

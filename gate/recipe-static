@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # The recipe checks before the compile (REC-4 to REC-6, REC-15).
 #
-# Usage: recipe-static <recipes dir> <name>
+# Usage: recipe-static <recipes dir> <name> [<out dir>]
 # <recipes dir> is what `fetch_tree.py --recipe <name>` wrote, plus the
 # source repository's root LICENSE as <recipes dir>/LICENSE.
 # Needs: GH_TOKEN for gh attestation verify, oras, gh, Docker with the image
 # $SANDBOX_IMAGE, the pinned check of kadet-hub/recipes in $RECIPES_CHECK
 # (.github/actions/setup-gate) and the tools of scan/static-scan. Prints
-# findings; exits 1 on any.
+# findings; exits 1 on any. With <out dir>, writes each verified generator
+# to <out dir>/lib/<generator> and check_recipe.py's recipe.json there (REC-8).
 set -euo pipefail
 
 recipes=$(cd -- "$1" && pwd)
 name=$2
+out=${3:+$(cd -- "$3" && pwd)}
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
 check=$(cd -- "${RECIPES_CHECK:-$root/gate/.check}" && pwd)
@@ -44,7 +46,7 @@ oras pull -o "$work/index" -- "ghcr.io/kadet-hub/index@$index" >/dev/null
 license=()
 if [[ -f $recipes/LICENSE ]]; then license=(--license /recipes/LICENSE); fi
 sandbox /base/gate/check_recipe.py --tree "/recipes/$name" --index /work/index/index.json --policy /base/policy \
-  "${license[@]}" --out /work/generators.txt || status=1
+  "${license[@]}" --out /work/recipe.json || status=1
 
 # REC-4: SEC-1, SEC-5 and SEC-6 over the shipped tree and the files of tests/ that fetch_tree.py wrote.
 "$root/scan/static-scan" "$recipes/$name" || status=1
@@ -59,8 +61,16 @@ for e in errors:
     print(f"REC-5: {e}")
 sys.exit(1 if errors else 0)' "/recipes/$name" || status=1
 
-# REC-6: each pinned generator's own attestation.
+# REC-6: each pinned generator's own attestation; REC-8 compiles with the verified ones.
+if [[ -n $out ]]; then mkdir -p -- "$out/lib"; fi
 while IFS= read -r ref; do
-  attested "$ref" || status=1
-done <"$work/generators.txt"
+  attested "$ref" || { status=1; continue; }
+  [[ -n $out ]] || continue
+  gen=${ref#ghcr.io/kadet-hub/}
+  mkdir -- "$work/pull"
+  oras pull -o "$work/pull" -- "$ref" >/dev/null
+  python3 -I "$root/consumer/unpack.py" "$work/pull" "$out/lib/${gen%@*}"
+  rm -rf -- "$work/pull"
+done < <(jq -r '.generators[]' -- "$work/recipe.json")
+if [[ -n $out ]]; then cp -- "$work/recipe.json" "$out/recipe.json"; fi
 exit "$status"

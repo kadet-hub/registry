@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+# The recipe's chart and its sandbox compile (REC-7, REC-8).
+#
+# Usage: recipe-compile <recipes dir> <name> <static dir>
+# <recipes dir> is what gate/run fetched: the recipes of source.sha with the
+# tests files of <name> and the tests/target.yml of each recipe it includes.
+# <static dir> is what gate/recipe-static wrote: the verified generators in
+# lib/ and recipe.json. Needs: what sandbox/run needs, network for the chart
+# or manifest, and the pinned check of kadet-hub/recipes in $RECIPES_CHECK
+# (.github/actions/setup-gate). Prints findings; exits 1 on any.
+set -euo pipefail
+
+recipes=$(cd -- "$1" && pwd)
+name=$2
+static=$(cd -- "$3" && pwd)
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+check=$(cd -- "${RECIPES_CHECK:-$root/gate/.check}" && pwd)
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+mkdir -- "$work/fetch"
+status=0
+
+if [[ ! -f $static/recipe.json ]]; then
+  echo "REC-8: gate/recipe-static wrote no list of verified generators"
+  exit 1
+fi
+# The pinned check's Python in the sandbox image; $1 is the network.
+pinned() {
+  local network=$1
+  shift
+  docker run --rm --network "$network" --read-only --tmpfs /tmp --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$recipes,dst=/recipes,readonly" \
+    --mount "type=bind,src=$check,dst=/check,readonly" \
+    --mount "type=bind,src=$work,dst=/work" \
+    "$image" python -I -c "$@"
+}
+
+# REC-7: the chart pulled by digest, or the archive or release asset compared
+# with the Source line, by check's own functions, with network as for SEC-8.
+echo "### chart"
+pinned bridge 'import json, sys
+from pathlib import Path
+sys.path.insert(0, "/check")
+import check, lint, yaml
+recipe, work = Path(sys.argv[1]), Path("/work/fetch")
+def fail(finding):
+    print(f"REC-7: {finding}")
+    sys.exit(1)
+source = lint.readme_fields(recipe)[0]
+if not source:
+    fail("README.md has no Source line (RCP-23)")
+try:
+    namespace = yaml.safe_load((recipe / "tests/target.yml").read_text())["parameters"]["namespace"]
+except (OSError, yaml.YAMLError, LookupError, TypeError):
+    namespace = None
+if source[0] in ("chart", "http") and not isinstance(namespace, str):
+    fail("tests/target.yml sets no parameters.namespace (RCP-23)")
+fetch = {"chart": check.fetch_chart, "http": check.fetch_http_chart, "manifest": check.fetch_manifest}.get(source[0])
+try:
+    if fetch:
+        fetch(source[1], work)
+except Exception as e:  # check.Failed, and the errors of a download or archive
+    fail(str(e)[:2000])
+(work / "source.json").write_text(json.dumps({"kind": source[0], "namespace": namespace}))' "/recipes/$name" || exit 1
+kind=$(jq -r .kind -- "$work/fetch/source.json")
+namespace=$(jq -r .namespace -- "$work/fetch/source.json")
+rendered=()
+case $kind in
+  chart | http)
+    # helm template's whole output, CRDs and hooks included, as check reads it (RCP-34).
+    mkdir -- "$work/chart"
+    cp -- "$work"/fetch/chart/*.tgz "$work/chart/chart.tgz"
+    cp -- "$recipes/$name/tests/values.yaml" "$work/chart/values.yaml"
+    "$root/sandbox/run" --allow helm-template --program helm --stdout "$work/rendered.yaml" "$work/chart" \
+      template "$name" /project/chart.tgz "--namespace=$namespace" -f /project/values.yaml --include-crds || exit 1
+    rendered=(/work/rendered.yaml)
+    ;;
+  manifest)
+    cp -- "$work/fetch/manifest.yaml" "$work/rendered.yaml"
+    rendered=(/work/rendered.yaml)
+    ;;
+  *) echo "REC-7: a compose source or a designed recipe has nothing to render" ;;
+esac
+
+# REC-8: the shipped tree, each included recipe and their own targets, and
+# the verified generators, compiled on omegaconf.
+included=()
+while IFS= read -r r; do included+=("$r"); done < <(jq -r '.included[]' -- "$static/recipe.json")
+allow=()
+while IFS= read -r binary; do allow+=(--allow "${binary// /-}"); done < <(jq -r '.binaries[]' -- "$static/recipe.json")
+project=$work/project
+mkdir -p -- "$project/inventory/classes/recipes" "$project/inventory/targets"
+cp -R -- "$static/lib" "$project/lib"
+for r in "$name" "${included[@]}"; do
+  if [[ ! -f $recipes/$r/tests/target.yml ]]; then
+    echo "REC-8: $r has no tests/target.yml at source.sha"
+    exit 1
+  fi
+  cp -R -- "$recipes/$r" "$project/inventory/classes/recipes/$r"
+  rm -rf -- "$project/inventory/classes/recipes/$r/tests"
+  cp -- "$recipes/$r/tests/target.yml" "$project/inventory/targets/$r.yml"
+done
+compile() {
+  local out=$1
+  shift
+  mkdir -- "$out"
+  "$root/sandbox/run" "${allow[@]}" --result "$out" "$@" || status=1
+}
+in_image() {
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" --mount "type=bind,src=$work/out,dst=/out,readonly" "$@"
+}
+
+echo "### compile"
+compile "$work/out" "$project" compile --output-path /out --inventory-backend omegaconf
+for t in "$name" "${included[@]}"; do
+  if ! find "$work/out/compiled/$t" -type f -print -quit 2>/dev/null | grep -q .; then
+    echo "CMP-1: target $t produced no file"
+    status=1
+  fi
+done
+echo "### SEC-12 matches, recorded and not judged (DEC-23)"
+in_image "$image" python -I /base/sandbox/output_check.py --out /out --policy /base/policy/output --unparsed '*' || true
+in_image --tmpfs /tmp:size=512m "$image" python -I /base/sandbox/apiserver_check.py --out /out || status=1
+# RCP-3 and RCP-6 on the objects of each recipe, as check lint assigns them (RCP-49).
+pinned none 'import sys
+from pathlib import Path
+sys.path.insert(0, "/check")
+import check, lint
+recipe, out, kind = Path(sys.argv[1]), Path("/work/out"), sys.argv[2]
+rendered = Path(sys.argv[3]) if len(sys.argv) > 3 else None
+if kind == "manifest":
+    chart = check.load_all(rendered.read_text())
+elif rendered:
+    chart, _ = check.render_chart(recipe.name, recipe, None, None, rendered)
+else:
+    chart = []
+own, parts = check.owned(recipe, check.objects_of(check.compiled_files(out, recipe.name)), Path("/tmp"), out)
+errors = [e for other, objs in parts.items() for e in lint.lint_output(other, objs, {o["metadata"]["name"] for o in objs})]
+errors += lint.lint_output(recipe.name, own, {o["metadata"]["name"] for o in chart})
+for e in errors:
+    print(f"REC-8: {e}")
+sys.exit(1 if errors else 0)' "/recipes/$name" "$kind" "${rendered[@]}" || status=1
+
+echo "### compile with CI set"
+compile "$work/out-ci" --env CI=true --env GITHUB_ACTIONS=true --env GITLAB_CI=true \
+  "$project" compile --output-path /out --inventory-backend omegaconf
+if ! (cd -- "$work" && diff -r -- out out-ci) >"$work/ci.diff"; then
+  echo "CMP-2: output differs with CI set:"
+  head -n 20 -- "$work/ci.diff"
+  status=1
+fi
+echo "### compile with --cache"
+compile "$work/out-cache" "$project" compile --output-path /out --inventory-backend omegaconf --cache
+if ! (cd -- "$work" && diff -r -- out out-cache) >"$work/cache.diff"; then
+  echo "CMP-5: output differs with --cache on omegaconf:"
+  head -n 20 -- "$work/cache.diff"
+  status=1
+fi
+exit "$status"
