@@ -11,6 +11,7 @@ on:
       - .github/workflows/fuzz.yml
       - tests/fuzz/**
       - gate/check_entry.py
+      - gate/check_recipe.py
       - gate/schema_diff.py
       - consumer/plan.py
       - sandbox/schema_check.py

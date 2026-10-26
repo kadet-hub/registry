@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# The recipe checks before the compile (REC-4 to REC-6, REC-15).
+#
+# Usage: recipe-static <recipes dir> <name>
+# <recipes dir> is what `fetch_tree.py --recipe <name>` wrote, plus the
+# source repository's root LICENSE as <recipes dir>/LICENSE.
+# Needs: GH_TOKEN for gh attestation verify, oras, gh, Docker with the image
+# $SANDBOX_IMAGE, the pinned check of kadet-hub/recipes in $RECIPES_CHECK
+# (.github/actions/setup-gate) and the tools of scan/static-scan. Prints
+# findings; exits 1 on any.
+set -euo pipefail
+
+recipes=$(cd -- "$1" && pwd)
+name=$2
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+check=$(cd -- "${RECIPES_CHECK:-$root/gate/.check}" && pwd)
+identity=https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+token=${GH_TOKEN:-}
+unset GH_TOKEN
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+status=0
+
+attested() {
+  GH_TOKEN=$token gh attestation verify "oci://$1" --owner kadet-hub --cert-identity "$identity" >/dev/null 2>&1 \
+    || { echo "REC-6: $1 has no marketplace attestation (CON-2)"; return 1; }
+}
+sandbox() {
+  docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+    --mount "type=bind,src=$root,dst=/base,readonly" \
+    --mount "type=bind,src=$recipes,dst=/recipes,readonly" \
+    --mount "type=bind,src=$check,dst=/check,readonly" \
+    --mount "type=bind,src=$work,dst=/work" \
+    "$image" python -I "$@"
+}
+
+# REC-6: the latest index, verified as CON-2 describes.
+index=$(oras resolve -- ghcr.io/kadet-hub/index:latest)
+attested "ghcr.io/kadet-hub/index@$index"
+oras pull -o "$work/index" -- "ghcr.io/kadet-hub/index@$index" >/dev/null
+
+# REC-4 layout and license, REC-5 includes, REC-6 pins, REC-15.
+license=()
+if [[ -f $recipes/LICENSE ]]; then license=(--license /recipes/LICENSE); fi
+sandbox /base/gate/check_recipe.py --tree "/recipes/$name" --index /work/index/index.json --policy /base/policy \
+  "${license[@]}" --out /work/generators.txt || status=1
+
+# REC-4: SEC-1, SEC-5 and SEC-6 over the shipped tree and the files of tests/ that fetch_tree.py wrote.
+"$root/scan/static-scan" "$recipes/$name" || status=1
+
+# REC-5: the file rules of the pinned check. `check lint` also compiles with
+# Kapitan on the host and pulls the generators and the chart.
+sandbox -c 'import sys
+sys.path.insert(0, "/check")
+import lint
+errors = lint.lint_files(sys.argv[1])
+for e in errors:
+    print(f"REC-5: {e}")
+sys.exit(1 if errors else 0)' "/recipes/$name" || status=1
+
+# REC-6: each pinned generator's own attestation.
+while IFS= read -r ref; do
+  attested "$ref" || status=1
+done <"$work/generators.txt"
+exit "$status"

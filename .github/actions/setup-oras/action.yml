@@ -2,8 +2,9 @@ name: setup-oras
 description: Install oras pinned by sha256 and log in to ghcr.io (PUB-2, GI-6).
 inputs:
   token:
-    description: Token with packages write
-    required: true
+    description: Token with packages write; without one oras pulls public packages anonymously
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -19,6 +20,7 @@ runs:
         sudo tar -xzf "$RUNNER_TEMP/oras.tar.gz" -C /usr/local/bin oras
 
     - name: Log in to ghcr.io
+      if: inputs.token != ''
       shell: bash
       env:
         TOKEN: ${{ inputs.token }}

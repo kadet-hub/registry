@@ -1,0 +1,22 @@
+classes:
+  - .demo
+parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:987694d4d8b061a6937fb5b8acd17416a16ed3fea36786a7604e6d607c210e24
+        output_path: lib/kubernetes
+    compile:
+      - input_type: kadet
+        input_paths:
+          - lib/kubernetes
+        output_path: manifests/
+        output_type: yml
+      - input_type: copy
+        input_paths:
+          # SHA-256 c90177b685ae8ba316d05f756492d579f6d599ba2b6c25a9659c9dc1bdca0b7c
+          - inventory/classes/recipes/demo/vendor/demo.crds.yaml
+        output_path: manifests/
+  applications:
+    demo:
+      version: 1.0.0

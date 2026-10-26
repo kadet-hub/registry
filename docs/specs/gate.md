@@ -202,6 +202,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   | `fuzz_manifest` | `check_entry.step_manifest`, `schema_diff.sources` | `kapitan-generator.yaml`, for a new entry and a bump |
   | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | `kapitan inventory` output, including the tag before the digest |
   | `fuzz_documents` | `tag_check.kinds`, `schema_check.check`, `schema_diff.sources` | a compiled output file, as YAML and as JSON, and `schemas/sources.yaml` |
+  | `fuzz_recipe` | `check_recipe.check` | a recipe's class file `init.yml` |
 
   The callers exit non-zero on an uncaught exception (GI-7, CON-1), so a
   finding prints a traceback in place of a finding or blocks a valid
@@ -210,7 +211,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   `apiserver_check.crd_files` is not fuzzed: importing it needs
   cryptography, which `.clusterfuzzlite/requirements.txt` does not
-  install.
+  install. `lint.lint_files` of kadet-hub/recipes' `check`, which REC-5
+  runs on the recipe files, is not fuzzed either: the fuzz build does not
+  fetch it, and an exception it raises fails the gate.
 
   The `fuzz` workflow runs code-change mode for 300 seconds on pull
   requests that touch a target's inputs (CI-1) and batch mode for 1800
@@ -249,7 +252,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: #243, #244; recipe entries: #377
+  - Since: #243, #244; recipe entries: #377; recipe files: #382
 
 - GI-15: A job that holds `contents`, `packages`, `id-token`,
   `attestations` or `pages` write, or reads a secret other than

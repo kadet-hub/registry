@@ -1,0 +1,19 @@
+classes:
+  - .demo
+  - recipes.demo.crds
+  - recipes.other.route
+parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
+        output_path: lib/kubernetes
+    compile:
+      - input_type: kadet
+        input_paths:
+          - lib/kubernetes
+        output_path: manifests/
+      - input_type: copy
+        input_paths:
+          - inventory/classes/recipes/demo/vendor/crds.yaml
+        output_path: manifests/

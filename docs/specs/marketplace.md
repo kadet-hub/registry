@@ -299,8 +299,9 @@ cover none of the changed files.
   tag passes. A consumer sample with a fetch inventory compiles
   cert-manager, and fails with the recipe pinned in the main inventory, with
   a digest the index does not list, and on its webhooks without
-  `admission-webhook` in `output_capabilities`. Check: `gate-selftest`,
-  `consumer-selftest` (not written).
+  `admission-webhook` in `output_capabilities`. Check: `gate-selftest`
+  (written for REC-4 to REC-6 and REC-15), `consumer-selftest` (not
+  written).
 
 - AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4): a sample parent
   fails the gate when its included recipe's tree at `source.sha` matches no
@@ -445,6 +446,13 @@ coverage is named at each:
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
+
+- OQ-15: SEC-5 fails every file above 1 MiB, so the cnpg recipe cannot pass
+  REC-4: its `vendor/cnpg.crds.yaml`, the CRDs of the CloudNativePG chart
+  0.29.1, has 1,259,760 bytes. Either SEC-5 allows larger vendored files
+  in a recipe, or kadet-hub/recipes vendors one file per CRD, as
+  keycloak-operator does. Whether each CRD alone stays below 1 MiB is not
+  checked.
 
 ## Implementation inventory
 
