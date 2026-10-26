@@ -254,7 +254,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: #243, #244; recipe entries: #377; recipe files: #382; `__init__.py`: this change
+  - Since: #243, #244; recipe entries: #377; recipe files: #382; `__init__.py`: #388
 
 - GI-15: A job that holds `contents`, `packages`, `id-token`,
   `attestations` or `pages` write, or reads a secret other than
@@ -785,7 +785,7 @@ review go into the review comment and do not fail the gate.
   not parse is a finding.
 
   - Test: `gate/test_check_entry.py` (`Quality.test_version_matches_the_tag`)
-  - Since: #373; one finding: this change
+  - Since: #373; one finding: #388
 
 - QA-2: `license` MUST be the SPDX identifier of an OSI-approved license
   (`policy/licenses.txt`), and `LICENSE` MUST match it.
