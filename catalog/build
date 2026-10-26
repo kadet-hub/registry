@@ -11,7 +11,8 @@
 # requests from $CATALOG_WANTED (CAT-31) and pull requests with their gate
 # comments from $CATALOG_GATE (CAT-33) and the recipe classes and the
 # recipes.sha of kadet-hub/recipes from $CATALOG_RECIPES/inventory/classes
-# (CAT-37a, CAT-37c) instead. Online, the
+# (CAT-37a, CAT-37c) and the layers of the recipes the index lists from
+# $CATALOG_ARTIFACTS/recipes/<name>.tar (CAT-38) instead. Online, the
 # previous build's published catalog.json supplies README, CHANGELOG sections,
 # the software of the schema groups (CAT-29c), log index and SBOM of every
 # unchanged digest, and its output diffs are kept when their
@@ -38,6 +39,12 @@ gate=${CATALOG_GATE:-$work/gate.json}
 pages=${CATALOG_PAGES:-$work/pages}
 recipes=$work/recipes
 site=${CATALOG_URL:-https://kadet-hub.org/}
+# CAT-38: the digest of the recipe's latest version that is not yanked, nothing when the index lists none.
+listed() {
+  jq -r --arg n "$1" '.recipes[$n] // {} | [to_entries[] | select(.value.yanked == null)]
+    | sort_by(.key | split(".") | map(tonumber)) | last | .value.digest // empty' -- "$index"
+}
+recipe_pages=$(grep -lx 'layout: chart-recipe' -- "$here"/site/content/recipes/*.md || :)
 if [[ ${CATALOG_OFFLINE:-} == 1 ]]; then
   offline=(--offline)
   recipes=$CATALOG_RECIPES
@@ -51,8 +58,19 @@ else
     curl -fsSL --max-time 20 "https://raw.githubusercontent.com/$OWNER/recipes/$sha/$1" -o "$recipes/inventory/classes/recipes/$1" \
       || { echo "::error::recipes: $1 not fetched from $OWNER/recipes@$sha"; exit 1; }
   }
-  for page in $(grep -lx 'layout: chart-recipe' -- "$here"/site/content/recipes/*.md); do
+  for page in $recipe_pages; do
     name=$(basename -- "$page" .md)
+    digest=$(listed "$name")
+    if [[ -n $digest ]]; then  # CAT-38: the layer by digest, unpacked below
+      mkdir -p -- "$artifacts/recipes"
+      ref=ghcr.io/$OWNER/recipes/$name
+      if layer=$(oras manifest fetch -- "$ref@$digest" | jq -er 'select(.artifactType == "application/vnd.kadet-hub.recipe.v1") | .layers[0].digest') \
+        && oras blob fetch --output "$artifacts/recipes/$name.tar" -- "$ref@$layer"; then
+        continue
+      fi
+      echo "::error::recipes: $ref@$digest not fetched"
+      exit 1
+    fi
     mkdir -p -- "$recipes/inventory/classes/recipes/$name"
     fetch_recipe "$name/README.md"
     fetch_recipe "$name/init.yml"
@@ -152,6 +170,15 @@ done
 cp -- "$here/../policy/tags.yaml" "$work/data/tags.yaml"
 mkdir -- "$work/assets/classes"
 cp -R -- "$recipes/inventory/classes/." "$work/assets/classes/"
+# CAT-38: a recipe the index lists shows its latest listed version's artifact layer instead of main.
+for page in $recipe_pages; do
+  name=$(basename -- "$page" .md)
+  [[ -n $(listed "$name") ]] || continue
+  rm -rf -- "$work/assets/classes/recipes/$name"
+  python3 -I -c 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(sys.argv[2], filter="data")' \
+    "$artifacts/recipes/$name.tar" "$work/assets/classes/recipes/$name" \
+    || { echo "::error::recipes: $name: $artifacts/recipes/$name.tar not unpacked"; exit 1; }
+done
 previous_arg=()
 if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
 python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --gate "$gate" --out "$work/data/catalog.json"

@@ -1,9 +1,13 @@
-{{ define "main" }}{{/* CAT-37c */}}
+{{ define "main" }}{{/* CAT-37c, CAT-38 */}}
 {{ $r := partial "chart-recipe.html" . }}
+{{ with $r.latest }}{{ $.Store.Set "recipe-blob" $r.record.blob_url }}{{ end }}
+{{ $owner := site.Data.catalog.owner }}
 <section class="prose-page prose">
 <h1>{{ .Title }}</h1>
-<p class="lead">{{ $r.lead | markdownify }}</p>
+<p class="lead">{{ $r.lead | replaceRE `\{\{([<%])` `{{\$1` | markdownify }}</p>
 <ul>
+{{ with $r.latest }}<li>Latest version: <a href="#v{{ .version }}"><code>{{ .version }}</code></a>{{ with .published }}, published <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}</li>
+{{ end -}}
 {{ with $r.compose -}}
 <li>Source: Docker Compose file <a href="{{ .url }}"><code>{{ .repo }}@{{ .commit }}</code></a> (<code>{{ .path }}</code>), <code>{{ .digest }}</code></li>
 <li><a href="{{ "/glossary/#proof-level" | relURL }}">Proof level</a>: <code>{{ $r.level }}</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>
@@ -17,31 +21,58 @@
 <li>Source chart: <code>{{ $r.source }}</code></li>
 <li><a href="{{ "/glossary/#proof-level" | relURL }}">Proof level</a>: <code>{{ $r.level }}</code>, compared with the chart by the kadet-hub/recipes CI</li>
 {{- end }}
+{{ with $r.latest }}<li>{{ with $r.renders }}<code>renders</code> passed in the <a href="{{ .run }}">release run</a> of <time datetime="{{ .at }}">{{ substr .at 0 10 }}</time> with {{ .tool }}{{ else }}No <code>renders</code> result in the release run's record{{ end }}</li>
+<li>Output capabilities: {{ range $i, $c := .output_capabilities }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ else }}none{{ end }}</li>
+{{ end -}}
 {{ with $r.requires }}<li>Prerequisites, installed once per cluster before the recipe: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/recipes/%s" $n) }}<a href="{{ printf "/recipes/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}<code>{{ $n }}</code>{{ end }}{{ end }}</li>
 {{ end -}}
 <li>Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/#v%s" $g.name $g.version | relURL }}">{{ $g.name }} {{ $g.version }}</a> <code>{{ $g.digest }}</code>{{ end }}</li>
 </ul>
 {{ with $r.replaces }}<h2>Replaces</h2>
-{{ $.RenderString (dict "display" "block") . }}
+{{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .) }}
 {{ end -}}
 <h2>What it deploys</h2>
 <ul>
 {{ range $r.classes }}<li><code>{{ .class }}</code> (<code>{{ .file }}</code>){{ if .option }}, an option{{ end }}{{ with .components }}: {{ range $i, $c := . }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ end }}{{ end }}</li>
 {{ end }}</ul>
 <h2>Required parameters</h2>
-{{ $.RenderString (dict "display" "block") $r.required }}
+{{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` $r.required) }}
 <h2>Include</h2>
 <p>A <a href="{{ "/glossary/#target" | relURL }}">target</a> includes the recipe and its options as <a href="{{ "/glossary/#class" | relURL }}">classes</a> and can override anything the recipe sets:</p>
 {{ partial "snippet.html" (dict "id" "include" "label" "include snippet" "text" $r.include) }}
 <h2>Fetching it</h2>
-<p>Until recipes are published as OCI artifacts, a separate fetch inventory pins kadet-hub/recipes by commit. This is <code>fetch/targets/recipes.yml</code> at the commit the page was built from:</p>
+{{ with $r.latest }}
+{{ with $r.blocked }}
+{{ range . }}<p class="warning">Version {{ $r.latest.version }} pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</p>
+{{ end }}<p>The consumer workflow rejects a yanked generator, so this page shows no fetch inventory for the version.</p>
+{{ else }}
+<p>A separate fetch inventory pins the recipe{{ with $r.latest.includes }} and the recipes it includes{{ end }} by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. This is <code>fetch/targets/recipes.yml</code> for version {{ $r.latest.version }}:</p>
+{{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" $r.fetch) }}
+<p>The first command fetches the recipe into <code>inventory/classes/recipes/{{ $r.name }}</code>, the second the generators and compiles:</p>
+{{ partial "snippet.html" (dict "id" "commands" "label" "commands" "text" $r.commands) }}
+<p>The first command exits with status 1 because the fetch target compiles nothing. Kapitan's <code>--fetch</code> checks neither the digest nor the attestation. This verifies the attestation of each recipe the fetch inventory pins:</p>
+{{ partial "snippet.html" (dict "id" "verify" "label" "verify commands" "text" $r.verify) }}
+<p>The attested index must also list each digest under its recipe with the pinned version, and not as yanked. <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#verifying-by-hand">Verifying by hand</a> shows how to read it.</p>
+{{ with $r.policy }}<p>The output rules found {{ range $i, $c := $r.latest.output_capabilities }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ end }} in the compiled output of the recipe's test target. The consumer workflow fails unless the policy <code>.kapitan-sandbox.yaml</code> accepts these capabilities for the target's output path:</p>
+{{ partial "snippet.html" (dict "id" "policy" "label" "policy line" "text" .) }}{{ end }}
+{{ end }}
+{{ else }}
+<p>Until this recipe is published as an OCI artifact, a separate fetch inventory pins kadet-hub/recipes by commit. This is <code>fetch/targets/recipes.yml</code> at the commit the page was built from:</p>
 {{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" $r.fetch) }}
 <p>The first command fetches the recipe into <code>inventory/classes/recipes/{{ $r.name }}</code>, the second the generators and compiles:</p>
 {{ partial "snippet.html" (dict "id" "commands" "label" "commands" "text" $r.commands) }}
 <p>The first command exits with status 1 because the fetch target compiles nothing. Kapitan's <code>--fetch</code> checks neither the <a href="{{ "/glossary/#digest" | relURL }}">digest</a> nor the attestation of a generator. <a href="{{ $r.guide }}">Using a recipe</a> describes how to verify them and how to raise the pin.</p>
+{{ end }}
 {{ range $r.sections }}
 <h2>{{ .heading }}</h2>
-{{ $.RenderString (dict "display" "block") .body }}
+{{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .body) }}
+{{ end }}
+{{ with $r.record }}
+<h2>Versions</h2>
+<ul>
+{{ range .versions }}<li id="v{{ .version }}"><code>{{ .version }}</code>{{ with .published }}, <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}: <code>{{ .digest }}</code>{{ with .yanked }}<br><span class="warning">Yanked: {{ . }}</span>{{ end }}
+{{- range .generators }}{{ if .yanked }}<br><span class="warning">Pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</span>{{ end }}{{ end }}</li>
+{{ end }}</ul>
 {{ end }}
 <p>The recipe's files are in <a href="{{ $r.folder }}">kadet-hub/recipes</a>. <a href="{{ "/recipes/" | relURL }}">All recipes</a></p>
 </section>
