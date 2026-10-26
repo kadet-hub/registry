@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The recipe checks before the compile (REC-4 to REC-6, REC-15).
+# The recipe checks before the compile (REC-4 to REC-6, REC-15 to REC-17).
 #
 # Usage: recipe-static <recipes dir> <name> [<out dir>]
 # <recipes dir> is what `fetch_tree.py --recipe <name>` wrote, plus the
@@ -8,7 +8,9 @@
 # $SANDBOX_IMAGE, the pinned check of kadet-hub/recipes in $RECIPES_CHECK
 # (.github/actions/setup-gate) and the tools of scan/static-scan. Prints
 # findings; exits 1 on any. With <out dir>, writes each verified generator
-# to <out dir>/lib/<generator> and check_recipe.py's recipe.json there (REC-8).
+# to <out dir>/lib/<generator>, or for a required recipe to
+# <out dir>/requires/<recipe>/lib/<generator>, and check_recipe.py's
+# recipe.json there (REC-8, REC-17).
 set -euo pipefail
 
 recipes=$(cd -- "$1" && pwd)
@@ -24,9 +26,10 @@ work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 status=0
 
+# attested <ref> [<rule> <verification>]
 attested() {
   GH_TOKEN=$token gh attestation verify "oci://$1" --owner kadet-hub --cert-identity "$identity" >/dev/null 2>&1 \
-    || { echo "REC-6: $1 has no marketplace attestation (CON-2)"; return 1; }
+    || { echo "${2:-REC-6}: $1 has no marketplace attestation (${3:-CON-2})"; return 1; }
 }
 sandbox() {
   docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
@@ -42,11 +45,27 @@ index=$(oras resolve -- ghcr.io/kadet-hub/index:latest)
 attested "ghcr.io/kadet-hub/index@$index"
 oras pull -o "$work/index" -- "ghcr.io/kadet-hub/index@$index" >/dev/null
 
-# REC-4 layout and license, REC-5 includes, REC-6 pins, REC-15.
+# REC-17: the recipes the recipe requires, also through the recipes it
+# includes and in turn through theirs, as the pinned check orders them (RCP-55).
+echo '[]' >"$work/required.json"
+sandbox -c 'import json, sys
+from pathlib import Path
+sys.path.insert(0, "/check")
+import check, lint
+try:
+    required = [r for r in check.requirement_order(Path(sys.argv[1])) if r != lint.GATEWAY_API]
+except (OSError, ValueError) as e:
+    reason = str(e).replace("/recipes/", "")[:200]
+    print(f"REC-17: the Requires lines do not resolve: {reason}")
+    sys.exit(1)
+with open("/work/required.json", "w") as f:
+    json.dump(required, f)' "/recipes/$name" || status=1
+
+# REC-4 layout and license, REC-5 includes, REC-6 pins, REC-15, REC-16 and REC-17 against the index.
 license=()
 if [[ -f $recipes/LICENSE ]]; then license=(--license /recipes/LICENSE); fi
 sandbox /base/gate/check_recipe.py --tree "/recipes/$name" --index /work/index/index.json --policy /base/policy \
-  "${license[@]}" --out /work/recipe.json || status=1
+  "${license[@]}" --requires /work/required.json --out /work/recipe.json || status=1
 
 # REC-4: SEC-1, SEC-5 and SEC-6 over the shipped tree and the files of tests/ that fetch_tree.py wrote.
 "$root/scan/static-scan" "$recipes/$name" || status=1
@@ -61,16 +80,19 @@ for e in errors:
     print(f"REC-5: {e}")
 sys.exit(1 if errors else 0)' "/recipes/$name" || status=1
 
-# REC-6: each pinned generator's own attestation; REC-8 compiles with the verified ones.
+# REC-6: each pinned generator's own attestation; REC-8 and REC-17 compile with the verified ones.
 if [[ -n $out ]]; then mkdir -p -- "$out/lib"; fi
-while IFS= read -r ref; do
+while IFS=$'\t' read -r ref dest; do
   attested "$ref" || { status=1; continue; }
   [[ -n $out ]] || continue
-  gen=${ref#ghcr.io/kadet-hub/}
   mkdir -- "$work/pull"
   oras pull -o "$work/pull" -- "$ref" >/dev/null
-  python3 -I "$root/consumer/unpack.py" "$work/pull" "$out/lib/${gen%@*}"
+  python3 -I "$root/consumer/unpack.py" "$work/pull" "$out/$dest"
   rm -rf -- "$work/pull"
-done < <(jq -r '.generators[]' -- "$work/recipe.json")
+done < <(jq -r '.pull[] | @tsv' -- "$work/recipe.json")
+# REC-16, REC-17: the attestation of each included and required recipe's version (CON-5).
+while IFS=$'\t' read -r rule ref; do
+  attested "$ref" "$rule" CON-5 || status=1
+done < <(jq -r '.recipes | to_entries[] | [.value.rule, "ghcr.io/kadet-hub/recipes/\(.key)@\(.value.digest)"] | @tsv' -- "$work/recipe.json")
 if [[ -n $out ]]; then cp -- "$work/recipe.json" "$out/recipe.json"; fi
 exit "$status"

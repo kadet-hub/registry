@@ -5,6 +5,8 @@ import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "release"))
+from tree import read_dir, tree_id  # noqa: E402
 
 
 def run(*args, cwd):
@@ -76,6 +78,30 @@ class FetchTree(unittest.TestCase):
                 r = subprocess.run([*fetch, "--targets", *names, "--out", os.path.join(d, "t")], capture_output=True, text=True, check=False)
                 self.assertEqual(r.returncode, 1, names)
             self.assertFalse(os.path.exists(os.path.join(d, "t")))
+
+    def test_recipe_tree_without_tests(self):  # REC-16
+        with tempfile.TemporaryDirectory() as d:
+            repo = os.path.join(d, "repo")
+            files = {"demo/init.yml": "classes: [recipes.other]\n", "demo/tests/target.yml": "t\n", "other/init.yml": "classes: []\n",
+                     "other/README.md": "# other\n", "other/vendor/crds.yaml": "kind: CRD\n", "other/tests/target.yml": "t\n"}
+            for rel, text in files.items():
+                os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
+                with open(os.path.join(repo, rel), "w") as f:
+                    f.write(text)
+            env = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1", "PATH": os.environ["PATH"]}
+            for cmd in (["git", "init", "-q"], ["git", "add", "-A"],
+                        ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "t"]):
+                subprocess.run(cmd, cwd=repo, check=True, env=env)
+            sha = run("git", "rev-parse", "HEAD", cwd=repo)
+            # REC-11: the tree git mktree writes for the listing of sha:other without its tests entry.
+            listing = run("git", "ls-tree", f"{sha}:other", cwd=repo).splitlines()
+            shipped = subprocess.run(["git", "mktree"], cwd=repo, check=True, capture_output=True, text=True,
+                                     input="".join(f"{ln}\n" for ln in listing if not ln.endswith("\ttests"))).stdout.strip()
+            out = os.path.join(d, "out")
+            subprocess.run([sys.executable, os.path.join(HERE, "fetch_tree.py"), "--git-dir", os.path.join(repo, ".git"),
+                            "--rev", sha, "--recipe", "demo", "--out", out], check=True)
+            self.assertEqual(tree_id(read_dir(os.path.join(out, "other"))), shipped)
+            self.assertNotEqual(shipped, run("git", "rev-parse", f"{sha}:other", cwd=repo))
 
     def test_missing_path_fails(self):
         with tempfile.TemporaryDirectory() as d:

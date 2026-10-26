@@ -9,6 +9,7 @@ on:
       - gate/**
       - policy/**
       - consumer/unpack.py
+      - release/tree.py
       - tests/selftest
       - tests/samples/**
       - .github/actions/setup-gate/**

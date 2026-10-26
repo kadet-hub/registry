@@ -70,5 +70,32 @@ class OutputDiff(unittest.TestCase):
         self.assertRegex(kept, r"\n\+é \d+$")  # whole lines only
 
 
+    def test_recipe_before_and_after(self):  # REC-10
+        digest = "sha256:" + "a" * 64
+        old = {"source": ["Source: `oci://ghcr.io/x/valkey:0.11.0@sha256:1`"], "level": ["Level: `deploys`"],
+               "pins": [f"ghcr.io/kadet-hub/kubernetes:1.8.0@{digest}"], "included": ["valkey"],
+               "recipes": {"valkey": {"rule": "REC-16", "version": "1.0.0", "digest": digest}}}
+        new = {**old, "source": ["Source: `oci://ghcr.io/x/valkey:0.12.0@sha256:2`"],
+               "pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@{digest}"], "included": ["valkey", "postgresql"],
+               "recipes": {"valkey": {"rule": "REC-16", "version": "1.1.0", "digest": digest}}}
+        for name, data in (("old.json", old), ("new.json", new)):
+            write(self.tmp.name, name, json.dumps(data))
+        write(self.tmp.name, "old.log", "## Static checks\nSEC-12: unparsed output compiled/t/x (*)\n")
+        log = "SEC-12: admission-webhook: compiled/t/z.yml: ValidatingWebhookConfiguration x\n"
+        out, _ = self.run_diff(log, ("--recipe", os.path.join(self.tmp.name, "old.json"), os.path.join(self.tmp.name, "new.json"),
+                                     "--old-compile-log", os.path.join(self.tmp.name, "old.log")))
+        section = out[out.index("### Before and after (REC-10)\n"):].splitlines()[1:]
+        self.assertEqual(section, [
+            "chart or manifest source:", "- Source: `oci://ghcr.io/x/valkey:0.11.0@sha256:1`",
+            "+ Source: `oci://ghcr.io/x/valkey:0.12.0@sha256:2`",
+            "level:", "  Level: `deploys`",
+            "generator pins:", f"- ghcr.io/kadet-hub/kubernetes:1.8.0@{digest}", f"+ ghcr.io/kadet-hub/kubernetes:1.9.0@{digest}",
+            "included recipes:", f"- valkey 1.0.0 {digest}", f"+ valkey 1.1.0 {digest}", "+ postgresql, no published version",
+            "SEC-12 matches:", "+ SEC-12: admission-webhook: compiled/t/z.yml: ValidatingWebhookConfiguration x"])
+        self.assertNotIn("Before and after", self.run_diff(log)[0])
+        out, _ = self.run_diff("", ("--recipe", os.path.join(self.tmp.name, "old.json"), os.path.join(self.tmp.name, "old.json"),
+                                    "--old-compile-log", os.path.join(self.tmp.name, "old.log")))
+        self.assertIn("SEC-12 matches:\n  none", out)
+
 if __name__ == "__main__":
     unittest.main()

@@ -301,8 +301,8 @@ cover none of the changed files.
   cert-manager, and fails with the recipe pinned in the main inventory, with
   a digest the index does not list, and on its webhooks without
   `admission-webhook` in `output_capabilities`. Check: `gate-selftest`
-  (written for REC-4 to REC-9 and REC-15), `consumer-selftest` (not
-  written).
+  (written for REC-4 to REC-9 and REC-15 to REC-17), `consumer-selftest`
+  (not written).
 
 - AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4): a sample parent
   fails the gate when its included recipe's tree at `source.sha` matches no
@@ -313,8 +313,9 @@ cover none of the changed files.
   does one that reaches the recipe only through another required recipe. A
   consumer sample fails when the fetch inventory pins the included recipe
   at another digest or not at all, and when two parents include it at
-  different digests. Check: `gate-selftest`, `consumer-selftest` (not
-  written).
+  different digests. Check: `gate-selftest` (written for the gate, against
+  an index and attestations that `tests/selftest` stubs until a recipe is
+  published; the record not written), `consumer-selftest` (not written).
 
 ## Residual risk
 
@@ -457,10 +458,10 @@ coverage is named at each:
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9, PUB-13 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
-| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9) |
+| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9, REC-10) |
 | `.github/actions/setup-gate/` | gVisor, scanners, sandbox image and `check` for `gate.yml` and `selftest.yml` |
 | `.github/actions/setup-check/` | `check` of kadet-hub/recipes (REC-5, REC-7 to REC-9) |
-| `.github/actions/setup-kind/` | kind, kubectl and uv for the `renders` job and `selftest.yml` (REC-9) |
+| `.github/actions/setup-kind/` | kind, kubectl and uv (REC-9) and cloud-provider-kind (REC-17) for the `renders` job and `selftest.yml` |
 | `policy/semgrep/blocking/`, `policy/semgrep/review/`, `policy/imports.txt` | SEC-3 |
 | `policy/gitleaks.toml` | SEC-1, SEC-4 |
 | `scan/` | SEC-1 to SEC-6: `static-scan` runner, `tree_check.py`, scanner requirements |

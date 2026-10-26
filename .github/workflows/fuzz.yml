@@ -12,6 +12,7 @@ on:
       - tests/fuzz/**
       - gate/check_entry.py
       - gate/check_recipe.py
+      - release/tree.py
       - gate/schema_diff.py
       - consumer/plan.py
       - sandbox/schema_check.py

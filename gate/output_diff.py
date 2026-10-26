@@ -1,11 +1,15 @@
-"""Fixture output diff against the approved version (SEC-13, PUB-9).
+"""Fixture output diff against the approved version (SEC-13, PUB-9, REC-10).
 
 Usage: output_diff.py --old DIR --new DIR --compile-log FILE --full FILE [--max-bytes N] [--json FILE]
+                      [--recipe OLD NEW --old-compile-log FILE]
 
 Prints the size in files and hunks and the first lines of the diff, files
 with a SEC-12 match in --compile-log first; writes the whole diff to --full,
 cut after the last whole line within --max-bytes with a closing line that
 names the cut. --json receives files, hunks and the sha256 of --full.
+--recipe takes the recipe.json of gate/check_recipe.py for both versions
+and prints after the diff what REC-10 shows of them before and after, the
+SEC-12 lines from --old-compile-log and --compile-log.
 Standard library only; the outputs are read as data.
 """
 
@@ -53,6 +57,29 @@ def diff(old, new, flagged):
     return sections
 
 
+def recipe_items(path, log):
+    """REC-10: what a recipe version's index record holds (REC-13), from its recipe.json and compile log."""
+    with open(path, encoding="utf-8") as f:
+        r = json.load(f)
+    with open(log, encoding="utf-8", errors="replace") as f:
+        matches = [ln.rstrip("\n") for ln in f if SEC12.match(ln)]
+    found = r["recipes"]
+    included = [f"{n} {found[n]['version']} {found[n]['digest']}" if n in found else f"{n}, no published version"
+                for n in r["included"]]
+    return {"chart or manifest source": r["source"], "level": r["level"], "generator pins": r["pins"],
+            "included recipes": included, "SEC-12 matches": matches}
+
+
+def changes(old, new):
+    """REC-10: each item of both versions; a line only the old one has is marked -, one only the new one has +."""
+    out = []
+    for key, after in new.items():
+        before = old[key]
+        lines = [("  " if x in after else "- ") + x for x in before] + ["+ " + x for x in after if x not in before]
+        out += [f"{key}:", *(ln if len(ln) <= LINE_WIDTH else ln[:LINE_WIDTH] + " [cut]" for ln in lines or ["  none"])]
+    return out
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--old", required=True)
@@ -61,6 +88,8 @@ def main():
     p.add_argument("--full", required=True)
     p.add_argument("--max-bytes", type=int)
     p.add_argument("--json")
+    p.add_argument("--recipe", nargs=2, metavar=("OLD", "NEW"))
+    p.add_argument("--old-compile-log")
     a = p.parse_args()
     with open(a.compile_log, encoding="utf-8", errors="replace") as f:
         flagged = {m.group(1) for line in f if (m := SEC12.match(line))}
@@ -84,6 +113,9 @@ def main():
         print(ln if len(ln) <= LINE_WIDTH else ln[:LINE_WIDTH] + " [cut]")
     if len(text) > REPORT_LINES:
         print(f"... {len(text) - REPORT_LINES} more lines in output.diff in the gate-report artifact")
+    if a.recipe:
+        print("### Before and after (REC-10)")
+        print("\n".join(changes(recipe_items(a.recipe[0], a.old_compile_log), recipe_items(a.recipe[1], a.compile_log))))
     return 0
 
 
