@@ -6,6 +6,8 @@
 # Needs: GH_TOKEN (contents and pull-requests read), REPO, PR, HEAD_SHA,
 # GITHUB_EVENT_PATH, and the tools of .github/actions/setup-gate. Prints a
 # report in "## <section>" blocks; copies entry.json to $GATE_OUT if set.
+# For a recipe that passes every check before REC-9, writes the input of
+# gate/recipe-renders as the tar $PROOF_OUT if set.
 set -euo pipefail
 
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -77,8 +79,16 @@ if [[ $path == recipes/* ]]; then
   if ((${#included[@]})); then
     python3 "$root/gate/fetch_tree.py" --git-dir "$work/src.git" --rev "$sha" --targets "${included[@]}" --out "$work/recipes" || status=1
   fi
-  "$root/gate/recipe-compile" "$work/recipes" "$name" "$work/static" || status=1
-  echo "REC-9: the recipe checks from REC-9 on are not implemented yet, so no recipe entry passes the gate"
+  mkdir -- "$work/proof"
+  "$root/gate/recipe-compile" "$work/recipes" "$name" "$work/static" "$work/proof" || status=1
+  # REC-9 runs in the renders job of gate.yml, on what this job fetched and compiled.
+  if ((status)); then
+    echo "REC-9: not run, a check before it failed"
+  elif [[ -n ${PROOF_OUT:-} ]]; then
+    printf '%s\n' "$name" >"$work/name"
+    tar -cf "$PROOF_OUT" -C "$work" name recipes proof
+  fi
+  echo "REC-10: the recipe checks from REC-10 on are not implemented yet, so no recipe entry passes the gate"
   exit 1
 fi
 gen=$work/generator

@@ -1,13 +1,14 @@
 name: checksum-pins
 
-# REG-7: Renovate bumps helm and gVisor without their checksum; this names
-# the checksum the publisher lists.
+# REG-7: Renovate bumps helm, gVisor and kubectl without their checksum;
+# this names the checksum the publisher lists.
 on:
   pull_request:
     paths:
       - sandbox/Dockerfile
       - sandbox/gitlab-ci.yml
       - .github/actions/setup-gvisor/action.yml
+      - .github/actions/setup-kind/action.yml
       - .github/workflows/checksum-pins.yml
       - tests/checksum-pins
 

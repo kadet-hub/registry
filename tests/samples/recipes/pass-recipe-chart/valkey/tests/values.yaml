@@ -1,0 +1,17 @@
+auth:
+  enabled: true
+  aclUsers:
+    default:
+      permissions: "~* &* +@all"
+      password: smoke-password
+dataStorage:
+  enabled: true
+  requestedSize: 8Gi
+valkeyConfig: |
+  appendonly yes
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 512Mi

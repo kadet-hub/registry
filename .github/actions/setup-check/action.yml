@@ -1,0 +1,15 @@
+name: setup-check
+description: Fetch the pinned check of kadet-hub/recipes to gate/.check (REC-5, REC-7 to REC-9).
+runs:
+  using: composite
+  steps:
+    - name: Fetch check
+      shell: bash
+      env:
+        # renovate: datasource=github-tags depName=kadet-hub/recipes versioning=regex:^check-v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$
+        CHECK_VERSION: check-v0.10.0
+        CHECK_SHA: a4c9945b340ccfb5a10ae5a4bfac960ef7608408
+      run: |
+        git init -q --bare "$RUNNER_TEMP/check.git"
+        git --git-dir="$RUNNER_TEMP/check.git" fetch -q --depth=1 --no-tags https://github.com/kadet-hub/recipes.git "$CHECK_SHA"
+        python3 gate/fetch_tree.py --git-dir "$RUNNER_TEMP/check.git" --rev "$CHECK_SHA" --path check --out gate/.check

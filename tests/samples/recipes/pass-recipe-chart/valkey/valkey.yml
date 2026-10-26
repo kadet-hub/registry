@@ -1,0 +1,210 @@
+parameters:
+  components:
+    valkey:
+      application: valkey
+      image: docker.io/valkey/valkey:${applications.valkey.version}@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+      command:
+        - valkey-server
+      args:
+        config: /data/conf/valkey.conf
+      env:
+        VALKEY_LOG_LEVEL: notice
+      ports:
+        tcp:
+          service_port: 6379
+      service:
+        type: ClusterIP
+      healthcheck:
+        startup: &probe
+          type: command
+          command:
+            - valkey-cli
+            - ping
+          timeout_seconds: 1
+        liveness: *probe
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+      service_account:
+        create: true
+      workload_security_context:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      security_context: &security_context
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000
+      # The chart's hashes of its rendered init_config.yaml and configmap.yaml.
+      # They do not follow a change of the recipe's config.
+      pod_annotations:
+        checksum/initconfig: d00dcde3c2cfcd195807cf4967b7a5c1
+        checksum/config: 2f4d171e81574f447d27a1ca44c021a0
+      init_containers:
+        valkey-init:
+          image: ${components.valkey.image}
+          security_context: *security_context
+          command:
+            - /scripts/init.sh
+          volume_mounts:
+            valkey-data:
+              mount_path: /data
+            scripts:
+              mount_path: /scripts
+            valkey-config:
+              mount_path: /usr/local/etc/valkey/valkey.conf
+              sub_path: valkey.conf
+            valkey-acl:
+              mount_path: /etc/valkey
+            valkey-auth-secret:
+              mount_path: /valkey-auth-secret
+              read_only: true
+      volume_mounts:
+        valkey-data:
+          mount_path: /data
+        valkey-acl:
+          mount_path: /etc/valkey
+      volumes:
+        scripts:
+          configMap:
+            name: valkey-init-scripts
+            defaultMode: 0555
+        valkey-acl:
+          emptyDir:
+            medium: Memory
+        valkey-config:
+          configMap:
+            name: valkey-config
+        valkey-auth-secret:
+          secret:
+            secretName: valkey-auth
+            defaultMode: 0400
+        valkey-data:
+          persistentVolumeClaim:
+            claimName: valkey
+      persistent_volume_claims:
+        valkey:
+          storage: 8Gi
+  generators:
+    kubernetes:
+      secrets:
+        valkey-auth:
+          string_data:
+            default-password:
+              value: ${applications.valkey.password}
+      configs:
+        valkey-config:
+          data:
+            valkey.conf:
+              value: ${applications.valkey.config}
+        valkey-init-scripts:
+          data:
+            # templates/init_config.yaml of the valkey chart 0.12.0, rendered
+            # with tests/values.yaml, BSD-3-Clause (valkey.yml.LICENSE). The
+            # shell's ${...} are written as ${escape:...}.
+            init.sh:
+              value: |-
+                #!/bin/sh
+                set -eu
+
+                # Default config paths
+                VALKEY_CONFIG=${escape:VALKEY_CONFIG_PATH:-/data/conf/valkey.conf}
+
+                LOGFILE="/data/init.log"
+                DATA_DIR="/data/conf"
+
+                # Logging function (outputs to stderr and file)
+                log() {
+                  echo "$(date) $1" | tee -a "$LOGFILE" >&2
+                }
+                # Function to get password for a user
+                # Usage: get_user_password <username> [password_key]
+                # Returns: password via stdout, exits with error if not found
+                get_user_password() {
+                  username="$1"
+                  password_key="${escape:2:-$username}"
+                  password=""
+                  # Use inline password only
+                  if [ -f "/valkey-auth-secret/${escape:username}-password" ]; then
+                    password=$(cat "/valkey-auth-secret/${escape:username}-password")
+                    log "Using inline password for user $username"
+                  else
+                    log "ERROR: No password found for user $username"
+                    return 1
+                  fi
+
+                  echo "$password"
+                }
+
+                # Clean old log if requested
+                if [ "${escape:KEEP_OLD_LOGS:-false}" != "true" ]; then
+                  rm -f "$LOGFILE"
+                fi
+
+                if [ -f "$LOGFILE" ]; then
+                  log "Detected restart of this instance ($HOSTNAME)"
+                fi
+
+                log "Creating configuration in $DATA_DIR..."
+                mkdir -p "$DATA_DIR"
+                rm -f "$VALKEY_CONFIG"
+
+
+                # Base valkey.conf
+                log "Generating base valkey.conf"
+                {
+                  echo "port 6379"
+                  echo "protected-mode no"
+                  echo "bind * -::*"
+                  echo "dir /data"
+                } >>"$VALKEY_CONFIG"
+                # Create secure directory for ACL file
+                log "Creating /etc/valkey directory for ACL file"
+                mkdir -p /etc/valkey
+
+                # Set aclfile path in valkey.conf
+                echo "aclfile /etc/valkey/users.acl" >>"$VALKEY_CONFIG"
+
+                # Remove or reset existing ACL file if present (it may be read-only from previous run)
+                log "Preparing ACL file at /etc/valkey/users.acl"
+                if [ -f /etc/valkey/users.acl ]; then
+                  log "Removing existing read-only users.acl file"
+                  chmod 0600 /etc/valkey/users.acl
+                  rm -f /etc/valkey/users.acl
+                fi
+
+                # Create ACL file with secure permissions
+                touch /etc/valkey/users.acl
+                chmod 0600 /etc/valkey/users.acl
+                # Generate ACL entries for each user
+                log "Generating ACL entries for users"
+
+                # User: default
+                PASSWORD=$(get_user_password "default" "default") || exit 1
+
+                # Hash the password and write ACL entry
+                PASSHASH=$(echo -n "$PASSWORD" | sha256sum | cut -f 1 -d " ")
+                echo "user default on #$PASSHASH ~* &* +@all" >> /etc/valkey/users.acl
+
+                # Set final permissions
+                chmod 0400 /etc/valkey/users.acl
+                log "ACL file created with 0400 permissions"
+
+                # Append extra configs if present
+                if [ -f /usr/local/etc/valkey/valkey.conf ]; then
+                  log "Appending /usr/local/etc/valkey/valkey.conf"
+                  cat /usr/local/etc/valkey/valkey.conf >>"$VALKEY_CONFIG"
+                fi
+                if [ -d /extravalkeyconfigs ]; then
+                  log "Appending files in /extravalkeyconfigs/"
+                  cat /extravalkeyconfigs/* >>"$VALKEY_CONFIG"
+                fi
