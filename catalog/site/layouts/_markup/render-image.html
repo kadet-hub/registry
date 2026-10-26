@@ -4,6 +4,7 @@
 {{- with .Page.Params.generator }}{{ with index (where site.Data.catalog.generators "name" .) 0 }}{{ $base = .blob_url }}{{ end }}{{ end -}}
 {{- $cl := .Page.Store.Get "changelog" | default "" -}}{{/* CAT-36b */}}
 {{- with $cl }}{{ $base = . }}{{ end -}}
+{{- with .Page.Store.Get "recipe-blob" }}{{ $base = . }}{{ end -}}{{/* CAT-38 */}}
 {{- $href := "" -}}
 {{- if in (slice "http" "https") $u.Scheme -}}{{ $href = .Destination }}
 {{- else if and (eq $u.Scheme "") (eq $u.Host "") (not (strings.HasPrefix .Destination "#")) -}}{{ $href = cond (ne $base "") (printf "%s%s" $base (strings.TrimPrefix "/" (strings.TrimPrefix "./" .Destination))) .Destination }}

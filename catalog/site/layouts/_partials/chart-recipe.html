@@ -4,6 +4,10 @@
 {{- $sha := resources.Get "classes/recipes.sha" -}}
 {{- if not $sha }}{{ errorf "CAT-37c: recipe %s: classes/recipes.sha missing" $name }}{{ end -}}
 {{- $sha = strings.TrimSpace $sha.Content -}}
+{{- /* CAT-38: a recipe the index lists, whose files catalog/build took from the latest listed version's layer. */ -}}
+{{- $rec := false }}{{ range where site.Data.catalog.recipes "name" $name }}{{ $rec = . }}{{ end -}}
+{{- $latest := false }}{{ with $rec }}{{ $latest = .latest }}{{ end -}}
+{{- with $latest }}{{ $sha = .source.sha }}{{ end -}}
 {{- $readme := resources.Get (printf "classes/recipes/%s/README.md" $name) -}}
 {{- if not $readme }}{{ errorf "CAT-37c: recipe %s: classes/recipes/%s/README.md missing" $name $name }}{{ end -}}
 {{- $md := $readme.Content -}}
@@ -66,16 +70,30 @@
   {{- $classes = $classes | append (merge . (dict "components" $components)) -}}
 {{- end -}}
 {{- $fetch := "parameters:\n  kapitan:\n    vars:\n      target: recipes\n    dependencies:" -}}
-{{- range $deps -}}
-  {{- $fetch = printf `%s
+{{- $verify := slice }}{{ $blocked := slice }}{{ $renders := false }}{{ $policy := "" -}}
+{{- with $latest -}}
+  {{- /* CON-4: the recipe and the recipes it includes by version and digest, and nothing but dependencies. */ -}}
+  {{- $fetch = "parameters:\n  kapitan:\n    dependencies:" -}}
+  {{- range slice (dict "name" $name "version" .version "digest" .digest) | append .includes -}}
+    {{- $fetch = printf "%s\n      - type: oci\n        source: ghcr.io/%s/recipes/%s:%s@%s\n        output_path: inventory/classes/recipes/%s" $fetch $owner .name .version .digest .name -}}
+    {{- $verify = $verify | append (partial "commands.html" (dict "name" (printf "recipes/%s" .name) "version" .version "digest" .digest)).verify -}}
+  {{- end -}}
+  {{- range .generators }}{{ if .yanked }}{{ $blocked = $blocked | append . }}{{ end }}{{ end -}}
+  {{- with .scan }}{{ $scan := . }}{{ range where .checks "id" "renders" }}{{ $renders = dict "tool" .tool "run" $scan.run "at" $scan.at }}{{ end }}{{ end -}}
+  {{- with .output_capabilities }}{{ $policy = printf "output_capabilities:\n  \"compiled/<target>/*\": [%s]" (delimit . ", ") }}{{ end -}}
+{{- else -}}
+  {{- range $deps -}}
+    {{- $fetch = printf `%s
       - type: git
         source: https://github.com/%s/recipes.git
         ref: %s
         subdir: %s
         output_path: inventory/classes/recipes/%s` $fetch $owner $sha . . -}}
+  {{- end -}}
 {{- end -}}
 {{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "manifest" $manifest "image" $image "level" $level "include" $include
   "replaces" $replaces "requires" $requires "required" $required "classes" $classes "generators" $generators "fetch" $fetch
+  "record" $rec "latest" $latest "verify" (delimit $verify "\n\n") "blocked" $blocked "renders" $renders "policy" $policy
   "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"
   "sections" (where $sections "heading" "in" (slice "Settings" "Mapping" "Left out" "Renamed RBAC objects" "Proof"))
   "folder" (printf "https://github.com/%s/recipes/tree/%s/%s" $owner $sha $name)

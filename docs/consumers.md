@@ -316,6 +316,15 @@ data the catalog is built from:
   has its own page at `/kinds/<section>/<kind>/`.
 - `sections`: the section names, split into `builtin` (served by
   kube-apiserver without CRDs) and `custom`.
+- `recipes[]`: every recipe the index lists, with `name`, `description`
+  and `versions[]`, newest first. A version has `version`, `digest`,
+  `yanked`, `level` (the proof level its README states), `chart` (`repo`,
+  `version` and `digest`, or `null` when the recipe is built from a
+  release manifest, a Docker Compose file or an image) and `generators`.
+  Each entry of `generators` is a generator version the recipe pins, with
+  `name`, `version`, `digest` and `yanked`, the reason the index yanks that
+  generator version, or `null`. The workflow rejects a yanked generator, so
+  a recipe version that pins one fails although it is listed.
 
 The listed certmanager versions built for cert-manager 1.21.2, one
 `<version> <digest>` line each, newest first:
@@ -333,6 +342,16 @@ per section:
 ```sh
 curl -fsSL https://kadet-hub.org/catalog.json | jq -r --arg kind configmap '
   .kinds | to_entries[] | select(.value[$kind]) | "\(.key) \(.value[$kind].rendered | join(" "))"'
+```
+
+The listed versions of the cert-manager recipe that pin no yanked
+generator, one `<version> <digest>` line each, newest first:
+
+```sh
+curl -fsSL https://kadet-hub.org/catalog.json | jq -r --arg name cert-manager '
+  .recipes[] | select(.name == $name) | .versions[]
+  | select(.yanked == null and all(.generators[]; .yanked == null))
+  | "\(.version) \(.digest)"'
 ```
 
 To have Renovate propose only versions built for your upstream line,
@@ -376,7 +395,8 @@ change the filter.
 the site or its domain can change it. That is acceptable for proposals: the
 consumer workflow still verifies the digest against the attested index and
 fails when the index does not list it or lists it as yanked (CON-2 in the
-[spec](specs/consumers.md)). Do not fetch what `catalog.json` names without
+[spec](specs/consumers.md)). A recipe digest needs the same check against
+the index's `recipes` (CON-5). Do not fetch what `catalog.json` names without
 that check; the signed records are in `index.json` (see Verifying by hand).
 
 ## Verifying by hand

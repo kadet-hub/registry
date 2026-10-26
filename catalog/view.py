@@ -22,6 +22,7 @@ is a version's verified output diff; its first lines are shown (CAT-27).
 --wanted is the list of open generator requests (CAT-31).
 --gate is the registry's pull requests with their changed paths and comments;
 only counts and requirement IDs are kept (CAT-33).
+The index's recipes become recipes[] (CAT-38b).
 """
 
 import argparse
@@ -268,7 +269,23 @@ def view(index, owner, lookup, artifacts=None, sboms=None, rekor=None, discussio
     sections = {"builtin": sorted(s for s in by_kind if s in BUILTIN), "custom": sorted(s for s in by_kind if s not in BUILTIN)}
     labels = {s: named[s].pop() for s in sections["custom"] if len(named[s]) == 1}
     return {"owner": owner, "serial": index.get("serial"), "generators": generators, "kinds": by_kind, "sections": sections,
-            "software": labels, "releases": releases(index, {g["name"]: g["changelog"] or {} for g in generators})}
+            "software": labels, "releases": releases(index, {g["name"]: g["changelog"] or {} for g in generators}),
+            "recipes": recipes(index)}
+
+
+def recipes(index):
+    """CAT-38, CAT-38b: each recipe's versions, newest first, every generator pin with the index's yank reason."""
+    found = []
+    for name, versions in sorted((index.get("recipes") or {}).items()):
+        ordered = [dict(r, version=v, chart=r.get("chart"), generators=[
+                       dict(p, yanked=(index.get("generators", {}).get(p["name"], {}).get(p["version"]) or {}).get("yanked"))
+                       for p in r.get("generators") or []])
+                   for v, r in sorted(versions.items(), key=lambda kv: semver(kv[0]), reverse=True)]
+        latest = next((r for r in ordered if not r.get("yanked")), None)
+        shown = latest or ordered[0]
+        found.append({"name": name, "description": shown.get("description", ""), "latest": latest,
+                      "blob_url": blob_url(shown["source"]), "versions": ordered})
+    return found
 
 
 FIRST_WEEK = datetime.date(2026, 10, 12)
