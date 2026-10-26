@@ -1,0 +1,10 @@
+"""demo"""
+import os
+
+__version__ = "1.0.0"
+__version__: str = "1.0.0"
+__version__ = __version__ = ("1", 0, b"1.0.0")
+x = __version__ = 1.0
+(a, __version__) = 1, 2
+if os:
+    __version__ = f"{os}"

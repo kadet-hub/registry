@@ -203,6 +203,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | `kapitan inventory` output, including the tag before the digest |
   | `fuzz_documents` | `tag_check.kinds`, `schema_check.check`, `schema_diff.sources` | a compiled output file, as YAML and as JSON, and `schemas/sources.yaml` |
   | `fuzz_recipe` | `check_recipe.check` | a recipe's class file `init.yml` |
+  | `fuzz_version` | `check_entry.quality` | a generator tree's `__init__.py`, which QA-1a parses with `ast` |
 
   The callers exit non-zero on an uncaught exception (GI-7, CON-1), so a
   finding prints a traceback in place of a finding or blocks a valid
@@ -253,7 +254,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   - Test: workflow job `fuzz` (partial: a parser added without a target
     goes unnoticed); workflow job `workflow-lint` (pins and caches)
-  - Since: #243, #244; recipe entries: #377; recipe files: #382
+  - Since: #243, #244; recipe entries: #377; recipe files: #382; `__init__.py`: #388
 
 - GI-15: A job that holds `contents`, `packages`, `id-token`,
   `attestations` or `pages` write, or reads a secret other than
@@ -772,15 +773,19 @@ review go into the review comment and do not fail the gate.
   gated, so these three fail on their next bump until the value is fixed.
 
   The gate parses the file with `ast` and runs nothing from it. Every
-  top-level `__version__ = ...` statement counts. A value other than a
-  string literal is a finding, because the gate does not evaluate
-  expressions. Assignments inside a block, annotated assignments and
-  imports are not seen. A tree without such a statement passes: mutate and
-  the four terraform generators define no `__version__`. An `__init__.py`
-  that does not parse is a finding.
+  top-level `__version__ = ...` statement counts, and the first one that
+  differs is the only finding. Quoting a value in a finding reads the whole
+  file again, so a finding per statement takes time quadratic in the file
+  size: 128 KB of `__version__=1;` took 18 s on Python 3.13, and SEC-5's
+  limit of 1 MiB applies after this step. A value other than a string
+  literal is a finding, because the gate does not evaluate expressions.
+  Assignments inside a block, annotated assignments and imports are not
+  seen. A tree without such a statement passes: mutate and the four
+  terraform generators define no `__version__`. An `__init__.py` that does
+  not parse is a finding.
 
   - Test: `gate/test_check_entry.py` (`Quality.test_version_matches_the_tag`)
-  - Since: #373
+  - Since: #373; one finding: #388
 
 - QA-2: `license` MUST be the SPDX identifier of an OSI-approved license
   (`policy/licenses.txt`), and `LICENSE` MUST match it.

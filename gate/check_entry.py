@@ -218,6 +218,7 @@ def quality(tree, manifest, entry, root_license, policy):
         if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__version__" for t in node.targets) \
                 and not (isinstance(node.value, ast.Constant) and node.value.value == version):
             findings.append(f"QA-1a: __init__.py sets __version__ to {ast.get_source_segment(init, node.value)[:100]!r}, the tag is {version}")
+            break
     text = read_text(os.path.join(tree, "LICENSE"), LICENSE_HEAD)
     if text is None and root_license:
         text = read_text(root_license, LICENSE_HEAD)
