@@ -1,0 +1,29 @@
+name: setup-kind
+description: Install kind, kubectl and uv pinned by sha256 for check's renders proof (REC-9, GI-6).
+runs:
+  using: composite
+  steps:
+    - name: Install kind, kubectl and uv
+      shell: bash
+      env:
+        # kind's release notes list check's node image for this version.
+        # renovate: datasource=github-release-attachments depName=kubernetes-sigs/kind
+        KIND_VERSION: v0.33.0
+        KIND_SHA256: aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
+        # Renovate moves the version only; tests/checksum-pins names the SHA-256.
+        # renovate: datasource=github-releases depName=kubernetes/kubernetes
+        KUBECTL_VERSION: v1.37.1
+        KUBECTL_SHA256: 65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8
+        # renovate: datasource=github-release-attachments depName=astral-sh/uv
+        UV_VERSION: 0.13.5
+        UV_SHA256: f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f
+      run: |
+        curl -fsSLo "$RUNNER_TEMP/kind" "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+        echo "${KIND_SHA256}  $RUNNER_TEMP/kind" | sha256sum -c -
+        curl -fsSLo "$RUNNER_TEMP/kubectl" "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+        echo "${KUBECTL_SHA256}  $RUNNER_TEMP/kubectl" | sha256sum -c -
+        curl -fsSLo "$RUNNER_TEMP/uv.tar.gz" "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz"
+        echo "${UV_SHA256}  $RUNNER_TEMP/uv.tar.gz" | sha256sum -c -
+        # /usr/local/bin replaces the runner image's kind and comes before its /usr/bin/kubectl.
+        sudo install -m 0755 "$RUNNER_TEMP/kind" "$RUNNER_TEMP/kubectl" /usr/local/bin/
+        sudo tar -xzf "$RUNNER_TEMP/uv.tar.gz" -C /usr/local/bin --strip-components=1 uv-x86_64-unknown-linux-gnu/uv

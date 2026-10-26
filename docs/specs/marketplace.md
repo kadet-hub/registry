@@ -155,19 +155,19 @@ cover none of the changed files.
 
   | Job | Workflow | Inputs |
   |---|---|---|
-  | `gate-selftest` | `selftest.yml` | `sandbox/`, `scan/`, `gate/`, `policy/`, `consumer/unpack.py`, `tests/selftest`, `tests/samples/`, actions `setup-gate`, `setup-gvisor` |
+  | `gate-selftest` | `selftest.yml` | `sandbox/`, `scan/`, `gate/`, `policy/`, `consumer/unpack.py`, `tests/selftest`, `tests/samples/`, actions `setup-gate`, `setup-check`, `setup-gvisor`, `setup-kind` |
   | `consumer-selftest` | `consumer-selftest.yml` | `consumer/`, `sandbox/`, `gate/fetch_tree.py`, `policy/output/`, `policy/binaries.txt`, `tests/consumer-selftest`, `tests/consumers/`, action `setup-gvisor` |
   | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, action `setup-hugo` |
   | `release-tests` | `release-tests.yml` | `release/` |
   | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
-  | `checksum-pins` | `checksum-pins.yml` | `sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`, `tests/checksum-pins`, action `setup-gvisor`; pull requests from `renovate/` branches only (REG-7) |
+  | `checksum-pins` | `checksum-pins.yml` | `sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`, `tests/checksum-pins`, actions `setup-gvisor`, `setup-kind`; pull requests from `renovate/` branches only (REG-7) |
   | `fuzz` | `fuzz.yml` | `.clusterfuzzlite/`, `tests/fuzz/`, `gate/check_entry.py`, `gate/schema_diff.py`, `consumer/plan.py`, `sandbox/schema_check.py`, `sandbox/tag_check.py`, `sandbox/tf_schema.py`, `policy/` (GI-14) |
 
   Every workflow also lists its own file. `workflow_dispatch` runs a job
   regardless of the change.
 
   - Test: manual: the checks of the pull request that introduced this
-  - Since: #58, #243
+  - Since: #58, #243, #389
 
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
@@ -294,13 +294,14 @@ cover none of the changed files.
   index does not list, a yanked generator, a chart whose version differs
   from the `Source` line, a release manifest whose SHA-256 differs from
   it, an image without digest, a vendored file without
-  `.LICENSE`, and an object diff
-  against the chart outside the RCP-12 classes; cert-manager at its first
+  `.LICENSE`, an object diff
+  against the chart outside the RCP-12 classes, and a custom resource the
+  API server rejects in the dry run; cert-manager at its first
   tag passes. A consumer sample with a fetch inventory compiles
   cert-manager, and fails with the recipe pinned in the main inventory, with
   a digest the index does not list, and on its webhooks without
   `admission-webhook` in `output_capabilities`. Check: `gate-selftest`
-  (written for REC-4 to REC-8 and REC-15), `consumer-selftest` (not
+  (written for REC-4 to REC-9 and REC-15), `consumer-selftest` (not
   written).
 
 - AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4): a sample parent
@@ -447,13 +448,6 @@ coverage is named at each:
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
 
-- OQ-15: SEC-5 fails every file above 1 MiB, so the cnpg recipe cannot pass
-  REC-4: its `vendor/cnpg.crds.yaml`, the CRDs of the CloudNativePG chart
-  0.29.1, has 1,259,760 bytes. Either SEC-5 allows larger vendored files
-  in a recipe, or kadet-hub/recipes vendors one file per CRD, as
-  keycloak-operator does. Whether each CRD alone stays below 1 MiB is not
-  checked.
-
 ## Implementation inventory
 
 | Path | Content |
@@ -464,7 +458,9 @@ coverage is named at each:
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9, PUB-13 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
 | `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9) |
-| `.github/actions/setup-gate/` | gVisor, scanners and sandbox image for `gate.yml` and `selftest.yml` |
+| `.github/actions/setup-gate/` | gVisor, scanners, sandbox image and `check` for `gate.yml` and `selftest.yml` |
+| `.github/actions/setup-check/` | `check` of kadet-hub/recipes (REC-5, REC-7 to REC-9) |
+| `.github/actions/setup-kind/` | kind, kubectl and uv for the `renders` job and `selftest.yml` (REC-9) |
 | `policy/semgrep/blocking/`, `policy/semgrep/review/`, `policy/imports.txt` | SEC-3 |
 | `policy/gitleaks.toml` | SEC-1, SEC-4 |
 | `scan/` | SEC-1 to SEC-6: `static-scan` runner, `tree_check.py`, scanner requirements |
@@ -507,6 +503,6 @@ coverage is named at each:
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
 ClamAV, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
-Hugo, atheris) are pinned in
+Hugo, atheris, kind, kubectl, uv) are pinned in
 `sandbox/Dockerfile`, `.clusterfuzzlite/Dockerfile`, the requirements files, `.github/actions/` and
 `sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).

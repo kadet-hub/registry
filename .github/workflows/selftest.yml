@@ -12,6 +12,8 @@ on:
       - tests/selftest
       - tests/samples/**
       - .github/actions/setup-gate/**
+      - .github/actions/setup-check/**
+      - .github/actions/setup-kind/**
       - .github/actions/setup-gvisor/**
       - .github/actions/setup-oras/**
       - .github/workflows/selftest.yml
@@ -44,6 +46,8 @@ jobs:
             sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && python -m unittest discover -p "test_schema*.py" -v && cd ../sandbox && python -m unittest discover -p "test_output*.py" -v && python -m unittest discover -p "test_tag*.py" -v && python -m unittest discover -p "test_schema*.py" -v && python -m unittest discover -p "test_tf_schema*.py" -v && python -m unittest discover -p "test_apiserver*.py" -v'
 
       - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - uses: ./.github/actions/setup-kind # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
       - name: Gate selftest
         env:

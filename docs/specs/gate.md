@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Gate
 
 Status: Approved
-Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `tests/fuzz/`, `.clusterfuzzlite/`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql,fuzz,request-review}.yml`, `.github/actions/setup-gate/`, `.github/CODEOWNERS`, `.github/ruleset*.json`
+Code: `gate/`, `scan/`, `sandbox/`, `policy/`, `tests/samples/`, `tests/selftest`, `tests/fuzz/`, `.clusterfuzzlite/`, `.github/workflows/{gate,selftest,scheduled,scorecard,codeql,fuzz,request-review}.yml`, `.github/actions/{setup-gate,setup-check,setup-kind}/`, `.github/CODEOWNERS`, `.github/ruleset*.json`
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -52,16 +52,22 @@ which only a maintainer pull request changes (GI-2, REV-1).
   - Since: #8
 
 - GI-4: The job that posts the review comment (REV-2) MUST run separately with
-  `pull-requests: write` only and consume nothing but the gate's result file,
-  rendered as escaped text.
+  `pull-requests: write` only and consume nothing but the result files of
+  the `gate` and `renders` jobs, rendered as escaped text.
   - Test: none (partial: `gate.yml` job permissions)
-  - Since: #12
+  - Since: #12; `renders`: #389
 
-- GI-5: The required status check MUST be the `pull_request_target` gate job
-  with GitHub Actions as expected source, and a fork workflow reporting a
-  check of the same name MUST NOT satisfy it (AC-9).
-  - Test: manual: AC-9 run on #9 (2026-10-08)
-  - Since: #8
+- GI-5: The required status checks MUST be the `pull_request_target` jobs
+  `gate` and `renders` (REC-9) with GitHub Actions as expected source, and
+  a fork workflow reporting a check of either name MUST NOT satisfy them
+  (AC-9).
+
+  `renders` runs only when the gate job hands over a recipe's compile.
+  Otherwise it is skipped, which counts as passed, and the gate job
+  decides alone.
+
+  - Test: manual: AC-9 run on #9 (2026-10-08) (partial: not repeated for `renders`)
+  - Since: #8; `renders`: #389
 
 - GI-6: Every third-party action MUST be pinned by full commit SHA and every
   downloaded tool binary by sha256 or by the digest of the image it is
@@ -1373,12 +1379,12 @@ code diff and the output diff, not only the verdict.
 - REV-1: A ruleset on `main` MUST require a pull request with one approval
   from someone other than the last pusher, dismiss approvals on new pushes,
   require code owner review for `.github/`, `policy/`, `gate/`, `scan/` and
-  `sandbox/`, require the gate check (GI-5) on a branch up to date with
+  `sandbox/`, require the gate checks (GI-5) on a branch up to date with
   `main` (DEC-14), and block force pushes and deletion. The organization
   MUST require two-factor authentication. The maintainer's own pull
   requests use the admin bypass (RISK-1).
   - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset.json`
-  - Since: #10
+  - Since: #10; `renders`: #389
 
 - REV-2: The gate MUST post the comment described above on every pull request
   that adds or changes an entry.

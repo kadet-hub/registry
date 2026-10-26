@@ -46,7 +46,7 @@ docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/gate kadet-hub/sandbo
   python -m unittest discover -p 'test_check*.py'
 docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/consumer kadet-hub/sandbox \
   python -m unittest discover
-tests/selftest            # every gate sample, needs gVisor (runsc)
+tests/selftest            # every gate sample, needs gVisor (runsc), and kind, kubectl and uv for the recipe samples
 tests/consumer-selftest   # the consumer workflow against its samples
 tests/workflow-policy     # pinned actions and permissions
 ```

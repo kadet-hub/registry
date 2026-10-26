@@ -1,0 +1,11 @@
+classes:
+  - recipes.valkey
+parameters:
+  namespace: valkey
+  kapitan:
+    vars:
+      target: valkey
+  # The password tests/values.yaml gives the chart.
+  applications:
+    valkey:
+      password: smoke-password

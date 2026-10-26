@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 # The recipe's chart and its sandbox compile (REC-7, REC-8).
 #
-# Usage: recipe-compile <recipes dir> <name> <static dir>
+# Usage: recipe-compile <recipes dir> <name> <static dir> [<proof dir>]
 # <recipes dir> is what gate/run fetched: the recipes of source.sha with the
 # tests files of <name> and the tests/target.yml of each recipe it includes.
 # <static dir> is what gate/recipe-static wrote: the verified generators in
 # lib/ and recipe.json. Needs: what sandbox/run needs, network for the chart
 # or manifest, and the pinned check of kadet-hub/recipes in $RECIPES_CHECK
-# (.github/actions/setup-gate). Prints findings; exits 1 on any.
+# (.github/actions/setup-gate). Prints findings; exits 1 on any. With
+# <proof dir> and no finding, writes there what gate/recipe-renders reads
+# (REC-9): the compile as out/ and, for a chart or manifest, the render as
+# rendered.yaml.
 set -euo pipefail
 
 recipes=$(cd -- "$1" && pwd)
 name=$2
 static=$(cd -- "$3" && pwd)
+proof=${4:+$(cd -- "$4" && pwd)}
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
 check=$(cd -- "${RECIPES_CHECK:-$root/gate/.check}" && pwd)
@@ -157,5 +161,9 @@ if ! (cd -- "$work" && diff -r -- out out-cache) >"$work/cache.diff"; then
   echo "CMP-5: output differs with --cache on omegaconf:"
   head -n 20 -- "$work/cache.diff"
   status=1
+fi
+if [[ -n $proof ]] && ((status == 0)); then
+  cp -R -- "$work/out" "$proof/out"
+  if ((${#rendered[@]})); then cp -- "$work/rendered.yaml" "$proof/rendered.yaml"; fi
 fi
 exit "$status"

@@ -1,0 +1,20 @@
+classes:
+  - .valkey
+parameters:
+  kapitan:
+    dependencies:
+      - type: oci
+        source: ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:987694d4d8b061a6937fb5b8acd17416a16ed3fea36786a7604e6d607c210e24
+        output_path: lib/kubernetes
+    compile:
+      - input_type: kadet
+        input_paths:
+          - lib/kubernetes
+        output_path: manifests/
+        output_type: yml
+  applications:
+    valkey:
+      version: 9.1.2
+      # The target sets password, the password of the ACL user default.
+      config: |
+        appendonly yes

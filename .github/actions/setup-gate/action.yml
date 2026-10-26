@@ -16,16 +16,7 @@ runs:
         python3 -m venv scan/.venv
         scan/.venv/bin/pip install --quiet --require-hashes --no-deps -r scan/requirements.txt
 
-    - name: Fetch check
-      shell: bash
-      env:
-        # renovate: datasource=github-tags depName=kadet-hub/recipes versioning=regex:^check-v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$
-        CHECK_VERSION: check-v0.9.0
-        CHECK_SHA: 89b14c087fafa3ca3de39c61680ef7d84da3d423
-      run: |
-        git init -q --bare "$RUNNER_TEMP/check.git"
-        git --git-dir="$RUNNER_TEMP/check.git" fetch -q --depth=1 --no-tags https://github.com/kadet-hub/recipes.git "$CHECK_SHA"
-        python3 gate/fetch_tree.py --git-dir "$RUNNER_TEMP/check.git" --rev "$CHECK_SHA" --path check --out gate/.check
+    - uses: ./.github/actions/setup-check # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
     - uses: ./.github/actions/setup-gvisor # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
