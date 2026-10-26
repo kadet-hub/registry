@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: nextcloud
+  tag: nextcloud-v1.0.0
+  sha: 4dd68cccf5b305a420f8dc04d5407d415d53a0cf
+owners: [3042152]
+exceptions: []
