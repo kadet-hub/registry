@@ -224,7 +224,7 @@ CON-1 checks, fetches and verifies them like any generator.
   so the GitHub workflow and the GitLab template run them alike.
 
   - Test: `consumer/test_consumer.py` (`FetchInventory`, `Includes`, `Dependencies.test_recipe_in_main_inventory`); `consumer-selftest` (`fail-recipe-main-inventory`, `fail-fetch-inventory-shape`); manual: `consumer/run` with `SANDBOX_TRACE=0` on a cert-manager fetch inventory against index serial 64 (2026-10-26) (partial: the AC-12 samples that fetch from ghcr.io and the AC-14 samples are not written, since `consumer-selftest` has neither oras nor a token for `gh attestation verify`, and no published recipe includes another yet)
-  - Since: this change
+  - Since: #397
 
 - CON-5: Verification of a recipe MUST check the artifact attestation as
   CON-2 does for `oci://ghcr.io/kadet-hub/recipes/<name>@sha256:<digest>`,
@@ -239,7 +239,7 @@ CON-1 checks, fetches and verifies them like any generator.
   first run fails; the cert-manager recipe renders admission webhooks.
 
   - Test: `consumer/test_consumer.py` (`RecipeIndex`); manual: the CON-4 run
-  - Since: this change
+  - Since: #397
 
 - CON-6: `docs/consumers.md` MUST describe the fetch inventory, the policy
   field, the two commands of a local compile
@@ -247,4 +247,4 @@ CON-1 checks, fetches and verifies them like any generator.
   and `kapitan compile`) and the verification of a recipe by hand.
 
   - Test: none
-  - Since: this change
+  - Since: #397
