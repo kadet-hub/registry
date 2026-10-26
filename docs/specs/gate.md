@@ -206,7 +206,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   |---|---|---|
   | `fuzz_entry` | `check_entry.step_entry` | `generators/<name>.yaml` or `recipes/<name>.yaml`, new or a bump, from an owner, a stranger, a maintainer or Renovate |
   | `fuzz_manifest` | `check_entry.step_manifest`, `schema_diff.sources` | `kapitan-generator.yaml`, for a new entry and a bump |
-  | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | `kapitan inventory` output, including the tag before the digest |
+  | `fuzz_plan` | `plan.dependencies`, `plan.check_index` | `kapitan inventory` output of the main and the fetch inventory (CON-4), including the tag before the digest |
   | `fuzz_documents` | `tag_check.kinds`, `schema_check.check`, `schema_diff.sources` | a compiled output file, as YAML and as JSON, and `schemas/sources.yaml` |
   | `fuzz_recipe` | `check_recipe.check` | a recipe's class file `init.yml` |
   | `fuzz_version` | `check_entry.quality` | a generator tree's `__init__.py`, which QA-1a parses with `ast` |

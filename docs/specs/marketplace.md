@@ -302,7 +302,9 @@ cover none of the changed files.
   a digest the index does not list, and on its webhooks without
   `admission-webhook` in `output_capabilities`. Check: `gate-selftest`
   (written for REC-4 to REC-9 and REC-15 to REC-17), `consumer-selftest`
-  (not written).
+  (written for the recipe pinned in the main inventory; the samples that
+  fetch from ghcr.io are not written), `consumer/test_consumer.py`
+  (`RecipeIndex` for the digest the index does not list).
 
 - AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4): a sample parent
   fails the gate when its included recipe's tree at `source.sha` matches no
@@ -316,7 +318,8 @@ cover none of the changed files.
   different digests. Check: `gate-selftest` (written for the gate, against
   an index and attestations that `tests/selftest` stubs until a recipe is
   published), `release/test_release.py` (`BuildAll.test_recipe_record` for
-  the record), `consumer-selftest` (not written).
+  the record), `consumer/test_consumer.py` (`Includes` for the consumer
+  checks), `consumer-selftest` (not written).
 
 ## Residual risk
 
@@ -475,17 +478,17 @@ coverage is named at each:
 | `.github/workflows/tf-schema-verify.yml`, `gate/tf-schema-verify` | QA-9 |
 | `sandbox/` | SEC-9 to SEC-12: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
-| `tests/consumers/` | AC-10 |
+| `tests/consumers/` | AC-10, AC-12 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/{consumer-selftest,catalog-tests,release-tests}.yml` | CI-1: `consumer-selftest`, `catalog-tests`, `release-tests` |
 | `.github/workflows/release.yml` | PUB-1 to PUB-13, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-13: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff`, `mirror-image` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
-| `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2 |
+| `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2, CON-4, CON-5 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
-| `docs/consumers.md` | CON-2, CON-3, PUB-12, PUB-13b, CAT-34d, CAT-34e |
+| `docs/consumers.md` | CON-2, CON-3, CON-6, PUB-12, PUB-13b, CAT-34d, CAT-34e |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |

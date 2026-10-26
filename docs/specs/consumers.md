@@ -213,8 +213,18 @@ CON-1 checks, fetches and verifies them like any generator.
   `**/inventory/**` only and needs a pattern for the fetch inventory
   (kadet-hub/renovate-config, follow-up).
 
-  - Test: `consumer/test_consumer.py`; `consumer-selftest` (AC-12, AC-14) (not written)
-  - Since: not implemented
+  Kapitan 0.36.3 writes `compile`, `labels`, `secrets`,
+  `target_full_path`, `validate` and `vars.target` into every target's
+  `parameters.kapitan`, empty when the target does not set them. Step 2
+  accepts these keys while they are empty, so a fetch target that sets
+  `vars.target` fails. The dependencies pass the OCI checks of CON-1 step
+  2, so `hosts.oci` must allow `ghcr.io`, which the generators the recipes
+  pin need anyway. A recipe source in the main inventory fails whether or
+  not the policy names a fetch inventory. `consumer/run` holds the steps,
+  so the GitHub workflow and the GitLab template run them alike.
+
+  - Test: `consumer/test_consumer.py` (`FetchInventory`, `Includes`, `Dependencies.test_recipe_in_main_inventory`); `consumer-selftest` (`fail-recipe-main-inventory`, `fail-fetch-inventory-shape`); manual: `consumer/run` with `SANDBOX_TRACE=0` on a cert-manager fetch inventory against index serial 64 (2026-10-26) (partial: the AC-12 samples that fetch from ghcr.io and the AC-14 samples are not written, since `consumer-selftest` has neither oras nor a token for `gh attestation verify`, and no published recipe includes another yet)
+  - Since: this change
 
 - CON-5: Verification of a recipe MUST check the artifact attestation as
   CON-2 does for `oci://ghcr.io/kadet-hub/recipes/<name>@sha256:<digest>`,
@@ -228,8 +238,8 @@ CON-1 checks, fetches and verifies them like any generator.
   the consumer sees which `output_capabilities` its policy needs before the
   first run fails; the cert-manager recipe renders admission webhooks.
 
-  - Test: `consumer/test_consumer.py` (not written)
-  - Since: not implemented
+  - Test: `consumer/test_consumer.py` (`RecipeIndex`); manual: the CON-4 run
+  - Since: this change
 
 - CON-6: `docs/consumers.md` MUST describe the fetch inventory, the policy
   field, the two commands of a local compile
@@ -237,4 +247,4 @@ CON-1 checks, fetches and verifies them like any generator.
   and `kapitan compile`) and the verification of a recipe by hand.
 
   - Test: none
-  - Since: not implemented
+  - Since: this change
