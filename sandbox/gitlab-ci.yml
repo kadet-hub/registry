@@ -34,8 +34,8 @@ kadet-hub-compile:
     OWNER: $[[ inputs.owner ]]
     SANDBOX_TRACE: "0"
     # renovate: datasource=github-release-attachments depName=oras-project/oras
-    ORAS_VERSION: v1.3.4
-    ORAS_SHA256: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
+    ORAS_VERSION: v1.3.5
+    ORAS_SHA256: f48a73ea6d026a862c3919fc773da9a8c86fc259c2c737d5baed3b8b9614ad22
     # renovate: datasource=github-releases depName=helm/helm
     HELM_VERSION: v4.3.1
     HELM_SHA256: 0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
