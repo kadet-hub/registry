@@ -1,12 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Consumer policy .kapitan-sandbox.yaml (CON-1, CON-2)",
+  "title": "Consumer policy .kapitan-sandbox.yaml (CON-1, CON-2, CON-4)",
   "type": "object",
   "additionalProperties": false,
   "required": ["index_serial", "hosts"],
   "properties": {
     "index_serial": {"type": "integer", "minimum": 0},
     "inventory_backend": {"enum": ["reclass", "reclass-rs", "omegaconf"]},
+    "fetch_inventory": {"type": "string", "pattern": "^(?!(.*/)?(\\.\\.?|\\.git)(/|$))[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$"},
     "hosts": {
       "type": "object",
       "additionalProperties": false,
