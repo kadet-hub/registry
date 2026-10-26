@@ -98,7 +98,11 @@ def description(readme, findings):
     if any(CONTROL.search(ln) for ln in para):
         findings.append("QA-5a: README.md: the first paragraph holds a control or bidirectional formatting character")
         return None
-    return re.sub(r"[ \t\r]+", " ", " ".join(para)).strip()
+    text = re.sub(r"[ \t\r]+", " ", " ".join(para)).strip()
+    if len(text) > 300:
+        findings.append(f"REC-13: README.md: the description has {len(text)} characters, RCP-32 allows 300")
+        return None
+    return text
 
 
 def published(index, recipe, rule, findings):

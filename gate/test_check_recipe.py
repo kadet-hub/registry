@@ -112,6 +112,9 @@ class Recipe(unittest.TestCase):
         readme = "# demo\r\n\r\nThe demo\trecipe.\r\nSecond line.\r\n\r\n## Include\n"
         self.assertEqual(check({"README.md": readme})[1]["description"], "The demo recipe. Second line.")
         self.assertEqual(check({"README.md": "# demo\nText right below.\n"})[1]["description"], "Text right below.")
+        self.assertEqual(len(check({"README.md": "# demo\n\n" + "a" * 300 + "\n"})[1]["description"]), 300)
+        self.assert_finding("REC-13: README.md: the description has 301 characters, RCP-32 allows 300",
+                            {"README.md": "# demo\n\n" + "a" * 150 + "\n" + "a" * 150 + "\n"})
         for readme in ("# demo\n\n## Include\n", "# demo\n", "", None, "No heading.\n"):
             self.assert_finding("REC-13: README.md has no paragraph after its heading", {"README.md": readme})
         for char in ("\x1b", "\x00", "\x0c", "\x85", "\u202e", "\u2066", "\u061c"):

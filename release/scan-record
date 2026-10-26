@@ -26,7 +26,7 @@ jq -n -S \
   --argjson recipe "$([[ ${2:-} == recipe ]] && echo true || echo false)" \
   --arg check "$(sed -n 's/^ *CHECK_VERSION: check-v//p' -- "$root/.github/actions/setup-check/action.yml")" \
   --arg kind "$(sed -n 's/^ *KIND_VERSION: //p' -- "$root/.github/actions/setup-kind/action.yml")" \
-  '{at: $at, gate: $gate, run: $run, exceptions: $exceptions, checks: [
+  '{at: $at, gate: $gate, run: $run, exceptions: $exceptions, checks: ([
     {id: "secrets", tool: "gitleaks \($gitleaks)"},
     {id: "malware", tool: "ClamAV \($clamav)"},
     {id: "package", tool: "GuardDog \($guarddog)"},
@@ -36,4 +36,4 @@ jq -n -S \
     {id: "sandbox", tool: "gVisor \($gvisor), Kapitan \($kapitan)"},
     {id: "output", tool: "Conftest \($conftest)"},
     {id: "ci-env", tool: "Kapitan \($kapitan)"}]
-    + if $recipe then [{id: "lint", tool: "check \($check)"}, {id: "renders", tool: "check \($check), kind \($kind)"}] else [] end}'
+    + if $recipe then [{id: "lint", tool: "check \($check)"}, {id: "renders", tool: "check \($check), kind \($kind)"}] else [] end)}'
