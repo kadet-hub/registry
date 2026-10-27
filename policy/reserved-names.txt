@@ -1,5 +1,5 @@
 # Names no new entry may take (REG-2, REG-3, REG-9): removed entries and
-# names that would read as official or that the registry publishes under (PUB-13, REC-2).
+# names that would read as official or that the registry publishes under (REG-2a, PUB-13, REC-2).
 kapitan
 kadet
 krab
@@ -11,3 +11,5 @@ official
 calico-resources
 mirror
 recipes
+index
+sandbox
