@@ -330,6 +330,17 @@ RABBITMQ_OPERATOR_RECIPE_FILES = {
     "operator.yml": "parameters:\n  components:\n    rabbitmq-cluster-operator:\n      application: rabbitmq-cluster-operator\n",
 }
 
+# CAT-37c: nextcloud, rebuilt from Nextcloud's chart, with the included recipes postgresql and valkey.
+NEXTCLOUD_RECIPE_FILES = {
+    "README.md": "# nextcloud\n\nNextcloud, rendered by the kadet-hub `kubernetes` generator from Nextcloud's Helm chart.\n\n"
+                 f"Source: `oci://ghcr.io/nextcloud/helm/nextcloud:9.4.1@sha256:{'6' * 64}`\n\nLevel: `deploys`\n\nRequires: `gateway-api`\n\n"
+                 "## Include\n\n```yaml\nclasses:\n  - recipes.nextcloud\n```\n\n"
+                 "## Required parameters\n\n`applications.nextcloud.host` must be set.\n\n"
+                 "## Proof\n\n`check nextcloud --level deploys` on kind, with `cnpg` installed first.\n",
+    "init.yml": CHART_RECIPE_FILES["init.yml"].replace("  - .controller\n  - .webhook\n", "  - recipes.postgresql\n  - recipes.valkey\n  - .nextcloud\n"),
+    "nextcloud.yml": "parameters:\n  components:\n    nextcloud:\n      application: nextcloud\n",
+}
+
 # CAT-37f: keycloak, designed on Keycloak's image and moved from kadet-hub/examples under the same name, with the prerequisites keycloak-operator and cert-manager and the included recipe postgresql.
 KEYCLOAK_SOURCE = f"quay.io/keycloak/keycloak:26.8.1@sha256:{'3' * 64}"
 KEYCLOAK_RECIPE_FILES = {
@@ -361,7 +372,8 @@ def recipe_classes(root):
                           ("external-dns-powerdns", EXTERNAL_DNS_RECIPE_FILES), ("kafka", KAFKA_RECIPE_FILES), ("strimzi", STRIMZI_RECIPE_FILES),
                           ("postgresql", POSTGRESQL_RECIPE_FILES), ("cnpg", CNPG_RECIPE_FILES),
                           ("keycloak", KEYCLOAK_RECIPE_FILES), ("keycloak-operator", KEYCLOAK_OPERATOR_RECIPE_FILES),
-                          ("rabbitmq", RABBITMQ_RECIPE_FILES), ("rabbitmq-cluster-operator", RABBITMQ_OPERATOR_RECIPE_FILES)):
+                          ("rabbitmq", RABBITMQ_RECIPE_FILES), ("rabbitmq-cluster-operator", RABBITMQ_OPERATOR_RECIPE_FILES),
+                          ("nextcloud", NEXTCLOUD_RECIPE_FILES)):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
             with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
@@ -395,7 +407,7 @@ LISTED_INDEX = {"serial": 64, "generators": {
         "external-dns-powerdns": {"1.0.0": recipe_record("external-dns-powerdns", "4", includes=(("powerdns", "1.0.0", "5"),), scan=SCAN)},
         "powerdns": {"1.0.0": {k: v for k, v in recipe_record("powerdns", "5").items() if k != "chart"}},  # designed: no chart
         "mysql": {"1.0.0": recipe_record("mysql", "6", yanked="entry removed")},  # every version yanked
-        "nextcloud": {"1.0.0": recipe_record("nextcloud", "7")},  # no content page
+        "no-page": {"1.0.0": recipe_record("no-page", "7")},  # no content page
     }}
 # CAT-38: the cert-manager layer of 1.1.0, with another chart and generator pin than main, a relative link and a shortcode.
 ARTIFACT_CHART = f"oci://quay.io/jetstack/charts/cert-manager:v1.22.0@sha256:{'c' * 64}"
@@ -707,7 +719,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 15)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 16)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -814,7 +826,7 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(["cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "keycloak", "keycloak-operator", "rabbitmq", "rabbitmq-cluster-operator"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(["cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "keycloak", "keycloak-operator", "rabbitmq", "rabbitmq-cluster-operator", "nextcloud"]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         self.assertIn(" The files are read from kadet-hub/recipes when the site is built.", index)
         chart = index
@@ -852,6 +864,9 @@ class Site(unittest.TestCase):
         self.assertIn('<meta name="description" content="Bitnami keycloak Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
         self.assertIn("<title>Keycloak Operator on Kubernetes without Helm, with Kapitan</title>", self.page("recipes", "keycloak-operator"))  # no room for the suffix
+        page = self.page("recipes", "nextcloud")
+        self.assertIn("<title>Nextcloud on Kubernetes without Helm, with Kapitan · kadet-hub</title>", page)
+        self.assertIn('<meta name="description" content="Nextcloud Helm chart alternative: Kapitan', page)
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
         for name in ["cert-manager", "valkey", "mysql", "mongodb", "external-dns-powerdns", "kafka", "postgresql", "keycloak", "rabbitmq"]:
@@ -2007,7 +2022,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn("Until this recipe is published as an OCI artifact", page)
         self.assertNotIn("Latest version", page)
         self.assertIn('<br><span class="warning">Yanked: entry removed</span></li>', page)
-        self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "nextcloud")))  # no content page, no page
+        self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "no-page")))  # no content page, no page
         page = self.page("recipes", "miniflux")  # unlisted
         self.assertNotIn("<h2>Versions</h2>", page)
         self.assertIn("        subdir: miniflux\n", self.snippet(page, "fetch"))
@@ -2076,7 +2091,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         with open(os.path.join(self.out, "catalog.json"), encoding="utf-8") as f:
             data = json.load(f)
         recipes = {r["name"]: r for r in data["recipes"]}
-        self.assertEqual(list(recipes), ["cert-manager", "external-dns-powerdns", "mysql", "nextcloud", "powerdns", "valkey"])
+        self.assertEqual(list(recipes), ["cert-manager", "external-dns-powerdns", "mysql", "no-page", "powerdns", "valkey"])
         fields = ("version", "digest", "yanked", "level", "chart", "generators")
         self.assertEqual([{k: v[k] for k in fields} for v in recipes["cert-manager"]["versions"]], [
             {"version": "1.1.0", "digest": "sha256:" + "b" * 64, "yanked": None, "level": "deploys",
