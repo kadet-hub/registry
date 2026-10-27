@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: ocm
+  tag: ocm-v0.1.0
+  sha: 01d9c3c0b530dfd3dd256c9e8d946983ad2c7f3a
+owners: [3042152]
