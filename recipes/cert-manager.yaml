@@ -1,7 +1,7 @@
 source:
   repo: https://github.com/kadet-hub/recipes.git
   path: cert-manager
-  tag: cert-manager-v1.0.1
-  sha: d9447b43c11a46ccca33af010622e5933db8b198
+  tag: cert-manager-v1.0.2
+  sha: 21d393a220614c2e353c431ae0c3bff4b8485c90
 owners: [3042152]
 exceptions: []
