@@ -1542,7 +1542,10 @@ Related: CAT-15, CAT-30, CON-2.
   keeps "Keycloak on Kubernetes with Kapitan" with a description that leads
   with "Bitnami keycloak Helm chart alternative:". It requires
   `keycloak-operator`, whose page is "Keycloak Operator on Kubernetes
-  without Helm, with Kapitan", and `cert-manager`. The title "Valkey on
+  without Helm, with Kapitan", and `cert-manager`. nextcloud, rebuilt
+  from Nextcloud's own chart, which Bitnami has no counterpart for, is
+  "Nextcloud on Kubernetes without Helm, with Kapitan" with a description
+  that leads with "Nextcloud Helm chart alternative:". The title "Valkey on
   Kubernetes without Helm" named neither Redis nor Bitnami, although
   CAT-11f sends the Redis queries and "valkey helm chart not bitnami" to
   the page. Moving those queries to the Bitnami guide was considered, but
@@ -1554,7 +1557,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_recipe_prerequisite`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
   - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364;
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
-    recipes' prerequisites: #368
+    recipes' prerequisites: #368; nextcloud: this change
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1712,7 +1715,7 @@ Related: CAT-15, CAT-30, CON-2.
   version list.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`)
-  - Since: this change
+  - Since: #399
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 
@@ -1728,7 +1731,7 @@ Related: CAT-15, CAT-30, CON-2.
   names it among the facts at the top.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_index_shows_the_latest_version`)
-  - Since: this change; valkey moved: #345; mysql moved: #349;
+  - Since: #399; valkey moved: #345; mysql moved: #349;
     mongodb moved: #352; external-dns-powerdns moved: #363; kafka moved: #364;
     rabbitmq moved: #367; postgresql moved: #366; keycloak moved: #368;
     name clash check dropped: #372
@@ -1749,7 +1752,7 @@ Related: CAT-15, CAT-30, CON-2.
   the fixture build, as for CAT-34d.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_catalog_json`, `ListedRecipe.test_not_counted_with_generators`, `ListedRecipe.test_consumer_docs_lookup`)
-  - Since: this change
+  - Since: #399
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
