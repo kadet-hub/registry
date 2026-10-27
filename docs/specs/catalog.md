@@ -1557,7 +1557,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_recipe_prerequisite`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
   - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364;
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
-    recipes' prerequisites: #368; nextcloud: this change
+    recipes' prerequisites: #368; nextcloud: #402
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
