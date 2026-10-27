@@ -92,6 +92,10 @@ def main():
         print(f"fetch: tree has more than {MAX_FILES} files")
         return 1
     findings, total = [], 0
+    blobs = [e[2] for e in entries if e[1] == "blob"]
+    # One process for every size instead of one per file.
+    sizes = dict(line.split() for line in git(a.git_dir, "cat-file", "--batch-check=%(objectname) %(objectsize)",
+                                               data="\n".join(blobs).encode()).decode().splitlines()) if blobs else {}
     os.makedirs(a.out, exist_ok=True)
     for mode, kind, obj, raw_path in entries:
         rel = raw_path.decode("utf-8", "replace")
@@ -105,7 +109,7 @@ def main():
         if any(x in (b"", b".", b"..", b".git") for x in parts):
             findings.append(f"tree: unsafe path {rel!r}")
             continue
-        size = int(git(a.git_dir, "cat-file", "-s", obj)) if kind == "blob" else 0
+        size = int(sizes[obj]) if kind == "blob" else 0
         total += size
         if total > MAX_TOTAL:
             print("fetch: tree above 50 MiB")
