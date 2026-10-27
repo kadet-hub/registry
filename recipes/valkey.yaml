@@ -1,7 +1,7 @@
 source:
   repo: https://github.com/kadet-hub/recipes.git
   path: valkey
-  tag: valkey-v1.0.0
-  sha: 82032aded0253f273c9ac227044be40b2dc687f8
+  tag: valkey-v1.0.1
+  sha: 21d393a220614c2e353c431ae0c3bff4b8485c90
 owners: [3042152]
 exceptions: []
