@@ -49,7 +49,8 @@ own.
      not allow, an `http` dependency, an OCI dependency whose source is not
      `<host>/<repository>[:<tag>]@sha256:<digest>` or that sets
      `insecure`, `tls_verify: false`, `subpath` or `media_type`, a helm
-     dependency without an exact `version` or with `helm_path`, a git
+     dependency without an exact `version`, with `helm_path` or with a
+     `chart_name` that does not match `^[a-z0-9][a-z0-9-]*$`, a git
      dependency whose `ref` is not a full commit SHA or with `submodules`,
      two dependencies sharing an `output_path`, an inventory that is not a
      mapping of target names to targets, and a target whose
@@ -77,6 +78,20 @@ own.
 
   - Test: `consumer-selftest` (AC-10); `consumer/test_consumer.py`
   - Since: #15, #234, #244
+
+- CON-1c: Unpacking a fetched tar or zip archive MUST fail on a member that
+  is not a regular file or directory, on a member path that leaves the
+  `output_path`, and when the members add up to more than 500 MiB.
+
+  `consumer/unpack.py` unpacks OCI layers, `unpack: true` downloads and the
+  gate's charts (SEC-8). The download limit of 100 MiB does not bound what
+  an archive expands to. 500 MiB is a bound on disk use, not a measured
+  size of real artifacts. The chart name rule is the one the manifest
+  schema sets for the gate, because `consumer/run` uses the name as a path
+  when it moves the unpacked chart.
+
+  - Test: `consumer/test_unpack.py`
+  - Since: this change
 
 - CON-1a: The marketplace MUST publish a GitLab CI template that runs the
   same steps with the published sandbox image.
