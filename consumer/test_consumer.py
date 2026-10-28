@@ -75,6 +75,8 @@ class Dependencies(unittest.TestCase):
             (oci(f"ghcr.io/kadet-hub/gen@{DIGEST}", output_path="../x"), "output_path"),
             (helm(version=None), "exact chart version"),
             (helm(source="http://charts.example.org"), "https URL"),
+            (helm(chart_name="../../etc"), "chart_name"),
+            (helm(chart_name="--repo"), "chart_name"),
             ({"type": "git", "source": "https://github.com/a/b.git", "ref": "main", "output_path": "x"}, "full commit SHA"),
             ({"type": "git", "source": "https://github.com/a/b.git", "ref": "c" * 40, "output_path": "x",
               "submodules": True}, "submodules"),

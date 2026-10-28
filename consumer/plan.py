@@ -26,6 +26,7 @@ RELPATH = re.compile(r"^[A-Za-z0-9._/-]+$")
 OCI = re.compile(r"^(?P<host>[a-z0-9.-]+(?::\d+)?)/(?P<repo>[a-z0-9._/-]+)"
                  r"(?::(?P<tag>[A-Za-z0-9_][A-Za-z0-9._-]{0,127}))?@(?P<digest>sha256:[0-9a-f]{64})$")
 NAME = re.compile(r"^[a-z][a-z0-9-]{1,38}$")
+CHART = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 VERSION = re.compile(r"^v?\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$")
 
@@ -109,6 +110,8 @@ def dependencies(inventory, policy, owner, fetch=False):
                     errors.append("version must be an exact chart version")
                 if d.get("helm_path"):
                     errors.append("helm_path is not supported")
+                if not CHART.match(str(d.get("chart_name", ""))):
+                    errors.append("chart_name must match ^[a-z0-9][a-z0-9-]*$, as the gate's manifest schema")
                 dep.update(host=host, chart_name=str(d.get("chart_name", "")), version=d.get("version"), sha256=None)
             elif kind == "git":
                 host = https_host(source)
