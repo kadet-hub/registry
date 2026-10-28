@@ -188,6 +188,11 @@ class Entry(unittest.TestCase):
         self.assertTrue(has(Case().entry("generators/kapitan.yaml", entry()), "REG-2"))
         self.assertTrue(has(Case(base_entries={"kube-rnetes": entry()}).entry("generators/kubernetes.yaml", entry()), "REG-3"))
 
+    def test_registry_packages_are_reserved(self):  # REG-2a
+        for name in ("index", "sandbox", "mirror", "recipes"):
+            with self.subTest(name=name):
+                self.assertTrue(has(Case().entry(f"generators/{name}.yaml", entry()), f"REG-2: {name} is reserved"))
+
     def test_bump(self):
         c = Case(base_entries={"demo": entry()})
         self.assertEqual(c.entry("generators/demo.yaml", entry(tag="v1.1.0")), [])
