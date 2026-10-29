@@ -487,7 +487,7 @@ review go into the review comment and do not fail the gate.
   - Test: `sandbox/test_image.py`, run in the image by workflow job
     `gate-selftest`; workflow jobs `gate-selftest` and `consumer-selftest`
     (every sample compiles under gVisor with the image)
-  - Since: this change
+  - Since: #415
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
