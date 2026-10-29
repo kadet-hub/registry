@@ -606,7 +606,7 @@ parameters:
   and a maintainer makes it public in the organisation's package settings.
 
   - Test: `release/test_release.py` (`Recipe.test_sign`); `release/test_build.py` (`Build.test_recipe_artifact`, `Build.test_recipe_names`, `Build.test_yanked_recipe_is_not_built`, `Build.test_root_license`)
-  - Since: #391, this change
+  - Since: #391, #418
 
 - REC-12: For every recipe version it publishes, the release workflow MUST
   rerun REC-4 to REC-9 in the build job, record the run as `scan` (PUB-7),
@@ -685,7 +685,7 @@ parameters:
   build job (RISK-10).
 
   - Test: `release/test_release.py` (`BuildAll.test_recipe_record`, `BuildAll.test_recipe_checks_and_renders_fail_the_build`, `ScanRecord.test_recipe_checks`, `OutputDiff.test_recipe_base`, `Sbom.test_recipe_dependencies`, `Images`); manual: `release/build-all`, `release/sign` and `release/publish-index` on cert-manager at kadet-hub/recipes `a4c9945` against a local registry, with the attestations of its artifacts stubbed, then a bump to 1.1.0 on the same commit and a second run of each (2026-10-26); `pyspdxtools` on a recipe SBOM with generators and images (2026-10-29)
-  - Since: #391, this change
+  - Since: #391, #418
 
 - REC-13: The index MUST list recipes under a top-level `recipes` key,
   `{<name>: {<version>: <record>}}`, with the same `serial`. A record MUST

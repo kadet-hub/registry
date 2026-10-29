@@ -78,7 +78,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: reproducibility and tree ID;
     the sign job's comparison by AC-6)
-  - Since: #13, #226; `attestations: read`: this change; the LICENSE of PUB-15: this change
+  - Since: #13, #226; `attestations: read`: this change; the LICENSE of PUB-15: #418
 
 - PUB-15: When the shipped tree has no `LICENSE` at its root, the build job
   MUST add the source repository's root `LICENSE` at `source.sha` to the
@@ -128,7 +128,7 @@ since the documented package API has no visibility call.
   - Test: `release/test_build.py` (`Build.test_root_license`);
     `release/test_release.py` (`Recipe.test_sign`, `Recipe.test_sign_generator`,
     `BuildAll.test_root_license_next_to_the_tree`)
-  - Since: this change
+  - Since: #418
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
   existing `<version>` tag, MUST fail when an existing tag points to a digest
@@ -242,7 +242,7 @@ since the documented package API has no visibility call.
   `https://spdx.dev/Document/v2.3`, as PUB-8 does for artifacts. syft lists
   the Debian packages, the Python packages of both venvs and the Go
   modules of helm, conftest, etcd and kube-apiserver: 609 packages for the
-  image of this change, 3.2 MB, which pyspdxtools accepts. syft records
+  image of #418, 3.2 MB, which pyspdxtools accepts. syft records
   no license for a Go binary or its modules; PUB-14a covers the programs'
   own texts.
 
@@ -250,7 +250,7 @@ since the documented package API has no visibility call.
     release run after the merge, `gh attestation verify
     oci://ghcr.io/kadet-hub/sandbox:<tree> --owner kadet-hub
     --predicate-type https://spdx.dev/Document/v2.3`
-  - Since: this change
+  - Since: #418
 
 - PUB-14a: The sandbox image MUST carry the license text of every program
   it bundles outside the Python venvs at `/usr/share/doc/<program>/LICENSE`.
@@ -265,7 +265,7 @@ since the documented package API has no visibility call.
 
   - Test: `sandbox/test_image.py` (`Image.test_licence_texts`), run in the
     image by workflow job `gate-selftest`
-  - Since: this change
+  - Since: #418
 
 - PUB-7: For every version it publishes, the build job MUST rerun the
   static checks with the entry's exceptions and the compile gate, fail on
@@ -355,7 +355,7 @@ since the documented package API has no visibility call.
     (`Build.test_schemas`); manual: fork rehearsal (2026-10-11),
     `pyspdxtools` on the kyverno, rabbitmq and terraform-aws SBOMs
     (2026-10-29)
-  - Since: #47, this change
+  - Since: #47, #418
 
 - PUB-9: For every version it publishes, the build job MUST diff the
   version's fixture output against that of the newest listed version of
