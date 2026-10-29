@@ -173,6 +173,64 @@ class Sbom(unittest.TestCase):
         self.assertEqual(len(doc["relationships"]), 5)
         json.dumps(doc)
 
+    def test_schema_groups(self):  # PUB-8
+        meta = {"name": "demo", "version": "1.2.0", "license": "Apache-2.0", "description": "Demo",
+                "source": {"repo": "https://github.com/example/demo.git", "path": "gen", "sha": "c" * 40}}
+        files = ["kapitan-generator.yaml", "schemas/sources.yaml", "schemas/core/secret_v1.json", "schemas/core/NOTICE",
+                 "schemas/core/hostnameconfig_v1alpha1.json", "schemas/kyverno.io/policy_v1.json", "schemas/kyverno.io/crds/policies.yaml",
+                 "schemas/terraform/hashicorp_aws_6.69.1.json", "schemas/example.org/thing_v1.json", "schemasx/core/a_v1.json"]
+        sources = {
+            "core": {"software": "Kubernetes", "version": "1.37.1", "license": "Apache-2.0",
+                     "source": "https://github.com/yannh/kubernetes-json-schema/tree/abc/v1.37.1-standalone-strict"},
+            "core/v1alpha1": {"software": "Talos", "version": "1.14.3", "license": "MPL-2.0", "copyright": "Sidero Labs",
+                              "source": "https://github.com/siderolabs/talos/blob/v1.14.3/config.schema.json"},
+            "kyverno.io": {"software": "Kyverno", "version": "1.19.1", "license": "Apache-2.0",
+                           "source": "https://example.org/a https://example.org/b", "copyright": ["Copyright 2020 A", "Copyright 2021 B"]},
+            "terraform/hashicorp/aws": {"software": "hashicorp/aws", "version": "6.69.1",
+                                        "source": "https://registry.terraform.io/providers/hashicorp/aws/6.69.1"},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tar = os.path.join(tmp, "demo.tar")
+            write_tar({f: (False, f.encode()) for f in files}, tar)
+            doc = sbom(tar, meta, "ghcr.io/kadet-hub/demo", "sha256:" + "a" * 64, NOW, {"dir": "schemas", "sources": sources})
+        ids = {f["SPDXID"]: f["fileName"][2:] for f in doc["files"]}
+        self.assertEqual(sorted(ids.values()), sorted(files))  # every file stays listed (CAT-29)
+        pkgs = {p["SPDXID"]: p for p in doc["packages"]}
+        generator = pkgs.pop("SPDXRef-Package")
+        self.assertEqual(sorted(ids[i] for i in generator["hasFiles"]),
+                         ["kapitan-generator.yaml", "schemas/sources.yaml", "schemasx/core/a_v1.json"])
+        groups = {p["summary"]: (p, sorted(ids[i] for i in p["hasFiles"])) for p in pkgs.values()}
+        self.assertEqual({k: v[1] for k, v in groups.items()}, {
+            "Schemas of the sources.yaml entry core": ["schemas/core/NOTICE", "schemas/core/secret_v1.json"],
+            "Schemas of the sources.yaml entry core/v1alpha1": ["schemas/core/hostnameconfig_v1alpha1.json"],
+            "Schemas of the sources.yaml entry kyverno.io": ["schemas/kyverno.io/crds/policies.yaml", "schemas/kyverno.io/policy_v1.json"],
+            "Schemas of the sources.yaml entry terraform/hashicorp/aws": ["schemas/terraform/hashicorp_aws_6.69.1.json"],
+            "Schemas of example.org without a sources.yaml entry": ["schemas/example.org/thing_v1.json"]})
+        fields = ("name", "versionInfo", "downloadLocation", "licenseDeclared", "copyrightText", "sourceInfo")
+        got = {k: tuple(v[0].get(f) for f in fields) for k, v in groups.items()}
+        self.assertEqual(got["Schemas of the sources.yaml entry core/v1alpha1"],
+                         ("Talos", "1.14.3", sources["core/v1alpha1"]["source"], "MPL-2.0", "Sidero Labs", None))
+        # Two URLs are no download location; the copyright list is one line per holder.
+        self.assertEqual(got["Schemas of the sources.yaml entry kyverno.io"],
+                         ("Kyverno", "1.19.1", "NOASSERTION", "Apache-2.0", "Copyright 2020 A\nCopyright 2021 B", sources["kyverno.io"]["source"]))
+        self.assertEqual(got["Schemas of the sources.yaml entry terraform/hashicorp/aws"][3:5], ("NOASSERTION", "NOASSERTION"))
+        self.assertEqual(got["Schemas of example.org without a sources.yaml entry"],
+                         ("example.org", None, "NOASSERTION", "NOASSERTION", "NOASSERTION", None))
+        rel = {(r["spdxElementId"], r["relationshipType"], r["relatedSpdxElement"]) for r in doc["relationships"]}
+        for p in pkgs.values():
+            self.assertIn(("SPDXRef-Package", "CONTAINS", p["SPDXID"]), rel)
+            self.assertTrue({("SPDXRef-Package", "CONTAINS", i) for i in p["hasFiles"]}.isdisjoint(rel))
+            self.assertTrue({(p["SPDXID"], "CONTAINS", i) for i in p["hasFiles"]} <= rel)
+            sha1s = sorted(c["checksumValue"] for f in doc["files"] if f["SPDXID"] in p["hasFiles"] for c in f["checksums"] if c["algorithm"] == "SHA1")
+            self.assertEqual(p["packageVerificationCode"]["packageVerificationCodeValue"], hashlib.sha1("".join(sha1s).encode()).hexdigest())
+        # Without sources.yaml every group is NOASSERTION, named after its directory.
+        with tempfile.TemporaryDirectory() as tmp:
+            tar = os.path.join(tmp, "demo.tar")
+            write_tar({f: (False, f.encode()) for f in files}, tar)
+            doc = sbom(tar, meta, "ghcr.io/kadet-hub/demo", "sha256:" + "a" * 64, NOW, {"dir": "schemas", "sources": {}})
+        self.assertEqual(sorted((p["name"], p["licenseDeclared"]) for p in doc["packages"][1:]),
+                         [(g, "NOASSERTION") for g in ("core", "example.org", "kyverno.io", "terraform")])
+
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 REPO = "https://github.com/example/demo.git"
@@ -568,7 +626,8 @@ class Recipe(unittest.TestCase):
     setUp = OutputDiff.setUp
     FILES = {"LICENSE": "Apache License\n", "demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n",
              "demo/vendor/crds.yaml": "kind: CRD\n", "demo/tests/target.yml": "classes: [recipes.demo]\n",
-             "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n", "gen/kapitan-generator.yaml": "name: gen\n"}
+             "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n", "gen/kapitan-generator.yaml": "name: gen\n",
+             "gen/schemas/core/secret_v1.json": "{}\n"}
 
     def commit(self, remove=()):
         repo = os.path.join(self.tmp, "repo")
@@ -595,7 +654,7 @@ exec {shutil.which("git")} "${{args[@]}}"
                        check=True, env=GIT_ENV)
         return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, env=GIT_ENV, capture_output=True, text=True).stdout.strip()
 
-    def sign(self, name, sha, tar, tree=None):
+    def sign(self, name, sha, tar, tree=None, schemas=None):
         """Signs the tar's files {path: text} as <name> at sha; tree defaults to the ID of the shipped tree without LICENSE."""
         base = name.removeprefix("recipes/")
         path = "demo" if name.startswith("recipes/") else "gen"
@@ -612,6 +671,9 @@ exec {shutil.which("git")} "${{args[@]}}"
                 "source": {"repo": REPO, "path": path, "tag": f"{base}-v1.0.0", "sha": sha}}
         with open(os.path.join(built, "meta.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f)
+        if schemas is not None:
+            with open(os.path.join(built, "schemas.json"), "w", encoding="utf-8") as f:
+                json.dump(schemas, f)
         outputs, pushed = os.path.join(self.tmp, "outputs"), os.path.join(self.tmp, "manifest.json")
         open(outputs, "w").close()
         if os.path.exists(pushed):
@@ -650,11 +712,14 @@ exec {shutil.which("git")} "${{args[@]}}"
         p, _, manifest = self.sign("recipes/demo", sha, tar, tree=tree_id({k: (False, v.encode()) for k, v in tar.items()}))
         self.assertEqual((p.returncode, manifest), (1, None))
 
-    def test_sign_generator(self):  # PUB-15
+    def test_sign_generator(self):  # PUB-15, PUB-8
         sha = self.commit()
         shipped = {p[4:]: t for p, t in self.FILES.items() if p.startswith("gen/")}
-        p, out, _ = self.sign("gen", sha, dict(shipped, LICENSE=self.FILES["LICENSE"]))
+        p, out, _ = self.sign("gen", sha, dict(shipped, LICENSE=self.FILES["LICENSE"]),
+                              schemas={"dir": "schemas", "sources": {"core": {"software": "Kubernetes"}}})
         self.assertEqual((p.returncode, out["publish"]), (0, "true"), p.stdout + p.stderr)
+        with open(out["sbom"], encoding="utf-8") as f:
+            self.assertEqual([x["name"] for x in json.load(f)["packages"]], ["gen", "Kubernetes"])
         p, _, manifest = self.sign("gen", sha, shipped)
         self.assertEqual((p.returncode, manifest), (1, None))
         sha = self.commit(remove=["LICENSE"])

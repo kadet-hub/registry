@@ -62,6 +62,11 @@ class Build(unittest.TestCase):
                     with open(os.path.join(d, "meta.json"), encoding="utf-8") as f, \
                             tarfile.open(os.path.join(d, f"{os.path.basename(name)}.tar")) as t:
                         built[name] = (json.load(f), {m: t.extractfile(m).read() for m in sorted(t.getnames())})
+                    if os.path.exists(os.path.join(d, "schemas.json")):
+                        with open(os.path.join(d, "schemas.json"), encoding="utf-8") as f:
+                            built[name] += (json.load(f),)
+                    else:
+                        built[name] += (None,)
             names = None
             if os.path.exists(os.path.join(out, "names.json")):
                 with open(os.path.join(out, "names.json"), encoding="utf-8") as f:
@@ -71,7 +76,7 @@ class Build(unittest.TestCase):
     def test_recipe_artifact(self):
         p, names, built = self.build(["demo"])
         self.assertEqual((p.returncode, names), (0, ["demo", "recipes/demo"]), p.stdout)
-        meta, members = built["recipes/demo"]
+        meta, members, _ = built["recipes/demo"]
         shipped = {k: (False, v.encode()) for k, v in RECIPE.items() if not k.startswith("tests/")}
         self.assertEqual(sorted(members), ["LICENSE", "README.md", "init.yml", "vendor/crds.yaml"])
         self.assertEqual(meta, {"name": "demo", "version": "2.0.0", "tree": tree_id(shipped), "owners": [1],
@@ -92,11 +97,23 @@ class Build(unittest.TestCase):
         self.assertEqual((p.returncode, names, list(built)), (0, ["demo"], ["demo"]))
         self.assertIn("recipe demo 2.0.0: yanked, not built", p.stdout)
 
+    def test_schemas(self):  # PUB-8: sources.yaml as JSON for the sign job, which parses no YAML
+        manifest = "name: demo\ndescription: Demo\nlicense: MIT\nowners: [1]\nkapitan: '>=0.36.3'\nfixtures: tests\nschemas: ./schemas/\n"
+        sources = "# QA-7\ncore:\n  software: Kubernetes\n  version: 1.37.1\n  copyright: [A, B]\n"
+        p, _, built = self.build([], files_extra={"src/demo/kapitan-generator.yaml": manifest, "src/demo/schemas/sources.yaml": sources})
+        self.assertEqual(p.returncode, 0, p.stdout)
+        self.assertEqual(built["demo"][2], {"dir": "schemas", "sources": {"core": {"software": "Kubernetes", "version": "1.37.1", "copyright": ["A", "B"]}}})
+        for broken in (None, "- core\n", "core: [\n"):  # missing, not a mapping, not YAML
+            _, _, built = self.build([], files_extra={"src/demo/kapitan-generator.yaml": manifest, "src/demo/schemas/sources.yaml": broken})
+            self.assertEqual(built["demo"][2], {"dir": "schemas", "sources": {}})
+        _, _, built = self.build([])
+        self.assertIsNone(built["demo"][2])
+
     def test_root_license(self):  # PUB-15
         p, names, built = self.build(["demo"])
         self.assertEqual(p.returncode, 0, p.stdout)
         # The tar gets the repository root's LICENSE; tree stays the ID of the tree without it.
-        meta, members = built["demo"]
+        meta, members, _ = built["demo"]
         self.assertEqual(members, {"LICENSE": b"MIT License\n", "kapitan-generator.yaml": members["kapitan-generator.yaml"]})
         self.assertEqual(meta["tree"], tree_id({"kapitan-generator.yaml": (False, members["kapitan-generator.yaml"])}))
         self.assertEqual(built["recipes/demo"][1]["LICENSE"], b"Apache License\n")

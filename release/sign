@@ -81,7 +81,9 @@ digest=$("$root/release/oci-push" "$ref" "application/vnd.kadet-hub.$type.v1" \
   "application/vnd.kadet-hub.$type.config.v1+json" "$meta" \
   application/vnd.oci.image.layer.v1.tar "$tar" "$base.tar")
 echo "$name $version: pushed $digest"
-python3 -I "$root/release/sbom.py" --tar "$tar" --meta "$meta" --ref "$ref" --digest "$digest" --out "$built/sbom.spdx.json"
+schemas=()
+if [[ -f $built/schemas.json ]]; then schemas=(--schemas "$built/schemas.json"); fi
+python3 -I "$root/release/sbom.py" --tar "$tar" --meta "$meta" --ref "$ref" --digest "$digest" "${schemas[@]}" --out "$built/sbom.spdx.json"
 out "digest=$digest"
 out "sbom=$built/sbom.spdx.json"
 if [[ -f $built/output.diff ]]; then

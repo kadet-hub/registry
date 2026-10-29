@@ -8,8 +8,9 @@ Runs in the sandbox image without network. DIR/<name> holds the fetched tree
 DIR/<name>.LICENSE and DIR/recipes/<name>/LICENSE the source repository's
 root LICENSE where it has one. Writes
 <out>/<name>/<name>.tar and meta.json for every entry whose current version
-is not yanked, <out>/recipes/<name>/ for a recipe, and <out>/names.json, which
-names a recipe recipes/<name>. Prints findings and exits 1 on any.
+is not yanked, with schemas.json when the manifest names `schemas`,
+<out>/recipes/<name>/ for a recipe, and <out>/names.json, which names a
+recipe recipes/<name>. Prints findings and exits 1 on any.
 """
 
 import argparse
@@ -100,6 +101,16 @@ def main():
         write_tar(shipped, os.path.join(out, f"{name}.tar"))
         with open(os.path.join(out, "meta.json"), "w", encoding="utf-8") as f:
             f.write(json.dumps(meta, sort_keys=True, separators=(",", ":")))
+        if manifest.get("schemas"):
+            # PUB-8: the schema groups' sources.yaml for the SBOM, parsed here so that the sign job reads no YAML.
+            schemas = os.path.normpath(manifest["schemas"])
+            try:
+                with open(os.path.join(tree, schemas, "sources.yaml"), encoding="utf-8") as f:
+                    sources = yaml.safe_load(f)
+            except (OSError, UnicodeDecodeError, yaml.YAMLError):
+                sources = None
+            with open(os.path.join(out, "schemas.json"), "w", encoding="utf-8") as f:
+                json.dump({"dir": schemas, "sources": sources if isinstance(sources, dict) else {}}, f, default=str)
         names.append(name)
     # REC-11: recipe entries, named against the recipes and the reserved names (REC-2).
     rec_dir = os.path.join(a.base, "recipes")
