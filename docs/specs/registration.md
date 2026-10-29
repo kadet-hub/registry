@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Registration
 
 Status: Approved
-Code: `generators/`, `policy/entry.schema.json`, `policy/reserved-names.txt`, `gate/check_entry.py`
+Code: `generators/`, `policy/entry.schema.json`, `policy/reserved-names.txt`, `gate/check_entry.py`, `gate/run`
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -197,3 +197,49 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
 - REG-9: A removed entry's name MUST be added to `policy/reserved-names.txt`.
   - Test: `gate/test_check_entry.py::Entry.test_removal_reserves_name`
   - Since: #8
+
+- REG-10: The source repository of a generator entry MUST have a
+  `SECURITY.md` and, on github.com, private vulnerability reporting
+  enabled. The gate MUST fail a new entry or a bump whose source repository
+  lacks either.
+
+  Reporters of a vulnerability in a listed generator are sent to its
+  repository ([SECURITY.md](../../SECURITY.md)), so that repository has to
+  say how to report and offer a private channel.
+
+  The gate looks for `SECURITY.md` where GitHub does: at the root, in
+  `.github/` and in `docs/` of `source.sha`, and then in the owner's
+  public `.github` repository, which GitHub uses as the default for every
+  repository of that owner without a file of its own
+  ([Creating a default community health file](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file)).
+  kadet-hub/generators relies on that default in kadet-hub/.github
+  (LEG-6).
+
+  Private reporting is read from
+  `GET /repos/{owner}/{repo}/private-vulnerability-reporting`. GitHub
+  lists that endpoint under the Metadata read permission and answers it
+  without authentication for a public repository. Every workflow token
+  holds Metadata read; the gate job's log lists it next to the
+  permissions `gate.yml` sets, so the gate needs no further permission
+  (GI-3). A failed request counts as not enabled (GI-7).
+
+  The check runs whenever the entry approves a new commit: for a new entry
+  and for a bump that changes `source.sha`. A repository that drops either
+  after registration is refused at its next version, and entries
+  registered before this requirement are checked at their next bump. A
+  change that keeps `source.sha`, such as a yank, an advisory or an owner
+  change, is not checked, so the source repository cannot hold up a yank
+  (INC-1). Checking new entries only was considered; it would never check
+  the entries registered before this requirement, nor a repository that
+  removes its policy later.
+
+  A gitlab.com source (GI-9) needs `SECURITY.md` in the same three places
+  of its commit. GitLab has neither GitHub's private vulnerability
+  reporting nor an owner-wide default file, so neither is checked; what a
+  GitLab source must provide instead is OQ-16.
+
+  Recipe entries are not checked; REC-1 lists the rules that apply to
+  them.
+
+  - Test: `gate/test_check_entry.py::Security` (`test_needs_security_md_and_private_reporting`, `test_gitlab_needs_security_md_only`, `test_only_a_new_commit_is_checked`) (partial: the lookups in `gate/run` have no test)
+  - Since: this change
