@@ -45,9 +45,17 @@ jobs:
       - uses: ./.github/actions/setup-gate # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
       - name: Unit tests in the sandbox image
+        # The image has no shell (SEC-17), so each directory is its own run.
         run: |
-          docker run --rm --network none -v "$PWD:/repo:ro" -w /repo -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox \
-            sh -c 'cd scan && python -m unittest discover -v && cd ../gate && python -m unittest discover -p "test_check*.py" -v && python -m unittest discover -p "test_schema*.py" -v && cd ../sandbox && python -m unittest discover -p "test_output*.py" -v && python -m unittest discover -p "test_tag*.py" -v && python -m unittest discover -p "test_schema*.py" -v && python -m unittest discover -p "test_tf_schema*.py" -v && python -m unittest discover -p "test_apiserver*.py" -v && cd ../release && python -m unittest discover -p "test_build.py" -v'
+          unit() {
+            docker run --rm --network none -v "$PWD:/repo:ro" -w "/repo/$1" -e PYTHONDONTWRITEBYTECODE=1 kadet-hub/sandbox \
+              python -m unittest discover -p "$2" -v
+          }
+          unit scan 'test*.py'
+          unit gate 'test_check*.py'
+          unit gate 'test_schema*.py'
+          for p in 'test_image.py' 'test_output*.py' 'test_tag*.py' 'test_schema*.py' 'test_tf_schema*.py' 'test_apiserver*.py'; do unit sandbox "$p"; done
+          unit release 'test_build.py'
 
       - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 

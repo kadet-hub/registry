@@ -1,4 +1,11 @@
-FROM python:3.13-slim@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f
+# SEC-17: the image is distroless, without shell, pip or package manager.
+# The build stage is the same image plus busybox and uv, so the venvs link
+# and the bytecode matches the interpreter that runs them.
+FROM gcr.io/distroless/python3-debian13:latest@sha256:0db804f397ca31a1498c9d94c3c1df53fe49ac8007e5942b1cb547c1c3355c09 AS build
+COPY --from=gcr.io/distroless/python3-debian13:debug@sha256:b11062384933aff9510c39ce2c46fdb64b87de3414fd73d64e5b669e7c75d961 /busybox /busybox
+COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff /uv /busybox/uv
+ENV PATH=/busybox:/usr/bin
+SHELL ["/busybox/sh", "-eu", "-c"]
 # renovate: datasource=github-releases depName=helm/helm
 ARG HELM_VERSION=v4.3.1
 ARG HELM_SHA256=0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
@@ -11,25 +18,41 @@ ADD --checksum=sha256:${CONFTEST_SHA256} https://github.com/open-policy-agent/co
 ARG KRAB_VERSION=v2.0.0-alpha.5
 ARG KRAB_SHA256=c57cb602e6c89174894708e00b9d4373e67f08582fdd6f7b95517a6658ab9c85
 ADD --checksum=sha256:${KRAB_SHA256} https://github.com/kapicorp/krab/releases/download/${KRAB_VERSION}/krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu.tar.gz /tmp/krab.tgz
-COPY --from=registry.k8s.io/kube-apiserver:v1.37.1@sha256:e190f914a6cc21cab9268485d1ae7282fdeab1315ac64b668aa42d732fd1061d /usr/local/bin/kube-apiserver /usr/local/bin/kube-apiserver
 # renovate: datasource=github-release-attachments depName=etcd-io/etcd
 ARG ETCD_VERSION=v3.7.3
 ARG ETCD_SHA256=5dfa9cc3b3ce3b4b491fbcc2057d3daa166bcc6676f743fcd20f8e5760cb9775
 ADD --checksum=sha256:${ETCD_SHA256} https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz /tmp/etcd.tgz
 COPY requirements.txt /tmp/requirements.txt
 COPY krab/requirements.txt /tmp/krab-requirements.txt
-RUN tar -xzf /tmp/helm.tgz -C /usr/local/bin --strip-components=1 linux-amd64/helm \
+# Kapitan's venv is /usr/local, so the interpreter, kapitan and the tools keep
+# the paths check.py and policy/binaries.txt name.
+RUN mkdir -p /usr/local/bin /home/gate \
+ && tar -xzf /tmp/helm.tgz -C /usr/local/bin --strip-components=1 linux-amd64/helm \
  && tar -xzf /tmp/conftest.tgz -C /usr/local/bin conftest \
  && tar -xzf /tmp/etcd.tgz -C /usr/local/bin --strip-components=1 "etcd-${ETCD_VERSION}-linux-amd64/etcd" \
- && pip install --no-cache-dir --require-hashes --no-deps -r /tmp/requirements.txt \
  && tar -xzf /tmp/krab.tgz -C /usr/local/bin --strip-components=1 "krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu/krab" \
- && python -m venv /opt/krab-python \
- && /opt/krab-python/bin/pip install --no-cache-dir --require-hashes --no-deps -r /tmp/krab-requirements.txt \
- && rm /tmp/helm.tgz /tmp/conftest.tgz /tmp/etcd.tgz /tmp/krab.tgz /tmp/requirements.txt /tmp/krab-requirements.txt \
- && useradd -m -u 10001 gate
-ENV KRAB_PYTHON=/opt/krab-python/bin/python KRAB_NO_DAEMON=1 \
+ && uv venv -q --allow-existing --python /usr/bin/python3.13 /usr/local \
+ && uv pip install -q --no-cache --compile-bytecode --require-hashes --no-deps --python /usr/local/bin/python3.13 -r /tmp/requirements.txt \
+ && uv venv -q --python /usr/bin/python3.13 /opt/krab-python \
+ && uv pip install -q --no-cache --compile-bytecode --require-hashes --no-deps --python /opt/krab-python/bin/python -r /tmp/krab-requirements.txt \
+ && python3.13 -m compileall -q -j0 /usr/lib/python3.13 \
+ && echo 'gate:x:10001:10001::/home/gate:/sbin/nologin' >>/etc/passwd \
+ && echo 'gate:x:10001:' >>/etc/group \
+ && chown 10001:10001 /home/gate
+
+FROM gcr.io/distroless/python3-debian13:latest@sha256:0db804f397ca31a1498c9d94c3c1df53fe49ac8007e5942b1cb547c1c3355c09
+COPY --from=build /usr/lib/python3.13 /usr/lib/python3.13
+COPY --from=build /usr/local /usr/local
+COPY --from=build /opt/krab-python /opt/krab-python
+COPY --from=build /etc/passwd /etc/group /etc/
+COPY --from=build /home/gate /home/gate
+COPY --from=registry.k8s.io/kube-apiserver:v1.37.1@sha256:e190f914a6cc21cab9268485d1ae7282fdeab1315ac64b668aa42d732fd1061d /usr/local/bin/kube-apiserver /usr/local/bin/kube-apiserver
+# PATH holds only directories that exist, so a program lookup tries no other path (SEC-10).
+ENV PATH=/usr/local/bin:/usr/bin \
+    KRAB_PYTHON=/opt/krab-python/bin/python KRAB_NO_DAEMON=1 \
     XDG_CACHE_HOME=/tmp/xdg/cache XDG_STATE_HOME=/tmp/xdg/state XDG_RUNTIME_DIR=/tmp/xdg/run \
     GIT_PYTHON_REFRESH=quiet PYTHONDONTWRITEBYTECODE=1 HOME=/home/gate KUBECONFIG=/dev/null HELM_PLUGINS= \
     HELM_CACHE_HOME=/tmp/helm/cache HELM_CONFIG_HOME=/tmp/helm/config HELM_DATA_HOME=/tmp/helm/data
+ENTRYPOINT []
 USER gate
 WORKDIR /project
