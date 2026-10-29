@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from images import images
 from index import build, notes
 from sbom import sbom
 from tree import read_dir, read_tar, tree_id, write_tar
@@ -230,6 +231,49 @@ class Sbom(unittest.TestCase):
             doc = sbom(tar, meta, "ghcr.io/kadet-hub/demo", "sha256:" + "a" * 64, NOW, {"dir": "schemas", "sources": {}})
         self.assertEqual(sorted((p["name"], p["licenseDeclared"]) for p in doc["packages"][1:]),
                          [(g, "NOASSERTION") for g in ("core", "example.org", "kyverno.io", "terraform")])
+
+    def test_recipe_dependencies(self):  # REC-12
+        digest = "sha256:" + "b" * 64
+        meta = {"name": "demo", "version": "1.0.0", "license": "Apache-2.0", "description": "Demo",
+                "source": {"repo": "https://github.com/kadet-hub/recipes.git", "path": "demo", "sha": "c" * 40},
+                "generators": [{"name": "kubernetes", "version": "1.9.0", "digest": digest}],
+                "images": [f"quay.io/jetstack/cert-manager-controller:v1.21.2@{digest}", "nginx:1.25"]}
+        with tempfile.TemporaryDirectory() as tmp:
+            tar = os.path.join(tmp, "demo.tar")
+            write_tar({"init.yml": (False, b"{}\n")}, tar)
+            doc = sbom(tar, meta, "ghcr.io/kadet-hub/recipes/demo", "sha256:" + "a" * 64, NOW)
+        deps = {p["name"]: (p.get("versionInfo"), p.get("primaryPackagePurpose"), p["externalRefs"][0]["referenceLocator"])
+                for p in doc["packages"][1:]}
+        self.assertEqual(deps, {
+            "kubernetes": ("1.9.0", None, f"pkg:oci/kubernetes@sha256%3A{'b' * 64}?repository_url=ghcr.io/kadet-hub/kubernetes&tag=1.9.0"),
+            "quay.io/jetstack/cert-manager-controller": ("v1.21.2", "CONTAINER", f"pkg:oci/cert-manager-controller@sha256%3A{'b' * 64}"
+                                                         "?repository_url=quay.io/jetstack/cert-manager-controller&tag=v1.21.2"),
+            # Without a digest pkg:oci does not apply.
+            "docker.io/library/nginx": ("1.25", "CONTAINER", "pkg:docker/library/nginx@1.25?repository_url=docker.io")})
+        depends = [r["relatedSpdxElement"] for r in doc["relationships"] if r["relationshipType"] == "DEPENDS_ON" and r["spdxElementId"] == "SPDXRef-Package"]
+        self.assertEqual(sorted(depends), sorted(p["SPDXID"] for p in doc["packages"][1:]))
+        self.assertEqual(len({p["SPDXID"] for p in doc["packages"]}), 4)
+
+
+class Images(unittest.TestCase):
+    """REC-12: release/images.py lists the container images of rendered objects."""
+
+    def test_pod_lists_at_any_depth(self):
+        pod = {"containers": [{"name": "a", "image": "a:1"}, {"name": "b", "image": "b:1"}],
+               "initContainers": [{"image": "init:1"}], "ephemeralContainers": [{"image": "debug:1"}]}
+        docs = [
+            {"apiVersion": "v1", "kind": "Pod", "spec": pod},
+            {"apiVersion": "apps/v1", "kind": "Deployment", "spec": {"template": {"spec": {"containers": [{"image": "a:1"}]}}}},
+            {"apiVersion": "batch/v1", "kind": "CronJob",
+             "spec": {"jobTemplate": {"spec": {"template": {"spec": {"containers": [{"image": "cron:1"}]}}}}}},
+            # A custom resource that embeds a pod template; an image named elsewhere is not one of these fields.
+            {"apiVersion": "example.org/v1", "kind": "Thing", "spec": {"imageName": "x:1", "podTemplate": {"spec": {"containers": [
+                {"image": "cr:1", "env": [{"name": "RELATED_IMAGE_X", "value": "related:1"}]}]}}}},
+            {"apiVersion": "v1", "kind": "List", "items": [{"spec": {"containers": [{"image": 3}, "c", {"name": "no-image"}]}}]},
+            {"apiVersion": "v1", "kind": "ConfigMap", "data": {"containers": "image: y:1"}},
+        ]
+        self.assertEqual(images(docs), ["a:1", "b:1", "cr:1", "cron:1", "debug:1", "init:1"])
+        self.assertEqual(images([]), [])
 
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -514,7 +558,8 @@ echo '[]' >"$out/names.json"
                               "req": {"rule": "REC-17", "version": "2.0.0", "digest": "sha256:" + "e" * 64}},
                   "included": ["other"], "required": {"req": []}, "source": ["Source: x"], "level": ["Level: x"],
                   "description": "Demo recipe.", "license": "Apache-2.0"}
-        fields = {"source": source, "level": "deploys", "kinds": [{"group": "", "version": "v1", "kind": "Service"}]}
+        fields = {"source": source, "level": "deploys", "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
+                  "images": ["quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:" + "f" * 64]}
         sec12 = (f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole x\nSEC-12: admission-webhook: compiled/demo/w.yml: x\n"
                  f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole y\nSEC-12: host-path: compiled/other/x.yml: x\n"
                  f"SEC-12: unparsed output compiled/demo/notes.txt (*)\n")
@@ -571,6 +616,8 @@ exit {renders_rc}
             # DEC-23: the matches in the recipe's own output, once each.
             "output_capabilities": ["admission-webhook", "rbac-admin"],
             "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
+            # REC-12: the images of the recipe's own output, for the SBOM.
+            "images": ["quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:" + "f" * 64],
             "scan": {"exceptions": 0, "for": "recipe"}, "output_diff": {"base": None, "error": "no earlier listed version"}})
         # Only the recipe checks get the token; the renders proof runs on what they wrote.
         dirs = calls[1].split()[1:4]

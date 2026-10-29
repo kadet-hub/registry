@@ -5,7 +5,8 @@ Usage: sbom.py --tar FILE --meta FILE --ref REF --digest DIGEST [--schemas FILE]
 One package for the generator with every file of the tar. Generators have
 no dependencies (DEC-10), so the document is the reviewed file list. With
 --schemas, the schemas.json that build.py wrote, each schema group is a
-package of its own that holds the group's files.
+package of its own that holds the group's files. A recipe's package depends
+on the generators and container images its meta.json lists (REC-12).
 """
 
 import argparse
@@ -54,6 +55,44 @@ def schema_package(key, entry, files):
     if source and package["downloadLocation"] == "NOASSERTION":
         package["sourceInfo"] = source  # several URLs
     return package
+
+
+def purl_ref(locator):
+    return [{"referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": locator}]
+
+
+def image_package(ref):
+    """REC-12: a container image's package, with a pkg:oci purl when the reference has a digest and pkg:docker otherwise."""
+    name, _, digest = ref.partition("@")
+    repo, tag = name, ""
+    if ":" in name.rpartition("/")[2]:
+        repo, _, tag = name.rpartition(":")
+    first = repo.split("/")[0]
+    if "/" not in repo or not ("." in first or ":" in first or first == "localhost"):  # Docker Hub
+        repo = "docker.io/" + (repo if "/" in repo else "library/" + repo)
+    registry, _, path = repo.partition("/")
+    if digest:  # pkg:oci requires the digest
+        purl = f"pkg:oci/{path.rpartition('/')[2]}@{digest.replace(':', '%3A')}?repository_url={repo}" + (f"&tag={tag}" if tag else "")
+    else:
+        purl = f"pkg:docker/{path}" + (f"@{tag}" if tag else "") + f"?repository_url={registry}"
+    package = {"name": repo, "SPDXID": "SPDXRef-Image-" + hashlib.sha256(ref.encode()).hexdigest()[:16],
+               "downloadLocation": "NOASSERTION", "filesAnalyzed": False, "primaryPackagePurpose": "CONTAINER",
+               "externalRefs": purl_ref(purl)}
+    if tag or digest:
+        package["versionInfo"] = tag or digest
+    return package
+
+
+def dependencies(meta):
+    """REC-12: a package per generator pin and per container image of a recipe's meta.json."""
+    out = []
+    for g in meta.get("generators", []):
+        key = f"{g['name']}:{g['version']}@{g['digest']}"
+        # Recipes pin generators on ghcr.io/kadet-hub only (REC-6).
+        purl = f"pkg:oci/{g['name']}@{g['digest'].replace(':', '%3A')}?repository_url=ghcr.io/kadet-hub/{g['name']}&tag={g['version']}"
+        out.append({"name": g["name"], "SPDXID": "SPDXRef-Generator-" + hashlib.sha256(key.encode()).hexdigest()[:16],
+                    "versionInfo": g["version"], "downloadLocation": "NOASSERTION", "filesAnalyzed": False, "externalRefs": purl_ref(purl)})
+    return out + [image_package(i) for i in meta.get("images", [])]
 
 
 def sbom(tar, meta, ref, digest, now, schemas=None):
@@ -108,6 +147,8 @@ def sbom(tar, meta, ref, digest, now, schemas=None):
     for g in group_packages:
         # PUB-8: the artifact holds the vendored schemas and nothing runs them, so CONTAINS rather than DEPENDS_ON.
         relationships += [contains("SPDXRef-Package", g["SPDXID"])] + [contains(g["SPDXID"], f) for f in g["hasFiles"]]
+    deps = dependencies(meta)
+    relationships += [{"spdxElementId": "SPDXRef-Package", "relationshipType": "DEPENDS_ON", "relatedSpdxElement": d["SPDXID"]} for d in deps]
     return {
         "spdxVersion": "SPDX-2.3",
         "dataLicense": "CC0-1.0",
@@ -116,7 +157,7 @@ def sbom(tar, meta, ref, digest, now, schemas=None):
         "documentNamespace": f"https://kadet-hub.org/spdx/{name}/{version}/{digest.removeprefix('sha256:')}",
         "creationInfo": {"created": now, "creators": ["Tool: kadet-hub release/sbom.py"]},
         "documentDescribes": ["SPDXRef-Package"],
-        "packages": [package, *group_packages],
+        "packages": [package, *group_packages, *deps],
         "files": files,
         "relationships": relationships,
     }
