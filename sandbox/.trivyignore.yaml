@@ -1,0 +1,4 @@
+# SEC-18, RISK-14: advisories with a fix that the pinned binaries cannot take
+# yet. Each entry names one binary. The statement says what it links and what
+# govulncheck -mode=binary v1.9.0 reported for that binary on 2026-10-29.
+vulnerabilities: []
