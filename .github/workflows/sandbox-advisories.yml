@@ -1,0 +1,42 @@
+name: sandbox-advisories
+
+# SEC-18: an advisory with a fix in the sandbox image fails pull requests that
+# change it, and the weekly run on main. Not a required check (CI-1).
+on:
+  pull_request:
+    paths:
+      - sandbox/**
+      - .github/actions/setup-trivy/**
+      - .github/workflows/sandbox-advisories.yml
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox-advisories:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-trivy # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - name: Build the sandbox image
+        run: docker build -q -t kadet-hub/sandbox sandbox
+
+      - name: Advisories with a fix
+        run: trivy image --quiet --scanners vuln --ignore-unfixed --ignorefile sandbox/.trivyignore.yaml --exit-code 1 kadet-hub/sandbox
+
+      - name: Every advisory, listed in the step summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo '```text'
+            trivy image --quiet --skip-db-update --scanners vuln --ignorefile sandbox/.trivyignore.yaml --show-suppressed kadet-hub/sandbox
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"

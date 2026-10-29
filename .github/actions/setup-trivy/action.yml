@@ -1,0 +1,15 @@
+name: setup-trivy
+description: Install trivy pinned by sha256 (GI-6), not the trivy actions (GHSA-69fq-xp46-6x23).
+runs:
+  using: composite
+  steps:
+    - name: Install trivy
+      shell: bash
+      env:
+        # renovate: datasource=github-release-attachments depName=aquasecurity/trivy
+        TRIVY_VERSION: v0.76.1
+        TRIVY_SHA256: c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0
+      run: |
+        curl -fsSLo "$RUNNER_TEMP/trivy.tar.gz" "https://github.com/aquasecurity/trivy/releases/download/${TRIVY_VERSION}/trivy_${TRIVY_VERSION#v}_Linux-64bit.tar.gz"
+        echo "${TRIVY_SHA256}  $RUNNER_TEMP/trivy.tar.gz" | sha256sum -c -
+        sudo tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C /usr/local/bin trivy

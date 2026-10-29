@@ -1,0 +1,148 @@
+# SEC-18, RISK-14: advisories with a fix that the pinned binaries cannot take
+# yet. Each entry names one binary. The statement says what it links and what
+# govulncheck -mode=binary v1.9.0 reported for that binary on 2026-10-29.
+vulnerabilities:
+  - id: CVE-2026-56857
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6604) reports nothing.
+  - id: CVE-2026-56866
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6605) finds the vulnerable symbols.
+  - id: CVE-2026-78659
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1 and links golang.org/x/net v0.58.0. govulncheck (GO-2026-6603) finds the vulnerable symbols.
+  - id: CVE-2026-78660
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1 and links golang.org/x/net v0.58.0. govulncheck (GO-2026-6610) finds the vulnerable symbols.
+  - id: CVE-2026-78661
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, links golang.org/x/net v0.58.0. govulncheck (GO-2026-6860) finds the vulnerable symbols.
+  - id: CVE-2026-78663
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1 and links golang.org/x/net v0.58.0. govulncheck (GO-2026-6612) finds the vulnerable symbols.
+  - id: CVE-2026-78667
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6609) finds the vulnerable symbols.
+  - id: CVE-2026-78669
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1 and links golang.org/x/net v0.58.0. govulncheck (GO-2026-6611) finds the vulnerable symbols.
+  - id: CVE-2026-94439
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6613) finds the vulnerable symbols.
+  - id: CVE-2026-94440
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6608) finds the vulnerable symbols.
+  - id: CVE-2026-94448
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6599) finds the vulnerable symbols.
+  - id: CVE-2026-97030
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6600) finds the vulnerable symbols.
+  - id: CVE-2026-97031
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6607) finds the vulnerable symbols.
+  - id: CVE-2026-97032
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1 and links golang.org/x/net v0.58.0. govulncheck (GO-2026-6617) finds the vulnerable symbols.
+  - id: CVE-2026-97045
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, links golang.org/x/net v0.58.0. govulncheck (GO-2026-6866) finds the vulnerable symbols.
+  - id: CVE-2026-111943
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, is built with Go 1.27.1. govulncheck (GO-2026-6809) finds the vulnerable symbols.
+  - id: CVE-2026-116585
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, links github.com/go-jose/go-jose/v4 v4.1.4. govulncheck reports nothing.
+  - id: CVE-2026-116586
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, links github.com/go-jose/go-jose/v4 v4.1.4. govulncheck reports nothing.
+  - id: CVE-2026-116587
+    paths: [usr/local/bin/conftest]
+    statement: conftest v0.71.1, the newest release, links github.com/go-jose/go-jose/v4 v4.1.4. govulncheck reports nothing.
+  - id: CVE-2026-78661
+    paths: [usr/local/bin/etcd]
+    statement: etcd v3.7.3, the newest release, links golang.org/x/net v0.61.0. govulncheck (GO-2026-6860) finds the vulnerable symbols.
+  - id: CVE-2026-97045
+    paths: [usr/local/bin/etcd]
+    statement: etcd v3.7.3, the newest release, links golang.org/x/net v0.61.0. govulncheck (GO-2026-6866) finds the vulnerable symbols.
+  - id: CVE-2026-78661
+    paths: [usr/local/bin/helm]
+    statement: helm v4.3.1, the newest release, links golang.org/x/net v0.60.0. govulncheck (GO-2026-6860) finds the vulnerable symbols.
+  - id: CVE-2026-97045
+    paths: [usr/local/bin/helm]
+    statement: helm v4.3.1, the newest release, links golang.org/x/net v0.60.0. govulncheck (GO-2026-6866) finds the vulnerable symbols.
+  - id: CVE-2026-111943
+    paths: [usr/local/bin/helm]
+    statement: helm v4.3.1, the newest release, is built with Go 1.27.2. govulncheck (GO-2026-6809) finds the vulnerable symbols.
+  - id: CVE-2026-56851
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links golang.org/x/text v0.40.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6629) finds the vulnerable symbols.
+  - id: CVE-2026-56854
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links golang.org/x/crypto v0.54.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6303) finds the vulnerable symbols.
+  - id: CVE-2026-56855
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links golang.org/x/crypto v0.54.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6355) finds the vulnerable symbols.
+  - id: CVE-2026-56857
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6604) reports nothing.
+  - id: CVE-2026-56866
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6605) finds the vulnerable symbols.
+  - id: CVE-2026-78659
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8 and links golang.org/x/net v0.57.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6603) finds the vulnerable symbols.
+  - id: CVE-2026-78660
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8 and links golang.org/x/net v0.57.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6610) finds the vulnerable symbols.
+  - id: CVE-2026-78661
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links golang.org/x/net v0.57.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6860) finds the vulnerable symbols.
+  - id: CVE-2026-78662
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links golang.org/x/crypto v0.54.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6354) finds the vulnerable symbols.
+  - id: CVE-2026-78663
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8 and links golang.org/x/net v0.57.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6612) finds the vulnerable symbols.
+  - id: CVE-2026-78667
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6609) finds the vulnerable symbols.
+  - id: CVE-2026-78669
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8 and links golang.org/x/net v0.57.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6611) finds the vulnerable symbols.
+  - id: CVE-2026-81870
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0, go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.44.0, go.opentelemetry.io/otel/sdk v1.44.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6505) reports the module only, no vulnerable symbol.
+  - id: CVE-2026-84303
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links google.golang.org/grpc v1.82.1; v1.37.2, the newest release, still does. govulncheck (GO-2026-6441) finds the vulnerable symbols.
+  - id: CVE-2026-84304
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links google.golang.org/grpc v1.82.1; v1.37.2, the newest release, still does. govulncheck (GO-2026-6348) finds the vulnerable symbols.
+  - id: CVE-2026-84445
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links google.golang.org/grpc v1.82.1; v1.37.2, the newest release, still does. govulncheck (GO-2026-6443) finds the vulnerable symbols.
+  - id: CVE-2026-94439
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6613) finds the vulnerable symbols.
+  - id: CVE-2026-94440
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6608) finds the vulnerable symbols.
+  - id: CVE-2026-94448
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6599) finds the vulnerable symbols.
+  - id: CVE-2026-97030
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6600) finds the vulnerable symbols.
+  - id: CVE-2026-97031
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6607) finds the vulnerable symbols.
+  - id: CVE-2026-97032
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8 and links golang.org/x/net v0.57.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6617) finds the vulnerable symbols.
+  - id: CVE-2026-97045
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 links golang.org/x/net v0.57.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6866) finds the vulnerable symbols.
+  - id: CVE-2026-111943
+    paths: [usr/local/bin/kube-apiserver]
+    statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6809) finds the vulnerable symbols.

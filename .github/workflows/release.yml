@@ -23,6 +23,7 @@ on:
       - .github/workflows/scorecard.yml
       - .github/workflows/codeql.yml
       - .github/workflows/fuzz.yml
+      - .github/workflows/sandbox-advisories.yml
       - .clusterfuzzlite/**
   schedule:
     - cron: "17 4 * * *" # CAT-20: refresh the 👍 counts and stars daily
