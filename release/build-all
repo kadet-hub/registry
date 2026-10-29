@@ -33,6 +33,8 @@ for f in "$root"/generators/*.yaml; do
   "${gitc[@]}" init -q --bare
   "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha"
   python3 "$root/gate/fetch_tree.py" --git-dir "$work/$name.git" --rev "$sha" --path "$path" --out "$work/src/$name"
+  # PUB-15: the repository root's LICENSE, which build.py ships when the tree has none.
+  "${gitc[@]}" cat-file blob "$sha:LICENSE" >"$work/src/$name.LICENSE" 2>/dev/null || rm -f -- "$work/src/$name.LICENSE"
 done
 # REC-11: a recipe's directories as the gate fetches them (REC-4); build.py ships <name>/ without tests/.
 for f in "$root"/recipes/*.yaml; do
@@ -43,6 +45,7 @@ for f in "$root"/recipes/*.yaml; do
   "${gitc[@]}" init -q --bare
   "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha"
   python3 "$root/gate/fetch_tree.py" --git-dir "$work/recipes/$name.git" --rev "$sha" --recipe "$name" --out "$work/src/recipes/$name"
+  "${gitc[@]}" cat-file blob "$sha:LICENSE" >"$work/src/recipes/$name/LICENSE" 2>/dev/null || rm -f -- "$work/src/recipes/$name/LICENSE"
 done
 
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \

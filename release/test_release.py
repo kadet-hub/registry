@@ -188,7 +188,7 @@ case "$1 $2" in
   *) echo "$*: not found" >&2; exit 1 ;;
 esac
 """,
-    "bin/git": "#!/usr/bin/env bash\nfor a; do if [[ $a == rev-parse ]]; then echo \"$FAKE_TREE\"; fi; done\n",
+    "bin/git": "#!/usr/bin/env bash\nfor a; do if [[ $a == rev-parse ]]; then echo \"$FAKE_TREE\"; elif [[ $a == ls-tree ]]; then printf '100644 blob x\\tLICENSE\\n'; fi; done\n",
     "root/gate/fetch_tree.py": """import os, sys
 a = dict(zip(sys.argv[1::2], sys.argv[2::2]))
 if a["--rev"] == "unreachable":
@@ -428,6 +428,28 @@ class BuildAll(unittest.TestCase):
                 "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
                 "backends": ["reclass-rs", "omegaconf"]})
 
+    def test_root_license_next_to_the_tree(self):  # PUB-15
+        fakes = {
+            # The generator's commit has a root LICENSE, the recipe's has none.
+            "bin/git": "#!/usr/bin/env bash\nfor a; do [[ $a != d*:LICENSE ]] || exit 1; [[ $a != *:LICENSE ]] || echo \"license at $a\"; done\n",
+            "bin/docker": """#!/usr/bin/env bash
+for a; do
+  [[ $a == type=bind,src=*,dst=/src,readonly ]] && src=${a#type=bind,src=} && src=${src%,dst=/src,readonly}
+  [[ $a == type=bind,src=*,dst=/out ]] && out=${a#type=bind,src=} && out=${out%,dst=/out}
+done
+(cd -- "$src" && grep -r . --include=LICENSE --include='*.LICENSE' .) >"$out/licenses.txt"
+echo '[]' >"$out/names.json"
+""",
+        }
+        for rel, text in fakes.items():
+            with open(os.path.join(self.tmp, rel), "w", encoding="utf-8") as f:
+                f.write(text)
+            os.chmod(os.path.join(self.tmp, rel), 0o755)
+        out = os.path.join(self.tmp, "out")
+        subprocess.run([os.path.join(self.root, "release", "build-all"), out], env=self.env, check=True, capture_output=True)
+        with open(os.path.join(out, "licenses.txt"), encoding="utf-8") as f:
+            self.assertEqual(f.read(), f"./demo.LICENSE:license at {'c' * 40}:LICENSE\n")
+
     def build_recipe(self, source, renders_rc=0, rev="d" * 40):  # REC-12, REC-13
         recipe = {"pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:{'a' * 64}", f"ghcr.io/kadet-hub/certmanager:1.0.2@sha256:{'b' * 64}"],
                   "recipes": {"other": {"rule": "REC-16", "version": "1.0.0", "digest": "sha256:" + "d" * 64},
@@ -541,28 +563,24 @@ class ScanRecord(unittest.TestCase):
 
 
 class Recipe(unittest.TestCase):
-    """REC-11: release/sign on a recipe, with git on a real repository and a fake registry."""
+    """REC-11, PUB-15: release/sign with git on a real repository and a fake registry."""
 
     setUp = OutputDiff.setUp
+    FILES = {"LICENSE": "Apache License\n", "demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n",
+             "demo/vendor/crds.yaml": "kind: CRD\n", "demo/tests/target.yml": "classes: [recipes.demo]\n",
+             "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n", "gen/kapitan-generator.yaml": "name: gen\n"}
 
-    def test_sign(self):
+    def commit(self, remove=()):
         repo = os.path.join(self.tmp, "repo")
-        files = {"demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n", "demo/vendor/crds.yaml": "kind: CRD\n",
-                 "demo/tests/target.yml": "classes: [recipes.demo]\n", "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n"}
-        for rel, text in files.items():
-            os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
-            with open(os.path.join(repo, rel), "w", encoding="utf-8") as f:
-                f.write(text)
-        os.chmod(os.path.join(repo, "demo/tests/smoke"), 0o755)
-        git_tree(repo)
-        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "t"], cwd=repo,
-                       check=True, env=GIT_ENV)
-        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, env=GIT_ENV, capture_output=True, text=True).stdout.strip()
-        with open(os.path.join(self.root, "recipes", "demo.yaml"), "w", encoding="utf-8") as f:
-            f.write(f"source:\n  repo: {REPO}\n  path: demo\n  tag: demo-v1.0.0\n  sha: {sha}\n")
-        # init and fetch do nothing; every other git call reads the repository.
-        with open(os.path.join(self.tmp, "bin", "git"), "w", encoding="utf-8") as f:
-            f.write(f"""#!/usr/bin/env bash
+        if not os.path.isdir(repo):
+            for rel, text in self.FILES.items():
+                os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
+                with open(os.path.join(repo, rel), "w", encoding="utf-8") as f:
+                    f.write(text)
+            os.chmod(os.path.join(repo, "demo/tests/smoke"), 0o755)
+            # init and fetch do nothing; every other git call reads the repository.
+            with open(os.path.join(self.tmp, "bin", "git"), "w", encoding="utf-8") as f:
+                f.write(f"""#!/usr/bin/env bash
 args=()
 for a; do
   case $a in init | fetch) exit 0 ;; --git-dir=*) a=--git-dir={repo}/.git ;; esac
@@ -570,31 +588,47 @@ for a; do
 done
 exec {shutil.which("git")} "${{args[@]}}"
 """)
+        for rel in remove:
+            os.remove(os.path.join(repo, rel))
+        git_tree(repo)
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "t"], cwd=repo,
+                       check=True, env=GIT_ENV)
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, env=GIT_ENV, capture_output=True, text=True).stdout.strip()
 
-        def sign(with_tests):
-            built = os.path.join(self.tmp, "built", "recipes", "demo")
-            shutil.rmtree(os.path.join(self.tmp, "built"), ignore_errors=True)
-            os.makedirs(built)
-            content = {p[5:]: (False, t.encode()) for p, t in files.items() if p.startswith("demo/") and (with_tests or "/tests/" not in p)}
-            write_tar(content, os.path.join(built, "demo.tar"))
-            meta = {"name": "demo", "version": "1.0.0", "tree": tree_id(content), "license": "Apache-2.0", "description": "Demo",
-                    "source": {"repo": REPO, "path": "demo", "tag": "demo-v1.0.0", "sha": sha}}
-            with open(os.path.join(built, "meta.json"), "w", encoding="utf-8") as f:
-                json.dump(meta, f)
-            outputs, pushed = os.path.join(self.tmp, "outputs"), os.path.join(self.tmp, "manifest.json")
-            open(outputs, "w").close()
-            if os.path.exists(pushed):
-                os.remove(pushed)
-            p = subprocess.run([os.path.join(self.root, "release", "sign"), "recipes/demo", built], capture_output=True, text=True,
-                               env=dict(self.env, GITHUB_OUTPUT=outputs, FAKE_PUSHED=pushed), cwd=self.root)
-            with open(outputs, encoding="utf-8") as f:
-                out = dict(line.rstrip("\n").split("=", 1) for line in f)
-            if not os.path.exists(pushed):
-                return p, out, None
-            with open(pushed, encoding="utf-8") as f:
-                return p, out, json.load(f)
+    def sign(self, name, sha, tar, tree=None):
+        """Signs the tar's files {path: text} as <name> at sha; tree defaults to the ID of the shipped tree without LICENSE."""
+        base = name.removeprefix("recipes/")
+        path = "demo" if name.startswith("recipes/") else "gen"
+        entry = os.path.join(self.root, f"{name}.yaml" if name.startswith("recipes/") else f"generators/{name}.yaml")
+        with open(entry, "w", encoding="utf-8") as f:
+            f.write(f"source:\n  repo: {REPO}\n  path: {path}\n  tag: {base}-v1.0.0\n  sha: {sha}\n")
+        built = os.path.join(self.tmp, "built", name)
+        shutil.rmtree(os.path.join(self.tmp, "built"), ignore_errors=True)
+        os.makedirs(built)
+        content = {p: (False, t.encode()) for p, t in tar.items()}
+        write_tar(content, os.path.join(built, f"{base}.tar"))
+        shipped = {p[len(path) + 1:]: (False, t.encode()) for p, t in self.FILES.items() if p.startswith(path + "/") and "/tests/" not in p}
+        meta = {"name": base, "version": "1.0.0", "tree": tree or tree_id(shipped), "license": "Apache-2.0", "description": "Demo",
+                "source": {"repo": REPO, "path": path, "tag": f"{base}-v1.0.0", "sha": sha}}
+        with open(os.path.join(built, "meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+        outputs, pushed = os.path.join(self.tmp, "outputs"), os.path.join(self.tmp, "manifest.json")
+        open(outputs, "w").close()
+        if os.path.exists(pushed):
+            os.remove(pushed)
+        p = subprocess.run([os.path.join(self.root, "release", "sign"), name, built], capture_output=True, text=True,
+                           env=dict(self.env, GITHUB_OUTPUT=outputs, FAKE_PUSHED=pushed), cwd=self.root)
+        with open(outputs, encoding="utf-8") as f:
+            out = dict(line.rstrip("\n").split("=", 1) for line in f)
+        if not os.path.exists(pushed):
+            return p, out, None
+        with open(pushed, encoding="utf-8") as f:
+            return p, out, json.load(f)
 
-        p, out, manifest = sign(with_tests=False)
+    def test_sign(self):
+        sha = self.commit()
+        shipped = {p[5:]: t for p, t in self.FILES.items() if p.startswith("demo/") and "/tests/" not in p}
+        p, out, manifest = self.sign("recipes/demo", sha, dict(shipped, LICENSE=self.FILES["LICENSE"]))
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertEqual((out["publish"], out["ref"], out["version"]), ("true", "ghcr.io/kadet-hub/recipes/demo", "1.0.0"))
         self.assertEqual((manifest["artifactType"], manifest["config"]["mediaType"], manifest["layers"][0]["mediaType"],
@@ -602,11 +636,31 @@ exec {shutil.which("git")} "${{args[@]}}"
                          ("application/vnd.kadet-hub.recipe.v1", "application/vnd.kadet-hub.recipe.config.v1+json",
                           "application/vnd.oci.image.layer.v1.tar", "demo.tar"))
         with open(out["sbom"], encoding="utf-8") as f:
-            self.assertEqual(sorted(x["fileName"] for x in json.load(f)["files"]), ["./README.md", "./init.yml", "./vendor/crds.yaml"])
-        # A tar that ships tests/ is not the tree without its tests entry, and nothing is pushed.
-        p, out, manifest = sign(with_tests=True)
+            self.assertEqual(sorted(x["fileName"] for x in json.load(f)["files"]),
+                             ["./LICENSE", "./README.md", "./init.yml", "./vendor/crds.yaml"])
+        # A tar that ships tests/, or lacks the root LICENSE (PUB-15), is not the tree without its tests entry
+        # plus the LICENSE, and nothing is pushed.
+        tests = {p[5:]: t for p, t in self.FILES.items() if p.startswith("demo/tests/")}
+        for tar in (dict(shipped, LICENSE=self.FILES["LICENSE"], **tests), shipped, dict(shipped, LICENSE="Other\n")):
+            p, out, manifest = self.sign("recipes/demo", sha, tar)
+            self.assertEqual((p.returncode, manifest), (1, None))
+            self.assertIn("PUB-1: recipes/demo 1.0.0: tar tree", p.stdout)
+        # meta.json names the shipped tree without the LICENSE (PUB-15), as REC-16 looks it up.
+        tar = dict(shipped, LICENSE=self.FILES["LICENSE"])
+        p, _, manifest = self.sign("recipes/demo", sha, tar, tree=tree_id({k: (False, v.encode()) for k, v in tar.items()}))
         self.assertEqual((p.returncode, manifest), (1, None))
-        self.assertIn("PUB-1: recipes/demo 1.0.0: tar tree", p.stdout)
+
+    def test_sign_generator(self):  # PUB-15
+        sha = self.commit()
+        shipped = {p[4:]: t for p, t in self.FILES.items() if p.startswith("gen/")}
+        p, out, _ = self.sign("gen", sha, dict(shipped, LICENSE=self.FILES["LICENSE"]))
+        self.assertEqual((p.returncode, out["publish"]), (0, "true"), p.stdout + p.stderr)
+        p, _, manifest = self.sign("gen", sha, shipped)
+        self.assertEqual((p.returncode, manifest), (1, None))
+        sha = self.commit(remove=["LICENSE"])
+        p, _, manifest = self.sign("gen", sha, shipped)
+        self.assertEqual((p.returncode, manifest), (1, None))
+        self.assertIn("PUB-15: gen 1.0.0: no LICENSE in the tree or at the repository root", p.stdout)
 
 
 class Mirror(unittest.TestCase):

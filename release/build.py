@@ -1,10 +1,12 @@
-"""Validate every entry on main and build its artifact (GI-9, REG-2, REG-3, PUB-1, REC-11).
+"""Validate every entry on main and build its artifact (GI-9, REG-2, REG-3, PUB-1, PUB-15, REC-11).
 
 Usage: build.py --base MAIN --sources DIR --out DIR
 
 Runs in the sandbox image without network. DIR/<name> holds the fetched tree
 `source.sha:source.path` of each generator entry, DIR/recipes/<name> what
-`fetch_tree.py --recipe <name>` wrote for each recipe entry. Writes
+`fetch_tree.py --recipe <name>` wrote for each recipe entry, and
+DIR/<name>.LICENSE and DIR/recipes/<name>/LICENSE the source repository's
+root LICENSE where it has one. Writes
 <out>/<name>/<name>.tar and meta.json for every entry whose current version
 is not yanked, <out>/recipes/<name>/ for a recipe, and <out>/names.json, which
 names a recipe recipes/<name>. Prints findings and exits 1 on any.
@@ -21,6 +23,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [HERE, os.path.join(HERE, "..", "gate")]  # python -I does not add the script dir
 from check_entry import ENTRY_PATH, TAG, lines, schema_errors, squash
 from tree import read_dir, tree_id, write_tar
+
+
+def with_license(content, root_license):
+    """PUB-15: the shipped tree plus the repository root's LICENSE when the tree has none; None without either."""
+    if "LICENSE" in {p.split("/")[0] for p in content}:
+        return content
+    if not os.path.isfile(root_license):
+        return None
+    with open(root_license, "rb") as f:
+        return {**content, "LICENSE": (False, f.read())}
 
 
 def main():
@@ -68,6 +80,10 @@ def main():
             findings.append(f"REG-2: manifest name {manifest['name']} differs from entry {name}")
             continue
         content = read_dir(tree)
+        shipped = with_license(content, os.path.join(a.sources, f"{name}.LICENSE"))
+        if shipped is None:
+            findings.append(f"PUB-15: {name}: no LICENSE in the tree or at the repository root")
+            continue
         meta = {
             "name": name, "version": version, "tree": tree_id(content), "krab": None,
             "description": manifest["description"], "tags": manifest.get("tags", []),
@@ -81,7 +97,7 @@ def main():
         }
         out = os.path.join(a.out, name)
         os.makedirs(out)
-        write_tar(content, os.path.join(out, f"{name}.tar"))
+        write_tar(shipped, os.path.join(out, f"{name}.tar"))
         with open(os.path.join(out, "meta.json"), "w", encoding="utf-8") as f:
             f.write(json.dumps(meta, sort_keys=True, separators=(",", ":")))
         names.append(name)
@@ -112,11 +128,15 @@ def main():
             continue
         # The shipped tree: the recipe directory without tests/ (REC-4).
         content = {p: f for p, f in read_dir(os.path.join(a.sources, "recipes", name, name)).items() if p.split("/")[0] != "tests"}
+        shipped = with_license(content, os.path.join(a.sources, "recipes", name, "LICENSE"))
+        if shipped is None:
+            findings.append(f"PUB-15: recipe {name}: no LICENSE in the tree or at the repository root")
+            continue
         meta = {"name": name, "version": version, "tree": tree_id(content),
                 "source": {k: src[k] for k in ("repo", "path", "tag", "sha")}, "owners": entry["owners"]}
         out = os.path.join(a.out, "recipes", name)
         os.makedirs(out)
-        write_tar(content, os.path.join(out, f"{name}.tar"))
+        write_tar(shipped, os.path.join(out, f"{name}.tar"))
         with open(os.path.join(out, "meta.json"), "w", encoding="utf-8") as f:
             f.write(json.dumps(meta, sort_keys=True, separators=(",", ":")))
         names.append(f"recipes/{name}")

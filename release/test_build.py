@@ -27,33 +27,41 @@ def entry(repo, path, tag, extra=""):
 
 
 class Build(unittest.TestCase):
-    """GI-9, REG-2, REG-3, REC-11: release/build.py on recipe entries next to a generator of the same name."""
+    """GI-9, REG-2, REG-3, PUB-15, REC-11: release/build.py on recipe entries next to a generator of the same name."""
 
-    def build(self, recipes, extra=None):
+    def build(self, recipes, extra=None, files_extra=None):
         with tempfile.TemporaryDirectory() as tmp:
             base, src, out = (os.path.join(tmp, d) for d in ("base", "src", "out"))
             shutil.copytree(os.path.join(HERE, "..", "policy"), os.path.join(base, "policy"))
             files = {"base/generators/demo.yaml": entry("generators", "demo", "demo-v1.0.0"),
                      "src/demo/kapitan-generator.yaml": "name: demo\ndescription: Demo\nlicense: MIT\nowners: [1]\n"
-                                                        "kapitan: '>=0.36.3'\nfixtures: tests\n"}
+                                                        "kapitan: '>=0.36.3'\nfixtures: tests\n",
+                     # PUB-15: the root LICENSE that build-all writes next to each tree.
+                     "src/demo.LICENSE": "MIT License\n"}
             for name in recipes:
                 files[f"base/recipes/{name}.yaml"] = entry("recipes", name, f"{name}-v2.0.0", (extra or {}).get(name, "exceptions: []\n"))
                 # What fetch_tree.py --recipe writes: the recipe with its tests files and the other recipes of the commit.
                 files.update({f"src/recipes/{name}/{name}/{p}": t for p, t in RECIPE.items()})
                 files[f"src/recipes/{name}/other/init.yml"] = "{}\n"
+                files[f"src/recipes/{name}/LICENSE"] = "Apache License\n"
+            files.update(files_extra or {})
             for rel, text in files.items():
+                if text is None:
+                    continue
                 os.makedirs(os.path.dirname(os.path.join(tmp, rel)), exist_ok=True)
                 with open(os.path.join(tmp, rel), "w", encoding="utf-8") as f:
                     f.write(text)
+            os.makedirs(out)  # as build-all does
             # Without -I, so build.py imports what this test imported.
             p = subprocess.run([sys.executable, os.path.join(HERE, "build.py"), "--base", base, "--sources", src, "--out", out],
                                capture_output=True, text=True)
             built = {}
-            for name in recipes:
-                d = os.path.join(out, "recipes", name)
+            for name in ["demo"] + [f"recipes/{r}" for r in recipes]:
+                d = os.path.join(out, name)
                 if os.path.isdir(d):
-                    with open(os.path.join(d, "meta.json"), encoding="utf-8") as f, tarfile.open(os.path.join(d, f"{name}.tar")) as t:
-                        built[name] = (json.load(f), sorted(t.getnames()))
+                    with open(os.path.join(d, "meta.json"), encoding="utf-8") as f, \
+                            tarfile.open(os.path.join(d, f"{os.path.basename(name)}.tar")) as t:
+                        built[name] = (json.load(f), {m: t.extractfile(m).read() for m in sorted(t.getnames())})
             names = None
             if os.path.exists(os.path.join(out, "names.json")):
                 with open(os.path.join(out, "names.json"), encoding="utf-8") as f:
@@ -63,9 +71,9 @@ class Build(unittest.TestCase):
     def test_recipe_artifact(self):
         p, names, built = self.build(["demo"])
         self.assertEqual((p.returncode, names), (0, ["demo", "recipes/demo"]), p.stdout)
-        meta, members = built["demo"]
+        meta, members = built["recipes/demo"]
         shipped = {k: (False, v.encode()) for k, v in RECIPE.items() if not k.startswith("tests/")}
-        self.assertEqual(members, ["README.md", "init.yml", "vendor/crds.yaml"])
+        self.assertEqual(sorted(members), ["LICENSE", "README.md", "init.yml", "vendor/crds.yaml"])
         self.assertEqual(meta, {"name": "demo", "version": "2.0.0", "tree": tree_id(shipped), "owners": [1],
                                 "source": {"repo": "https://github.com/kadet-hub/recipes.git", "path": "demo",
                                            "tag": "demo-v2.0.0", "sha": SHA}})
@@ -81,8 +89,26 @@ class Build(unittest.TestCase):
 
     def test_yanked_recipe_is_not_built(self):  # PUB-2
         p, names, built = self.build(["demo"], {"demo": "yanked:\n  2.0.0: broken\n"})
-        self.assertEqual((p.returncode, names, built), (0, ["demo"], {}))
+        self.assertEqual((p.returncode, names, list(built)), (0, ["demo"], ["demo"]))
         self.assertIn("recipe demo 2.0.0: yanked, not built", p.stdout)
+
+    def test_root_license(self):  # PUB-15
+        p, names, built = self.build(["demo"])
+        self.assertEqual(p.returncode, 0, p.stdout)
+        # The tar gets the repository root's LICENSE; tree stays the ID of the tree without it.
+        meta, members = built["demo"]
+        self.assertEqual(members, {"LICENSE": b"MIT License\n", "kapitan-generator.yaml": members["kapitan-generator.yaml"]})
+        self.assertEqual(meta["tree"], tree_id({"kapitan-generator.yaml": (False, members["kapitan-generator.yaml"])}))
+        self.assertEqual(built["recipes/demo"][1]["LICENSE"], b"Apache License\n")
+        # A LICENSE in the tree is shipped as it is.
+        p, _, built = self.build([], files_extra={"src/demo/LICENSE": "Own license\n"})
+        self.assertEqual(built["demo"][1]["LICENSE"], b"Own license\n")
+        self.assertEqual(built["demo"][0]["tree"], tree_id({k: (False, v) for k, v in built["demo"][1].items()}))
+        # Without either the build fails.
+        p, _, built = self.build(["demo"], files_extra={"src/demo.LICENSE": None, "src/recipes/demo/LICENSE": None})
+        self.assertEqual((p.returncode, built), (1, {}))
+        self.assertIn("PUB-15: demo: no LICENSE in the tree or at the repository root", p.stdout)
+        self.assertIn("PUB-15: recipe demo: no LICENSE in the tree or at the repository root", p.stdout)
 
 
 if __name__ == "__main__":
