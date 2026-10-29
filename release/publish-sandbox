@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Sandbox job, before the attestation (PUB-6): build the image of the
-# sandbox/ tree on main and push it by digest unless that tree is published.
+# sandbox/ tree on main and push it by digest unless that tree is published,
+# and write the SPDX SBOM of what it pushed (PUB-14).
 #
 # Usage: publish-sandbox
 # Needs: REGISTRY (ghcr.io/<owner>), IDENTITY, GITHUB_REPOSITORY, GH_TOKEN,
-# oras logged in, docker, skopeo, the main checkout as working directory.
-# Writes ref, tree, digest and publish=true|false to $GITHUB_OUTPUT.
+# RUNNER_TEMP, oras logged in, docker, skopeo, syft, the main checkout as
+# working directory.
+# Writes ref, tree, digest, sbom and publish=true|false to $GITHUB_OUTPUT.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 work=$(mktemp -d)
@@ -34,4 +36,7 @@ digest=$(jq -er '.manifests[0].digest' "$work/layout/index.json")
 oras cp --from-oci-layout -- "$work/layout@$digest" "$ref@$digest" >/dev/null
 echo "sandbox $tree: pushed $digest"
 out "digest=$digest"
+syft scan -q "oci-dir:$work/layout" --source-name "$ref" --source-version "$tree" \
+  -o "spdx-json=$RUNNER_TEMP/sandbox.spdx.json"
+out "sbom=$RUNNER_TEMP/sandbox.spdx.json"
 out "publish=true"

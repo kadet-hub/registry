@@ -449,7 +449,7 @@ class OutputDiff(unittest.TestCase):
         with open(os.path.join(ROOT, ".github", "workflows", "release.yml"), encoding="utf-8") as f:
             steps = f.read().split("uses: actions/attest@")[1:]
         oci = [s.split("\n      - ", 1)[0] for s in steps if "subject-digest:" in s.split("\n      - ", 1)[0]]
-        self.assertEqual(len(oci), 5)  # artifact provenance, SBOM, output diff, sandbox image, index manifest
+        self.assertEqual(len(oci), 6)  # artifact provenance, SBOM, output diff, sandbox image and its SBOM, index manifest
         for step in oci:
             self.assertIn("push-to-registry: true", step)
             self.assertIn("create-storage-record: false", step)
@@ -834,3 +834,34 @@ esac
         rc, out, writes, summary = self.mirror({"multi.GIT_SHA": "3a1a099"}, tags="3a1a099 sha256:" + "o" * 64)
         self.assertEqual((rc, writes, summary), (1, [], ""))
         self.assertIn("tag not moved", out)
+
+
+class PublishSandbox(unittest.TestCase):
+    """PUB-14: release/publish-sandbox writes the SBOM of the layout it pushed, with fake docker, skopeo, oras and syft."""
+
+    DIGEST = "sha256:" + "d" * 64
+
+    def test_sbom_of_the_pushed_layout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            calls, output = os.path.join(tmp, "calls"), os.path.join(tmp, "output")
+            fakes = {
+                "docker": "exit 0",
+                "skopeo": f'd=${{4#oci:}}; d=${{d%:image}}; mkdir -p "$d"; echo \'{{"manifests": [{{"digest": "{self.DIGEST}"}}]}}\' >"$d/index.json"',
+                "oras": '[[ $1 == resolve ]] && { echo "$3: not found" >&2; exit 1; }; exit 0',
+                "syft": 'for a; do case $a in spdx-json=*) echo "{}" >"${a#spdx-json=}" ;; esac; done',
+            }
+            for name, body in fakes.items():
+                with open(os.path.join(tmp, name), "w", encoding="utf-8") as f:
+                    f.write(f'#!/usr/bin/env bash\necho "{name} $*" >>{calls!r}\n{body}\n')
+                os.chmod(os.path.join(tmp, name), 0o755)
+            p = subprocess.run([os.path.join(ROOT, "release", "publish-sandbox")], capture_output=True, text=True,
+                               env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], REGISTRY="ghcr.io/kadet-hub",
+                                        GITHUB_OUTPUT=output, RUNNER_TEMP=tmp))
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            with open(output, encoding="utf-8") as f:
+                out = dict(line.split("=", 1) for line in f.read().splitlines())
+            with open(calls, encoding="utf-8") as f:
+                syft = [c for c in f.read().splitlines() if c.startswith("syft ")]
+        self.assertEqual((out["publish"], out["digest"], out["sbom"]), ("true", self.DIGEST, os.path.join(tmp, "sandbox.spdx.json")))
+        self.assertEqual(len(syft), 1)
+        self.assertRegex(syft[0], r"^syft scan -q oci-dir:\S+/layout --source-name ghcr.io/kadet-hub/sandbox --source-version [0-9a-f]{40} ")
