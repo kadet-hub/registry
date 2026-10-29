@@ -546,7 +546,7 @@ remembered in the browser's `localStorage`.
   says it is not scanned (OQ-19).
 
   - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_not_scanned`, `View.test_security_grade`, `View.test_security_of_the_shown_version`)
-  - Since: this change
+  - Since: #417
 
 - CAT-39a: The images of a version MUST be the references
   `<repository>:<tag>@sha256:<digest>` in its tree, outside `tests/` and
@@ -591,7 +591,7 @@ remembered in the browser's `localStorage`.
   listed version pins is not scanned.
 
   - Test: `scan/test_images.py`
-  - Since: this change
+  - Since: #417
 
 - CAT-39b: The site MUST have a full report at
   `/security/generators/<name>/` or `/security/recipes/<name>/` for every
@@ -609,7 +609,7 @@ remembered in the browser's `localStorage`.
   `catalog.json`.
 
   - Test: `catalog/test_catalog.py` (`Security.test_full_report`, `Security.test_seo`)
-  - Since: this change
+  - Since: #417
 
 - CAT-39c: The catalog job MUST read the image report of the newest run
   of `scheduled.yml` on `main` that uploaded one, and MUST build the pages
@@ -637,7 +637,7 @@ remembered in the browser's `localStorage`.
   `$CATALOG_SECURITY`.
 
   - Test: `catalog/test_catalog.py` (`Security.test_build_reads_the_newest_report`, `Site.test_pages_without_image_report_say_not_scanned`)
-  - Since: this change
+  - Since: #417
 
 - CAT-21: The generator page MUST link "Request a feature" to a new issue
   in the generator's source repository, prefilled with the generator's

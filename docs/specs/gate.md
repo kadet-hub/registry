@@ -718,7 +718,7 @@ review go into the review comment and do not fail the gate.
   compromise (GHSA-69fq-xp46-6x23).
 
   - Test: `scan/test_rescan.py` (`Rescan.test_recipe_entry`, the images file), `scan/test_image_report.py`; manual: the first scheduled run after the merge
-  - Since: this change
+  - Since: #417
 
 ## Compile gate
 
