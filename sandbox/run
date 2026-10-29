@@ -38,8 +38,11 @@ if ((trace)); then
   trap 'sudo umount -- "$work/judge/out" 2>/dev/null || true; rm -rf -- "$work"' EXIT
 else
   # /out holds files of the sandbox user, which a non-root caller cannot delete.
+  # The image has no shell or find (SEC-17), so Python empties it.
   trap 'docker run --rm --network none --user 10001:10001 --mount "type=bind,src=$work/judge/out,dst=/out" \
-    "$image" find /out -mindepth 1 -delete; rm -rf -- "$work"' EXIT
+    "$image" python -I -c "import os, shutil
+for e in os.scandir(\"/out\"):
+    shutil.rmtree(e.path) if e.is_dir(follow_symlinks=False) else os.unlink(e.path)"; rm -rf -- "$work"' EXIT
 fi
 
 # Decoy credentials, random per run (SEC-11).

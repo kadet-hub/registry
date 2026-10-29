@@ -476,7 +476,7 @@ coverage is named at each:
 | `sandbox/schema_check.py`, `sandbox/tf_schema.py` | QA-7, QA-8 |
 | `sandbox/apiserver_check.py` | QA-10 to QA-12 |
 | `.github/workflows/tf-schema-verify.yml`, `gate/tf-schema-verify` | QA-9 |
-| `sandbox/` | SEC-9 to SEC-12: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
+| `sandbox/` | SEC-9 to SEC-12, SEC-17: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
 | `tests/consumers/` | AC-10, AC-12 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
