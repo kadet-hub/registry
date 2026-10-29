@@ -27,6 +27,8 @@
 {{ with $r.requires }}<li>Prerequisites, installed once per cluster before the recipe: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/recipes/%s" $n) }}<a href="{{ printf "/recipes/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}<code>{{ $n }}</code>{{ end }}{{ end }}</li>
 {{ end -}}
 <li>Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/#v%s" $g.name $g.version | relURL }}">{{ $g.name }} {{ $g.version }}</a> <code>{{ $g.digest }}</code>{{ end }}</li>
+{{ $v := "" }}{{ with $r.latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "recipes" "name" $r.name "version" $v) -}}
+<li>Image security: {{ with $sec.grade }}grade <span class="grade grade-{{ $sec.class }}">{{ . }}</span> {{ end }}{{ $sec.text }}{{ with $sec.full }} <a href="{{ . | relURL }}">Full report</a>{{ end }}</li>
 </ul>
 {{ with $r.replaces }}<h2>Replaces</h2>
 {{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .) }}

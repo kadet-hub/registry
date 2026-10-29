@@ -1,0 +1,9 @@
+{{/* CAT-39b: the full image security report of each generator and recipe page with an image to report. */}}
+{{ range $report, $what := dict "generators" "generator" "recipes" "recipe" }}
+  {{ range $name, $p := index site.Data.security $report }}{{ if $p.images }}
+    {{ $title := printf "Image security report: %s %s" $name $what }}
+    {{ if gt (len $title) 65 }}{{ $title = printf "Image security report: %s" $name }}{{ end }}
+    {{ $.AddPage (dict "kind" "page" "path" (printf "%s/%s" $report $name) "title" $title "layout" "security" "params" (dict "report" $report "name" $name)
+        "description" (truncate 159 "…" (printf "Vulnerabilities that Trivy finds in the container images the %s %s %s pins, with fixed versions, scanned daily by kadet-hub." $what $name $p.version))) }}
+  {{ end }}{{ end }}
+{{ end }}

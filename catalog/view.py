@@ -1,6 +1,6 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] [--wanted FILE] [--gate FILE] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] [--wanted FILE] [--gate FILE] [--security FILE --security-out FILE] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
@@ -23,6 +23,8 @@ is a version's verified output diff; its first lines are shown (CAT-27).
 --gate is the registry's pull requests with their changed paths and comments;
 only counts and requirement IDs are kept (CAT-33).
 The index's recipes become recipes[] (CAT-38b).
+--security is the rescan's image report (SEC-19); --security-out gets the
+report of each page's version with its counts and grade (CAT-39).
 """
 
 import argparse
@@ -437,6 +439,59 @@ def stats(generators, gate):
             "months": [months[m] for m in sorted(months, reverse=True)], "gate": gate}
 
 
+SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN")
+GRADES = dict(zip(SEVERITIES, "FDCB-"))  # CAT-39: Artifact Hub's SEVERITY_RATING
+
+
+def grade(counts):
+    """CAT-39: Artifact Hub's grade, the letter of the most severe level with a finding, A without findings."""
+    return next((GRADES[s] for s in SEVERITIES if counts[s]), "A")
+
+
+def load_security(path):
+    """CAT-39c: the rescan's image report (SEC-19), None when it was not read or has another form."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data["scanned"], str) and STAMP.match(data["scanned"]) and isinstance(data["pages"], dict) and isinstance(data["images"], dict):
+            return data
+    except (OSError, TypeError, ValueError, KeyError):
+        pass
+    return None
+
+
+def security(report, generators, recipes):
+    """CAT-39, CAT-39b: per page, the report of the version it shows with counts and grade; no entry when the scan missed it."""
+    out = {"scanned": None, "generators": {}, "recipes": {}}
+    if not report:
+        return out
+    text = lambda v: CONTROL.sub("", v) if isinstance(v, str) else ""
+    out.update(scanned=report["scanned"], trivy=text(report.get("trivy")), db=text(report.get("db")))
+    for kind, entries in (("generators", generators), ("recipes", recipes)):
+        for e in entries:
+            page = report["pages"].get(f"{kind}/{e['name']}")
+            if not e["latest"] or not isinstance(page, dict) or page.get("version") != e["latest"]["version"] or not isinstance(page.get("images"), list):
+                continue
+            images = []
+            for ref in page["images"]:
+                scan = report["images"].get(ref) if isinstance(ref, str) else None
+                scan = scan if isinstance(scan, dict) else {}
+                found = scan.get("vulnerabilities")
+                if not isinstance(found, list):  # Artifact Hub grades no package with an image it could not scan
+                    images.append({"ref": text(ref), "error": text(scan.get("error")) or "no result", "counts": None, "findings": []})
+                    continue
+                rows = sorted(({"id": text(v.get("id")), "severity": v.get("severity") if v.get("severity") in SEVERITIES else "UNKNOWN",
+                                "package": text(v.get("package")), "installed": text(v.get("installed")), "fixed": text(v.get("fixed"))}
+                               for v in found if isinstance(v, dict)), key=lambda r: (SEVERITIES.index(r["severity"]), r["id"], r["package"]))
+                images.append({"ref": text(ref), "error": None, "findings": rows,
+                               "counts": {s: sum(r["severity"] == s for r in rows) for s in SEVERITIES}})
+            failed = sum(i["error"] is not None for i in images)
+            counts = None if failed or not images else {s: sum(i["counts"][s] for i in images) for s in SEVERITIES}
+            out[kind][e["name"]] = {"version": e["latest"]["version"], "images": images, "failed": failed, "counts": counts,
+                                    "total": sum(counts.values()) if counts else None, "grade": grade(counts) if counts else None}
+    return out
+
+
 def load_previous(path):
     """{(name, latest digest): {"readme": README, "changelog": CHANGELOG sections, "sources": group software}} from the last build's catalog.json."""
     try:
@@ -467,6 +522,8 @@ def main():
     p.add_argument("--diffs")
     p.add_argument("--wanted")
     p.add_argument("--gate")
+    p.add_argument("--security")
+    p.add_argument("--security-out")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     with open(a.index, encoding="utf-8") as f:
@@ -475,6 +532,9 @@ def main():
                   load_discussions(a.discussions, a.owner), a.pages, load_previous(a.previous), a.diffs)
     result["wanted"] = load_wanted(a.wanted)
     result["stats"] = stats(result["generators"], load_gate(a.gate))
+    if a.security_out:
+        with open(a.security_out, "w", encoding="utf-8") as f:
+            json.dump(security(load_security(a.security), result["generators"], result["recipes"]), f, sort_keys=True)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=True)
     return 0

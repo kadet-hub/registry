@@ -2,14 +2,16 @@
 # SEC-15, SEC-16, REC-14: rescan the current version of every entry on main
 # and check that its tag still resolves to the pinned commit.
 #
-# Usage: rescan <findings file>
+# Usage: rescan <findings file> <images file>
 # Needs: what static-scan needs, yq, git, python3. Writes one line per
 # finding, "<kind>\t<name>\t<version or tag>\t<text>", for rescan_issues.py;
-# a recipe's <name> is "recipe <name>".
+# a recipe's <name> is "recipe <name>". SEC-19: writes one line per fetched
+# version, "<catalog page>\t<version>\t<images>", for image_report.py.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
-out=$1
+out=$1 images=$2
 : >"$out"
+: >"$images"
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
@@ -20,10 +22,10 @@ for f in "$root"/generators/*.yaml "$root"/recipes/*.yaml; do
   [[ -e $f ]] || continue
   name=$(basename -- "$f" .yaml)
   repo=$(yq -r .source.repo "$f") path=$(yq -r .source.path "$f") tag=$(yq -r .source.tag "$f") sha=$(yq -r .source.sha "$f")
-  dir=$work/generators/$name tree=$work/generators/$name fetch=(--path "$path")
+  dir=$work/generators/$name tree=$work/generators/$name fetch=(--path "$path") page=generators/$name
   # REC-14: what REC-4 scans, the shipped tree with the tests files the gate reads; a recipe may share a generator's name.
   if [[ $f == "$root"/recipes/* ]]; then
-    dir=$work/recipes/$name tree=$work/recipes/$name/$name fetch=(--recipe "$name") name="recipe $name"
+    dir=$work/recipes/$name tree=$work/recipes/$name/$name fetch=(--recipe "$name") page=recipes/$name name="recipe $name"
   fi
   [[ $tag =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]
   version=${BASH_REMATCH[1]}
@@ -46,6 +48,10 @@ for f in "$root"/generators/*.yaml "$root"/recipes/*.yaml; do
     continue
   fi
   python3 "$root/gate/fetch_tree.py" --git-dir "$dir.git" --rev "$sha" "${fetch[@]}" --out "$dir" >"$work/tree.log" 2>&1 || true
+  # SEC-19, CAT-39a: the images this version pins; a version whose list fails stays unscanned.
+  if refs=$(python3 -I "$root/scan/images.py" "$tree"); then
+    printf '%s\t%s\t%s\n' "$page" "$version" "${refs//$'\n'/ }" >>"$images"
+  fi
   rc=0
   "$root/scan/static-scan" "$tree" >>"$work/tree.log" 2>&1 || rc=$?
   yq -o json '.exceptions // []' "$f" >"$work/exceptions.json"

@@ -545,7 +545,7 @@ remembered in the browser's `localStorage`.
   from `main` of kadet-hub/recipes, which the rescan does not fetch, and
   says it is not scanned (OQ-19).
 
-  - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_not_scanned`, `View.test_security_grade`)
+  - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_not_scanned`, `View.test_security_grade`, `View.test_security_of_the_shown_version`)
   - Since: this change
 
 - CAT-39a: The images of a version MUST be the references
@@ -636,7 +636,7 @@ remembered in the browser's `localStorage`.
   With `CATALOG_OFFLINE=1` the build reads the report from
   `$CATALOG_SECURITY`.
 
-  - Test: `catalog/test_catalog.py` (`Security.test_build_reads_the_newest_report`)
+  - Test: `catalog/test_catalog.py` (`Security.test_build_reads_the_newest_report`, `Site.test_pages_without_image_report_say_not_scanned`)
   - Since: this change
 
 - CAT-21: The generator page MUST link "Request a feature" to a new issue
