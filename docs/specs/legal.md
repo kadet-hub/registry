@@ -115,6 +115,6 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
   applies the same policy to the registry and to listed generators.
 
   - Test: manual: `gh api -H 'Accept: application/vnd.github.raw' repos/kadet-hub/.github/contents/SECURITY.md`
-    prints a file that says all four points. On 2026-10-29 the file did
-    not exist.
-  - Since: #414
+    prints a file that says all four points. It did on 2026-10-29; the
+    file says "without a fixed response time" and does not name an SLA.
+  - Since: #414; the file: kadet-hub/.github#7
