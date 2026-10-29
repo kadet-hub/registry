@@ -22,8 +22,9 @@ is listed as a newer version, never as a change to an older one.
 ## Advisories
 
 A vulnerability fixed in the registry gets a GitHub security advisory
-(GHSA) in this repository. It names the affected versions, for the registry
-the `main` commits before the fix, and a CVSS score.
+(GHSA) in this repository that names the affected versions and a CVSS
+score. For the registry, the affected versions are the `main` commits
+before the fix.
 
 ## Listed generators
 

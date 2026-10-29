@@ -218,10 +218,10 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   Private reporting is read from
   `GET /repos/{owner}/{repo}/private-vulnerability-reporting`. GitHub
   lists that endpoint under the Metadata read permission and answers it
-  without authentication for a public repository. Every workflow token
-  holds Metadata read; the gate job's log lists it next to the
-  permissions `gate.yml` sets, so the gate needs no further permission
-  (GI-3). A failed request counts as not enabled (GI-7).
+  without authentication for a public repository. The gate job's token
+  holds Metadata read: its log lists it next to the permissions
+  `gate.yml` sets, so the gate needs no further permission (GI-3). A
+  failed request counts as not enabled (GI-7).
 
   The check runs whenever the entry approves a new commit: for a new entry
   and for a bump that changes `source.sha`. A repository that drops either
@@ -234,8 +234,8 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   removes its policy later.
 
   A gitlab.com source (GI-9) needs `SECURITY.md` in the same three places
-  of its commit. GitLab has neither GitHub's private vulnerability
-  reporting nor an owner-wide default file, so neither is checked; what a
+  of its commit. The gate has no GitLab counterpart of the private
+  reporting check or the owner default, so neither is checked. What a
   GitLab source must provide instead is OQ-16.
 
   Recipe entries are not checked; REC-1 lists the rules that apply to
