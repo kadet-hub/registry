@@ -117,4 +117,4 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
   - Test: manual: `gh api -H 'Accept: application/vnd.github.raw' repos/kadet-hub/.github/contents/SECURITY.md`
     prints a file that says all four points. On 2026-10-29 the file did
     not exist.
-  - Since: this change
+  - Since: #414

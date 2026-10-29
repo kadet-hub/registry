@@ -241,5 +241,10 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   Recipe entries are not checked; REC-1 lists the rules that apply to
   them.
 
-  - Test: `gate/test_check_entry.py::Security` (`test_needs_security_md_and_private_reporting`, `test_gitlab_needs_security_md_only`, `test_only_a_new_commit_is_checked`) (partial: the lookups in `gate/run` have no test)
-  - Since: this change
+  - Test: `gate/test_check_entry.py::Security` (`test_needs_security_md_and_private_reporting`, `test_gitlab_needs_security_md_only`, `test_only_a_new_commit_is_checked`)
+    (partial: the lookups in `gate/run` have no test); manual: on
+    2026-10-29 the lookups with a personal token passed kadet-hub/registry,
+    found no file for kadet-hub/generators at the argocd pin, found
+    fluxcd's default with private reporting off for
+    fluxcd/flux2-multi-tenancy, and neither for octocat/Hello-World
+  - Since: #414
