@@ -581,9 +581,10 @@ parameters:
   `application/vnd.kadet-hub.recipe.config.v1+json` and one layer
   `application/vnd.oci.image.layer.v1.tar` titled `<name>.tar`, pushed to
   `ghcr.io/kadet-hub/recipes/<name>` and tagged `<X.Y.Z>`. The tar MUST hold
-  the shipped tree (REC-4) at its root, normalized as PUB-1 describes. The
-  sign job MUST compare the tar with the tree of `source.sha:source.path`
-  without its `tests` entry.
+  the shipped tree (REC-4) and the root LICENSE of PUB-15 at its root,
+  normalized as PUB-1 describes. The sign job MUST compare the tar with the
+  tree of `source.sha:source.path` without its `tests` entry, with that
+  LICENSE added.
 
   That tree ID is the one `git mktree` writes for `git ls-tree
   <sha>:<path>` with the `tests` line removed, so the sign job's own fetch
@@ -604,19 +605,20 @@ parameters:
   generator. The index job warns about every package that is not public,
   and a maintainer makes it public in the organisation's package settings.
 
-  - Test: `release/test_release.py` (`Recipe.test_sign`); `release/test_build.py` (`Build.test_recipe_artifact`, `Build.test_recipe_names`, `Build.test_yanked_recipe_is_not_built`)
-  - Since: #391
+  - Test: `release/test_release.py` (`Recipe.test_sign`); `release/test_build.py` (`Build.test_recipe_artifact`, `Build.test_recipe_names`, `Build.test_yanked_recipe_is_not_built`, `Build.test_root_license`)
+  - Since: #391, this change
 
 - REC-12: For every recipe version it publishes, the release workflow MUST
   rerun REC-4 to REC-9 in the build job, record the run as `scan` (PUB-7),
-  and apply PUB-1 to PUB-3a, PUB-8 and PUB-9 as for a generator.
+  and apply PUB-1 to PUB-3a, PUB-8, PUB-9 and PUB-15 as for a generator.
+  The SBOM MUST list each generator of the record's `generators` (REC-13)
+  and each container image of `images` as a package that the recipe's
+  package `DEPENDS_ON`.
 
   The `renders` proof of the release run is the one the catalog shows
   (DEC-20), since PUB-7 records what the publishing run checked. kind runs in
   the build job, which holds `contents: read`, `packages: read` and
-  `attestations: read` only. The SBOM lists the tar's files; the vendored
-  files keep the source URL from their SHA-256 comment, which RCP-17
-  requires.
+  `attestations: read` only.
 
   For each recipe version without a published tag, `release/build-all`
   runs `gate/recipe-checks` and `gate/recipe-renders`, the scripts of the
@@ -649,8 +651,41 @@ parameters:
   output, as REC-10 does. Without that output the record is `{base,
   error}` with `base did not compile`.
 
-  - Test: `release/test_release.py` (`BuildAll.test_recipe_record`, `BuildAll.test_recipe_checks_and_renders_fail_the_build`, `ScanRecord.test_recipe_checks`, `OutputDiff.test_recipe_base`); manual: `release/build-all`, `release/sign` and `release/publish-index` on cert-manager at kadet-hub/recipes `a4c9945` against a local registry, with the attestations of its artifacts stubbed, then a bump to 1.1.0 on the same commit and a second run of each (2026-10-26)
-  - Since: #391
+  The SBOM lists the tar's files; the vendored files keep the source URL
+  from their SHA-256 comment, which RCP-17 requires. The recipe's package
+  is what the consumer extracts into its inventory. Running it needs the
+  generators, which the consumer's compile fetches, and the images, which
+  the cluster pulls. Until this change the SBOM named neither.
+
+  A generator's package has the purl `pkg:oci/<name>@<digest>` with
+  `repository_url=ghcr.io/kadet-hub/<name>` and the version as `tag`, as
+  the generator's own SBOM names it (PUB-8). An image with a digest gets
+  `pkg:oci` in the same form with its repository and tag. One without a
+  digest gets `pkg:docker` with its tag as version, since `pkg:oci`
+  requires the digest. A name without a registry is completed as Docker
+  completes it, `nginx` to `docker.io/library/nginx`. An image's package
+  has the primary purpose `CONTAINER`, which tells it from a generator's.
+
+  SPDX 2.3's `BUILD_DEPENDENCY_OF` and `RUNTIME_DEPENDENCY_OF` were
+  considered for compile time and run time. They point from the dependency
+  to the recipe, and the recipe package itself is neither built nor run.
+
+  The build job records the images in `meta.json` as `images`, sorted and
+  once each, so they enter the index with the rest of the record (REC-13).
+  They come from the output of the recipe's own target,
+  `compiled/<name>/`, as `kinds` do: the `image` of every item of a
+  `containers`, `initContainers` or `ephemeralContainers` list at any
+  depth of a document with `apiVersion` and `kind`. That covers Pods,
+  workload templates and custom resources that embed a pod template. An
+  image named elsewhere, such as in an operator's `RELATED_IMAGE_*`
+  variable or CloudNativePG's `imageName`, is not listed.
+  `release/images.py` walks the documents that `sandbox/tag_check.py`
+  reads for `kinds`. Versions published before this change have no
+  `images`, and none is added later (CMP-4). The images are a claim of the
+  build job (RISK-10).
+
+  - Test: `release/test_release.py` (`BuildAll.test_recipe_record`, `BuildAll.test_recipe_checks_and_renders_fail_the_build`, `ScanRecord.test_recipe_checks`, `OutputDiff.test_recipe_base`, `Sbom.test_recipe_dependencies`, `Images`); manual: `release/build-all`, `release/sign` and `release/publish-index` on cert-manager at kadet-hub/recipes `a4c9945` against a local registry, with the attestations of its artifacts stubbed, then a bump to 1.1.0 on the same commit and a second run of each (2026-10-26); `pyspdxtools` on a recipe SBOM with generators and images (2026-10-29)
+  - Since: #391, this change
 
 - REC-13: The index MUST list recipes under a top-level `recipes` key,
   `{<name>: {<version>: <record>}}`, with the same `serial`. A record MUST
@@ -730,7 +765,7 @@ REG-2. They fail closed.
 | `.github/actions/setup-check/` | `check` pin (REC-5, REC-7 to REC-9) |
 | `.github/actions/setup-kind/` | kind, kubectl and uv (REC-9), cloud-provider-kind (REC-17) |
 | `.github/workflows/gate.yml` | `attestations: read` (REC-6), the `renders` job (REC-9) |
-| `release/build-all`, `release/build.py`, `release/tree.py`, `release/sign`, `release/publish-index`, `release/index.py`, `release/output-diff`, `release/scan-record` | REC-11 to REC-13 |
+| `release/build-all`, `release/build.py`, `release/tree.py`, `release/sign`, `release/publish-index`, `release/index.py`, `release/output-diff`, `release/scan-record`, `release/sbom.py`, `release/images.py` | REC-11 to REC-13 |
 | `.github/workflows/release.yml` | The build job's `attestations: read` and kind (REC-12) |
 | `tests/samples/recipes/`, `tests/selftest` | AC-12, AC-14 |
 

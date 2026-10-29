@@ -20,14 +20,15 @@ The build job has `contents: read`, `packages: read` and
 `attestations: read` only. It fetches
 each source without checkout or submodules (`gate/fetch_tree.py`), validates entry and manifest
 (GI-9), repeats REG-2 and REG-3 across all entries on `main`, and writes a
-normalized tar of the tree `source.sha:source.path` with its metadata: the
-manifest fields the index lists, the source, and the tree ID computed from the
-files. It runs the checks in the sandbox image without network, and the
+normalized tar of the tree `source.sha:source.path`, with a LICENSE added
+when the tree has none (PUB-15), and its metadata: the manifest fields the
+index lists, the source, and the tree ID computed from the files of the
+tree. It runs the checks in the sandbox image without network, and the
 compile gate under gVisor for versions without a published tag (CMP-4).
 
 The sign job runs once per entry in the `release` environment. It fetches
 `source.sha` itself, blobless, compares the git tree of `source.path` with
-the tree ID of the tar's contents and with the metadata, writes the OCI
+the tree ID of the tar's contents (PUB-15) and with the metadata, writes the OCI
 manifest itself, pushes config and layer to `ghcr.io/kadet-hub/<name>` by
 digest, attests the digest, and then sets the `<version>` tag. The krab
 result is the build job's (CMP-4).
@@ -57,11 +58,12 @@ the index included, and a maintainer changes the visibility in the web UI,
 since the documented package API has no visibility call.
 
 - PUB-1: The build job MUST build the artifact from the git tree
-  `source.sha:source.path` alone, reproducibly (normalized tar, no timestamp
-  in the manifest), MUST NOT use files produced by the gate, and MUST NOT
-  hold `id-token` or any write permission. The sign job MUST fail when the
-  tree ID of the tar differs from the tree of `source.sha:source.path` read by
-  its own fetch.
+  `source.sha:source.path` and the LICENSE of PUB-15 alone, reproducibly
+  (normalized tar, no timestamp in the manifest), MUST NOT use files
+  produced by the gate, and MUST NOT hold `id-token` or any write
+  permission. The sign job MUST fail when the tree ID of the tar differs
+  from the tree of `source.sha:source.path` read by its own fetch, with the
+  LICENSE of PUB-15 added.
 
   The build job holds `packages: read` to tell which versions are
   published (CMP-4) and to read the latest index for the output diff
@@ -76,7 +78,57 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: reproducibility and tree ID;
     the sign job's comparison by AC-6)
-  - Since: #13, #226; `attestations: read`: this change
+  - Since: #13, #226; `attestations: read`: this change; the LICENSE of PUB-15: this change
+
+- PUB-15: When the shipped tree has no `LICENSE` at its root, the build job
+  MUST add the source repository's root `LICENSE` at `source.sha` to the
+  root of the tar, and MUST fail when neither exists. The sign job MUST
+  compare the tar with the tree of its own fetch plus that blob, and the
+  metadata's tree ID with the tree of its own fetch alone.
+
+  The shipped tree is `source.sha:source.path`, for a recipe without its
+  `tests` entry (REC-11). On 2026-10-29 all 37 generator entries came from
+  kadet-hub/generators, which keeps one LICENSE at the repository root, and
+  QA-1 accepts that one. Their artifacts therefore carried no license text.
+  Every version in index serial 73 declares Apache-2.0, whose section 4(a)
+  requires a copy of the license with every redistribution, and the
+  marketplace redistributes (DEC-1).
+
+  Recipes get the same. kadet-hub/recipes keeps its LICENSE at the root,
+  which REC-4 matches against `policy/licenses.txt`, and REC-4's layout
+  allows no LICENSE in a recipe directory, so every recipe artifact gets
+  the root LICENSE. A class is a `.yml` file, so the LICENSE in
+  `inventory/classes/recipes/<name>/` is never loaded as one.
+
+  `tree` in the metadata and the index stays the tree ID of the shipped
+  tree without the added LICENSE. REC-16 looks up an included recipe by
+  that ID, computed from the directory at the parent's commit, which holds
+  no LICENSE. With the LICENSE in the ID, no recipe version published after
+  this change would be found. Nothing else compares a tree ID: `consumer/`
+  checks digests and attestations against the index (CON-2, CON-5), the
+  catalog does not show the ID, and `docs/consumers.md` verifies digests.
+  So `tree` means the same for versions published before and after this
+  change. The build job rebuilds the tar of an already published version
+  as well, and the sign job compares it under the same rule before it
+  finds the existing tag (PUB-2). Published artifacts are not touched.
+
+  QA-1 and REC-4 fail a version without either LICENSE in the gate, so the
+  release meets one only for an entry that bypassed the gate. Like the
+  other findings of `release/build.py` it then fails the build of every
+  entry: `PUB-15: <name>: no LICENSE in the tree or at the repository root`.
+
+  `release/build-all` writes the root LICENSE from its fetch next to the
+  tree, as `<name>.LICENSE` for a generator and as `recipes/<name>/LICENSE`
+  for a recipe (as `gate/recipe-checks` does), and `release/build.py` adds
+  it with mode 0644 like every file of the tar. The sign job reads the
+  blob ID with `git rev-parse <sha>:LICENSE`, which its blobless fetch
+  resolves without the blob, and writes the tree with `git mktree
+  --missing` as REC-11 does.
+
+  - Test: `release/test_build.py` (`Build.test_root_license`);
+    `release/test_release.py` (`Recipe.test_sign`, `Recipe.test_sign_generator`,
+    `BuildAll.test_root_license_next_to_the_tree`)
+  - Since: this change
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
   existing `<version>` tag, MUST fail when an existing tag points to a digest
@@ -180,6 +232,41 @@ since the documented package API has no visibility call.
   - Test: manual: AC-6 consumer run (2026-10-09)
   - Since: #15
 
+- PUB-14: For every sandbox image it publishes (PUB-6), the release
+  workflow MUST attest an SPDX 2.3 SBOM of the pushed image for the same
+  digest.
+
+  `release/publish-sandbox` runs syft on the OCI layout it pushes, with
+  `ghcr.io/kadet-hub/sandbox` as name and the tree as version, and
+  `actions/attest` stores the document with the predicate type
+  `https://spdx.dev/Document/v2.3`, as PUB-8 does for artifacts. syft lists
+  the Debian packages, the Python packages of both venvs and the Go
+  modules of helm, conftest, etcd and kube-apiserver: 609 packages for the
+  image of this change, 3.2 MB, which pyspdxtools accepts. syft records
+  no license for a Go binary or its modules; PUB-14a covers the programs'
+  own texts.
+
+  - Test: `release/test_release.py` (`PublishSandbox`); manual: the first
+    release run after the merge, `gh attestation verify
+    oci://ghcr.io/kadet-hub/sandbox:<tree> --owner kadet-hub
+    --predicate-type https://spdx.dev/Document/v2.3`
+  - Since: this change
+
+- PUB-14a: The sandbox image MUST carry the license text of every program
+  it bundles outside the Python venvs at `/usr/share/doc/<program>/LICENSE`.
+
+  helm, conftest and krab ship the text in their release archives. etcd's
+  archive and the kube-apiserver image do not, so `sandbox/Dockerfile`
+  fetches it from the release tag by checksum. None of the five has a
+  NOTICE file at its tag. The Python packages keep their license files in
+  their `dist-info` directories and the Debian packages theirs in
+  `/usr/share/doc/<package>/copyright`. The licenses of the Go modules
+  compiled into the four Go programs are not in the image.
+
+  - Test: `sandbox/test_image.py` (`Image.test_licence_texts`), run in the
+    image by workflow job `gate-selftest`
+  - Since: this change
+
 - PUB-7: For every version it publishes, the build job MUST rerun the
   static checks with the entry's exceptions and the compile gate, fail on
   any finding, and record the run in the artifact's `meta.json` as `scan`.
@@ -200,13 +287,18 @@ since the documented package API has no visibility call.
   - Since: #47
 
 - PUB-8: The sign job MUST attest an SPDX 2.3 SBOM for every artifact it
-  pushes, for the same digest.
+  pushes, for the same digest. Each schema group a generator ships in its
+  `schemas` directory MUST be a package of its own in that SBOM, holding
+  the group's files, with name, version, download location, declared
+  license and copyright from the group's `sources.yaml` entry where it
+  has them, and NOASSERTION where it has not.
 
   The SBOM is written from the pushed tar (`release/sbom.py`): one package
   with the manifest's license as declared license, the source repository
   at `source.sha` as download location and a `pkg:oci` purl with the
   digest, and every file with its SHA-256 and SHA-1. Generators have no
-  dependencies (DEC-10), so the SBOM is the reviewed file list.
+  dependencies (DEC-10), so the SBOM is the reviewed file list. A recipe's
+  dependencies are REC-12's.
   `actions/attest` with `sbom-path` stores it with the predicate type
   `https://spdx.dev/Document/v2.3`.
 
@@ -215,8 +307,55 @@ since the documented package API has no visibility call.
   the pushed digest); `pyspdxtools` validates the document written for
   the published keda 1.0.0 tar.
 
-  - Test: `release/test_release.py::Sbom`; manual: fork rehearsal (2026-10-11)
-  - Since: #47
+  A schema group is third-party content: CRDs and JSON Schemas of the
+  software the generator renders for, under that software's license
+  (QA-7, QA-8). Inside the generator's package it would be declared under
+  the generator's license. The group's package takes `software` as name
+  (the group key when the entry has none), `version`, `source` as download
+  location, `license` as declared license and `copyright`, one line per
+  list item. A `source` with more than one URL, such as the rabbitmq
+  generator's, is no valid download location. The package then gives
+  NOASSERTION there and the URLs as source information. The generator's
+  package keeps the files directly in the `schemas` directory, such as
+  `sources.yaml`, and every file outside it. The top-level `files` list
+  still holds every file of the tar, which the catalog reads (CAT-29).
+
+  A file belongs to the entry that QA-7 or QA-8 applies to it:
+  `<group>/<version>` for `<group>/<kind>_<version>.json` when
+  `sources.yaml` has that key, `terraform/<namespace>/<type>` for
+  `terraform/<namespace>_<type>_<version>.json`, and `<group>` for any
+  other file below `<group>/`. A group without an entry, and every group of
+  a version without `sources.yaml`, is a package named after its directory
+  with NOASSERTION fields. One package per directory was considered. It
+  would declare the talos generator's Talos schemas (`core/v1alpha1`,
+  MPL-2.0) under the Kubernetes entry (`core`, Apache-2.0), and the
+  terraform generators' `terraform/` directory would match no entry,
+  since their keys name the provider.
+
+  The generator's package `CONTAINS` each group's package. The schema
+  files are inside the artifact, and SPDX 2.3 has no relationship for
+  vendored content. `DEPENDS_ON` would claim the generator needs the
+  schemas to run, while only the gate's QA-7 and QA-8 read them.
+
+  The sign job parses no YAML from the tree, so a YAML parser bug cannot
+  reach the job that holds `id-token: write`. `release/build.py` reads
+  `sources.yaml` together with the manifest in the sandbox image and
+  writes the manifest's `schemas` directory and the parsed entries to
+  `schemas.json` next to `meta.json`. A file it cannot read as a mapping
+  counts as missing. The entries are therefore claims of the build job
+  (RISK-10), while the files and their checksums come from the compared
+  tar.
+
+  On 2026-10-29 `pyspdxtools` validated the documents `release/sbom.py`
+  wrote for the published kyverno, rabbitmq and terraform-aws tars, with
+  their `schemas.json` written by `release/build.py`.
+
+  - Test: `release/test_release.py::Sbom`, `release/test_release.py`
+    (`Recipe.test_sign_generator`), `release/test_build.py`
+    (`Build.test_schemas`); manual: fork rehearsal (2026-10-11),
+    `pyspdxtools` on the kyverno, rabbitmq and terraform-aws SBOMs
+    (2026-10-29)
+  - Since: #47, this change
 
 - PUB-9: For every version it publishes, the build job MUST diff the
   version's fixture output against that of the newest listed version of
