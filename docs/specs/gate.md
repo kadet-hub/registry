@@ -455,6 +455,40 @@ review go into the review comment and do not fail the gate.
   - Test: workflow job `gate-selftest` (partial: AC-4 samples only)
   - Since: #3
 
+- SEC-17: The sandbox image MUST NOT contain a shell, pip or a package
+  manager, and MUST keep the interpreter and program paths that
+  `sandbox/check.py` and `policy/binaries.txt` name.
+
+  The image is `gcr.io/distroless/python3-debian13`, Debian's Python 3.13
+  without shell, coreutils, apt or dpkg. Kapitan's venv is `/usr/local`
+  and krab's is `/opt/krab-python`, both linked to that interpreter, so
+  Kapitan still runs as `/usr/local/bin/python3.13` and the trace policy is
+  unchanged. `PATH` is `/usr/local/bin:/usr/bin`, two directories that
+  exist, so a program lookup tries no further paths. A build stage of the
+  same image adds busybox and uv to unpack the downloads, install the locks
+  and compile the bytecode; neither tool reaches the image.
+
+  The gate and the consumer flow need no shell in the image: every call
+  starts `python`, `kapitan`, `krab`, `helm`, `conftest`, `etcd` or
+  `kube-apiserver` directly. `sandbox/run` empties `/out` with Python
+  instead of `find`, and the selftest starts one container per test
+  directory instead of `sh -c`.
+
+  Other bases were built or checked on 2026-10-29. `python:3.13-slim`
+  without pip keeps bash, apt and dpkg and had one more advisory than this
+  image (99 against 98 unique IDs, Trivy 0.76.1). Chainguard's free Python
+  image is only `latest`, Python 3.15, which Kapitan 0.36.3 excludes
+  (`<3.15`). Canonical's chiseled `ubuntu/python` is Python 3.14 on 26.04,
+  where jsonnet 0.21.0, which Kapitan pins below 0.22, has no wheel; its
+  3.13 tag is on Ubuntu 25.10, which is out of support. Docker Hardened
+  Images need a Docker login. None of the image's 70 Debian advisories has
+  a fix in Debian 13; glibc and Debian's Python carry 40 of them.
+
+  - Test: `sandbox/test_image.py`, run in the image by workflow job
+    `gate-selftest`; workflow jobs `gate-selftest` and `consumer-selftest`
+    (every sample compiles under gVisor with the image)
+  - Since: this change
+
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
 
