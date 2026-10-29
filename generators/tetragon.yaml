@@ -1,0 +1,6 @@
+source:
+  repo: https://github.com/kadet-hub/generators.git
+  path: tetragon
+  tag: tetragon-v0.1.0
+  sha: fe1e1c5265b0ea43a9e30acc5280f0208823faef
+owners: [3042152]
