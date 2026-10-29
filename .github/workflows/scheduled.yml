@@ -1,7 +1,7 @@
 name: scheduled
 
 # SEC-15, SEC-16, REC-14: daily rescan of every listed generator and recipe version and its tag;
-# SEC-19: the images they pin, for the catalog's security report (CAT-39).
+# SEC-19: the images they and the recipes at main of kadet-hub/recipes name, for the catalog's security report (CAT-39).
 on:
   schedule:
     - cron: "23 4 * * *"
@@ -55,7 +55,7 @@ jobs:
           name: findings
           path: findings
 
-      - name: Scan the pinned images (SEC-19)
+      - name: Scan the images (SEC-19)
         run: python3 -I scan/image_report.py findings/images.tsv "$RUNNER_TEMP/security.json"
 
       # CAT-39c: the release workflow's catalog job reads it from here.

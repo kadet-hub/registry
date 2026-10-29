@@ -461,34 +461,51 @@ def load_security(path):
 
 
 def security(report, generators, recipes):
-    """CAT-39, CAT-39b: per page, the report of the version it shows with counts and grade; no entry when the scan missed it."""
-    out = {"scanned": None, "generators": {}, "recipes": {}}
+    """CAT-39, CAT-39b: per page, the report of the version it shows, or of main for a recipe without a listed version."""
+    out = {"scanned": None, "generators": {}, "recipes": {}, "main": {}}
     if not report:
         return out
     text = lambda v: CONTROL.sub("", v) if isinstance(v, str) else ""
     out.update(scanned=report["scanned"], trivy=text(report.get("trivy")), db=text(report.get("db")))
+
+    def page(refs):
+        images = []
+        for ref in refs:
+            scan = report["images"].get(ref) if isinstance(ref, str) else None
+            scan = scan if isinstance(scan, dict) else {}
+            found, tag = scan.get("vulnerabilities"), "@sha256:" not in text(ref)  # CAT-39a: a reference by tag
+            if not isinstance(found, list):  # Artifact Hub grades no package with an image it could not scan
+                images.append({"ref": text(ref), "tag": tag, "digest": "", "error": text(scan.get("error")) or "no result",
+                               "missing": tag and scan.get("missing") is True, "counts": None, "findings": []})
+                continue
+            rows = sorted(({"id": text(v.get("id")), "severity": v.get("severity") if v.get("severity") in SEVERITIES else "UNKNOWN",
+                            "package": text(v.get("package")), "installed": text(v.get("installed")), "fixed": text(v.get("fixed"))}
+                           for v in found if isinstance(v, dict)), key=lambda r: (SEVERITIES.index(r["severity"]), r["id"], r["package"]))
+            images.append({"ref": text(ref), "tag": tag, "digest": text(scan.get("digest")), "error": None, "missing": False,
+                           "findings": rows, "counts": {s: sum(r["severity"] == s for r in rows) for s in SEVERITIES}})
+        scanned = [i for i in images if not i["missing"]]  # a tag no registry serves names no image
+        failed = sum(i["error"] is not None for i in scanned)
+        counts = None if failed or not scanned else {s: sum(i["counts"][s] for i in scanned) for s in SEVERITIES}
+        return {"images": images, "count": len(scanned), "tagged": sum(i["tag"] for i in scanned), "failed": failed, "counts": counts,
+                "total": sum(counts.values()) if counts else None, "grade": grade(counts) if counts else None}
+
+    listed = set()
     for kind, entries in (("generators", generators), ("recipes", recipes)):
         for e in entries:
-            page = report["pages"].get(f"{kind}/{e['name']}")
-            if not e["latest"] or not isinstance(page, dict) or page.get("version") != e["latest"]["version"] or not isinstance(page.get("images"), list):
+            if not e["latest"]:
                 continue
-            images = []
-            for ref in page["images"]:
-                scan = report["images"].get(ref) if isinstance(ref, str) else None
-                scan = scan if isinstance(scan, dict) else {}
-                found = scan.get("vulnerabilities")
-                if not isinstance(found, list):  # Artifact Hub grades no package with an image it could not scan
-                    images.append({"ref": text(ref), "error": text(scan.get("error")) or "no result", "counts": None, "findings": []})
-                    continue
-                rows = sorted(({"id": text(v.get("id")), "severity": v.get("severity") if v.get("severity") in SEVERITIES else "UNKNOWN",
-                                "package": text(v.get("package")), "installed": text(v.get("installed")), "fixed": text(v.get("fixed"))}
-                               for v in found if isinstance(v, dict)), key=lambda r: (SEVERITIES.index(r["severity"]), r["id"], r["package"]))
-                images.append({"ref": text(ref), "error": None, "findings": rows,
-                               "counts": {s: sum(r["severity"] == s for r in rows) for s in SEVERITIES}})
-            failed = sum(i["error"] is not None for i in images)
-            counts = None if failed or not images else {s: sum(i["counts"][s] for i in images) for s in SEVERITIES}
-            out[kind][e["name"]] = {"version": e["latest"]["version"], "images": images, "failed": failed, "counts": counts,
-                                    "total": sum(counts.values()) if counts else None, "grade": grade(counts) if counts else None}
+            listed.add((kind, e["name"]))
+            versions = report["pages"].get(f"{kind}/{e['name']}")
+            refs = versions.get(e["latest"]["version"]) if isinstance(versions, dict) else None
+            if isinstance(refs, list):
+                out[kind][e["name"]] = dict(page(refs), version=e["latest"]["version"])
+    for key, versions in report["pages"].items():  # CAT-39: a recipe page without a listed version is built from main
+        name = key.removeprefix("recipes/")
+        if key.startswith("recipes/") and ("recipes", name) not in listed and isinstance(versions, dict):
+            for version, refs in versions.items():
+                m = re.fullmatch(r"main@([0-9a-f]{40})", version)
+                if m and isinstance(refs, list):
+                    out["main"][name] = dict(page(refs), sha=m.group(1))
     return out
 
 

@@ -3,11 +3,14 @@
 Usage: image_report.py IMAGES OUT
 
 IMAGES has one line per scanned version, "<page>\t<version>\t<references
-separated by spaces>", the page being generators/<name> or recipes/<name>.
+separated by spaces>", the page being generators/<name> or recipes/<name>
+and the version main@<commit> for a recipe at main of kadet-hub/recipes.
 Downloads the vulnerability database once, scans each reference once and
-writes OUT: {"scanned", "trivy", "db", "pages": {page: {"version", "images"}},
-"images": {reference: {"vulnerabilities": [{"id", "severity", "package",
-"installed", "fixed"}]} or {"error"}}}. Needs trivy on PATH.
+writes OUT: {"scanned", "trivy", "db", "pages": {page: {version: [reference]}},
+"images": {reference: {"digest", "vulnerabilities": [{"id", "severity",
+"package", "installed", "fixed"}]} or {"error", "missing"}}}. "digest" is the
+one Trivy scanned, which for a reference by tag is the tag's at scan time;
+"missing" marks a manifest the registry does not know. Needs trivy on PATH.
 """
 
 import datetime
@@ -29,8 +32,11 @@ def scan(ref):
     except ValueError:
         report = None
     if report is None:
-        return {"error": ((run.stderr.strip().splitlines() or [f"trivy exited {run.returncode}"])[-1])[-300:]}
-    return {"vulnerabilities": [{"id": v.get("VulnerabilityID", ""), "severity": v.get("Severity", "UNKNOWN"),
+        return {"error": ((run.stderr.strip().splitlines() or [f"trivy exited {run.returncode}"])[-1])[-300:],
+                "missing": "MANIFEST_UNKNOWN" in run.stderr}  # Artifact Hub's ErrImageNotFound
+    digests = (report.get("Metadata") or {}).get("RepoDigests") or [""]
+    return {"digest": digests[0].rpartition("@")[2],
+            "vulnerabilities": [{"id": v.get("VulnerabilityID", ""), "severity": v.get("Severity", "UNKNOWN"),
                                  "package": v.get("PkgName", ""), "installed": v.get("InstalledVersion", ""),
                                  "fixed": v.get("FixedVersion", "")}
                                 for r in report.get("Results") or [] for v in r.get("Vulnerabilities") or []]}
@@ -41,13 +47,13 @@ def main():
     with open(sys.argv[1], encoding="utf-8") as f:
         for line in f:
             page, version, refs = line.rstrip("\n").split("\t")
-            pages[page] = {"version": version, "images": refs.split()}
+            pages.setdefault(page, {})[version] = refs.split()
     scanned = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     db = trivy("image", "--quiet", "--download-db-only")
     if db.returncode:
         sys.exit(f"trivy: vulnerability database not downloaded: {db.stderr.strip()}")
     meta = json.loads(trivy("version", "--format", "json").stdout)
-    images = {ref: scan(ref) for ref in sorted({r for p in pages.values() for r in p["images"]})}
+    images = {ref: scan(ref) for ref in sorted({r for p in pages.values() for refs in p.values() for r in refs})}
     with open(sys.argv[2], "w", encoding="utf-8") as f:
         json.dump({"scanned": scanned, "trivy": meta["Version"], "db": meta["VulnerabilityDB"]["UpdatedAt"][:19] + "Z",
                    "pages": pages, "images": images}, f, sort_keys=True)

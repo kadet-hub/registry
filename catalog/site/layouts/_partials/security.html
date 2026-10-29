@@ -1,20 +1,23 @@
-{{- /* CAT-39: the image security report of the version a page shows, as {grade, class, text, full}. dict: report (generators or recipes), name, version. */ -}}
+{{- /* CAT-39: the image security report of the version a page shows, or of main for a recipe without one, as {grade, class, text, full}. dict: report (generators or recipes), name, version. */ -}}
 {{- $s := site.Data.security -}}
-{{- $p := index (index $s .report) .name -}}
+{{- $p := false }}{{ $of := "" -}}
+{{- if .version }}{{ $p = index (index $s .report) .name }}{{ $of = printf "version %s" .version -}}
+{{- else if eq .report "recipes" }}{{ with index $s.main .name }}{{ $p = . }}{{ $of = printf "main at %s" (substr .sha 0 12) }}{{ end -}}
+{{- end -}}
 {{- $r := dict "grade" "" "class" "" "full" "" -}}
-{{- if not .version -}}
-  {{- $r = merge $r (dict "text" "Not scanned: no version is listed.") -}}
-{{- else if not $p -}}
+{{- with $p }}{{ if .images }}{{ $r = merge $r (dict "full" (printf "/security/%s/%s/" $.report $.name)) }}{{ end }}{{ end -}}
+{{- if not $p -}}
   {{- $why := "no image scan was available when this page was built" -}}
-  {{- with $s.scanned }}{{ $why = printf "the image scan of %s did not cover version %s" (substr . 0 10) $.version }}{{ end -}}
+  {{- if and (not .version) (ne .report "recipes") }}{{ $why = "no version is listed" -}}
+  {{- else if $s.scanned }}{{ $why = printf "the image scan of %s did not cover %s" (substr $s.scanned 0 10) (cond (ne .version "") (printf "version %s" .version) "main of kadet-hub/recipes") }}{{ end -}}
   {{- $r = merge $r (dict "text" (printf "Not scanned: %s." $why)) -}}
-{{- else if not $p.images -}}
-  {{- $r = merge $r (dict "text" (printf "Version %s pins no image by digest." .version)) -}}
+{{- else if not $p.count -}}
+  {{- $r = merge $r (dict "text" (printf "%s names no image." (strings.FirstUpper $of))) -}}
 {{- else -}}
   {{- $at := printf "%s %s UTC" (substr $s.scanned 0 10) (substr $s.scanned 11 5) -}}
-  {{- $n := len $p.images -}}
-  {{- $images := printf "%d image%s of version %s" $n (cond (eq $n 1) "" "s") .version -}}
-  {{- $r = merge $r (dict "full" (printf "/security/%s/%s/" .report .name)) -}}
+  {{- $n := int $p.count -}}
+  {{- $images := printf "%d image%s of %s" $n (cond (eq $n 1) "" "s") $of -}}
+  {{- with int $p.tagged }}{{ $images = printf "%s, %d by tag, digest at scan time" $images . }}{{ end -}}
   {{- if $p.failed -}}
     {{- $r = merge $r (dict "text" (printf "Not graded: %d of the %s could not be scanned on %s." (int $p.failed) $images $at)) -}}
   {{- else -}}

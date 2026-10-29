@@ -6,7 +6,8 @@
 # Needs: what static-scan needs, yq, git, python3. Writes one line per
 # finding, "<kind>\t<name>\t<version or tag>\t<text>", for rescan_issues.py;
 # a recipe's <name> is "recipe <name>". SEC-19: writes one line per fetched
-# version, "<catalog page>\t<version>\t<images>", for image_report.py.
+# version, "<catalog page>\t<version>\t<images>", for image_report.py, and
+# one per recipe at main of kadet-hub/recipes with the version main@<commit>.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 out=$1 images=$2
@@ -48,7 +49,7 @@ for f in "$root"/generators/*.yaml "$root"/recipes/*.yaml; do
     continue
   fi
   python3 "$root/gate/fetch_tree.py" --git-dir "$dir.git" --rev "$sha" "${fetch[@]}" --out "$dir" >"$work/tree.log" 2>&1 || true
-  # SEC-19, CAT-39a: the images this version pins; a version whose list fails stays unscanned.
+  # SEC-19, CAT-39a: the images this version names; a version whose list fails stays unscanned.
   if refs=$(python3 -I "$root/scan/images.py" "$tree"); then
     printf '%s\t%s\t%s\n' "$page" "$version" "${refs//$'\n'/ }" >>"$images"
   fi
@@ -66,3 +67,24 @@ for f in "$root"/generators/*.yaml "$root"/recipes/*.yaml; do
   done < <(grep -vE '^(review|warning|excepted): |^$' -- "$work/report.txt" || true)
   if ((failed && !found)); then emit rescan "$name" "$version" "static-scan: exit $rc without a finding"; fi
 done
+
+# SEC-19, CAT-39: every recipe at main of kadet-hub/recipes, for the recipe pages without a listed version (CAT-37c).
+recipes_repo=https://github.com/${GITHUB_REPOSITORY_OWNER:-kadet-hub}/recipes.git
+main=$("${gitc[@]}" ls-remote -- "$recipes_repo" refs/heads/main 2>/dev/null | awk '{print $1}') || true
+if [[ $main =~ ^[0-9a-f]{40}$ ]] && "${gitc[@]}" init -q --bare -- "$work/main.git" \
+  && "${gitc[@]}" --git-dir="$work/main.git" fetch -q --depth=1 --no-tags -- "$recipes_repo" "$main" 2>/dev/null; then
+  # fetch_tree.py --recipe writes every recipe directory of the commit, given the name of one.
+  for d in $(git --git-dir="$work/main.git" ls-tree -d --name-only "$main"); do
+    git --git-dir="$work/main.git" cat-file -e "$main:$d/init.yml" 2>/dev/null || continue
+    python3 "$root/gate/fetch_tree.py" --git-dir "$work/main.git" --rev "$main" --recipe "$d" --out "$work/main" >/dev/null 2>&1 || true
+    break
+  done
+  for tree in "$work"/main/*/; do
+    [[ -d $tree ]] || continue
+    if refs=$(python3 -I "$root/scan/images.py" "$tree"); then
+      printf 'recipes/%s\tmain@%s\t%s\n' "$(basename -- "$tree")" "$main" "${refs//$'\n'/ }" >>"$images"
+    fi
+  done
+else
+  echo "recipes at main: not fetched, so the recipe pages without a listed version stay unscanned"
+fi

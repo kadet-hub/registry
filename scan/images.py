@@ -1,10 +1,10 @@
-"""Container images a generator or recipe tree pins by digest (CAT-39a). Standard library only.
+"""Container images a generator or recipe tree names, by digest or by tag (CAT-39a). Standard library only.
 
 Usage: images.py DIR
 
-Prints one reference `<repository>:<tag>@sha256:<digest>` per line, sorted.
-pinned_images() takes the {path: (executable, bytes)} of release/tree.py's
-read_dir and read_tar, so the release build can list the images of a tar.
+Prints one reference `<repository>:<tag>@sha256:<digest>` or
+`<registry>/<repository>:<tag>` per line, sorted. image_references() takes
+the {path: (executable, bytes)} of release/tree.py's read_dir and read_tar.
 """
 
 import ast
@@ -13,9 +13,12 @@ import re
 import sys
 
 COMPONENT = r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*"
-REFERENCE = re.compile(rf"(?:[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?::[0-9]+)?/)?{COMPONENT}(?:/{COMPONENT})*"
-                       r":[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}@sha256:[0-9a-f]{64}")
+HOST = r"[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?::[0-9]+)?/"
+TAG = r":[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}"
+REFERENCE = re.compile(rf"(?:{HOST})?{COMPONENT}(?:/{COMPONENT})*{TAG}@sha256:[0-9a-f]{{64}}")
+TAGGED = re.compile(rf"{HOST}{COMPONENT}(?:/{COMPONENT})*{TAG}")  # by tag only with a registry host: "x:y" is no image
 IN_TEXT = re.compile(rf"(?<![\w./:@-]){REFERENCE.pattern}(?![\w.-])")
+TAGGED_IN_TEXT = re.compile(rf"(?<![\w./:@-]){TAGGED.pattern}(?![\w.@/:-])")
 GENERATOR = re.compile(r"ghcr\.io/kadet-hub/[^/]+:")  # REC-6: a generator artifact, no image
 
 
@@ -58,19 +61,28 @@ def python_strings(source):
     return found
 
 
-def pinned_images(files):
-    """Sorted references pinned by digest in the files outside tests/; Markdown is documentation, not a pin."""
-    found = set()
+def image_references(files):
+    """Sorted references by digest outside tests/ and Markdown, and by tag in code and class files only.
+
+    Schemas and vendored CRDs name example images, such as ghcr.io/team/dashboards:v1, by tag only.
+    A tag the same tree pins by digest is that image.
+    """
+    pinned, tagged = set(), set()
     for path, (_, data) in files.items():
         parts = path.removeprefix("./").split("/")
         if "tests" in parts[:-1] or path.endswith(".md"):
             continue
         text = data.decode("utf-8", errors="replace")
         if path.endswith(".py"):
-            found.update(s for s in python_strings(text) if REFERENCE.fullmatch(s))
-        else:
-            found.update(m.group() for m in IN_TEXT.finditer(text))
-    return sorted(r for r in found if not GENERATOR.match(r))
+            strings = python_strings(text)
+            pinned.update(s for s in strings if REFERENCE.fullmatch(s))
+            tagged.update(s for s in strings if TAGGED.fullmatch(s))
+            continue
+        pinned.update(m.group() for m in IN_TEXT.finditer(text))
+        if path.endswith((".yml", ".yaml")) and not {"schemas", "vendor"} & set(parts[:-1]):
+            tagged.update(m.group() for m in TAGGED_IN_TEXT.finditer(text))
+    tagged -= {r.partition("@")[0] for r in pinned}
+    return sorted(r for r in pinned | tagged if not GENERATOR.match(r))
 
 
 def main():
@@ -83,7 +95,7 @@ def main():
         for name in names:
             with open(os.path.join(top, name), "rb") as f:
                 files[os.path.relpath(os.path.join(top, name), root).replace(os.sep, "/")] = (False, f.read())
-    for ref in pinned_images(files):
+    for ref in image_references(files):
         print(ref)
     return 0
 
