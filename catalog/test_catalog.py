@@ -1206,7 +1206,7 @@ class Site(unittest.TestCase):
             self.assertTrue(after.lstrip().startswith("<ol>"), name)
         self.assertNotRegex(main, r"<style\b| style=|<\?xml|<!DOCTYPE")
         table = main[main.index("<table>"):main.index("</table>")]
-        self.assertIn(">REG-1 to REG-6, REG-8</a>", table)
+        self.assertIn(">REG-1 to REG-6, REG-8, REG-10</a>", table)
         text = re.sub(r"<[^>]+>", " ", main.replace(table, ""))  # requirement IDs only in the stage table
         self.assertNotRegex(text, r"\b(?:GI|REG|SEC|QA|CMP|PUB|CON|CAT|UPD|INC|DEC)-\d")
         md = self.markdown("guides", "how-kadet-hub-works")
