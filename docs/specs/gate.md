@@ -513,11 +513,11 @@ review go into the review comment and do not fail the gate.
   a `pull_request_target` workflow it would build the pull request's
   `sandbox/` with the gate's token, which GI-1 forbids.
 
-  - Test: workflow job `sandbox-advisories` on this change's pull request,
-    failing before `sandbox/.trivyignore.yaml` existed and passing after;
+  - Test: workflow job `sandbox-advisories` on #416, failing before
+    `sandbox/.trivyignore.yaml` had entries and passing after;
     manual: the job's Trivy command fails on the image of `main` before
     #415 (pip's advisories) and passes on the image of #415
-  - Since: this change
+  - Since: #416
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
