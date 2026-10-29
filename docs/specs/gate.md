@@ -489,6 +489,36 @@ review go into the review comment and do not fail the gate.
     (every sample compiles under gVisor with the image)
   - Since: #415
 
+- SEC-18: The `sandbox-advisories` job MUST fail when Trivy reports an
+  advisory with a fix in the sandbox image that `sandbox/.trivyignore.yaml`
+  does not list. It MUST run on every pull request that changes `sandbox/`
+  and weekly on `main`, and MUST list every advisory, the ignored ones
+  included, in its step summary.
+
+  An advisory without a fix does not fail the job: Debian ships the fix
+  first, and the digest bump Renovate then proposes brings it in. The
+  weekly run catches advisories published after the image last changed.
+
+  An ignore entry names one advisory and one binary. Its statement says
+  why the pinned binary cannot take the fix yet and what
+  `govulncheck -mode=binary` reports for that binary. The entries cover Go
+  modules and Go releases that helm, conftest, etcd and kube-apiserver link
+  even in their newest releases (RISK-14). An entry is removed once its
+  advisory no longer shows in the step summary.
+
+  The job is not a required check and runs only when its inputs change
+  (CI-1). A required check has to report on every pull request. As a
+  `pull_request` workflow it would wait for an approval that fork pull
+  requests never get (Gate integrity), which blocks every registration. As
+  a `pull_request_target` workflow it would build the pull request's
+  `sandbox/` with the gate's token, which GI-1 forbids.
+
+  - Test: workflow job `sandbox-advisories` on this change's pull request,
+    failing before `sandbox/.trivyignore.yaml` existed and passing after;
+    manual: the job's Trivy command fails on the image of `main` before
+    #415 (pip's advisories) and passes on the image of #415
+  - Since: this change
+
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
 

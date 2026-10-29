@@ -161,6 +161,7 @@ cover none of the changed files.
   | `release-tests` | `release-tests.yml` | `release/` |
   | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
   | `checksum-pins` | `checksum-pins.yml` | `sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`, `tests/checksum-pins`, actions `setup-gvisor`, `setup-kind`; pull requests from `renovate/` branches only (REG-7) |
+  | `sandbox-advisories` | `sandbox-advisories.yml` | `sandbox/`, action `setup-trivy`; also weekly (SEC-18) |
   | `fuzz` | `fuzz.yml` | `.clusterfuzzlite/`, `tests/fuzz/`, `gate/check_entry.py`, `gate/schema_diff.py`, `consumer/plan.py`, `sandbox/schema_check.py`, `sandbox/tag_check.py`, `sandbox/tf_schema.py`, `policy/` (GI-14) |
 
   Every workflow also lists its own file. `workflow_dispatch` runs a job
@@ -405,6 +406,13 @@ cover none of the changed files.
 
 - RISK-13 (accepted, DEC-16 in [publishing.md](publishing.md)): mirrored
   images are redistributed with references to their upstream sources only.
+- RISK-14 (accepted, SEC-18): helm, conftest, etcd and kube-apiserver
+  link Go modules or a Go release with published fixes, even in their
+  newest releases, and `govulncheck -mode=binary` finds the vulnerable
+  symbols for most of them. The binaries run in the sandbox image on
+  fixture output, without credentials, and without network except
+  `helm pull` in `gate/fetch-charts`. `sandbox/.trivyignore.yaml` lists
+  each advisory until a release carries its fix.
 
 ## Out of scope
 
@@ -485,6 +493,7 @@ coverage is named at each:
 | `.github/workflows/release.yml` | PUB-1 to PUB-13, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-13: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff`, `mirror-image` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
+| `.github/workflows/sandbox-advisories.yml`, `.github/actions/setup-trivy/`, `sandbox/.trivyignore.yaml` | SEC-18 |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2, CON-4, CON-5 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
@@ -507,7 +516,7 @@ coverage is named at each:
 | `.github/workflows/checksum-pins.yml`, `tests/checksum-pins` | REG-7: checksums Renovate cannot update |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
-ClamAV, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
+ClamAV, Trivy, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
 Hugo, atheris, kind, kubectl, uv) are pinned in
 `sandbox/Dockerfile`, `.clusterfuzzlite/Dockerfile`, the requirements files, `.github/actions/` and
 `sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).
