@@ -460,10 +460,6 @@ coverage is named at each:
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
   `security@kadet-hub.org`, role addresses the operator routes.
-- OQ-16: What must a gitlab.com source provide besides `SECURITY.md`, in
-  place of GitHub's private vulnerability reporting (REG-10)? Until this
-  is decided the gate requires only `SECURITY.md` of such a source. No
-  listed entry has a gitlab.com source.
 
 ## Implementation inventory
 

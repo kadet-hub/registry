@@ -199,9 +199,10 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   - Since: #8
 
 - REG-10: The source repository of a generator entry MUST have a
-  `SECURITY.md` and, on github.com, private vulnerability reporting
-  enabled. The gate MUST fail a new entry or a bump whose source repository
-  lacks either.
+  `SECURITY.md`. On github.com it MUST also have private vulnerability
+  reporting enabled. On gitlab.com its `SECURITY.md` MUST name a private
+  contact. The gate MUST fail a new entry or a bump whose source
+  repository does not meet this.
 
   Reporters of a vulnerability in a listed generator are sent to its
   repository ([SECURITY.md](../../SECURITY.md)), so that repository has to
@@ -234,18 +235,26 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   removes its policy later.
 
   A gitlab.com source (GI-9) needs `SECURITY.md` in the same three places
-  of its commit. The gate has no GitLab counterpart of the private
-  reporting check or the owner default, so neither is checked. What a
-  GitLab source must provide instead is OQ-16.
+  of its commit; the gate looks up no owner default there. Its private
+  contact is a mail address or GitLab's confidential issues. The gate reads the first
+  64 KiB of the first file in GitHub's order (`.github/`, root, `docs/`)
+  and accepts it when it contains a mail address (text of the form
+  `local@domain.tld`) or the word "confidential" in any case, as in
+  confidential issues or GitLab's `/confidential` quick action. Whether
+  the contact works is the reviewer's call. Requiring the words
+  "confidential issue" was considered; the `SECURITY.md` of
+  gitlab-org/cli asks reporters to create issues as `confidential` and
+  would fail it. This answers OQ-16.
 
   Recipe entries are not checked; REC-1 lists the rules that apply to
   them.
 
-  - Test: `gate/test_check_entry.py::Security` (`test_needs_security_md_and_private_reporting`, `test_gitlab_needs_security_md_only`, `test_only_a_new_commit_is_checked`)
+  - Test: `gate/test_check_entry.py::Security` (`test_needs_security_md_and_private_reporting`, `test_gitlab_needs_a_private_contact`, `test_only_a_new_commit_is_checked`)
     (partial: the lookups in `gate/run` have no test); manual: on
     2026-10-29 the lookups with a personal token passed kadet-hub/registry
     and, after kadet-hub/.github#7, kadet-hub/generators at the argocd and
     talos pins through the organisation default; they found fluxcd's
     default with private reporting off for fluxcd/flux2-multi-tenancy, and
-    neither for octocat/Hello-World
+    neither for octocat/Hello-World. On gitlab.com they passed
+    gitlab-org/cli and found no `SECURITY.md` in gitlab-org/release-cli
   - Since: #414

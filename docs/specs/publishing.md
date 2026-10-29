@@ -470,6 +470,12 @@ fixtures and the end-to-end runs can pull it without credentials.
   and a GitHub security advisory published and listed in the index. The
   target is 24 hours from confirmation, best effort with one maintainer.
 
+  The 24 hours are the maintainer's internal target, not a commitment to
+  reporters or consumers. Report handling has no SLA and no response time
+  ([SECURITY.md](../../SECURITY.md)). `docs/incident.md` and the catalog
+  guide "How kadet-hub works" call the target internal; the runbook refers
+  here.
+
   `docs/incident.md` is the runbook. The entry records advisories as
   `advisories: {<version>: [GHSA-…]}`; only a maintainer pull request may
   add or change them (the gate fails otherwise), and the release copies

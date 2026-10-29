@@ -102,8 +102,8 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
 - LEG-6: The organisation kadet-hub MUST provide a default `SECURITY.md`
   in its public repository kadet-hub/.github. The file MUST say that
   reports go through GitHub private vulnerability reporting or to
-  security@kadet-hub.org, that they are handled best effort without an
-  SLA or a response time, that the newest release of a repository is
+  security@kadet-hub.org, that they are handled best effort without a
+  fixed response time, that the newest release of a repository is
   supported, or `main` where it has no releases, and that a fixed
   vulnerability gets a GitHub security advisory (GHSA) naming the
   affected versions and a CVSS score.
@@ -115,6 +115,5 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
   applies the same policy to the registry and to listed generators.
 
   - Test: manual: `gh api -H 'Accept: application/vnd.github.raw' repos/kadet-hub/.github/contents/SECURITY.md`
-    prints a file that says all four points. It did on 2026-10-29; the
-    file says "without a fixed response time" and does not name an SLA.
+    prints a file that says all four points. It did on 2026-10-29.
   - Since: #414; the file: kadet-hub/.github#7
