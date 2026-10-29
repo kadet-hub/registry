@@ -1,8 +1,8 @@
 # Incident runbook: a malicious version
 
-For a listed version confirmed malicious (INC-1). Target: done within 24
-hours of confirmation, best effort with one maintainer. Reports arrive as
-described in [SECURITY.md](../SECURITY.md); a rescan finding (SEC-15)
+For a listed version confirmed malicious (INC-1). Internal target: done
+within 24 hours of confirmation, best effort with one maintainer. Reports
+arrive as described in [SECURITY.md](../SECURITY.md); a rescan finding (SEC-15)
 needs the same confirmation before anything below.
 
 Replace `<name>` and `<version>` throughout.

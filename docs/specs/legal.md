@@ -98,3 +98,22 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
 
   - Test: `catalog/test_catalog.py` (the site); none for the documents
   - Since: #48
+
+- LEG-6: The organisation kadet-hub MUST provide a default `SECURITY.md`
+  in its public repository kadet-hub/.github. The file MUST say that
+  reports go through GitHub private vulnerability reporting or to
+  security@kadet-hub.org, that they are handled best effort without a
+  fixed response time, that the newest release of a repository is
+  supported, or `main` where it has no releases, and that a fixed
+  vulnerability gets a GitHub security advisory (GHSA) naming the
+  affected versions and a CVSS score.
+
+  GitHub shows this file for every repository of the organisation without
+  a `SECURITY.md` of its own (REG-10 cites the page). kadet-hub/generators,
+  which hosts every listed generator, has none and passes REG-10 only
+  through this file. The registry's own [SECURITY.md](../../SECURITY.md)
+  applies the same policy to the registry and to listed generators.
+
+  - Test: manual: `gh api -H 'Accept: application/vnd.github.raw' repos/kadet-hub/.github/contents/SECURITY.md`
+    prints a file that says all four points. It did on 2026-10-29.
+  - Since: #414; the file: kadet-hub/.github#7

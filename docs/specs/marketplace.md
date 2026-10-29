@@ -470,7 +470,7 @@ coverage is named at each:
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9, PUB-13 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
-| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9, REC-10) |
+| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8 to REG-10, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9, REC-10) |
 | `.github/actions/setup-gate/` | gVisor, scanners, sandbox image and `check` for `gate.yml` and `selftest.yml` |
 | `.github/actions/setup-check/` | `check` of kadet-hub/recipes (REC-5, REC-7 to REC-9) |
 | `.github/actions/setup-kind/` | kind, kubectl and uv (REC-9) and cloud-provider-kind (REC-17) for the `renders` job and `selftest.yml` |
