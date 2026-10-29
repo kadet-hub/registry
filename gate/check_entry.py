@@ -7,7 +7,7 @@ reading only files the gate wrote and printing findings, exit 1 on any:
            GI-2 on the changed files; writes the validated entry path or "".
   entry    --event E --head H --base B --reserved R --policy P --out O
            GI-1/QA-5 schema, layout, REG-2/3/5/6/8/9, REC-1/3; writes entry.json.
-  manifest --event E --entry J --manifest M --policy P [--root-license L] --security-md S --private-reporting R
+  manifest --event E --entry J --manifest M --policy P [--root-license L] --security-md S --private-reporting R --security-text T
            QA-5 schema, REG-4, CMP-3, SEC-7, name match, QA-1, QA-1a, QA-2, REG-10.
 """
 
@@ -232,15 +232,24 @@ def quality(tree, manifest, entry, root_license, policy):
     return findings
 
 
-def security(entry, security_md, private_reporting):
-    """REG-10 on what gate/run found: SECURITY.md paths, and "true" when private vulnerability reporting is on."""
+CONTACT = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}|confidential", re.IGNORECASE)
+SECURITY_HEAD = 64 * 1024
+
+
+def security(entry, security_md, private_reporting, security_text):
+    """REG-10 on what gate/run found: SECURITY.md paths, "true" when private vulnerability reporting is on
+    (github.com), and the text of the commit's SECURITY.md (gitlab.com)."""
     if not entry["new"] and entry["previous_sha"] == entry["sha"]:
         return []  # no new commit, e.g. a yank: the source repository must not hold it up (INC-1)
     findings = []
-    if not (read_text(security_md) or "").strip():
+    found = (read_text(security_md) or "").strip()
+    if not found:
         findings.append("REG-10: no SECURITY.md at the root, in .github/ or docs/ of the commit, or in the owner's .github repository")
-    if entry["repo"].startswith("https://github.com/") and (read_text(private_reporting) or "").strip() != "true":
-        findings.append("REG-10: private vulnerability reporting is not enabled on the source repository, or could not be read")
+    if entry["repo"].startswith("https://github.com/"):
+        if (read_text(private_reporting) or "").strip() != "true":
+            findings.append("REG-10: private vulnerability reporting is not enabled on the source repository, or could not be read")
+    elif found and not CONTACT.search(read_text(security_text, SECURITY_HEAD) or ""):
+        findings.append("REG-10: SECURITY.md names no private contact, a mail address or confidential issues")
     return findings
 
 
@@ -275,7 +284,7 @@ def step_manifest(a):
         if b.replace(" ", "-") not in allowed:
             findings.append(f"SEC-7: binary {b!r} is not on policy/binaries.txt")
     return findings + quality(os.path.dirname(a.manifest), manifest, entry, a.root_license, a.policy) \
-        + security(entry, a.security_md, a.private_reporting)
+        + security(entry, a.security_md, a.private_reporting, a.security_text)
 
 
 def main():
@@ -293,6 +302,7 @@ def main():
     p.add_argument("--root-license")
     p.add_argument("--security-md")
     p.add_argument("--private-reporting")
+    p.add_argument("--security-text")
     p.add_argument("--out")
     a = p.parse_args()
     findings = {"files": step_files, "entry": step_entry, "manifest": step_manifest}[a.step](a)

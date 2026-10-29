@@ -56,7 +56,8 @@ def TestOneInput(data):
     check_entry.step_manifest(SimpleNamespace(
         event=os.path.join(WORK, f"event{mode & 1}.json"), entry=os.path.join(WORK, f"entry{mode >> 1 & 1}.json"),
         manifest=MANIFEST, policy=POLICY, root_license=None,
-        security_md=os.path.join(WORK, "security-md"), private_reporting=os.path.join(WORK, "private-reporting")))
+        security_md=os.path.join(WORK, "security-md"), private_reporting=os.path.join(WORK, "private-reporting"),
+        security_text=os.path.join(WORK, "security-text")))
     schema_diff.sources(os.path.join(WORK, "tree"))
 
 

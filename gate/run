@@ -106,10 +106,11 @@ if [[ $src_path != . ]]; then
     || rm -f -- "$work/root-license"
 fi
 # REG-10: SECURITY.md where GitHub looks for it, in the commit and then in the owner's
-# .github repository, and private vulnerability reporting on github.com.
+# .github repository; private vulnerability reporting on github.com, the file's text on gitlab.com.
 "${gitc[@]}" --git-dir="$work/src.git" ls-tree "$sha" -- SECURITY.md .github/SECURITY.md docs/SECURITY.md \
   | awk '$1 ~ /^1006/ {print $4}' >"$work/security-md"
 : >"$work/private-reporting"
+: >"$work/security-text"
 if [[ $src_repo =~ ^https://github\.com/([^/]+)/([^/]+)\.git$ ]]; then
   owner=${BASH_REMATCH[1]} gh_repo=${BASH_REMATCH[1]}/${BASH_REMATCH[2]}
   for f in SECURITY.md .github/SECURITY.md docs/SECURITY.md; do
@@ -120,9 +121,13 @@ if [[ $src_repo =~ ^https://github\.com/([^/]+)/([^/]+)\.git$ ]]; then
   done
   GH_TOKEN=$token gh api "repos/$gh_repo/private-vulnerability-reporting" --jq .enabled >"$work/private-reporting" \
     || : >"$work/private-reporting"
+elif [[ -s $work/security-md ]]; then
+  # ls-tree lists .github/ before the root and docs/, GitHub's order.
+  "${gitc[@]}" --git-dir="$work/src.git" cat-file blob "$sha:$(head -n 1 -- "$work/security-md")" >"$work/security-text"
 fi
 check manifest --entry /work/entry.json --manifest "/work/generator/kapitan-generator.yaml" \
-  --root-license /work/root-license --security-md /work/security-md --private-reporting /work/private-reporting || exit 1
+  --root-license /work/root-license --security-md /work/security-md --private-reporting /work/private-reporting \
+  --security-text /work/security-text || exit 1
 
 echo "## Charts"
 "$root/gate/fetch-charts" "$gen" "$work/charts" || exit 1
