@@ -472,7 +472,8 @@ remembered in the browser's `localStorage`.
   `/generators/<name>/<version>.spdx.json`. A version without a record or
   SBOM says so. The page names what the checks cover, as listed checks
   that ran and passed, and links to what a listing covers; it shows no
-  score or "secure" badge.
+  score or "secure" badge. The grade of CAT-39 rates the third-party
+  images a version pins, not these checks.
 
   In the rehearsal the fork's catalog showed the record and served
   `generators/keda/1.0.0.spdx.json`.
@@ -503,6 +504,140 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py`; manual: fork rehearsal (pending)
   - Since: #226
+
+- DEC-30: The container images that generators and recipes pin, the
+  KubeVirt CSI driver mirror among them, pass no gate. The catalog shows
+  an Artifact Hub style security report of them instead, fed by the daily
+  rescan (CAT-39, SEC-19).
+
+- CAT-39: Every generator page and every recipe page MUST show an image
+  security report for the version the page shows: the number of findings
+  per severity (CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN), the grade, the time
+  of the scan and a link to the full report (CAT-39b). A page whose
+  version has no scan result MUST say that it is not scanned, and a
+  version that pins no image MUST say so. Neither shows a grade.
+
+  The report follows Artifact Hub's, as on its kube-prometheus-stack
+  page. Artifact Hub counts every vulnerability Trivy lists in every
+  result of every image of a package (`generateSummary` in
+  `internal/scanner/scanner.go`). A finding is therefore one advisory in
+  one package of one image, and the same advisory in two packages or two
+  images counts twice. The grade is the letter of the most severe level
+  with a finding: F for CRITICAL, D for HIGH, C for MEDIUM, B for LOW, `-`
+  when only UNKNOWN findings are left, and A without findings
+  (`SEVERITY_RATING` in `web/src/utils/data.tsx`, applied in
+  `web/src/layout/common/SecurityRating.tsx`; artifacthub/hub at
+  `1cd0160`). Both are adopted unchanged, with Artifact Hub's colours for
+  the letters.
+
+  The page names the counting unit, because unique advisories are fewer.
+  Trivy 0.76.1 reported 65 findings, 34 of them HIGH, in the KubeVirt CSI
+  driver mirror that kubevirt 1.3.2 pins, and 58 unique advisories, 31 of
+  them HIGH, in the same scan on 2026-10-29.
+
+  Artifact Hub stores no report for a package when one of its images
+  fails to scan. A page with an image that could not be scanned therefore
+  shows no grade and no counts. It says how many images failed and links
+  the full report, which names the errors.
+
+  The page shows the latest listed version (CAT-7, CAT-38), so the report
+  covers that version. A recipe page without a listed version is built
+  from `main` of kadet-hub/recipes, which the rescan does not fetch, and
+  says it is not scanned (OQ-19).
+
+  - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_not_scanned`, `View.test_security_grade`)
+  - Since: this change
+
+- CAT-39a: The images of a version MUST be the references
+  `<repository>:<tag>@sha256:<digest>` in its tree, outside `tests/` and
+  outside Markdown files, without the generator pins of REC-6.
+
+  `scan/images.py` reads the tree the rescan already fetched (SEC-15,
+  REC-14), so the list needs neither a compile nor network access. A
+  recipe class file writes each image reference as one literal (RCP-66 of
+  kadet-hub/recipes), which a pattern finds. Generator code builds
+  references in Python, such as kubevirt's `SIG_STORAGE +
+  "csi-provisioner:..."` and a literal split over two lines. The module is
+  parsed with `ast`, and every string expression made of literals,
+  module-level constants, `+` and f-strings is evaluated. Part of an
+  expression that does not evaluate is no reference, so
+  `"csi-provisioner:v6.0.2@sha256:..."` alone is not read as an image on
+  Docker Hub. `tests/` holds fixture inputs and a recipe's
+  `tests/values.yaml` the chart's images. Markdown documents images
+  rather than pinning them.
+
+  The compiled fixture output holds the rendered references too. The
+  rescan does not compile, and the release build does not record them, so
+  versions published before such a record would have no list (CMP-4).
+
+  `pinned_images()` takes the `{path: (executable, bytes)}` that
+  `read_dir` and `read_tar` of `release/tree.py` return, so the release
+  build can list the images of an artifact.
+
+  On 2026-10-29 the function listed 12 images for the generators: kind's
+  four `kindest/node` images, and kubevirt's mirror and seven
+  `sig-storage` images. For the 16 recipes of kadet-hub/recipes at
+  `21d393a` it listed 20 unique images, 8 of them for the 5 recipes the
+  registry lists. An audit made the same day, by means it did not record,
+  named 18 generator and 24 recipe references. The generator difference
+  is talos's six references by tag without a digest, which pin nothing
+  (OQ-18). The recipe list adds miniflux's `miniflux/miniflux` and
+  `postgres`, which have no registry host, and leaves out the six
+  `ghcr.io/kadet-hub/<generator>` dependencies of REC-6, which are
+  generator artifacts rather than images.
+
+  The KubeVirt CSI driver mirror (PUB-13) has no page of its own. It is
+  scanned as an image of kubevirt, which pins it. A mirror tag that no
+  listed version pins is not scanned.
+
+  - Test: `scan/test_images.py`
+  - Since: this change
+
+- CAT-39b: The site MUST have a full report at
+  `/security/generators/<name>/` or `/security/recipes/<name>/` for every
+  page with an image to report. It MUST list each image with its findings
+  per severity and every finding with its advisory ID, severity, package,
+  installed version and fixed version, or the error of an image that could
+  not be scanned.
+
+  The columns are those of Artifact Hub's report table. IDs, package names,
+  versions and errors come from the images and the vulnerability database,
+  so they go through Hugo's escaping (CAT-3) with control characters
+  removed. Findings are sorted by severity, then by ID. On 2026-10-29
+  kind's four images had 3,565 findings and the nextcloud image 2,596, so
+  the report is a page of its own and stays out of the catalog page and
+  `catalog.json`.
+
+  - Test: `catalog/test_catalog.py` (`Security.test_full_report`, `Security.test_seo`)
+  - Since: this change
+
+- CAT-39c: The catalog job MUST read the image report of the newest run
+  of `scheduled.yml` on `main` that uploaded one, and MUST build the pages
+  as not scanned when it reads none.
+
+  The scheduled workflow has no publishing rights (GI-8). It uploads the
+  report as the artifact `security-report` (SEC-19), kept for seven days.
+  `catalog/build` lists the last seven runs with `gh run list --workflow
+  scheduled.yml --branch main` and downloads the artifact of the first run
+  that has one. Reading another run's artifacts takes `actions: read` on
+  the catalog job (OQ-17). Runs on other branches are not read, so a
+  workflow pushed to a branch cannot supply the report.
+
+  The rescan is scheduled six minutes after the release, but GitHub starts
+  scheduled runs late: from 2026-10-27 to 2026-10-29 both started between
+  09:52 and 10:58 UTC, the rescan two minutes after the release. The
+  catalog shows the newest report that was finished when it was built,
+  and each page shows the time of its scan.
+
+  The report is a claim of the scheduled job and carries no attestation.
+  An exploit of Trivy's image parsing in that job can change the counts
+  and grades the site shows as text, and nothing else.
+
+  With `CATALOG_OFFLINE=1` the build reads the report from
+  `$CATALOG_SECURITY`.
+
+  - Test: `catalog/test_catalog.py` (`Security.test_build_reads_the_newest_report`)
+  - Since: this change
 
 - CAT-21: The generator page MUST link "Request a feature" to a new issue
   in the generator's source repository, prefilled with the generator's
@@ -1997,3 +2132,21 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py`
   - Since: #18, #158
+
+## Open questions
+
+- OQ-17: The catalog job needs `actions: read` to download the rescan's
+  artifact (CAT-39c). No job of the release workflow holds it so far. It
+  grants reading the repository's workflow runs, logs and artifacts, and
+  no write. The alternative that avoids it is scanning the images in the
+  release workflow itself, which is no longer fed by the rescan.
+- OQ-18: talos references six images by tag without a digest, such as
+  `registry.k8s.io/kube-apiserver:v1.37.1`. CAT-39a counts only
+  references with a digest, so its page says it pins no image. Scanning
+  references by tag as well would report what each tag points to on the
+  day of the scan, which can change without a new talos version.
+- OQ-19: 11 of the 16 recipe pages have no listed version and are built
+  from `main` of kadet-hub/recipes (CAT-37c). They say they are not
+  scanned. Scanning them would make the rescan fetch kadet-hub/recipes at
+  `main`, which no entry pins, and the page's commit can differ from the
+  rescan's.

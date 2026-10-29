@@ -696,6 +696,30 @@ review go into the review comment and do not fail the gate.
   - Test: `scan/test_rescan_issues.py`; manual: fork rehearsal (2026-10-10)
   - Since: #28
 
+- SEC-19: The scheduled workflow MUST scan, once a day, every image that
+  CAT-39a lists for a version it rescans, with Trivy, and MUST upload the
+  result as the artifact `security-report`. A finding MUST NOT fail the
+  run, open an issue or yank a version.
+
+  Images are reported, not gated (DEC-30). `scan/rescan` writes one line
+  per version it fetched, with the catalog page, the version and its
+  images, next to the findings. The job `images` with `contents: read`
+  installs Trivy by sha256 from `.github/actions/setup-trivy`, downloads
+  the vulnerability database once and scans each image once, with
+  `--scanners vuln`. `scan/image_report.py` keeps the advisory ID,
+  severity, package, installed version and fixed version of every
+  vulnerability, or the last line of Trivy's error for an image that
+  failed, with the scan time, Trivy's version and the database's update
+  time.
+
+  The job is separate from the rescan, so a failed database download or
+  scan leaves the issues of SEC-15 and SEC-16 to their own job. The Trivy
+  GitHub actions are not used: their tags were moved in the March 2026
+  compromise (GHSA-69fq-xp46-6x23).
+
+  - Test: `scan/test_rescan.py` (`Rescan.test_recipe_entry`, the images file), `scan/test_image_report.py`; manual: the first scheduled run after the merge
+  - Since: this change
+
 ## Compile gate
 
 - CMP-1: Every target of the fixture project MUST compile with the pinned
