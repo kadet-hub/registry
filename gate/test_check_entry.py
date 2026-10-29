@@ -86,16 +86,19 @@ class Case:
                             base=self.base, reserved=self.p("reserved.txt"), policy=POLICY, out=self.p("entry.json"))
         return check_entry.step_entry(a)
 
-    def manifest(self, text, files=None, root_license=None):
+    def manifest(self, text, files=None, root_license=None, security="SECURITY.md\n", reporting="true\n"):
         for rel, content in {**TREE, **(files or {})}.items():
             if content is not None:
                 self.write(f"gen/{rel}", content)
         self.write("gen/kapitan-generator.yaml", text)
         if root_license is not None:
             self.write("root-license", root_license)
+        self.write("security-md", security)  # as gate/run writes them for REG-10
+        self.write("private-reporting", reporting)
         a = SimpleNamespace(event=self.p("event.json"), entry=self.p("entry.json"),
                             manifest=self.p("gen/kapitan-generator.yaml"), policy=POLICY,
-                            root_license=self.p("root-license"))
+                            root_license=self.p("root-license"), security_md=self.p("security-md"),
+                            private_reporting=self.p("private-reporting"))
         return check_entry.step_manifest(a)
 
 
@@ -350,6 +353,31 @@ class Quality(unittest.TestCase):
         self.assertEqual(self.c.manifest(bsd.format("BSD-3-Clause"), {"LICENSE": three}), [])
         self.assertTrue(has(self.c.manifest(bsd.format("BSD-2-Clause"), {"LICENSE": three}), "QA-2"))
         self.assertTrue(has(self.c.manifest(bsd.format("BSD-3-Clause"), {"LICENSE": two}), "QA-2"))
+
+
+class Security(unittest.TestCase):  # REG-10
+    def test_needs_security_md_and_private_reporting(self):
+        c = Case()
+        self.assertEqual(c.entry("generators/demo.yaml", entry()), [])
+        self.assertEqual(c.manifest(manifest()), [])
+        self.assertEqual(c.manifest(manifest(), security="example/.github/SECURITY.md\n"), [])
+        self.assertTrue(has(c.manifest(manifest(), security=""), "REG-10: no SECURITY.md"))
+        for reporting in ("false\n", ""):
+            self.assertTrue(has(c.manifest(manifest(), reporting=reporting), "REG-10: private vulnerability reporting"), reporting)
+
+    def test_gitlab_needs_security_md_only(self):
+        c = Case()
+        self.assertEqual(c.entry("generators/demo.yaml", entry().replace("github.com", "gitlab.com")), [])
+        self.assertEqual(c.manifest(manifest(), reporting=""), [])
+        self.assertTrue(has(c.manifest(manifest(), security="", reporting=""), "REG-10: no SECURITY.md"))
+
+    def test_only_a_new_commit_is_checked(self):
+        c = Case(base_entries={"demo": entry()})
+        self.assertEqual(c.entry("generators/demo.yaml", entry(tag="v1.1.0", sha="b" * 40)), [])
+        self.assertTrue(has(c.manifest(manifest(), security=""), "REG-10: no SECURITY.md"))
+        self.assertTrue(has(c.manifest(manifest(), reporting="false\n"), "REG-10: private vulnerability reporting"))
+        self.assertEqual(c.entry("generators/demo.yaml", entry() + 'yanked:\n  "1.0.0": broken\n'), [])
+        self.assertEqual(c.manifest(manifest(), security="", reporting="false\n"), [])
 
 
 if __name__ == "__main__":

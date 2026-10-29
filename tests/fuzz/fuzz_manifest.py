@@ -41,7 +41,9 @@ for i, author in enumerate((1001, 2002)):
     repo = {"full_name": "kadet-hub/registry"}
     write(f"event{i}.json", json.dumps({"pull_request": {"user": {"id": author}, "head": {"repo": repo}, "base": {"repo": repo}}}))
 for new in (False, True):
-    write(f"entry{int(new)}.json", json.dumps({"name": "demo", "new": new, "tag": "demo-v1.0.0", "owners": [1001]}))
+    write(f"entry{int(new)}.json", json.dumps({"name": "demo", "new": new, "tag": "demo-v1.0.0", "owners": [1001],
+                                               "repo": "https://github.com/example/demo.git", "sha": "a" * 40,
+                                               "previous_sha": None if new else "b" * 40}))
 MANIFEST = os.path.join(WORK, "tree", "kapitan-generator.yaml")
 
 
@@ -53,7 +55,8 @@ def TestOneInput(data):
     mode = data[-1]
     check_entry.step_manifest(SimpleNamespace(
         event=os.path.join(WORK, f"event{mode & 1}.json"), entry=os.path.join(WORK, f"entry{mode >> 1 & 1}.json"),
-        manifest=MANIFEST, policy=POLICY, root_license=None))
+        manifest=MANIFEST, policy=POLICY, root_license=None,
+        security_md=os.path.join(WORK, "security-md"), private_reporting=os.path.join(WORK, "private-reporting")))
     schema_diff.sources(os.path.join(WORK, "tree"))
 
 
