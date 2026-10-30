@@ -1750,8 +1750,13 @@ class Site(unittest.TestCase):
 
     def test_search_matches_kind_names(self):  # CAT-29a
         home = self.page()
-        self.assertRegex(home, r'data-text="demo [^"]* configmap httproute" data-tags="helm" data-name="demo"')
+        self.assertRegex(home, r'data-text="demo [^"]* configmap httproute[^"]*" data-tags="helm" data-name="demo"')
         self.assertRegex(home, r'data-text="plain [^"]* configmap httproute" data-tags="" data-name="plain"')
+
+    def test_search_matches_built_for(self):  # CAT-29e
+        home = self.page()
+        self.assertRegex(home, r'data-text="demo [^"]* configmap httproute external secrets operator" data-tags="helm" data-name="demo"')
+        self.assertRegex(home, r'data-text="plain [^"]* httproute" data-tags="" data-name="plain"')  # no compatibility record
 
     def test_feed_stays_valid_xml_with_control_characters(self):  # CAT-18, QA-5a
         with tempfile.TemporaryDirectory() as tmp:
