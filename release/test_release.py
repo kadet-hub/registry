@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from images import images
 from index import build, notes
 from sbom import sbom
 from tree import read_dir, read_tar, tree_id, write_tar
@@ -173,6 +174,107 @@ class Sbom(unittest.TestCase):
         self.assertEqual(len(doc["relationships"]), 5)
         json.dumps(doc)
 
+    def test_schema_groups(self):  # PUB-8
+        meta = {"name": "demo", "version": "1.2.0", "license": "Apache-2.0", "description": "Demo",
+                "source": {"repo": "https://github.com/example/demo.git", "path": "gen", "sha": "c" * 40}}
+        files = ["kapitan-generator.yaml", "schemas/sources.yaml", "schemas/core/secret_v1.json", "schemas/core/NOTICE",
+                 "schemas/core/hostnameconfig_v1alpha1.json", "schemas/kyverno.io/policy_v1.json", "schemas/kyverno.io/crds/policies.yaml",
+                 "schemas/terraform/hashicorp_aws_6.69.1.json", "schemas/example.org/thing_v1.json", "schemasx/core/a_v1.json"]
+        sources = {
+            "core": {"software": "Kubernetes", "version": "1.37.1", "license": "Apache-2.0",
+                     "source": "https://github.com/yannh/kubernetes-json-schema/tree/abc/v1.37.1-standalone-strict"},
+            "core/v1alpha1": {"software": "Talos", "version": "1.14.3", "license": "MPL-2.0", "copyright": "Sidero Labs",
+                              "source": "https://github.com/siderolabs/talos/blob/v1.14.3/config.schema.json"},
+            "kyverno.io": {"software": "Kyverno", "version": "1.19.1", "license": "Apache-2.0",
+                           "source": "https://example.org/a https://example.org/b", "copyright": ["Copyright 2020 A", "Copyright 2021 B"]},
+            "terraform/hashicorp/aws": {"software": "hashicorp/aws", "version": "6.69.1",
+                                        "source": "https://registry.terraform.io/providers/hashicorp/aws/6.69.1"},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tar = os.path.join(tmp, "demo.tar")
+            write_tar({f: (False, f.encode()) for f in files}, tar)
+            doc = sbom(tar, meta, "ghcr.io/kadet-hub/demo", "sha256:" + "a" * 64, NOW, {"dir": "schemas", "sources": sources})
+        ids = {f["SPDXID"]: f["fileName"][2:] for f in doc["files"]}
+        self.assertEqual(sorted(ids.values()), sorted(files))  # every file stays listed (CAT-29)
+        pkgs = {p["SPDXID"]: p for p in doc["packages"]}
+        generator = pkgs.pop("SPDXRef-Package")
+        self.assertEqual(sorted(ids[i] for i in generator["hasFiles"]),
+                         ["kapitan-generator.yaml", "schemas/sources.yaml", "schemasx/core/a_v1.json"])
+        groups = {p["summary"]: (p, sorted(ids[i] for i in p["hasFiles"])) for p in pkgs.values()}
+        self.assertEqual({k: v[1] for k, v in groups.items()}, {
+            "Schemas of the sources.yaml entry core": ["schemas/core/NOTICE", "schemas/core/secret_v1.json"],
+            "Schemas of the sources.yaml entry core/v1alpha1": ["schemas/core/hostnameconfig_v1alpha1.json"],
+            "Schemas of the sources.yaml entry kyverno.io": ["schemas/kyverno.io/crds/policies.yaml", "schemas/kyverno.io/policy_v1.json"],
+            "Schemas of the sources.yaml entry terraform/hashicorp/aws": ["schemas/terraform/hashicorp_aws_6.69.1.json"],
+            "Schemas of example.org without a sources.yaml entry": ["schemas/example.org/thing_v1.json"]})
+        fields = ("name", "versionInfo", "downloadLocation", "licenseDeclared", "copyrightText", "sourceInfo")
+        got = {k: tuple(v[0].get(f) for f in fields) for k, v in groups.items()}
+        self.assertEqual(got["Schemas of the sources.yaml entry core/v1alpha1"],
+                         ("Talos", "1.14.3", sources["core/v1alpha1"]["source"], "MPL-2.0", "Sidero Labs", None))
+        # Two URLs are no download location; the copyright list is one line per holder.
+        self.assertEqual(got["Schemas of the sources.yaml entry kyverno.io"],
+                         ("Kyverno", "1.19.1", "NOASSERTION", "Apache-2.0", "Copyright 2020 A\nCopyright 2021 B", sources["kyverno.io"]["source"]))
+        self.assertEqual(got["Schemas of the sources.yaml entry terraform/hashicorp/aws"][3:5], ("NOASSERTION", "NOASSERTION"))
+        self.assertEqual(got["Schemas of example.org without a sources.yaml entry"],
+                         ("example.org", None, "NOASSERTION", "NOASSERTION", "NOASSERTION", None))
+        rel = {(r["spdxElementId"], r["relationshipType"], r["relatedSpdxElement"]) for r in doc["relationships"]}
+        for p in pkgs.values():
+            self.assertIn(("SPDXRef-Package", "CONTAINS", p["SPDXID"]), rel)
+            self.assertTrue({("SPDXRef-Package", "CONTAINS", i) for i in p["hasFiles"]}.isdisjoint(rel))
+            self.assertTrue({(p["SPDXID"], "CONTAINS", i) for i in p["hasFiles"]} <= rel)
+            sha1s = sorted(c["checksumValue"] for f in doc["files"] if f["SPDXID"] in p["hasFiles"] for c in f["checksums"] if c["algorithm"] == "SHA1")
+            self.assertEqual(p["packageVerificationCode"]["packageVerificationCodeValue"], hashlib.sha1("".join(sha1s).encode()).hexdigest())
+        # Without sources.yaml every group is NOASSERTION, named after its directory.
+        with tempfile.TemporaryDirectory() as tmp:
+            tar = os.path.join(tmp, "demo.tar")
+            write_tar({f: (False, f.encode()) for f in files}, tar)
+            doc = sbom(tar, meta, "ghcr.io/kadet-hub/demo", "sha256:" + "a" * 64, NOW, {"dir": "schemas", "sources": {}})
+        self.assertEqual(sorted((p["name"], p["licenseDeclared"]) for p in doc["packages"][1:]),
+                         [(g, "NOASSERTION") for g in ("core", "example.org", "kyverno.io", "terraform")])
+
+    def test_recipe_dependencies(self):  # REC-12
+        digest = "sha256:" + "b" * 64
+        meta = {"name": "demo", "version": "1.0.0", "license": "Apache-2.0", "description": "Demo",
+                "source": {"repo": "https://github.com/kadet-hub/recipes.git", "path": "demo", "sha": "c" * 40},
+                "generators": [{"name": "kubernetes", "version": "1.9.0", "digest": digest}],
+                "images": [f"quay.io/jetstack/cert-manager-controller:v1.21.2@{digest}", "nginx:1.25"]}
+        with tempfile.TemporaryDirectory() as tmp:
+            tar = os.path.join(tmp, "demo.tar")
+            write_tar({"init.yml": (False, b"{}\n")}, tar)
+            doc = sbom(tar, meta, "ghcr.io/kadet-hub/recipes/demo", "sha256:" + "a" * 64, NOW)
+        deps = {p["name"]: (p.get("versionInfo"), p.get("primaryPackagePurpose"), p["externalRefs"][0]["referenceLocator"])
+                for p in doc["packages"][1:]}
+        self.assertEqual(deps, {
+            "kubernetes": ("1.9.0", None, f"pkg:oci/kubernetes@sha256%3A{'b' * 64}?repository_url=ghcr.io/kadet-hub/kubernetes&tag=1.9.0"),
+            "quay.io/jetstack/cert-manager-controller": ("v1.21.2", "CONTAINER", f"pkg:oci/cert-manager-controller@sha256%3A{'b' * 64}"
+                                                         "?repository_url=quay.io/jetstack/cert-manager-controller&tag=v1.21.2"),
+            # Without a digest pkg:oci does not apply.
+            "docker.io/library/nginx": ("1.25", "CONTAINER", "pkg:docker/library/nginx@1.25?repository_url=docker.io")})
+        depends = [r["relatedSpdxElement"] for r in doc["relationships"] if r["relationshipType"] == "DEPENDS_ON" and r["spdxElementId"] == "SPDXRef-Package"]
+        self.assertEqual(sorted(depends), sorted(p["SPDXID"] for p in doc["packages"][1:]))
+        self.assertEqual(len({p["SPDXID"] for p in doc["packages"]}), 4)
+
+
+class Images(unittest.TestCase):
+    """REC-12: release/images.py lists the container images of rendered objects."""
+
+    def test_pod_lists_at_any_depth(self):
+        pod = {"containers": [{"name": "a", "image": "a:1"}, {"name": "b", "image": "b:1"}],
+               "initContainers": [{"image": "init:1"}], "ephemeralContainers": [{"image": "debug:1"}]}
+        docs = [
+            {"apiVersion": "v1", "kind": "Pod", "spec": pod},
+            {"apiVersion": "apps/v1", "kind": "Deployment", "spec": {"template": {"spec": {"containers": [{"image": "a:1"}]}}}},
+            {"apiVersion": "batch/v1", "kind": "CronJob",
+             "spec": {"jobTemplate": {"spec": {"template": {"spec": {"containers": [{"image": "cron:1"}]}}}}}},
+            # A custom resource that embeds a pod template; an image named elsewhere is not one of these fields.
+            {"apiVersion": "example.org/v1", "kind": "Thing", "spec": {"imageName": "x:1", "podTemplate": {"spec": {"containers": [
+                {"image": "cr:1", "env": [{"name": "RELATED_IMAGE_X", "value": "related:1"}]}]}}}},
+            {"apiVersion": "v1", "kind": "List", "items": [{"spec": {"containers": [{"image": 3}, "c", {"name": "no-image"}]}}]},
+            {"apiVersion": "v1", "kind": "ConfigMap", "data": {"containers": "image: y:1"}},
+        ]
+        self.assertEqual(images(docs), ["a:1", "b:1", "cr:1", "cron:1", "debug:1", "init:1"])
+        self.assertEqual(images([]), [])
+
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 REPO = "https://github.com/example/demo.git"
@@ -188,7 +290,7 @@ case "$1 $2" in
   *) echo "$*: not found" >&2; exit 1 ;;
 esac
 """,
-    "bin/git": "#!/usr/bin/env bash\nfor a; do if [[ $a == rev-parse ]]; then echo \"$FAKE_TREE\"; fi; done\n",
+    "bin/git": "#!/usr/bin/env bash\nfor a; do if [[ $a == rev-parse ]]; then echo \"$FAKE_TREE\"; elif [[ $a == ls-tree ]]; then printf '100644 blob x\\tLICENSE\\n'; fi; done\n",
     "root/gate/fetch_tree.py": """import os, sys
 a = dict(zip(sys.argv[1::2], sys.argv[2::2]))
 if a["--rev"] == "unreachable":
@@ -347,7 +449,7 @@ class OutputDiff(unittest.TestCase):
         with open(os.path.join(ROOT, ".github", "workflows", "release.yml"), encoding="utf-8") as f:
             steps = f.read().split("uses: actions/attest@")[1:]
         oci = [s.split("\n      - ", 1)[0] for s in steps if "subject-digest:" in s.split("\n      - ", 1)[0]]
-        self.assertEqual(len(oci), 5)  # artifact provenance, SBOM, output diff, sandbox image, index manifest
+        self.assertEqual(len(oci), 6)  # artifact provenance, SBOM, output diff, sandbox image and its SBOM, index manifest
         for step in oci:
             self.assertIn("push-to-registry: true", step)
             self.assertIn("create-storage-record: false", step)
@@ -428,13 +530,36 @@ class BuildAll(unittest.TestCase):
                 "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
                 "backends": ["reclass-rs", "omegaconf"]})
 
+    def test_root_license_next_to_the_tree(self):  # PUB-15
+        fakes = {
+            # The generator's commit has a root LICENSE, the recipe's has none.
+            "bin/git": "#!/usr/bin/env bash\nfor a; do [[ $a != d*:LICENSE ]] || exit 1; [[ $a != *:LICENSE ]] || echo \"license at $a\"; done\n",
+            "bin/docker": """#!/usr/bin/env bash
+for a; do
+  [[ $a == type=bind,src=*,dst=/src,readonly ]] && src=${a#type=bind,src=} && src=${src%,dst=/src,readonly}
+  [[ $a == type=bind,src=*,dst=/out ]] && out=${a#type=bind,src=} && out=${out%,dst=/out}
+done
+(cd -- "$src" && grep -r . --include=LICENSE --include='*.LICENSE' .) >"$out/licenses.txt"
+echo '[]' >"$out/names.json"
+""",
+        }
+        for rel, text in fakes.items():
+            with open(os.path.join(self.tmp, rel), "w", encoding="utf-8") as f:
+                f.write(text)
+            os.chmod(os.path.join(self.tmp, rel), 0o755)
+        out = os.path.join(self.tmp, "out")
+        subprocess.run([os.path.join(self.root, "release", "build-all"), out], env=self.env, check=True, capture_output=True)
+        with open(os.path.join(out, "licenses.txt"), encoding="utf-8") as f:
+            self.assertEqual(f.read(), f"./demo.LICENSE:license at {'c' * 40}:LICENSE\n")
+
     def build_recipe(self, source, renders_rc=0, rev="d" * 40):  # REC-12, REC-13
         recipe = {"pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:{'a' * 64}", f"ghcr.io/kadet-hub/certmanager:1.0.2@sha256:{'b' * 64}"],
                   "recipes": {"other": {"rule": "REC-16", "version": "1.0.0", "digest": "sha256:" + "d" * 64},
                               "req": {"rule": "REC-17", "version": "2.0.0", "digest": "sha256:" + "e" * 64}},
                   "included": ["other"], "required": {"req": []}, "source": ["Source: x"], "level": ["Level: x"],
                   "description": "Demo recipe.", "license": "Apache-2.0"}
-        fields = {"source": source, "level": "deploys", "kinds": [{"group": "", "version": "v1", "kind": "Service"}]}
+        fields = {"source": source, "level": "deploys", "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
+                  "images": ["quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:" + "f" * 64]}
         sec12 = (f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole x\nSEC-12: admission-webhook: compiled/demo/w.yml: x\n"
                  f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole y\nSEC-12: host-path: compiled/other/x.yml: x\n"
                  f"SEC-12: unparsed output compiled/demo/notes.txt (*)\n")
@@ -491,6 +616,8 @@ exit {renders_rc}
             # DEC-23: the matches in the recipe's own output, once each.
             "output_capabilities": ["admission-webhook", "rbac-admin"],
             "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
+            # REC-12: the images of the recipe's own output, for the SBOM.
+            "images": ["quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:" + "f" * 64],
             "scan": {"exceptions": 0, "for": "recipe"}, "output_diff": {"base": None, "error": "no earlier listed version"}})
         # Only the recipe checks get the token; the renders proof runs on what they wrote.
         dirs = calls[1].split()[1:4]
@@ -541,28 +668,25 @@ class ScanRecord(unittest.TestCase):
 
 
 class Recipe(unittest.TestCase):
-    """REC-11: release/sign on a recipe, with git on a real repository and a fake registry."""
+    """REC-11, PUB-15: release/sign with git on a real repository and a fake registry."""
 
     setUp = OutputDiff.setUp
+    FILES = {"LICENSE": "Apache License\n", "demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n",
+             "demo/vendor/crds.yaml": "kind: CRD\n", "demo/tests/target.yml": "classes: [recipes.demo]\n",
+             "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n", "gen/kapitan-generator.yaml": "name: gen\n",
+             "gen/schemas/core/secret_v1.json": "{}\n"}
 
-    def test_sign(self):
+    def commit(self, remove=()):
         repo = os.path.join(self.tmp, "repo")
-        files = {"demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n", "demo/vendor/crds.yaml": "kind: CRD\n",
-                 "demo/tests/target.yml": "classes: [recipes.demo]\n", "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n"}
-        for rel, text in files.items():
-            os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
-            with open(os.path.join(repo, rel), "w", encoding="utf-8") as f:
-                f.write(text)
-        os.chmod(os.path.join(repo, "demo/tests/smoke"), 0o755)
-        git_tree(repo)
-        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "t"], cwd=repo,
-                       check=True, env=GIT_ENV)
-        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, env=GIT_ENV, capture_output=True, text=True).stdout.strip()
-        with open(os.path.join(self.root, "recipes", "demo.yaml"), "w", encoding="utf-8") as f:
-            f.write(f"source:\n  repo: {REPO}\n  path: demo\n  tag: demo-v1.0.0\n  sha: {sha}\n")
-        # init and fetch do nothing; every other git call reads the repository.
-        with open(os.path.join(self.tmp, "bin", "git"), "w", encoding="utf-8") as f:
-            f.write(f"""#!/usr/bin/env bash
+        if not os.path.isdir(repo):
+            for rel, text in self.FILES.items():
+                os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
+                with open(os.path.join(repo, rel), "w", encoding="utf-8") as f:
+                    f.write(text)
+            os.chmod(os.path.join(repo, "demo/tests/smoke"), 0o755)
+            # init and fetch do nothing; every other git call reads the repository.
+            with open(os.path.join(self.tmp, "bin", "git"), "w", encoding="utf-8") as f:
+                f.write(f"""#!/usr/bin/env bash
 args=()
 for a; do
   case $a in init | fetch) exit 0 ;; --git-dir=*) a=--git-dir={repo}/.git ;; esac
@@ -570,31 +694,50 @@ for a; do
 done
 exec {shutil.which("git")} "${{args[@]}}"
 """)
+        for rel in remove:
+            os.remove(os.path.join(repo, rel))
+        git_tree(repo)
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "t"], cwd=repo,
+                       check=True, env=GIT_ENV)
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, env=GIT_ENV, capture_output=True, text=True).stdout.strip()
 
-        def sign(with_tests):
-            built = os.path.join(self.tmp, "built", "recipes", "demo")
-            shutil.rmtree(os.path.join(self.tmp, "built"), ignore_errors=True)
-            os.makedirs(built)
-            content = {p[5:]: (False, t.encode()) for p, t in files.items() if p.startswith("demo/") and (with_tests or "/tests/" not in p)}
-            write_tar(content, os.path.join(built, "demo.tar"))
-            meta = {"name": "demo", "version": "1.0.0", "tree": tree_id(content), "license": "Apache-2.0", "description": "Demo",
-                    "source": {"repo": REPO, "path": "demo", "tag": "demo-v1.0.0", "sha": sha}}
-            with open(os.path.join(built, "meta.json"), "w", encoding="utf-8") as f:
-                json.dump(meta, f)
-            outputs, pushed = os.path.join(self.tmp, "outputs"), os.path.join(self.tmp, "manifest.json")
-            open(outputs, "w").close()
-            if os.path.exists(pushed):
-                os.remove(pushed)
-            p = subprocess.run([os.path.join(self.root, "release", "sign"), "recipes/demo", built], capture_output=True, text=True,
-                               env=dict(self.env, GITHUB_OUTPUT=outputs, FAKE_PUSHED=pushed), cwd=self.root)
-            with open(outputs, encoding="utf-8") as f:
-                out = dict(line.rstrip("\n").split("=", 1) for line in f)
-            if not os.path.exists(pushed):
-                return p, out, None
-            with open(pushed, encoding="utf-8") as f:
-                return p, out, json.load(f)
+    def sign(self, name, sha, tar, tree=None, schemas=None):
+        """Signs the tar's files {path: text} as <name> at sha; tree defaults to the ID of the shipped tree without LICENSE."""
+        base = name.removeprefix("recipes/")
+        path = "demo" if name.startswith("recipes/") else "gen"
+        entry = os.path.join(self.root, f"{name}.yaml" if name.startswith("recipes/") else f"generators/{name}.yaml")
+        with open(entry, "w", encoding="utf-8") as f:
+            f.write(f"source:\n  repo: {REPO}\n  path: {path}\n  tag: {base}-v1.0.0\n  sha: {sha}\n")
+        built = os.path.join(self.tmp, "built", name)
+        shutil.rmtree(os.path.join(self.tmp, "built"), ignore_errors=True)
+        os.makedirs(built)
+        content = {p: (False, t.encode()) for p, t in tar.items()}
+        write_tar(content, os.path.join(built, f"{base}.tar"))
+        shipped = {p[len(path) + 1:]: (False, t.encode()) for p, t in self.FILES.items() if p.startswith(path + "/") and "/tests/" not in p}
+        meta = {"name": base, "version": "1.0.0", "tree": tree or tree_id(shipped), "license": "Apache-2.0", "description": "Demo",
+                "source": {"repo": REPO, "path": path, "tag": f"{base}-v1.0.0", "sha": sha}}
+        with open(os.path.join(built, "meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f)
+        if schemas is not None:
+            with open(os.path.join(built, "schemas.json"), "w", encoding="utf-8") as f:
+                json.dump(schemas, f)
+        outputs, pushed = os.path.join(self.tmp, "outputs"), os.path.join(self.tmp, "manifest.json")
+        open(outputs, "w").close()
+        if os.path.exists(pushed):
+            os.remove(pushed)
+        p = subprocess.run([os.path.join(self.root, "release", "sign"), name, built], capture_output=True, text=True,
+                           env=dict(self.env, GITHUB_OUTPUT=outputs, FAKE_PUSHED=pushed), cwd=self.root)
+        with open(outputs, encoding="utf-8") as f:
+            out = dict(line.rstrip("\n").split("=", 1) for line in f)
+        if not os.path.exists(pushed):
+            return p, out, None
+        with open(pushed, encoding="utf-8") as f:
+            return p, out, json.load(f)
 
-        p, out, manifest = sign(with_tests=False)
+    def test_sign(self):
+        sha = self.commit()
+        shipped = {p[5:]: t for p, t in self.FILES.items() if p.startswith("demo/") and "/tests/" not in p}
+        p, out, manifest = self.sign("recipes/demo", sha, dict(shipped, LICENSE=self.FILES["LICENSE"]))
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertEqual((out["publish"], out["ref"], out["version"]), ("true", "ghcr.io/kadet-hub/recipes/demo", "1.0.0"))
         self.assertEqual((manifest["artifactType"], manifest["config"]["mediaType"], manifest["layers"][0]["mediaType"],
@@ -602,11 +745,34 @@ exec {shutil.which("git")} "${{args[@]}}"
                          ("application/vnd.kadet-hub.recipe.v1", "application/vnd.kadet-hub.recipe.config.v1+json",
                           "application/vnd.oci.image.layer.v1.tar", "demo.tar"))
         with open(out["sbom"], encoding="utf-8") as f:
-            self.assertEqual(sorted(x["fileName"] for x in json.load(f)["files"]), ["./README.md", "./init.yml", "./vendor/crds.yaml"])
-        # A tar that ships tests/ is not the tree without its tests entry, and nothing is pushed.
-        p, out, manifest = sign(with_tests=True)
+            self.assertEqual(sorted(x["fileName"] for x in json.load(f)["files"]),
+                             ["./LICENSE", "./README.md", "./init.yml", "./vendor/crds.yaml"])
+        # A tar that ships tests/, or lacks the root LICENSE (PUB-15), is not the tree without its tests entry
+        # plus the LICENSE, and nothing is pushed.
+        tests = {p[5:]: t for p, t in self.FILES.items() if p.startswith("demo/tests/")}
+        for tar in (dict(shipped, LICENSE=self.FILES["LICENSE"], **tests), shipped, dict(shipped, LICENSE="Other\n")):
+            p, out, manifest = self.sign("recipes/demo", sha, tar)
+            self.assertEqual((p.returncode, manifest), (1, None))
+            self.assertIn("PUB-1: recipes/demo 1.0.0: tar tree", p.stdout)
+        # meta.json names the shipped tree without the LICENSE (PUB-15), as REC-16 looks it up.
+        tar = dict(shipped, LICENSE=self.FILES["LICENSE"])
+        p, _, manifest = self.sign("recipes/demo", sha, tar, tree=tree_id({k: (False, v.encode()) for k, v in tar.items()}))
         self.assertEqual((p.returncode, manifest), (1, None))
-        self.assertIn("PUB-1: recipes/demo 1.0.0: tar tree", p.stdout)
+
+    def test_sign_generator(self):  # PUB-15, PUB-8
+        sha = self.commit()
+        shipped = {p[4:]: t for p, t in self.FILES.items() if p.startswith("gen/")}
+        p, out, _ = self.sign("gen", sha, dict(shipped, LICENSE=self.FILES["LICENSE"]),
+                              schemas={"dir": "schemas", "sources": {"core": {"software": "Kubernetes"}}})
+        self.assertEqual((p.returncode, out["publish"]), (0, "true"), p.stdout + p.stderr)
+        with open(out["sbom"], encoding="utf-8") as f:
+            self.assertEqual([x["name"] for x in json.load(f)["packages"]], ["gen", "Kubernetes"])
+        p, _, manifest = self.sign("gen", sha, shipped)
+        self.assertEqual((p.returncode, manifest), (1, None))
+        sha = self.commit(remove=["LICENSE"])
+        p, _, manifest = self.sign("gen", sha, shipped)
+        self.assertEqual((p.returncode, manifest), (1, None))
+        self.assertIn("PUB-15: gen 1.0.0: no LICENSE in the tree or at the repository root", p.stdout)
 
 
 class Mirror(unittest.TestCase):
@@ -668,3 +834,34 @@ esac
         rc, out, writes, summary = self.mirror({"multi.GIT_SHA": "3a1a099"}, tags="3a1a099 sha256:" + "o" * 64)
         self.assertEqual((rc, writes, summary), (1, [], ""))
         self.assertIn("tag not moved", out)
+
+
+class PublishSandbox(unittest.TestCase):
+    """PUB-14: release/publish-sandbox writes the SBOM of the layout it pushed, with fake docker, skopeo, oras and syft."""
+
+    DIGEST = "sha256:" + "d" * 64
+
+    def test_sbom_of_the_pushed_layout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            calls, output = os.path.join(tmp, "calls"), os.path.join(tmp, "output")
+            fakes = {
+                "docker": "exit 0",
+                "skopeo": f'd=${{4#oci:}}; d=${{d%:image}}; mkdir -p "$d"; echo \'{{"manifests": [{{"digest": "{self.DIGEST}"}}]}}\' >"$d/index.json"',
+                "oras": '[[ $1 == resolve ]] && { echo "$3: not found" >&2; exit 1; }; exit 0',
+                "syft": 'for a; do case $a in spdx-json=*) echo "{}" >"${a#spdx-json=}" ;; esac; done',
+            }
+            for name, body in fakes.items():
+                with open(os.path.join(tmp, name), "w", encoding="utf-8") as f:
+                    f.write(f'#!/usr/bin/env bash\necho "{name} $*" >>{calls!r}\n{body}\n')
+                os.chmod(os.path.join(tmp, name), 0o755)
+            p = subprocess.run([os.path.join(ROOT, "release", "publish-sandbox")], capture_output=True, text=True,
+                               env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], REGISTRY="ghcr.io/kadet-hub",
+                                        GITHUB_OUTPUT=output, RUNNER_TEMP=tmp))
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            with open(output, encoding="utf-8") as f:
+                out = dict(line.split("=", 1) for line in f.read().splitlines())
+            with open(calls, encoding="utf-8") as f:
+                syft = [c for c in f.read().splitlines() if c.startswith("syft ")]
+        self.assertEqual((out["publish"], out["digest"], out["sbom"]), ("true", self.DIGEST, os.path.join(tmp, "sandbox.spdx.json")))
+        self.assertEqual(len(syft), 1)
+        self.assertRegex(syft[0], r"^syft scan -q oci-dir:\S+/layout --source-name ghcr.io/kadet-hub/sandbox --source-version [0-9a-f]{40} ")

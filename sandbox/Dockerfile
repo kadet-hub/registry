@@ -22,6 +22,10 @@ ADD --checksum=sha256:${KRAB_SHA256} https://github.com/kapicorp/krab/releases/d
 ARG ETCD_VERSION=v3.7.3
 ARG ETCD_SHA256=5dfa9cc3b3ce3b4b491fbcc2057d3daa166bcc6676f743fcd20f8e5760cb9775
 ADD --checksum=sha256:${ETCD_SHA256} https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz /tmp/etcd.tgz
+# PUB-14a: etcd's archive and the kube-apiserver image ship no licence text,
+# so it comes from the release tag. Both are the Apache-2.0 text every release carries.
+ADD --checksum=sha256:43ca1b4bbf462789ba15b28373e0c536e510f49e4d05d85a7690cfee94de6f49 https://raw.githubusercontent.com/etcd-io/etcd/${ETCD_VERSION}/LICENSE /tmp/etcd.LICENSE
+ADD --checksum=sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30 https://raw.githubusercontent.com/kubernetes/kubernetes/v1.37.1/LICENSE /tmp/kube-apiserver.LICENSE
 COPY requirements.txt /tmp/requirements.txt
 COPY krab/requirements.txt /tmp/krab-requirements.txt
 # Kapitan's venv is /usr/local, so the interpreter, kapitan and the tools keep
@@ -31,6 +35,13 @@ RUN mkdir -p /usr/local/bin /home/gate \
  && tar -xzf /tmp/conftest.tgz -C /usr/local/bin conftest \
  && tar -xzf /tmp/etcd.tgz -C /usr/local/bin --strip-components=1 "etcd-${ETCD_VERSION}-linux-amd64/etcd" \
  && tar -xzf /tmp/krab.tgz -C /usr/local/bin --strip-components=1 "krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu/krab" \
+ && mkdir -p /licenses/helm /licenses/conftest /licenses/krab /licenses/etcd /licenses/kube-apiserver \
+ && cp /tmp/etcd.LICENSE /licenses/etcd/LICENSE \
+ && cp /tmp/kube-apiserver.LICENSE /licenses/kube-apiserver/LICENSE \
+ && tar -xzf /tmp/helm.tgz -C /licenses/helm --strip-components=1 linux-amd64/LICENSE \
+ && tar -xzf /tmp/conftest.tgz -C /licenses/conftest LICENSE \
+ && tar -xzf /tmp/krab.tgz -C /licenses/krab --strip-components=1 "krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu/LICENSE" \
+ && chmod -R a+rX /licenses \
  && uv venv -q --allow-existing --python /usr/bin/python3.13 /usr/local \
  && uv pip install -q --no-cache --compile-bytecode --require-hashes --no-deps --python /usr/local/bin/python3.13 -r /tmp/requirements.txt \
  && uv venv -q --python /usr/bin/python3.13 /opt/krab-python \
@@ -46,6 +57,7 @@ COPY --from=build /usr/local /usr/local
 COPY --from=build /opt/krab-python /opt/krab-python
 COPY --from=build /etc/passwd /etc/group /etc/
 COPY --from=build /home/gate /home/gate
+COPY --from=build /licenses /usr/share/doc
 COPY --from=registry.k8s.io/kube-apiserver:v1.37.1@sha256:e190f914a6cc21cab9268485d1ae7282fdeab1315ac64b668aa42d732fd1061d /usr/local/bin/kube-apiserver /usr/local/bin/kube-apiserver
 # PATH holds only directories that exist, so a program lookup tries no other path (SEC-10).
 ENV PATH=/usr/local/bin:/usr/bin \

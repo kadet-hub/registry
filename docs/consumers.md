@@ -479,8 +479,9 @@ output before you apply it ([terms](../TERMS.md#no-warranty)).
 A listed version passed the gate: secret, malware and code scans of the
 generator tree, a fixture compile in the gVisor sandbox with a syscall trace
 and decoy credentials, and a maintainer's review. The artifact contains
-exactly the scanned tree, and its attestation ties the digest to the
-marketplace release workflow on `main`.
+exactly the scanned tree, plus the source repository's root `LICENSE` when
+the tree has none, and its attestation ties the digest to the marketplace
+release workflow on `main`.
 
 A listing does not show that the generator is harmless in your project. The
 [threat model](specs/marketplace.md#threat-model) and the
