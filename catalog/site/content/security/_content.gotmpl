@@ -1,0 +1,13 @@
+{{/* CAT-39b: the full image security report of each generator and recipe page with an image to report. */}}
+{{ $reports := slice (dict "report" "generators" "what" "generator" "pages" site.Data.security.generators)
+  (dict "report" "recipes" "what" "recipe" "pages" site.Data.security.recipes)
+  (dict "report" "recipes" "what" "recipe" "pages" site.Data.security.main) }}
+{{ range $reports }}{{ $r := . }}
+  {{ range $name, $p := .pages }}{{ if and $p.images (or (ne $r.report "recipes") (os.FileExists (printf "content/recipes/%s.md" $name))) }}
+    {{ $of := cond (isset $p "sha") (printf "main at %s" (substr (string $p.sha) 0 12)) (string $p.version) }}
+    {{ $title := printf "Image security report: %s %s" $name $r.what }}
+    {{ if gt (len $title) 65 }}{{ $title = printf "Image security report: %s" $name }}{{ end }}
+    {{ $.AddPage (dict "kind" "page" "path" (printf "%s/%s" $r.report $name) "title" $title "layout" "security" "params" (dict "report" $r.report "name" $name)
+        "description" (truncate 159 "…" (printf "Vulnerabilities that Trivy finds in the container images the %s %s names at %s, with fixed versions, scanned daily by kadet-hub." $r.what $name $of))) }}
+  {{ end }}{{ end }}
+{{ end }}

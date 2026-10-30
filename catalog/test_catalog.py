@@ -17,7 +17,7 @@ from html import unescape as _unescape
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEO_CHECK = os.path.join(HERE, "seo_check.py")
 sys.path.insert(0, HERE)
-from view import README_MAX, readme, releases, schema_kinds, schema_sources, view
+from view import README_MAX, grade, readme, releases, schema_kinds, schema_sources, security, view
 
 OWNER = "kadet-hub"
 
@@ -432,7 +432,8 @@ def recipe_layers(root, layers=LAYERS):
     return root
 
 
-def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False, root=HERE):
+def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False, root=HERE,
+          security=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -441,7 +442,8 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
                CATALOG_SBOMS=sboms or os.path.join(tmp, "none"), CATALOG_REKOR=rekor or os.path.join(tmp, "none.json"),
                CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"),
                CATALOG_PAGES=pages or os.path.join(tmp, "none"), CATALOG_DIFFS=diffs or os.path.join(tmp, "none"),
-               CATALOG_WANTED=wanted or os.path.join(tmp, "none.json"), CATALOG_GATE=gate or os.path.join(tmp, "none.json"))
+               CATALOG_WANTED=wanted or os.path.join(tmp, "none.json"), CATALOG_GATE=gate or os.path.join(tmp, "none.json"),
+               CATALOG_SECURITY=security or os.path.join(tmp, "none.json"))
     if recipes is None:
         recipes = os.path.join(tmp, "recipes")
         recipe_classes(os.path.join(recipes, "inventory", "classes"))
@@ -514,6 +516,10 @@ class Site(unittest.TestCase):
         self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
         self.assertNotIn(f"sha256:{'a' * 64}\n        output_path", html)
         self.assertNotIn('data-name="old"', self.page())  # CAT-26
+
+    def test_pages_without_image_report_say_not_scanned(self):  # CAT-39, CAT-39c
+        self.assertIn("<dt>Image security</dt><dd>Not scanned: no image scan was available when this page was built.</dd>", self.page("generators", "demo"))
+        self.assertFalse(os.path.exists(os.path.join(self.out, "security")))
 
     def test_owner_without_login_shows_the_user_id(self):
         self.assertIn("<dt>Maintainer</dt><dd>331675722</dd>", self.page())
@@ -2127,7 +2133,174 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn("A recipe digest needs the same check against\nthe index's `recipes` (CON-5).", doc)
 
 
+# CAT-39: the rescan's image report (SEC-19): graded, ungraded, unscanned, outdated and by-tag pages, and recipes at main.
+IMAGE = "registry.example/{}:1.0@sha256:" + "f" * 64
+MAIN_SHA = "2" * 40
+SECURITY = {"scanned": "2026-10-29T04:31:07Z", "trivy": "0.76.1", "db": "2026-10-29T07:17:11Z",
+            "pages": {"generators/demo": {"1.10.0": [IMAGE.format("a"), IMAGE.format("b")]},
+                      "generators/clean": {"1.0.0": [IMAGE.format("clean")]},
+                      "generators/nopin": {"1.0.0": []},
+                      "generators/failing": {"1.0.0": [IMAGE.format("a"), IMAGE.format("missing")]},
+                      "generators/stale": {"1.0.0": [IMAGE.format("a")]},
+                      "generators/tagged": {"1.0.0": ["registry.example/kubelet:v1.37.1", "quay.io/strimzi/kafka:1.3.0-kafka"]},
+                      "recipes/cert-manager": {"1.1.0": [IMAGE.format("unknown")], f"main@{MAIN_SHA}": [IMAGE.format("a")]},
+                      "recipes/valkey": {f"main@{MAIN_SHA}": [IMAGE.format("b")]},
+                      "recipes/no-page": {f"main@{MAIN_SHA}": [IMAGE.format("b")]}},
+            "images": {IMAGE.format("a"): {"digest": "sha256:" + "f" * 64, "vulnerabilities": [
+                           {"id": "CVE-2026-3", "severity": "UNKNOWN", "package": "zlib", "installed": "1.3", "fixed": ""},
+                           {"id": "CVE-2026-2", "severity": "LOW", "package": "zlib", "installed": "1.3", "fixed": "1.3.1"},
+                           {"id": "CVE-2026-1", "severity": "HIGH", "package": "<script>alert(10)</script>", "installed": "1.0‮", "fixed": ""}]},
+                       IMAGE.format("b"): {"digest": "sha256:" + "f" * 64, "vulnerabilities": [
+                           {"id": "CVE-2026-1", "severity": "HIGH", "package": "openssl", "installed": "3.0.1", "fixed": "3.0.2"},
+                           {"id": "GHSA-aaaa-bbbb-cccc", "severity": "MEDIUM", "package": "golang.org/x/net", "installed": "0.1.0", "fixed": "0.2.0"}]},
+                       IMAGE.format("clean"): {"digest": "sha256:" + "f" * 64, "vulnerabilities": []},
+                       IMAGE.format("unknown"): {"digest": "sha256:" + "f" * 64,
+                                                 "vulnerabilities": [{"id": "CVE-2026-4", "severity": "UNKNOWN", "package": "x", "installed": "1", "fixed": ""}]},
+                       IMAGE.format("missing"): {"error": "MANIFEST_UNKNOWN: manifest\x1b[31m unknown", "missing": True},  # by digest: still a failure
+                       "registry.example/kubelet:v1.37.1": {"digest": "sha256:" + "7" * 64,
+                                                            "vulnerabilities": [{"id": "CVE-2026-5", "severity": "LOW", "package": "y", "installed": "1", "fixed": ""}]},
+                       "quay.io/strimzi/kafka:1.3.0-kafka": {"error": "MANIFEST_UNKNOWN: manifest unknown", "missing": True}}}
+SECURITY_INDEX = {"serial": 9, "generators": {"demo": {"1.10.0": record("b")}, "clean": {"1.0.0": record("c")}, "nopin": {"1.0.0": record("d")},
+                                              "failing": {"1.0.0": record("e")}, "stale": {"2.0.0": record("f")}, "tagged": {"1.0.0": record("9")},
+                                              "old": {"0.1.0": record("1", yanked="entry removed")}},
+                  "recipes": {"cert-manager": LISTED_INDEX["recipes"]["cert-manager"]}}
+
+
+class Security(unittest.TestCase):  # CAT-39 to CAT-39c
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        report = os.path.join(cls.tmp.name, "security.json")
+        with open(report, "w", encoding="utf-8") as f:
+            json.dump(SECURITY, f)
+        artifacts = recipe_layers(os.path.join(cls.tmp.name, "artifacts"), {"cert-manager": CERT_MANAGER_LAYER})
+        cls.out = build(SECURITY_INDEX, cls.tmp.name, artifacts, security=report)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts, name="index.html"):
+        with open(os.path.join(self.out, *parts, name), encoding="utf-8") as f:
+            return f.read()
+
+    def fact(self, *parts):
+        page = self.page(*parts)
+        if parts[0] == "recipes":
+            return re.search(r"<li>Image security: (.*?)</li>", page).group(1)
+        return re.search(r"<dt>Image security</dt><dd>(.*?)</dd>", page).group(1)
+
+    def test_report_on_the_pages(self):  # CAT-39: counts per severity, grade, scan time, link
+        self.assertRegex(self.fact("generators", "demo"), r'^Grade <span class="grade grade-d">D</span> 5 findings, one per advisory and package, '
+                         r"in the 2 images of version 1\.10\.0: CRITICAL 0, HIGH 2, MEDIUM 1, LOW 1, UNKNOWN 1\. Scanned 2026-10-29 04:31 UTC\. "
+                         r'<a href="[./]*security/generators/demo/">Full report</a>$')
+        self.assertRegex(self.fact("generators", "clean"), r'^Grade <span class="grade grade-a">A</span> 0 findings, .* in the 1 image of version 1\.0\.0: ')
+        self.assertRegex(self.fact("recipes", "cert-manager"), r'^grade <span class="grade grade-u">-</span> 1 finding, .*UNKNOWN 1\. ')  # not main's
+        self.assertIn("- Image security: grade -, 1 finding, one per advisory and package, in the 1 image of version 1.1.0: CRITICAL 0, HIGH 0, "
+                      "MEDIUM 0, LOW 0, UNKNOWN 1. Scanned 2026-10-29 04:31 UTC. Full report: https://kadet-hub.org/security/recipes/cert-manager/\n",
+                      self.page("recipes", "cert-manager", name="index.md"))  # CAT-37b
+
+    def test_by_tag(self):  # CAT-39a: a reference by tag is scanned at its digest then; a tag no registry serves names no image
+        self.assertRegex(self.fact("generators", "tagged"), r'^Grade <span class="grade grade-b">B</span> 1 finding, one per advisory and package, '
+                         r"in the 1 image of version 1\.0\.0, 1 by tag, digest at scan time: CRITICAL 0, HIGH 0, MEDIUM 0, LOW 1, UNKNOWN 0\. ")
+        page = self.page("security", "generators", "tagged")
+        self.assertIn(f"<p>By tag, digest at scan time: <code>sha256:{'7' * 64}</code></p>", page)
+        self.assertIn('<p class="warning">No image at this tag on 2026-10-29: MANIFEST_UNKNOWN: manifest unknown</p>', page)
+
+    def test_recipe_at_main(self):  # CAT-39: a recipe page without a listed version reports main of kadet-hub/recipes
+        self.assertRegex(self.fact("recipes", "valkey"), r'^grade <span class="grade grade-d">D</span> 2 findings, one per advisory and package, '
+                         rf"in the 1 image of main at {MAIN_SHA[:12]}: CRITICAL 0, HIGH 1, MEDIUM 1, LOW 0, UNKNOWN 0\. Scanned 2026-10-29 04:31 UTC\. "
+                         r'<a href="[./]*security/recipes/valkey/">Full report</a>$')
+        self.assertIn(f"commit <code>{MAIN_SHA}</code>", self.page("security", "recipes", "valkey"))
+        self.assertEqual(self.fact("recipes", "mysql"), "Not scanned: the image scan of 2026-10-29 did not cover main of kadet-hub/recipes.")
+        self.assertFalse(os.path.exists(os.path.join(self.out, "security", "recipes", "no-page")))  # no recipe page to link it
+
+    def test_not_scanned(self):  # CAT-39: the page says why instead of showing a grade
+        self.assertEqual(self.fact("generators", "nopin"), "Version 1.0.0 names no image.")
+        self.assertRegex(self.fact("generators", "failing"), r"^Not graded: 1 of the 2 images of version 1\.0\.0 could not be scanned on "
+                         r'2026-10-29 04:31 UTC\. <a href="[./]*security/generators/failing/">Full report</a>$')
+        self.assertEqual(self.fact("generators", "stale"), "Not scanned: the image scan of 2026-10-29 did not cover version 2.0.0.")
+        self.assertEqual(self.fact("generators", "old"), "Not scanned: no version is listed.")
+        for name in ("nopin", "stale", "old"):
+            self.assertFalse(os.path.exists(os.path.join(self.out, "security", "generators", name)))
+
+    def test_full_report(self):  # CAT-39b
+        page = self.page("security", "generators", "demo")
+        self.assertIn("<h1>Image security report: demo generator</h1>", page)
+        self.assertIn('<meta name="description" content="Vulnerabilities that Trivy finds in the container images the generator demo names at 1.10.0, '
+                      'with fixed versions, scanned daily by kadet-hub.">', page)
+        self.assertIn(f"<h2><code>{IMAGE.format('a')}</code></h2>\n\n\n<p>CRITICAL 0, HIGH 1, MEDIUM 0, LOW 1, UNKNOWN 1</p>", page)
+        rows = re.findall(r"<tr><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td></tr>", page)
+        self.assertEqual(rows, [("CVE-2026-1", "HIGH", "&lt;script&gt;alert(10)&lt;/script&gt;", "1.0", ""),
+                                ("CVE-2026-2", "LOW", "zlib", "1.3", "1.3.1"), ("CVE-2026-3", "UNKNOWN", "zlib", "1.3", ""),
+                                ("CVE-2026-1", "HIGH", "openssl", "3.0.1", "3.0.2"), ("GHSA-aaaa-bbbb-cccc", "MEDIUM", "golang.org/x/net", "0.1.0", "0.2.0")])
+        self.assertIn("Trivy 0.76.1 scanned the images with the vulnerability database of 2026-10-29.", page)
+        self.assertNotIn("By tag", page)
+        self.assertIn('<p class="warning">Not scanned: MANIFEST_UNKNOWN: manifest[31m unknown</p>', self.page("security", "generators", "failing"))
+        self.assertIn("<p>No vulnerabilities found.</p>", self.page("security", "generators", "clean"))
+        self.assertIn("<h1>Image security report: cert-manager recipe</h1>", self.page("security", "recipes", "cert-manager"))
+
+    def test_seo(self):  # CAT-11d over the new pages
+        p = subprocess.run([sys.executable, SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stdout)
+
+    def test_build_reads_the_newest_report(self):  # CAT-39c: the online build with gh, curl, git and oras faked
+        shims = {"gh": 'echo "gh $*" >>"$LOG"\n'
+                       'case "$1 $2" in\n'
+                       '  "run list") printf "30\\n20\\n10\\n";;\n'
+                       '  "run download") [[ $3 == 20 ]] || exit 1\n'
+                       '    while (($#)); do case $1 in -D) mkdir -p "$2"; cp "$REPORT" "$2/security.json"; shift;; esac; shift; done;;\n'
+                       '  *) exit 1;;\n'
+                       'esac\n',
+                 "curl": 'while (($#)); do case $1 in -o) out=$2; shift;; https://*) url=$1;; esac; shift; done\n'
+                         'case $url in\n'
+                         '  https://raw.githubusercontent.com/*/recipes/*/*) cp "$RECIPES/inventory/classes/recipes/${url#https://raw.githubusercontent.com/*/recipes/*/}" "$out";;\n'
+                         '  *) exit 22;;\n'
+                         'esac\n',
+                 "git": 'printf "%s\\trefs/heads/main\\n" "$RECIPES_SHA"\n',
+                 "oras": "exit 1\n"}
+        with tempfile.TemporaryDirectory() as tmp:
+            os.mkdir(os.path.join(tmp, "bin"))
+            for name, script in shims.items():
+                with open(os.path.join(tmp, "bin", name), "w", encoding="utf-8") as f:
+                    f.write("#!/usr/bin/env bash\n" + script)
+                os.chmod(os.path.join(tmp, "bin", name), 0o755)
+            recipes, log, report = os.path.join(tmp, "recipes"), os.path.join(tmp, "gh.log"), os.path.join(tmp, "report.json")
+            recipe_classes(os.path.join(recipes, "inventory", "classes"))
+            with open(report, "w", encoding="utf-8") as f:
+                json.dump(SECURITY, f)
+            with open(os.path.join(tmp, "index.json"), "w", encoding="utf-8") as f:
+                json.dump({"serial": 1, "generators": {"demo": {"1.10.0": record("b")}}}, f)
+            env = dict(os.environ, OWNER=OWNER, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], LOG=log, RECIPES=recipes,
+                       RECIPES_SHA=CHART_RECIPE_SHA, REPORT=report)
+            env.pop("CATALOG_OFFLINE", None)
+            subprocess.run([os.path.join(HERE, "build"), os.path.join(tmp, "index.json"), os.path.join(tmp, "out")], env=env, check=True, capture_output=True)
+            with open(log, encoding="utf-8") as f:
+                calls = [c for c in f.read().splitlines() if c.startswith("gh run ")]
+            with open(os.path.join(tmp, "out", "security", "generators", "demo", "index.html"), encoding="utf-8") as f:
+                self.assertIn("GHSA-aaaa-bbbb-cccc", f.read())
+        self.assertEqual(calls[0], f"gh run list -R {OWNER}/registry --workflow scheduled.yml --branch main --limit 7 --json databaseId --jq .[].databaseId")
+        self.assertEqual([c.split()[3] for c in calls[1:]], ["30", "20"])  # 30 has no report; 10 is not read
+        self.assertIn("-n security-report", calls[2])
+
+
 class View(unittest.TestCase):
+    def test_security_grade(self):  # CAT-39: Artifact Hub's letters
+        zero = dict.fromkeys(("CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"), 0)
+        for counts, letter in ((zero, "A"), (dict(zero, UNKNOWN=3), "-"), (dict(zero, LOW=1, UNKNOWN=3), "B"), (dict(zero, MEDIUM=1, LOW=9), "C"),
+                               (dict(zero, HIGH=1, MEDIUM=1), "D"), (dict(zero, CRITICAL=1, HIGH=9), "F")):
+            self.assertEqual(grade(counts), letter, counts)
+
+    def test_security_of_the_shown_version(self):  # CAT-39: another version or a malformed entry is no result
+        report = {"scanned": "2026-10-29T04:31:07Z", "images": {"r": ["not", "a", "dict"]},
+                  "pages": {"generators/a": {"1.0.0": ["r"]}, "generators/b": {"0.9.0": []}, "generators/c": ["x"],
+                            "recipes/d": {"main@" + "1" * 40: []}, "recipes/e": {"main@x": []}}}
+        found = security(report, [{"name": n, "latest": {"version": "1.0.0"}} for n in "abc"], [{"name": "d", "latest": {"version": "1.0.0"}}])
+        self.assertEqual(found["generators"], {"a": {"version": "1.0.0", "failed": 1, "counts": None, "total": None, "grade": None, "count": 1, "tagged": 1,
+                                                     "images": [{"ref": "r", "tag": True, "digest": "", "error": "no result", "missing": False,
+                                                                 "counts": None, "findings": []}]}})
+        self.assertEqual((found["recipes"], found["main"]), ({}, {}))  # d is listed, e names no commit
+
     def test_readme_limits(self):
         with tempfile.TemporaryDirectory() as tmp:
             small, big, none = (os.path.join(tmp, n) for n in ("small.tar", "big.tar", "none.tar"))

@@ -27,6 +27,8 @@
 {{ with $r.requires }}- Prerequisites, installed once per cluster before the recipe: {{ delimit . ", " }}
 {{ end -}}
 - Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}{{ $g.name }} {{ $g.version }} ({{ $g.digest }}){{ end }}
+{{ $v := "" }}{{ with $r.latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "recipes" "name" $r.name "version" $v) -}}
+- Image security: {{ with $sec.grade }}grade {{ . }}, {{ end }}{{ $sec.text }}{{ with $sec.full }} Full report: {{ . | absURL }}{{ end }}
 {{ range $r.classes }}- {{ if .option }}Option{{ else }}Class{{ end }} {{ .class }} ({{ .file }}){{ with .components }}: {{ delimit . ", " }}{{ end }}
 {{ end }}- Source: {{ $r.folder }}
 - Page: {{ .Permalink }}

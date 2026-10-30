@@ -330,6 +330,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read # the newest image report of the daily rescan (CAT-39c)
       packages: read # the latest artifacts' READMEs (CAT-7)
       attestations: read # the SBOM and output diff attestations (CAT-14, CAT-27)
       discussions: write # one discussion per generator and its 👍 count (CAT-20)
