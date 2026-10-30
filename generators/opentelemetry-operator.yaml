@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: opentelemetry-operator
-  tag: opentelemetry-operator-v1.1.0
-  sha: dcbe958a17a0ceddd7c4d0ba829fdf789d64e156
+  tag: opentelemetry-operator-v1.2.0
+  sha: cca18f9c91c74892b720ed194ad0d2facb7646a2
 owners: [3042152]
