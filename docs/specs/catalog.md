@@ -1084,6 +1084,18 @@ Related: CAT-15, CAT-30, CON-2.
     markup; the matching runs in the browser)
   - Since: #235
 
+- CAT-29e: The home page search MUST match the software names the card
+  shows under "Built for", from the latest listed version's
+  `compatibility` (CAT-15).
+
+  A card that says "Chainsaw 0.2.15" has to come up for "chain". Before
+  this, only the name, the description and the kinds were searched, so
+  the kubernetes generator, which writes Chainsaw step templates but
+  names Chainsaw only under Built for, did not.
+
+  - Test: `catalog/test_catalog.py::test_search_matches_built_for`
+  - Since: this change
+
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
   receives and returns, how a target wires a generator, and the
