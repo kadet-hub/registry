@@ -1,6 +1,7 @@
 name: scheduled
 
-# SEC-15, SEC-16, REC-14: daily rescan of every listed generator and recipe version and its tag.
+# SEC-15, SEC-16, REC-14: daily rescan of every listed generator and recipe version and its tag;
+# SEC-19: the images they and the recipes at main of kadet-hub/recipes name, for the catalog's security report (CAT-39).
 on:
   schedule:
     - cron: "23 4 * * *"
@@ -26,12 +27,42 @@ jobs:
       - uses: ./.github/actions/setup-gate # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
       - name: Rescan
-        run: scan/rescan "$RUNNER_TEMP/findings.tsv"
+        run: scan/rescan "$RUNNER_TEMP/findings.tsv" "$RUNNER_TEMP/images.tsv"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: findings
-          path: ${{ runner.temp }}/findings.tsv
+          path: |
+            ${{ runner.temp }}/findings.tsv
+            ${{ runner.temp }}/images.tsv
+          retention-days: 7
+
+  images:
+    needs: rescan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-trivy # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: findings
+          path: findings
+
+      - name: Scan the images (SEC-19)
+        run: python3 -I scan/image_report.py findings/images.tsv "$RUNNER_TEMP/security.json"
+
+      # CAT-39c: the release workflow's catalog job reads it from here.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: security-report
+          path: ${{ runner.temp }}/security.json
           retention-days: 7
 
   issues:

@@ -17,6 +17,8 @@
       <div><dt>Source</dt><dd><a href="{{ .source_url }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} {{ with $shared }}repo stars, shared by {{ . }} generators{{ else }}stars{{ end }}{{ end }}</dd></div>
       {{ with .discussion }}<div><dt>Thumbs up</dt><dd><a href="{{ .url }}">👍 {{ .up }}</a> on GitHub Discussions</dd></div>{{ end }}
       <div><dt>Popularity</dt><dd><a href="{{ printf "/popularity/#%s" .name | relURL }}">{{ .score }}</a> · {{ with .pulls }}{{ . }} pulls{{ else }}pulls not read{{ end }}</dd></div>
+      {{ $v := "" }}{{ with .latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "generators" "name" .name "version" $v) }}
+      <div><dt>Image security</dt><dd>{{ with $sec.grade }}Grade <span class="grade grade-{{ $sec.class }}">{{ . }}</span> {{ end }}{{ $sec.text }}{{ with $sec.full }} <a href="{{ . | relURL }}">Full report</a>{{ end }}</dd></div>
     </dl>
     {{ $q := dict "template" "generator-report.yml" "generator" .name "title" (printf "[report] %s: " .name) }}{{ with .latest }}{{ $q = merge $q (dict "version" .version) }}{{ end }}
     {{/* CAT-21: feature requests go to the source repository's tracker. */}}

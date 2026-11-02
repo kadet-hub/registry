@@ -12,7 +12,8 @@
 # comments from $CATALOG_GATE (CAT-33) and the recipe classes and the
 # recipes.sha of kadet-hub/recipes from $CATALOG_RECIPES/inventory/classes
 # (CAT-37a, CAT-37c) and the layers of the recipes the index lists from
-# $CATALOG_ARTIFACTS/recipes/<name>.tar (CAT-38) instead. Online, the
+# $CATALOG_ARTIFACTS/recipes/<name>.tar (CAT-38) and the image report of the
+# rescan from $CATALOG_SECURITY (CAT-39c) instead. Online, the
 # previous build's published catalog.json supplies README, CHANGELOG sections,
 # the software of the schema groups (CAT-29c), log index and SBOM of every
 # unchanged digest, and its output diffs are kept when their
@@ -37,6 +38,7 @@ discussions=${CATALOG_DISCUSSIONS:-$work/discussions.json}
 wanted=${CATALOG_WANTED:-$work/wanted.json}
 gate=${CATALOG_GATE:-$work/gate.json}
 pages=${CATALOG_PAGES:-$work/pages}
+security=${CATALOG_SECURITY:-$work/image-report/security.json}
 recipes=$work/recipes
 site=${CATALOG_URL:-https://kadet-hub.org/}
 # CAT-38: the digest of the recipe's latest version that is not yanked, nothing when the index lists none.
@@ -160,6 +162,11 @@ else
     --jq '.data.repository.pullRequests.nodes[] | {number, files: [.files.nodes[].path],
       comments: [.comments.nodes[] | {author: .author.login, versions: [.body, (.userContentEdits.nodes[].diff // empty)]}]}' \
     | jq -s . >"$gate" || { rm -f -- "$gate"; echo "::warning::gate comments not read; the statistics page says so"; }
+  # CAT-39c: the image report of the newest rescan on main that uploaded one (SEC-19).
+  for run in $(gh run list -R "$OWNER/registry" --workflow scheduled.yml --branch main --limit 7 --json databaseId --jq '.[].databaseId' 2>/dev/null); do
+    gh run download "$run" -R "$OWNER/registry" -n security-report -D "$work/image-report" 2>/dev/null && break
+  done
+  [[ -f $security ]] || echo "::warning::image report not read; the pages say they are not scanned"
 fi
 for dir in "$sboms" "$diffs"; do
   if [[ -d $dir ]]; then
@@ -181,6 +188,6 @@ for page in $recipe_pages; do
 done
 previous_arg=()
 if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --gate "$gate" --out "$work/data/catalog.json"
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --gate "$gate" --security "$security" --security-out "$work/data/security.json" --out "$work/data/catalog.json"
 cp -- "$work/data/catalog.json" "$work/static/catalog.json"  # CAT-23: the next build reuses it
 hugo --logLevel error --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}" >/dev/null  # CAT-1: errors on stderr

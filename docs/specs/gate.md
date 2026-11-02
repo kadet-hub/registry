@@ -696,6 +696,38 @@ review go into the review comment and do not fail the gate.
   - Test: `scan/test_rescan_issues.py`; manual: fork rehearsal (2026-10-10)
   - Since: #28
 
+- SEC-19: The scheduled workflow MUST scan, once a day, every image that
+  CAT-39a lists for a version it rescans and for every recipe at `main`
+  of kadet-hub/recipes, with Trivy, and MUST upload the result as the
+  artifact `security-report`. A finding MUST NOT fail the run, open an
+  issue or yank a version.
+
+  Images are reported, not gated (DEC-30). `scan/rescan` writes one line
+  per version it fetched, with the catalog page, the version and its
+  images, next to the findings. It then resolves `main` of
+  kadet-hub/recipes, fetches that commit once with `gate/fetch_tree.py
+  --recipe`, which writes every recipe directory, and writes one line per
+  recipe with the version `main@<commit>`. A failed fetch of `main` leaves
+  those pages unscanned and the rest of the rescan as it was.
+
+  The job `images` with `contents: read` installs Trivy by sha256 from
+  `.github/actions/setup-trivy`, downloads the vulnerability database
+  once and scans each image once, with `--scanners vuln`.
+  `scan/image_report.py` keeps the advisory ID, severity, package,
+  installed version and fixed version of every vulnerability and the
+  digest Trivy scanned, which for a reference by tag is the tag's at that
+  moment. For an image that failed it keeps the last line of Trivy's error
+  and whether the registry reported `MANIFEST_UNKNOWN`. The file also
+  holds the scan time, Trivy's version and the database's update time.
+
+  The job is separate from the rescan, so a failed database download or
+  scan leaves the issues of SEC-15 and SEC-16 to their own job. The Trivy
+  GitHub actions are not used: their tags were moved in the March 2026
+  compromise (GHSA-69fq-xp46-6x23).
+
+  - Test: `scan/test_rescan.py` (`Rescan.test_recipe_entry`, the images file and the recipes at `main`), `scan/test_image_report.py`; manual: the first scheduled run after the merge
+  - Since: #417
+
 ## Compile gate
 
 - CMP-1: Every target of the fixture project MUST compile with the pinned

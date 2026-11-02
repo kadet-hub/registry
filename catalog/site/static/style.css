@@ -214,6 +214,14 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
 .pill.warn { background: var(--warn-bg); color: var(--warn); }
 .warning { color: var(--warn); font-weight: 600; }
+/* CAT-39: Artifact Hub's grade colours, each with the text colour that contrasts with it. */
+.grade { display: inline-block; min-width: 1.6em; padding: 0 .35em; border-radius: 6px; font-weight: 700; text-align: center; color: #000; }
+.grade-a { background: #47a319; }
+.grade-b { background: #f4bd0c; }
+.grade-c { background: #f7860f; }
+.grade-d { background: #df2a19; color: #fff; }
+.grade-f { background: #960003; color: #fff; }
+.grade-u { background: #b2b2b2; }
 /* CAT-34: listed versions with what they are built for, and the selector over them. */
 .match-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1.25rem 0 .5rem; }
 .match-form select, .match-form input { min-height: 44px; max-width: 100%; padding: 0 .7rem; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }

@@ -1,0 +1,33 @@
+{{ define "main" }}{{/* CAT-39b: the full image security report of a generator or recipe page. */}}
+{{ $s := site.Data.security }}
+{{ $p := index (index $s .Params.report) .Params.name }}
+{{ $version := "" }}{{ with $p }}{{ $version = .version }}{{ else }}{{ $p = index $s.main .Params.name }}{{ end }}
+{{ $sec := partial "security.html" (dict "report" .Params.report "name" .Params.name "version" $version) }}
+<section class="prose-page prose">
+<h1>{{ .Title }}</h1>
+<p class="lead"><a href="{{ printf "/%s/%s/" .Params.report .Params.name | relURL }}">{{ .Params.name }}</a>: {{ with $sec.grade }}grade <span class="grade grade-{{ $sec.class }}">{{ . }}</span>, {{ end }}{{ $sec.text }}</p>
+{{ with $p.sha }}<p>The recipe has no listed version, so this report covers the images it names at main of kadet-hub/recipes, commit <code>{{ . }}</code>. The recipe page may be built from a later commit.</p>{{ end }}
+<p>Trivy {{ $s.trivy }} scanned the images with the vulnerability database of {{ substr $s.db 0 10 }}. A finding is one advisory in one package of one image, so an advisory in two packages counts twice. The grade is Artifact Hub's: F with a CRITICAL finding, D with HIGH, C with MEDIUM, B with LOW, <code>-</code> with UNKNOWN findings only, A without findings. It rates known vulnerabilities in third-party images, not the {{ if eq .Params.report "recipes" }}recipe{{ else }}generator{{ end }} itself.</p>
+{{ range $p.images }}
+<h2><code>{{ .ref }}</code></h2>
+{{ if .missing }}
+<p class="warning">No image at this tag on {{ substr $s.scanned 0 10 }}: {{ .error }}</p>
+{{ else if .error }}
+<p class="warning">Not scanned: {{ .error }}</p>
+{{ else }}
+{{ if .tag }}<p>By tag, digest at scan time: <code>{{ .digest | default "not recorded" }}</code></p>{{ end }}
+<p>CRITICAL {{ index .counts "CRITICAL" }}, HIGH {{ index .counts "HIGH" }}, MEDIUM {{ index .counts "MEDIUM" }}, LOW {{ index .counts "LOW" }}, UNKNOWN {{ index .counts "UNKNOWN" }}</p>
+{{ with .findings }}
+<table>
+<thead><tr><th>ID</th><th>Severity</th><th>Package</th><th>Version</th><th>Fixed in</th></tr></thead>
+<tbody>
+{{ range . }}<tr><td>{{ .id }}</td><td>{{ .severity }}</td><td>{{ .package }}</td><td>{{ .installed }}</td><td>{{ .fixed }}</td></tr>
+{{ end }}</tbody>
+</table>
+{{ else }}
+<p>No vulnerabilities found.</p>
+{{ end }}
+{{ end }}
+{{ end }}
+</section>
+{{ end }}
