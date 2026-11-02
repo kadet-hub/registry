@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: linkerd
-  tag: linkerd-v1.0.2
-  sha: f7c9a3bbdc92f6d8de2cdefb8bd677fbaac646d5
+  tag: linkerd-v1.0.3
+  sha: 8d37c8b0307f95f49becc62a62214a963e8eec31
 owners: [3042152]
