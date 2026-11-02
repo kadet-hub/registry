@@ -71,7 +71,8 @@ the build job (RISK-10).
   bytes the gate scanned rather than a third-party repository.
 - DEC-2: Anyone can register a generator.
 - DEC-3: Every new entry and every version bump needs a maintainer's approval.
-  Renovate opens bump pull requests; nothing merges automatically.
+  Renovate merges its other pull requests itself once every check passed,
+  except major updates and moved action tags (REV-5).
 - DEC-4: Kapitan compile is a release gate. The krab result is recorded only,
   until krab has a non-prerelease 2.x version. Security findings under krab
   fail the gate regardless (CMP-4).
@@ -387,8 +388,10 @@ cover none of the changed files.
   tree (PUB-1).
 
 - RISK-11: a malicious release of an action, tool, Kapitan or krab reaches
-  a bump pull request once it is three days old (REG-7) and then needs one
-  approval by the single maintainer (GI-2a, REV-1). Inside the published
+  a bump pull request once it is three days old (REG-7). A minor, patch or
+  image digest update then merges without a maintainer once every check
+  passed (REV-5); only a major update needs the approval of the single
+  maintainer (GI-2a, REV-1). Inside the published
   sandbox image a malicious Kapitan writes every consumer's compiled
   output; CON-1b bounds it to the capabilities the consumer accepts.
 

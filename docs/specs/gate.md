@@ -37,9 +37,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
   `scan/static-scan`, `sandbox/gitlab-ci.yml`, `.github/workflows/*.yml`
   and `.github/actions/*/action.yml`.
 
-  The gate then passes without an entry; the merge still needs a
-  maintainer's approval and code owner review (REV-1), and the selftests
-  run the bumped tools. `renovate.json`, `policy/` and the gate's scripts
+  The gate then passes without an entry, and the selftests run the bumped
+  tools. A major update still needs a maintainer's approval and code owner
+  review (REV-1); other updates merge once every check passed (REV-5). `renovate.json`, `policy/` and the gate's scripts
   stay maintainer pull requests.
 
   - Test: `gate/test_check_entry.py::Files`
@@ -1446,7 +1446,8 @@ code diff and the output diff, not only the verdict.
   `sandbox/`, require the gate checks (GI-5) on a branch up to date with
   `main` (DEC-14), and block force pushes and deletion. The organization
   MUST require two-factor authentication. The maintainer's own pull
-  requests use the admin bypass (RISK-1).
+  requests use the admin bypass (RISK-1). Renovate has a bypass in
+  `pull_request` mode for REV-5.
   - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset.json`
   - Since: #10; `renders`: #389
 
@@ -1503,3 +1504,20 @@ code diff and the output diff, not only the verdict.
     `gh api repos/kadet-hub/registry/collaborators/neat-bot/permission` reports
     `read`
   - Since: #353
+
+- REV-5: Renovate MUST merge its own pull request once every check on it
+  passed, unless the update is a major update, an entry bump (REG-7), or a
+  digest update of a GitHub Action.
+
+  Renovate merges without GitHub's auto-merge (`platformAutomerge: false`),
+  so it waits for every check, including the ones the ruleset does not
+  require such as `sandbox-advisories`. It merges through its bypass of the
+  `main` ruleset, which is in `pull_request` mode and allows no direct push.
+  An entry bump publishes a third party's new version, which DEC-3 leaves to
+  a maintainer. A digest update of an action under an unchanged version is
+  a moved tag, the pattern of a hijacked action, and RISK-11 says it is not
+  delayed. The three days of release age still apply to everything else
+  that reports a release timestamp.
+
+  - Test: manual: `renovate.json` `automerge` rules; `gh api repos/kadet-hub/registry/rulesets` lists Integration 2740 with `bypass_mode: pull_request` on `main`
+  - Since: this change
