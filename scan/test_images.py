@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import sys
 import unittest
@@ -66,6 +67,25 @@ class Images(unittest.TestCase):
 
     def test_unparsable_python_pins_nothing(self):
         self.assertEqual(image_references({"a.py": (False, b"x = (\n"), "b.py": (False, b"\x00")}), [])
+
+
+class AgainstRenderedOutput(unittest.TestCase):
+    """CAT-39a reads the tree; release/images.py (REC-12) reads the rendered objects. Each finds images the other misses."""
+
+    def test_each_finds_what_the_other_misses(self):
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "release", "images.py")
+        spec = importlib.util.spec_from_file_location("release_images", path)  # same module name as scan/images.py
+        release_images = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(release_images)
+        rendered_images = release_images.images
+        op, worker, init = (f"quay.io/example/{n}:1.0{D}" for n in ("operator", "worker", "init"))
+        tree = {"op/operator.yml": (False, f"parameters:\n  components:\n    op:\n      image: {op}\n      env:\n        RELATED_IMAGE_WORKER: {worker}\n".encode())}
+        # The generator adds an init container from its own default; the class file never names it.
+        rendered = [{"kind": "Deployment", "spec": {"template": {"spec": {
+            "containers": [{"image": op, "env": [{"name": "RELATED_IMAGE_WORKER", "value": worker}]}],
+            "initContainers": [{"image": init}]}}}}]
+        self.assertEqual(image_references(tree), [op, worker])  # the worker image only sits in an env value
+        self.assertEqual(rendered_images(rendered), [init, op])  # the init image only exists after the compile
 
 
 if __name__ == "__main__":
