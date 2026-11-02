@@ -1,4 +1,4 @@
-"""SEC-17 on the image itself; run inside the sandbox image (selftest.yml)."""
+"""SEC-17 and PUB-14a on the image itself; run inside the sandbox image (selftest.yml)."""
 
 import importlib.util
 import os
@@ -34,6 +34,12 @@ class Image(unittest.TestCase):
         self.assertTrue(os.path.exists(check.PYTHON))
         self.assertEqual(shutil.which("helm"), "/usr/local/bin/helm")
         self.assertEqual([d for d in os.environ["PATH"].split(":") if not os.path.isdir(d)], [])
+
+    def test_licence_texts(self):
+        # PUB-14a: the programs outside the Python venvs.
+        for name in ("helm", "conftest", "krab", "etcd", "kube-apiserver"):
+            with open(f"/usr/share/doc/{name}/LICENSE", encoding="utf-8") as f:
+                self.assertIn("License", f.read(4096), name)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@
   "timezone": "Europe/Berlin",
   "schedule": ["* 0-5 * * 1"],
   "automerge": false,
+  "platformAutomerge": false,
   "minimumReleaseAge": "3 days",
   "minimumReleaseAgeBehaviour": "timestamp-required",
   "internalChecksFilter": "strict",
@@ -121,6 +122,35 @@
         "!/^(docker\\.io|index\\.docker\\.io)//"
       ],
       "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
+      "description": "REV-5: Renovate merges its own pull request once every check passed",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "REV-5: an entry bump publishes a new version, which a maintainer approves (DEC-3)",
+      "matchFileNames": [
+        "generators/*.yaml",
+        "recipes/*.yaml"
+      ],
+      "automerge": false
+    },
+    {
+      "description": "REV-5: a digest update of an action under the same version is a moved tag",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "automerge": false
     }
   ],
   "gitlabci": {

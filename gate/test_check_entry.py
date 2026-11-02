@@ -86,16 +86,21 @@ class Case:
                             base=self.base, reserved=self.p("reserved.txt"), policy=POLICY, out=self.p("entry.json"))
         return check_entry.step_entry(a)
 
-    def manifest(self, text, files=None, root_license=None):
+    def manifest(self, text, files=None, root_license=None, security="SECURITY.md\n", reporting="true\n",
+                 security_text="Mail security@example.org.\n"):
         for rel, content in {**TREE, **(files or {})}.items():
             if content is not None:
                 self.write(f"gen/{rel}", content)
         self.write("gen/kapitan-generator.yaml", text)
         if root_license is not None:
             self.write("root-license", root_license)
+        self.write("security-md", security)  # as gate/run writes them for REG-10
+        self.write("private-reporting", reporting)
+        self.write("security-text", security_text)
         a = SimpleNamespace(event=self.p("event.json"), entry=self.p("entry.json"),
                             manifest=self.p("gen/kapitan-generator.yaml"), policy=POLICY,
-                            root_license=self.p("root-license"))
+                            root_license=self.p("root-license"), security_md=self.p("security-md"),
+                            private_reporting=self.p("private-reporting"), security_text=self.p("security-text"))
         return check_entry.step_manifest(a)
 
 
@@ -350,6 +355,38 @@ class Quality(unittest.TestCase):
         self.assertEqual(self.c.manifest(bsd.format("BSD-3-Clause"), {"LICENSE": three}), [])
         self.assertTrue(has(self.c.manifest(bsd.format("BSD-2-Clause"), {"LICENSE": three}), "QA-2"))
         self.assertTrue(has(self.c.manifest(bsd.format("BSD-3-Clause"), {"LICENSE": two}), "QA-2"))
+
+
+class Security(unittest.TestCase):  # REG-10
+    def test_needs_security_md_and_private_reporting(self):
+        c = Case()
+        self.assertEqual(c.entry("generators/demo.yaml", entry()), [])
+        self.assertEqual(c.manifest(manifest()), [])
+        self.assertEqual(c.manifest(manifest(), security="example/.github/SECURITY.md\n"), [])
+        self.assertTrue(has(c.manifest(manifest(), security=""), "REG-10: no SECURITY.md"))
+        for reporting in ("false\n", ""):
+            self.assertTrue(has(c.manifest(manifest(), reporting=reporting), "REG-10: private vulnerability reporting"), reporting)
+
+    def test_gitlab_needs_a_private_contact(self):
+        c = Case()
+        self.assertEqual(c.entry("generators/demo.yaml", entry().replace("github.com", "gitlab.com")), [])
+        for text in ("Write to security@example.org.\n", "Open a Confidential Issue.\n", "Create the issue as `confidential`.\n"):
+            self.assertEqual(c.manifest(manifest(), reporting="", security_text=text), [], text)
+        for text in ("", "Open an issue.\n", "Write to security at example dot org.\n", "@example.org\n"):
+            self.assertTrue(has(c.manifest(manifest(), reporting="", security_text=text), "REG-10: SECURITY.md names no private contact"), text)
+        self.assertEqual(c.manifest(manifest(), security="", reporting="", security_text=""),
+                         ["REG-10: no SECURITY.md at the root, in .github/ or docs/ of the commit, or in the owner's .github repository"])
+        github = Case()
+        self.assertEqual(github.entry("generators/demo.yaml", entry()), [])
+        self.assertEqual(github.manifest(manifest(), security_text=""), [])  # private reporting is the channel there
+
+    def test_only_a_new_commit_is_checked(self):
+        c = Case(base_entries={"demo": entry()})
+        self.assertEqual(c.entry("generators/demo.yaml", entry(tag="v1.1.0", sha="b" * 40)), [])
+        self.assertTrue(has(c.manifest(manifest(), security=""), "REG-10: no SECURITY.md"))
+        self.assertTrue(has(c.manifest(manifest(), reporting="false\n"), "REG-10: private vulnerability reporting"))
+        self.assertEqual(c.entry("generators/demo.yaml", entry() + 'yanked:\n  "1.0.0": broken\n'), [])
+        self.assertEqual(c.manifest(manifest(), security="", reporting="false\n"), [])
 
 
 if __name__ == "__main__":

@@ -71,7 +71,8 @@ the build job (RISK-10).
   bytes the gate scanned rather than a third-party repository.
 - DEC-2: Anyone can register a generator.
 - DEC-3: Every new entry and every version bump needs a maintainer's approval.
-  Renovate opens bump pull requests; nothing merges automatically.
+  Renovate merges its other pull requests itself once every check passed,
+  except major updates and moved action tags (REV-5).
 - DEC-4: Kapitan compile is a release gate. The krab result is recorded only,
   until krab has a non-prerelease 2.x version. Security findings under krab
   fail the gate regardless (CMP-4).
@@ -381,13 +382,16 @@ cover none of the changed files.
   environment that admits only `main`, and rotating it, is open.
 
 - RISK-10: an exploit of a host-side parser in the release build job forges
-  the scan record, krab result, compatibility, kinds, backends and output
-  diff that the sign job attests. The artifact's code is still checked by
+  the scan record, krab result, compatibility, kinds, backends, a recipe's
+  images, the SBOM's schema group fields (PUB-8) and output diff that the
+  sign job attests. The artifact's code is still checked by
   tree (PUB-1).
 
 - RISK-11: a malicious release of an action, tool, Kapitan or krab reaches
-  a bump pull request once it is three days old (REG-7) and then needs one
-  approval by the single maintainer (GI-2a, REV-1). Inside the published
+  a bump pull request once it is three days old (REG-7). A minor, patch or
+  image digest update then merges without a maintainer once every check
+  passed (REV-5); only a major update needs the approval of the single
+  maintainer (GI-2a, REV-1). Inside the published
   sandbox image a malicious Kapitan writes every consumer's compiled
   output; CON-1b bounds it to the capabilities the consumer accepts.
 
@@ -470,7 +474,7 @@ coverage is named at each:
 | `policy/entry.schema.json`, `policy/manifest.schema.json` | QA-5, GI-1, GI-9 |
 | `policy/reserved-names.txt` | REG-2, REG-3, REG-9, PUB-13 |
 | `policy/maintainers.txt` | maintainer user IDs (Gate integrity) |
-| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8, REG-9, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9, REC-10) |
+| `gate/` | GI-1, GI-2, REG-1 to REG-6, REG-8 to REG-10, SEC-8, QA-1, QA-2, QA-5: `run`, `check_entry.py`, `fetch_tree.py`, `fetch-charts`, `output_diff.py` (SEC-13, PUB-9, REC-10) |
 | `.github/actions/setup-gate/` | gVisor, scanners, sandbox image and `check` for `gate.yml` and `selftest.yml` |
 | `.github/actions/setup-check/` | `check` of kadet-hub/recipes (REC-5, REC-7 to REC-9) |
 | `.github/actions/setup-kind/` | kind, kubectl and uv (REC-9) and cloud-provider-kind (REC-17) for the `renders` job and `selftest.yml` |
@@ -484,14 +488,14 @@ coverage is named at each:
 | `sandbox/schema_check.py`, `sandbox/tf_schema.py` | QA-7, QA-8 |
 | `sandbox/apiserver_check.py` | QA-10 to QA-12 |
 | `.github/workflows/tf-schema-verify.yml`, `gate/tf-schema-verify` | QA-9 |
-| `sandbox/` | SEC-9 to SEC-12, SEC-17: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
+| `sandbox/` | SEC-9 to SEC-12, SEC-17, PUB-14a: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
 | `tests/consumers/` | AC-10, AC-12 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/{consumer-selftest,catalog-tests,release-tests}.yml` | CI-1: `consumer-selftest`, `catalog-tests`, `release-tests` |
-| `.github/workflows/release.yml` | PUB-1 to PUB-13, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, CAT-39c, index and catalog |
-| `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-13: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff`, `mirror-image` |
+| `.github/workflows/release.yml` | PUB-1 to PUB-14, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, CAT-39c, index and catalog |
+| `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-15: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff`, `mirror-image`, `publish-sandbox` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
 | `.github/workflows/sandbox-advisories.yml`, `.github/actions/setup-trivy/`, `sandbox/.trivyignore.yaml` | SEC-18 |
 | `scan/images.py`, `scan/image_report.py`, `.github/actions/setup-trivy/` | SEC-19, CAT-39a: the images a version names and their Trivy scan |
@@ -517,7 +521,7 @@ coverage is named at each:
 | `.github/workflows/checksum-pins.yml`, `tests/checksum-pins` | REG-7: checksums Renovate cannot update |
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
-ClamAV, Trivy, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
+ClamAV, Trivy, syft, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
 Hugo, atheris, kind, kubectl, uv) are pinned in
 `sandbox/Dockerfile`, `.clusterfuzzlite/Dockerfile`, the requirements files, `.github/actions/` and
 `sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).

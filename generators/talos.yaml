@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: talos
-  tag: talos-v1.2.0
-  sha: 1ea7e4efd57d526e040bf4f52fbc7c0c2be1215c
+  tag: talos-v1.3.0
+  sha: cca18f9c91c74892b720ed194ad0d2facb7646a2
 owners: [3042152]

@@ -266,6 +266,15 @@ its own directory or at the root. That directory carries:
   version as Markdown: raw HTML is dropped, images become links, and
   relative links point into your repository at the pinned commit.
 
+The repository needs a `SECURITY.md` at its root, in `.github/` or in
+`docs/`, or a default one in your account's or organisation's public
+`.github` repository. On github.com it also needs
+[private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository)
+turned on. On gitlab.com the `SECURITY.md` has to name a private contact,
+a mail address or confidential issues. The gate checks this for a new
+entry and for every new version
+([REG-10](specs/registration.md#registration)).
+
 The Python code has to pass `ruff check` with
 [`policy/ruff.toml`](../policy/ruff.toml): syntax errors and pyflakes
 findings, no style rules; `noqa` comments do not count.

@@ -1212,7 +1212,7 @@ class Site(unittest.TestCase):
             self.assertTrue(after.lstrip().startswith("<ol>"), name)
         self.assertNotRegex(main, r"<style\b| style=|<\?xml|<!DOCTYPE")
         table = main[main.index("<table>"):main.index("</table>")]
-        self.assertIn(">REG-1 to REG-6, REG-8</a>", table)
+        self.assertIn(">REG-1 to REG-6, REG-8, REG-10</a>", table)
         text = re.sub(r"<[^>]+>", " ", main.replace(table, ""))  # requirement IDs only in the stage table
         self.assertNotRegex(text, r"\b(?:GI|REG|SEC|QA|CMP|PUB|CON|CAT|UPD|INC|DEC)-\d")
         md = self.markdown("guides", "how-kadet-hub-works")
@@ -1756,8 +1756,13 @@ class Site(unittest.TestCase):
 
     def test_search_matches_kind_names(self):  # CAT-29a
         home = self.page()
-        self.assertRegex(home, r'data-text="demo [^"]* configmap httproute" data-tags="helm" data-name="demo"')
+        self.assertRegex(home, r'data-text="demo [^"]* configmap httproute[^"]*" data-tags="helm" data-name="demo"')
         self.assertRegex(home, r'data-text="plain [^"]* configmap httproute" data-tags="" data-name="plain"')
+
+    def test_search_matches_built_for(self):  # CAT-29e
+        home = self.page()
+        self.assertRegex(home, r'data-text="demo [^"]* configmap httproute external secrets operator" data-tags="helm" data-name="demo"')
+        self.assertRegex(home, r'data-text="plain [^"]* httproute" data-tags="" data-name="plain"')  # no compatibility record
 
     def test_feed_stays_valid_xml_with_control_characters(self):  # CAT-18, QA-5a
         with tempfile.TemporaryDirectory() as tmp:

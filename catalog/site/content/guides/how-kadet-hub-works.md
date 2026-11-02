@@ -53,7 +53,7 @@ has the manifest, the fixture project and the entry format.
 
 | Stage and requirements | Fails the gate when |
 |---|---|
-| Registration ([GI-1, GI-2](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#gate-integrity), [REG-1 to REG-6, REG-8](https://github.com/kadet-hub/registry/blob/main/docs/specs/registration.md#registration)) | the pull request changes more than one entry file, the entry or its name breaks the rules, the author is not an owner, the tag does not resolve to the pinned SHA, or a bump does not raise the version or moves the source |
+| Registration ([GI-1, GI-2](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#gate-integrity), [REG-1 to REG-6, REG-8, REG-10](https://github.com/kadet-hub/registry/blob/main/docs/specs/registration.md#registration)) | the pull request changes more than one entry file, the entry or its name breaks the rules, the author is not an owner, the tag does not resolve to the pinned SHA, a bump does not raise the version or moves the source, or the source repository has no security policy or private reporting channel |
 | Source and charts ([QA-1, QA-2, QA-5](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate), [CMP-3](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#compile-gate), [SEC-7, SEC-8](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#dependencies-binaries-and-charts)) | the manifest breaks its schema or licence rules, its Kapitan range excludes the pinned version, it declares a program that is not allowed, or a chart differs from its sha256 |
 | Static scans ([SEC-1 to SEC-6](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#static-checks), [SEC-14](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection), [QA-3](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate)) | gitleaks, GuardDog, the import allowlist and semgrep rules, the file tree rules, ClamAV or ruff report a finding that no exception bound to the file's content covers |
 | Sandbox compile ([SEC-9 to SEC-11](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#sandbox-and-runtime-detection), [CMP-1, CMP-2, CMP-4, CMP-5](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#compile-gate), [QA-4](https://github.com/kadet-hub/registry/blob/main/docs/specs/gate.md#quality-gate)) | a target fails or writes nothing on an inventory backend, the output changes with `CI` set or with `--cache`, the trace shows a forbidden call, or a decoy value appears in the output; the [krab](/glossary/#krab) result is recorded, not judged |
@@ -175,10 +175,10 @@ has the workflow call, the policy file and how to verify by hand.
    [SECURITY.md](https://github.com/kadet-hub/registry/blob/main/SECURITY.md)
    describes. Once a maintainer confirms a version malicious, the
    [incident runbook](https://github.com/kadet-hub/registry/blob/main/docs/incident.md)
-   applies, with a target of 24 hours: a draft security advisory, a
-   maintainer pull request that sets `yanked` and the advisory, the
-   release, the deletion of the artifact and the publication of the
-   advisory.
+   applies, with an internal target of 24 hours: a draft security
+   advisory, a maintainer pull request that sets `yanked` and the
+   advisory, the release, the deletion of the artifact and the
+   publication of the advisory.
 5. After the deletion the index keeps the version with its digest, reason
    and advisory, so a consumer whose pinned digest fails still learns why.
 

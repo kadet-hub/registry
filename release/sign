@@ -36,13 +36,22 @@ gitc=(git -c protocol.allow=never -c protocol.https.allow=always --git-dir="$wor
 "${gitc[@]}" init -q --bare
 "${gitc[@]}" fetch -q --depth=1 --filter=blob:none --no-tags -- "$repo" "$sha"
 if [[ $path == . ]]; then rev="$sha^{tree}"; else rev=$sha:$path; fi
+listing() { "${gitc[@]}" ls-tree -z --end-of-options "$rev" | if [[ $type == recipe ]]; then grep -zv $'\ttests$' || true; else cat; fi; }
 if [[ $type == recipe ]]; then
-  expected=$("${gitc[@]}" ls-tree -z --end-of-options "$rev" | { grep -zv $'\ttests$' || true; } | "${gitc[@]}" mktree -z --missing)
+  source_tree=$(listing | "${gitc[@]}" mktree -z --missing)
 else
-  expected=$("${gitc[@]}" rev-parse --verify --end-of-options "$rev")
+  source_tree=$("${gitc[@]}" rev-parse --verify --end-of-options "$rev")
+fi
+# PUB-15: the tar adds the repository root's LICENSE when the shipped tree has none;
+# meta.json keeps the tree without it.
+expected=$source_tree
+if [[ -z $("${gitc[@]}" ls-tree --end-of-options "$rev" LICENSE) ]]; then
+  blob=$("${gitc[@]}" rev-parse --verify -q --end-of-options "$sha:LICENSE") \
+    || { echo "PUB-15: $name $version: no LICENSE in the tree or at the repository root"; exit 1; }
+  expected=$({ listing; printf '100644 blob %s\tLICENSE\0' "$blob"; } | "${gitc[@]}" mktree -z --missing)
 fi
 actual=$(python3 "$root/release/tree.py" "$tar")
-if [[ $actual != "$expected" || $(jq -r .tree "$meta") != "$expected" ]]; then
+if [[ $actual != "$expected" || $(jq -r .tree "$meta") != "$source_tree" ]]; then
   echo "PUB-1: $name $version: tar tree $actual, source tree $expected"
   exit 1
 fi
@@ -72,7 +81,9 @@ digest=$("$root/release/oci-push" "$ref" "application/vnd.kadet-hub.$type.v1" \
   "application/vnd.kadet-hub.$type.config.v1+json" "$meta" \
   application/vnd.oci.image.layer.v1.tar "$tar" "$base.tar")
 echo "$name $version: pushed $digest"
-python3 -I "$root/release/sbom.py" --tar "$tar" --meta "$meta" --ref "$ref" --digest "$digest" --out "$built/sbom.spdx.json"
+schemas=()
+if [[ -f $built/schemas.json ]]; then schemas=(--schemas "$built/schemas.json"); fi
+python3 -I "$root/release/sbom.py" --tar "$tar" --meta "$meta" --ref "$ref" --digest "$digest" "${schemas[@]}" --out "$built/sbom.spdx.json"
 out "digest=$digest"
 out "sbom=$built/sbom.spdx.json"
 if [[ -f $built/output.diff ]]; then

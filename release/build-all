@@ -5,7 +5,7 @@
 # yet published and record the run, the krab result, the output diff, the
 # kinds of the output and the backends it compiled on in meta.json. For a
 # recipe version, rerun the gate's recipe checks and renders proof and record
-# what REC-13 lists instead.
+# what REC-13 lists and the images of REC-12 instead.
 #
 # Usage: build-all <out dir>
 # Needs: the sandbox image $SANDBOX_IMAGE, yq, jq, oras, REGISTRY, what
@@ -33,6 +33,8 @@ for f in "$root"/generators/*.yaml; do
   "${gitc[@]}" init -q --bare
   "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha"
   python3 "$root/gate/fetch_tree.py" --git-dir "$work/$name.git" --rev "$sha" --path "$path" --out "$work/src/$name"
+  # PUB-15: the repository root's LICENSE, which build.py ships when the tree has none.
+  "${gitc[@]}" cat-file blob "$sha:LICENSE" >"$work/src/$name.LICENSE" 2>/dev/null || rm -f -- "$work/src/$name.LICENSE"
 done
 # REC-11: a recipe's directories as the gate fetches them (REC-4); build.py ships <name>/ without tests/.
 for f in "$root"/recipes/*.yaml; do
@@ -43,6 +45,7 @@ for f in "$root"/recipes/*.yaml; do
   "${gitc[@]}" init -q --bare
   "${gitc[@]}" fetch -q --depth=1 --no-tags -- "$repo" "$sha"
   python3 "$root/gate/fetch_tree.py" --git-dir "$work/recipes/$name.git" --rev "$sha" --recipe "$name" --out "$work/src/recipes/$name"
+  "${gitc[@]}" cat-file blob "$sha:LICENSE" >"$work/src/recipes/$name/LICENSE" 2>/dev/null || rm -f -- "$work/src/recipes/$name/LICENSE"
 done
 
 docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
@@ -68,15 +71,18 @@ build_recipe() {
   echo "PUB-9: recipe $name $version: $(cat -- "$work/diff.json")"
   echo "## recipe $name $version: renders"
   "$root/gate/recipe-renders" "$dir/recipes" "$name" "$dir/proof" || { echo "REC-12: recipe $name $version: the renders proof failed"; exit 1; }
-  # REC-13: the Source and Level lines as the pinned check reads them (REC-7), the kinds of the recipe's own output (PUB-10).
+  # REC-13: the Source and Level lines as the pinned check reads them (REC-7), the kinds of the recipe's own output (PUB-10)
+  # and the container images it names (REC-12).
   docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
     --mount "type=bind,src=$root,dst=/base,readonly" --mount "type=bind,src=$check,dst=/check,readonly" \
     --mount "type=bind,src=$dir,dst=/recipe,readonly" \
-    "$image" python -I -c 'import json, sys
-sys.path[:0] = ["/check", "/base/sandbox"]
-import lint, tag_check
+    "$image" python -I -c 'import json, os, sys
+sys.path[:0] = ["/check", "/base/sandbox", "/base/release"]
+import images, lint, tag_check
 source, level = lint.readme_fields("/recipe/recipes/" + sys.argv[1])
-print(json.dumps({"source": source, "level": level, "kinds": tag_check.kinds("/recipe/proof/out/compiled/" + sys.argv[1])}))' \
+out = "/recipe/proof/out/compiled/" + sys.argv[1]
+docs = [d for rel in tag_check.files(out) if rel.endswith((".yml", ".yaml", ".json")) for d in tag_check.k8s_documents(os.path.join(out, rel))]
+print(json.dumps({"source": source, "level": level, "kinds": tag_check.kinds(out), "images": images.images(docs)}))' \
     "$name" >"$work/fields.json"
   # DEC-23: the capabilities of the SEC-12 matches in the recipe's own output.
   caps=$(sed -nE "s#^SEC-12: ([a-z-]+): compiled/$name/.*#\1#p" -- "$work/compile.txt" | sort -u | jq -cnR '[inputs]')
@@ -87,7 +93,7 @@ print(json.dumps({"source": source, "level": level, "kinds": tag_check.kinds("/r
     | .description = $r.description | .license = $r.license | .level = $f.level
     | .generators = [$r.pins[] | capture("^ghcr\\.io/kadet-hub/(?<name>[^:]+):(?<version>[^@]+)@(?<digest>.+)$")]
     | .includes = [$r.recipes | to_entries[] | select(.value.rule == "REC-16") | {name: .key, version: .value.version, digest: .value.digest}]
-    | .output_capabilities = $caps | .kinds = $f.kinds | .scan = $scan[0] | .output_diff = $diff[0]
+    | .output_capabilities = $caps | .kinds = $f.kinds | .images = $f.images | .scan = $scan[0] | .output_diff = $diff[0]
     | if $kind == "chart" then .chart = {repo: $s[0], version: $s[1], digest: $s[2]}
       elif $kind == "http" then .chart = {repo: "\($s[0])/\($s[1])", version: $s[2], digest: $s[3]}
       elif $kind == "manifest" then .manifest = {url: "https://github.com/\($s[0])/releases/download/\($s[1])/\($s[2])", digest: $s[3]}
