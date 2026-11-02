@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: certmanager
-  tag: certmanager-v1.0.3
-  sha: cca18f9c91c74892b720ed194ad0d2facb7646a2
+  tag: certmanager-v1.0.4
+  sha: 90965fa637631d8bd127c16808bec0cb055e9322
 owners: [3042152]
