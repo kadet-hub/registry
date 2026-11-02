@@ -231,6 +231,9 @@ are pinned by commit SHA, `permissions` is empty, and there are no caches.
               echo "${GVISOR_SHA512}  runsc.tar.zstd" | sha512sum -c -
               # runsc starts its sidecars from gvisor-bin/ next to it: unpack everything
               sudo tar --zstd -xf runsc.tar.zstd -C /usr/local/bin
+          - name: Show swap
+            # runsc enforces no memory limit on a host with swap (google/gvisor#15756)
+            run: swapon --show
           - name: Allow unprivileged user namespaces
             # ubuntu-24.04 restricts them with AppArmor; rootless runsc fails
             # with "fork/exec /proc/self/exe: permission denied" otherwise
