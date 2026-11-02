@@ -241,7 +241,7 @@ jobs:
     needs: [build, sign]
     if: always() && needs.build.result == 'success' && (needs.sign.result == 'success' || needs.sign.result == 'skipped')
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30 # the index job verifies every version; it took 10 to 15 minutes in late October 2026
     environment: release
     permissions:
       contents: read

@@ -2,7 +2,7 @@
 # The build stage is the same image plus busybox and uv, so the venvs link
 # and the bytecode matches the interpreter that runs them.
 FROM gcr.io/distroless/python3-debian13:latest@sha256:0db804f397ca31a1498c9d94c3c1df53fe49ac8007e5942b1cb547c1c3355c09 AS build
-COPY --from=gcr.io/distroless/python3-debian13:debug@sha256:b11062384933aff9510c39ce2c46fdb64b87de3414fd73d64e5b669e7c75d961 /busybox /busybox
+COPY --from=gcr.io/distroless/python3-debian13:debug@sha256:f40b59a6222bb2775d52fc5366938d3e0f3855d8201cee16e6198e80fbcc05b3 /busybox /busybox
 COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff /uv /busybox/uv
 ENV PATH=/busybox:/usr/bin
 SHELL ["/busybox/sh", "-eu", "-c"]
