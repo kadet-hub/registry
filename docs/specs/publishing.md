@@ -211,9 +211,20 @@ since the documented package API has no visibility call.
   no timestamp, so its digest stays reproducible. Versions built before
   description and tags entered the metadata list neither.
 
+  The job checks every version again on every run, four at a time. One
+  after another, the checks took 10 to 15 minutes in late October 2026.
+  Index serial 81 lists 162 versions. Four is the core count of the
+  ubuntu-24.04 runner for public repositories. It keeps the job at four
+  `gh attestation verify` calls at a time, far below GitHub's secondary
+  limit of 100 concurrent API requests. ghcr.io documents no rate limit.
+  Each check writes its own file, and the job joins the files in tag
+  order, so `index.py` reads the same versions in the same order as with
+  sequential checks. A failed check still fails the job, after the other
+  checks have finished, and the log names every failed version.
+
   - Test: `release/test_release.py` (partial: content and serial; publishing
-    by AC-6)
-  - Since: #13, #226, #235, #242
+    by AC-6); `PublishIndex` for the concurrent checks
+  - Since: #13, #226, #235, #242, #455
 
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
