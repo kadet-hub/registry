@@ -196,6 +196,7 @@ remembered in the browser's `localStorage`.
   | kustomize json patch add, kustomize add annotation, service appprotocol, kubernetes trafficdistribution (checked 2026-10-21) | blog post "Kustomize JSON patch add: fields a Helm chart does not template", one section per chart |
   | kustomize patch tolerations, kustomize patch nodeselector, kustomize patch add label, ipfamilypolicy requiredualstack, kubernetes service ipfamilypolicy, cilium ingress ipv6 (checked 2026-10-22) | same post, sections #consul-hook-job-tolerations, #apisix-ingress-controller-pod-labels and #cilium-ingress-ipfamilypolicy |
   | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
+  | docker tag and digest (also "docker tag digest"), docker image tag and digest (checked 2026-11-02) | blog post "Docker tag and digest: which one Kubernetes runs" |
   | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
   | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI" |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
