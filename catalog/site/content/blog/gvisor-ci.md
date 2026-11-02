@@ -1,6 +1,7 @@
 ---
 title: "gVisor in CI: sandboxing untrusted code on GitHub Actions"
 date: 2026-10-21
+lastmod: 2026-11-02
 topics: [sandbox, ci, gate, security]
 description: How kadet-hub runs untrusted contributor code in CI inside a gVisor sandbox on GitHub Actions, what it adds over a plain container and what it misses.
 ---
@@ -112,9 +113,19 @@ in [how kadet-hub works](/guides/how-kadet-hub-works/).
 
 gVisor is a kernel boundary, not a policy. Four things stay your job.
 
-CPU and wall-clock exhaustion. A sandboxed process can spin or allocate
-forever. gVisor does not time it out; you set a job timeout and a memory
-bound. The gate runs each compile under a step timeout and a tmpfs size cap.
+CPU, wall-clock and memory exhaustion. A sandboxed process can spin or
+allocate forever, and gVisor does not time it out. Set a job timeout. The
+gate runs each compile under a step timeout and a tmpfs size cap, and sets
+no memory limit, so the runner's memory is the cap.
+
+A memory limit under gVisor needs care. The rootless `runsc ... do` run
+below passes `--ignore-cgroups`, so it has no memory limit at all. Where a
+container or pod limit applies, it may not hold on a host with swap. On
+kind with a 128Mi limit, a pod under runc was OOM-killed at 112 MiB, and
+the same pod under runsc used about 1000 MiB until the node's swap ran out.
+The measurement is in [google/gvisor#15756](https://github.com/google/gvisor/issues/15756), still open. If a job
+relies on a memory limit, print `swapon --show` first and turn swap off
+before the container or cluster starts.
 
 Data you mount in. Everything inside the rootfs and every bind mount is
 reachable. Mount the contributor's input read-only, mount nothing else, and
