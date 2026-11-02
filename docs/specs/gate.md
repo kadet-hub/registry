@@ -1520,4 +1520,4 @@ code diff and the output diff, not only the verdict.
   that reports a release timestamp.
 
   - Test: manual: `renovate.json` `automerge` rules; `gh api repos/kadet-hub/registry/rulesets` lists Integration 2740 with `bypass_mode: pull_request` on `main`
-  - Since: this change
+  - Since: #441
