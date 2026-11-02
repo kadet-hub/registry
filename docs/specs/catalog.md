@@ -186,10 +186,12 @@ remembered in the browser's `localStorage`.
   | bitnami alternative redis, bitnami alternative kafka | `/recipes/valkey/`, `/recipes/kafka/` |
   | postgres, redis, keycloak, rabbitmq or kafka helm chart without bitnami (also "not bitnami", "bitnami alternative"), valkey helm chart not bitnami | the matching `/recipes/<name>/` page, `/recipes/valkey/` for redis |
   | mysql helm chart not bitnami, bitnami mysql alternative, bitnami alternative mongodb | `/recipes/mysql/`, `/recipes/mongodb/` |
+  | nextcloud helm chart, nextcloud helm chart bitnami (checked 2026-11-02) | blog post "Nextcloud Helm chart: Bitnami subcharts and Kapitan" |
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
-  | kubeconform vs kubeval, helm lint vs kubeconform, kubelinter vs kubeconform (checked 2026-10-22) | same post, section #kubeval-helm-lint-kube-linter |
+  | kubectl wait for condition (checked 2026-11-02) | blog post "kubectl wait for condition fails on null conditions" |
+| kubeconform vs kubeval, helm lint vs kubeconform, kubelinter vs kubeconform (checked 2026-10-22) | same post, section #kubeval-helm-lint-kube-linter |
   | kubectl validate crd | guide "Validate Kubernetes custom resources against their CRDs" |
   | kustomize json patch add, kustomize add annotation, service appprotocol, kubernetes trafficdistribution (checked 2026-10-21) | blog post "Kustomize JSON patch add: fields a Helm chart does not template", one section per chart |
   | kustomize patch tolerations, kustomize patch nodeselector, kustomize patch add label, ipfamilypolicy requiredualstack, kubernetes service ipfamilypolicy, cilium ingress ipv6 (checked 2026-10-22) | same post, sections #consul-hook-job-tolerations, #apisix-ingress-controller-pod-labels and #cilium-ingress-ipfamilypolicy |
@@ -230,7 +232,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331, #444
 
 - CAT-11g: Every guide and recipe MUST carry `lastmod` in its front
   matter, the day its text last changed, and schema.org `TechArticle`
