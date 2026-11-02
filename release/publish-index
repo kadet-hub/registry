@@ -40,29 +40,42 @@ entries() {
   done
   mapfile -t -O "${#names[@]}" names < <(sed 's/#.*//; /^[[:space:]]*$/d; s/[[:space:]]//g' "$root/policy/reserved-names.txt")
 }
-# collect <package> <artifact type> <file>: each attested version of the package, appended to <file>.
+# collect <package> <artifact type> <tasks>: "<package> <type> <version>" per semver tag, appended to <tasks>.
 collect() {
-  local pkg=$1 type=$2 rc=0 tags version digest cfg
+  local pkg=$1 rc=0 tags
   tags=$(lookup oras repo tags -- "$pkg") || rc=$?
   ((rc < 2)) || exit 1
   ((rc == 0)) || return 0
-  while read -r version; do
-    digest=$(oras resolve -- "$pkg:$version")
-    attested "$pkg@$digest" || { echo "PUB-4: $pkg:$version ($digest) has no marketplace attestation"; exit 1; }
-    cfg=$(oras manifest fetch -- "$pkg@$digest" | jq -er --arg t "application/vnd.kadet-hub.$type.v1" 'select(.artifactType == $t) | .config.digest') \
-      || { echo "PUB-4: $pkg:$version is not a marketplace artifact"; exit 1; }
-    oras blob fetch --output - -- "$pkg@$cfg" | jq -c --arg d "$digest" '{digest: $d, meta: .}' >>"$3"
-  done < <(printf '%s\n' "$tags" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; })
+  printf '%s\n' "$tags" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sed "s|^|$pkg $2 |" >>"$3"
   public "${pkg#"$REGISTRY"/}"
 }
+# verify <package> <artifact type> <version> <file>: the attested version's line for the index, written to <file>.
+verify() {
+  local digest cfg
+  digest=$(oras resolve -- "$1:$3")
+  attested "$1@$digest" || { echo "PUB-4: $1:$3 ($digest) has no marketplace attestation"; exit 1; }
+  cfg=$(oras manifest fetch -- "$1@$digest" | jq -er --arg t "application/vnd.kadet-hub.$2.v1" 'select(.artifactType == $t) | .config.digest') \
+    || { echo "PUB-4: $1:$3 is not a marketplace artifact"; exit 1; }
+  oras blob fetch --output - -- "$1@$cfg" | jq -c --arg d "$digest" '{digest: $d, meta: .}' >"$4"
+}
+export -f verify attested
+# verify_all <tasks> <file>: verifies four tasks at a time (PUB-4), each into a file of its own, and joins
+# the files into <file> in task order. Fails after all tasks ran when any of them failed.
+verify_all() {
+  awk -v f="$2" '{print $0, f "." NR}' "$1" >"$1.n"
+  xargs -r -P 4 -L 1 bash -c 'set -euo pipefail; verify "$@"' _ <"$1.n" || exit 1
+  awk '{print $4}' "$1.n" | xargs -r cat -- >"$2"
+}
 
-: >"$work/versions.jsonl"
+: >"$work/tasks"
 entries generators ""
-for name in "${names[@]}"; do collect "$REGISTRY/$name" generator "$work/versions.jsonl"; done
+for name in "${names[@]}"; do collect "$REGISTRY/$name" generator "$work/tasks"; done
+verify_all "$work/tasks" "$work/versions.jsonl"
 # REC-13: recipes publish to recipes/<name>; a reserved name blocks both namespaces (REC-2).
-: >"$work/recipe-versions.jsonl"
+: >"$work/recipe-tasks"
 entries recipes recipe-
-for name in "${names[@]}"; do collect "$REGISTRY/recipes/$name" recipe "$work/recipe-versions.jsonl"; done
+for name in "${names[@]}"; do collect "$REGISTRY/recipes/$name" recipe "$work/recipe-tasks"; done
+verify_all "$work/recipe-tasks" "$work/recipe-versions.jsonl"
 
 previous=()
 rc=0; latest=$(lookup oras resolve -- "$ref:latest") || rc=$?

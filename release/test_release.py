@@ -508,6 +508,105 @@ echo x >>{calls!r}
         self.assertEqual(self.run_attested(0), (0, 1))
 
 
+def digest(ref):
+    return "sha256:" + hashlib.sha256(ref.encode()).hexdigest()
+
+
+class PublishIndex(unittest.TestCase):
+    """PUB-4: release/publish-index checks four versions at a time, with fake oras, gh and yq.
+
+    The fake oras answers `<command> ... <ref>` with the file $FAKE/<command>/<ref with / as _>."""
+
+    REG = "ghcr.io/kadet-hub"
+    TAGS = {"a": ["1.0.0", "latest", "1.1.0", "2.0.0"], "b": ["1.0.0", "1.0.1"], "recipes/r": ["0.1.0"]}
+    FAKE_TOOLS = {
+        "oras": '[[ $2 == push ]] && exit 0\nf=$FAKE/$1/$(tr / _ <<<"${!#}")\n'
+                '[[ -f $f ]] || { echo "${!#}: not found" >&2; exit 1; }\ncat -- "$f"',
+        "gh": 'case $1 in api) echo public ;; attestation) echo + >>"$FAKE/log"; sleep 0.2; echo - >>"$FAKE/log"\n'
+              '  ! grep -qxF -- "$3" "$FAKE/unattested" ;; esac',
+        "yq": 'cat -- "${!#}"',
+    }
+
+    def publish(self, unattested="", no_config=""):
+        """Runs the job; returns its exit code, log, $GITHUB_OUTPUT, index, notes and the most gh calls at once."""
+        def oras(command, ref):
+            return f"fake/{command}/{ref.replace('/', '_')}"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fake, root = os.path.join(tmp, "fake"), os.path.join(tmp, "root")
+            shutil.copytree(os.path.join(ROOT, "release"), os.path.join(root, "release"))
+            files = {"root/policy/reserved-names.txt": "index\n", "fake/unattested": ""}
+            files.update({f"bin/{name}": f"#!/usr/bin/env bash\n{body}\n" for name, body in self.FAKE_TOOLS.items()})
+            for path, tags in self.TAGS.items():
+                kind, name, pkg = ("recipe" if "/" in path else "generator"), path.split("/")[-1], f"{self.REG}/{path}"
+                files[f"root/{kind}s/{name}.yaml"] = '{"yanked": {"1.0.1": "broken"}}'
+                files[oras("repo", pkg)] = "\n".join(tags) + "\n"
+                for v in (v for v in tags if v != "latest"):
+                    d, cfg = digest(f"{pkg}:{v}"), digest(f"config {pkg}:{v}")
+                    files[oras("resolve", f"{pkg}:{v}")] = d + "\n"
+                    files[oras("manifest", f"{pkg}@{d}")] = json.dumps({"artifactType": f"application/vnd.kadet-hub.{kind}.v1",
+                                                                         "config": {"digest": cfg}})
+                    if f"{path}:{v}" != no_config:
+                        files[oras("blob", f"{pkg}@{cfg}")] = json.dumps(version(name, v)["meta"])
+                    if f"{path}:{v}" == unattested:
+                        files["fake/unattested"] = f"oci://{pkg}@{d}\n"
+            for rel, text in files.items():
+                path = os.path.join(tmp, rel)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(text)
+                if rel.startswith("bin/"):
+                    os.chmod(path, 0o755)
+            result = {k: os.path.join(tmp, k) for k in ("output", "index.json", "notes.md")}
+            open(result["output"], "w").close()
+            p = subprocess.run([os.path.join(root, "release", "publish-index")], capture_output=True, text=True,
+                               env=dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], FAKE=fake,
+                                        REGISTRY=self.REG, IDENTITY="i", GITHUB_REPOSITORY="kadet-hub/registry", GH_TOKEN="x",
+                                        PACKAGES_API="orgs/kadet-hub", ATTESTED_DELAY_SCALE="0", GITHUB_OUTPUT=result["output"],
+                                        INDEX_OUT=result["index.json"], NOTES_OUT=result["notes.md"]))
+            texts = {}
+            for k, path in result.items():
+                if os.path.exists(path):
+                    with open(path, encoding="utf-8") as f:
+                        texts[k] = f.read()
+            running = peak = 0
+            with open(os.path.join(fake, "log"), encoding="utf-8") as f:
+                for line in f:
+                    running += 1 if line.strip() == "+" else -1
+                    peak = max(peak, running)
+        out = dict(line.split("=", 1) for line in texts["output"].splitlines())
+        return p.returncode, p.stdout + p.stderr, out, texts.get("index.json"), texts.get("notes.md"), peak
+
+    def test_same_index_as_sequential_checks(self):
+        rc, log, out, index, notes_text, peak = self.publish()
+        self.assertEqual(rc, 0, log)
+        self.assertEqual((out["publish"], out["serial"]), ("true", "1"))
+        self.assertTrue(1 < peak <= 4, peak)
+        # The versions in tag order, as the sequential job read them.
+        versions = {"generator": [], "recipe": []}
+        for path, tags in self.TAGS.items():
+            versions["recipe" if "/" in path else "generator"] += [
+                dict(version(path.split("/")[-1], v), digest=digest(f"{self.REG}/{path}:{v}")) for v in tags if v != "latest"]
+        yanked = {"yanked": {"1.0.1": "broken"}}
+        expected = build(versions["generator"], {"a": yanked, "b": yanked}, None,
+                         json.loads(index)["generators"]["a"]["1.0.0"]["published"], versions["recipe"], {"r": yanked})
+        self.assertEqual(index, json.dumps(expected, sort_keys=True, indent=1))
+        self.assertEqual(notes_text, notes(None, expected))
+
+    def test_any_failed_check_fails_the_job(self):
+        cfg = digest(f"config {self.REG}/a:1.1.0")
+        for kwargs, message in (
+                ({"unattested": "b:1.0.1"},
+                 f"PUB-4: {self.REG}/b:1.0.1 ({digest(self.REG + '/b:1.0.1')}) has no marketplace attestation"),
+                ({"no_config": "a:1.1.0"}, f"{self.REG}/a@{cfg}: not found")):
+            with self.subTest(**kwargs):
+                rc, log, out, index, _, _ = self.publish(**kwargs)
+                self.assertEqual(rc, 1, log)
+                self.assertIn(message, log)
+                self.assertNotIn("publish", out)
+                self.assertIsNone(index)
+
+
 class BuildAll(unittest.TestCase):
     """PUB-7, PUB-9 to PUB-11, CMP-4: release/build-all merges the gate's results into meta.json."""
 
