@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: kubernetes
-  tag: kubernetes-v1.12.2
-  sha: 56585b3547cd43d04e365513e993e0ee145362e4
+  tag: kubernetes-v1.13.0
+  sha: bf1aa36b493f01bb499e1e930d462131400737a7
 owners: [3042152]
