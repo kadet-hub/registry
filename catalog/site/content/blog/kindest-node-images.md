@@ -122,8 +122,8 @@ with `failed to pull image`
 ([images.go](https://github.com/kubernetes-sigs/kind/blob/v0.33.0/pkg/cluster/internal/providers/docker/images.go#L35-L81)).
 kind shows none of the pull's output and sets no timeout on it.
 
-The pull is large. The amd64 image of v1.37.0, `sha256:1aac8018…` in the
-index above, has two layers:
+The pull is large. The amd64 image of v1.37.0, the entry `sha256:1aac8018…`
+of the index that the v1.37.0 digest names, has two layers:
 
     $ skopeo inspect --raw docker://docker.io/kindest/node@sha256:1aac8018c42eb5d48fae5be507caaee789fc6d9b9b3f560359dd4157ac00d4f6 | jq '{mediaType, layers: (.layers | length), compressed_bytes: ([.layers[].size] | add)}'
     {
