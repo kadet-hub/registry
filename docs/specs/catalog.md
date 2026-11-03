@@ -200,6 +200,7 @@ remembered in the browser's `localStorage`.
   | renovate automerge (also "renovate bot automerge", "renovate auto merge"), renovate automerge github (checked 2026-11-02) | blog post "Renovate automerge with required reviews on GitHub" |
   | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
   | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI" |
+  | kindest node (also "kindest node image", "kindest node images"), kindest node version, kind node image, kind node image version, kind custom node image, kind build node image, kind ensuring node image stuck (checked 2026-11-03) | blog post "kindest/node images: picking the version for your kind release", sections #kind-build-node-image for the custom and build queries and #ensuring-node-image-stuck for the last |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
