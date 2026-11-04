@@ -1814,7 +1814,9 @@ Related: CAT-15, CAT-30, CON-2.
   `mariadb` chart in that chart's default architecture. It is "MariaDB on
   Kubernetes with Kapitan" with a description that leads with "Bitnami
   mariadb Helm chart alternative:", because that chart is what readers
-  search a replacement for.
+  search a replacement for. wordpress, designed on the Docker Official
+  Image with mariadb included, follows it as "WordPress on Kubernetes with
+  Kapitan" and "Bitnami wordpress Helm chart alternative:".
 
   powerdns is the PowerDNS part of the kadet-hub/examples recipe
   `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
@@ -1849,7 +1851,8 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
-    keycloak: #368; mariadb: #509
+    keycloak: #368; mariadb: #509;
+    wordpress: #511
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
