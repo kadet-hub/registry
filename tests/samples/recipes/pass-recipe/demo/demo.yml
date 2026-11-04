@@ -2,7 +2,7 @@ parameters:
   components:
     demo:
       application: demo
-      image: docker.io/library/busybox:${applications.demo.version}@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      image: docker.io/library/busybox:1.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
       command:
         - sleep
         - infinity
