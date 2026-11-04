@@ -364,6 +364,15 @@ KEYCLOAK_OPERATOR_RECIPE_FILES = {
     "keycloak-operator.yml": "parameters:\n  components:\n    keycloak-operator:\n      application: keycloak-operator\n",
 }
 
+# CAT-37c, CAT-37e: the other recipes with a content page, as the chart or compose fixture under their own name.
+NEW_RECIPES = tuple(
+    (name, {k.replace(base, name): v.replace(base, name) for k, v in files.items()})
+    for base, files, names in (
+        ("cert-manager", CHART_RECIPE_FILES, ("authentik", "blackbox-exporter", "gitea", "immich", "jellyfin", "n8n", "netbox",
+                                              "ollama", "open-webui", "semaphore")),
+        ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden")))
+    for name in names)
+
 
 def recipe_classes(root):
     """Writes the classes of every recipe page under root (an assets/classes or inventory/classes directory)."""
@@ -373,7 +382,7 @@ def recipe_classes(root):
                           ("postgresql", POSTGRESQL_RECIPE_FILES), ("cnpg", CNPG_RECIPE_FILES),
                           ("keycloak", KEYCLOAK_RECIPE_FILES), ("keycloak-operator", KEYCLOAK_OPERATOR_RECIPE_FILES),
                           ("rabbitmq", RABBITMQ_RECIPE_FILES), ("rabbitmq-cluster-operator", RABBITMQ_OPERATOR_RECIPE_FILES),
-                          ("nextcloud", NEXTCLOUD_RECIPE_FILES)):
+                          ("nextcloud", NEXTCLOUD_RECIPE_FILES), *NEW_RECIPES):
         os.makedirs(os.path.join(root, "recipes", recipe), exist_ok=True)
         for name, text in files.items():
             with open(os.path.join(root, "recipes", recipe, name), "w", encoding="utf-8") as f:
@@ -725,7 +734,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 16)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 31)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -832,7 +841,7 @@ class Site(unittest.TestCase):
 
     def test_recipes(self):  # CAT-37, CAT-37b
         index = self.page("recipes")
-        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(["cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "keycloak", "keycloak-operator", "rabbitmq", "rabbitmq-cluster-operator", "nextcloud"]))
+        self.assertEqual(sorted(re.findall(r'<li><a href="[./]*recipes/([^/]+)/">', index)), sorted(["cert-manager", "miniflux", "valkey", "mysql", "mongodb", "powerdns", "external-dns-powerdns", "kafka", "strimzi", "postgresql", "cnpg", "keycloak", "keycloak-operator", "rabbitmq", "rabbitmq-cluster-operator", "nextcloud", *(name for name, _ in NEW_RECIPES)]))
         self.assertIn("<title>Kubernetes recipes that replace Helm and Bitnami charts</title>", index)  # CAT-11a
         self.assertIn(" The files are read from kadet-hub/recipes when the site is built.", index)
         chart = index

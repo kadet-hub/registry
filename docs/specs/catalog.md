@@ -1748,7 +1748,9 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_chart_recipe`, `test_http_chart_recipe`, `test_recipe_prerequisite`, `test_compose_recipe`, `test_designed_recipe`, `test_recipe_file_missing_fails_the_build`)
   - Since: #342, #344, #347, #349, #354; HTTP chart: #363; prerequisites: #364;
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
-    recipes' prerequisites: #368; nextcloud: #402
+    recipes' prerequisites: #368; nextcloud: #402;
+    authentik, blackbox-exporter, gitea, immich, jellyfin, n8n, netbox,
+    ollama, open-webui and semaphore: #507
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1785,7 +1787,8 @@ Related: CAT-15, CAT-30, CON-2.
   Related: DEC-8, DEC-9, RCP-37 to RCP-39 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c.
 
   - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
-  - Since: #343
+  - Since: #343; paperless-ngx, pihole, searxng, uptime-kuma and
+    vaultwarden: #507
 
 - CAT-37f: A CAT-37c page whose README `Source:` line is an image
   reference MUST show the source as the container image the recipe is
