@@ -1809,6 +1809,13 @@ Related: CAT-15, CAT-30, CON-2.
   "MongoDB on Kubernetes with Kapitan" and "Bitnami
   mongodb Helm chart alternative:".
 
+  mariadb, designed on the MariaDB Foundation's image, had no stand-in in
+  kadet-hub/examples, but its README says it can replace Bitnami's
+  `mariadb` chart in that chart's default architecture. It is "MariaDB on
+  Kubernetes with Kapitan" with a description that leads with "Bitnami
+  mariadb Helm chart alternative:", because that chart is what readers
+  search a replacement for.
+
   powerdns is the PowerDNS part of the kadet-hub/examples recipe
   `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
   chart. PowerDNS itself replaces no Bitnami chart, so its new page is
@@ -1842,7 +1849,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
-    keycloak: #368
+    keycloak: #368; mariadb: #509
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
