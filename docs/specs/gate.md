@@ -344,7 +344,7 @@ review go into the review comment and do not fail the gate.
   quoted, are still a finding.
 
   - Test: workflow job `gate-selftest` (`pass-recipe` holds such a line, `fail-recipe-hex-key` the same digits as `api_key`)
-  - Since: #4; `checksum/` annotations: #PR
+  - Since: #4; `checksum/` annotations: #505
 
 - SEC-2: The gate MUST fail on any GuardDog `threat-*` finding from a local
   scan of the generator tree, and MUST list `capability-*` findings for

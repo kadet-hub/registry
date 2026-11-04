@@ -326,7 +326,7 @@ the rules it is judged by.
   library, and helm fetches it while it validates, which fails in the
   sandbox without network. The schema checks the values and not the
   output, and kadet-hub/recipes CI renders the same chart and
-  `tests/values.yaml` with validation (RCP-23 there). Changed in #PR.
+  `tests/values.yaml` with validation (RCP-23 there). Changed in #505.
 
   `check` reads the render as `helm template`'s own output (RCP-34). It
   leaves the hooks out and lists them itself (RCP-25), and the CRDs are
