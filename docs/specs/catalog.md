@@ -1848,7 +1848,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
-    keycloak: #368; mariadb: this change
+    keycloak: #368; mariadb: #509
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
