@@ -334,8 +334,17 @@ fails the gate, apart from exceptions under SEC-14. Findings marked for
 review go into the review comment and do not fail the gate.
 
 - SEC-1: The gate MUST fail on any gitleaks finding in the generator tree.
-  - Test: workflow job `gate-selftest`
-  - Since: #4
+
+  `policy/gitleaks.toml` lets one kind of line pass: a pod template
+  annotation `checksum/<name>:` with 64 hex digits, the SHA-256 a chart
+  computes of a rendered Secret or ConfigMap. Recipes render the chart's
+  annotations as they are, and gitleaks' `generic-api-key` reads such a
+  line as a key: authentik, n8n, netbox and semaphore failed on it. The
+  regex matches the whole line, so the same digits under any other key, or
+  quoted, are still a finding.
+
+  - Test: workflow job `gate-selftest` (`pass-recipe` holds such a line, `fail-recipe-hex-key` the same digits as `api_key`)
+  - Since: #4; `checksum/` annotations: #505
 
 - SEC-2: The gate MUST fail on any GuardDog `threat-*` finding from a local
   scan of the generator tree, and MUST list `capability-*` findings for

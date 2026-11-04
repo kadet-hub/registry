@@ -2,3 +2,13 @@
 # a .gitleaks.toml in the scanned tree is never read.
 [extend]
 useDefault = true
+
+# A chart puts the SHA-256 of a rendered Secret or ConfigMap on the pod
+# template as checksum/<name>, and a recipe renders the same annotation
+# (SEC-1). The rule matches the whole line, so the same digits under another
+# key, or quoted, stay a finding. gitleaks 8.30.1 joins paths and regexes of
+# one allowlist with OR, so the allowlist has no paths.
+[[allowlists]]
+description = "checksum/<name> pod template annotations"
+regexTarget = "line"
+regexes = ['''^\s*checksum/[\w.-]+: [0-9a-f]{64}\s*$''']

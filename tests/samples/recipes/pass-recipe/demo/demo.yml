@@ -6,3 +6,6 @@ parameters:
       command:
         - sleep
         - infinity
+      # A chart's hash of a Secret on the pod template, which SEC-1 lets pass.
+      pod_annotations:
+        checksum/secret: 9f3b2c7d1e8a4f6b0c5d2e9a7b1f4c8d3e6a0b5c9d2f7e1a4b8c3d6e0f9a2b5c
