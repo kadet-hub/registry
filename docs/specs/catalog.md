@@ -205,6 +205,7 @@ remembered in the browser's `localStorage`.
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
+  | kubernetes cluster add-ons (also "kubernetes cluster addons"), external secrets kubernetes provider (also "external secrets operator kubernetes provider"), velero s3 compatible storage (checked 2026-11-05) | blog post "Kubernetes cluster add-ons from one Kapitan inventory, on kind", sections #external-secrets-with-the-kubernetes-provider and #velero-with-s3-compatible-storage for the last two |
   | gvisor vs docker (also "docker vs gvisor", "gvisor docker runtime") | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions", section #gvisor-vs-docker |
   | write your own helm chart, how to write helm charts, kube prometheus stack alternative (checked 2026-10-22) | blog post "Writing a Helm chart vs Kapitan: three popular charts rebuilt", section #kube-prometheus-stack-alternative for the last |
   | helm chart vs operator, operator vs helm chart, kubernetes operator vs helm chart, k8s operator vs helm chart (checked 2026-10-22) | blog post "Helm chart vs operator: PostgreSQL installed both ways on kind" |
