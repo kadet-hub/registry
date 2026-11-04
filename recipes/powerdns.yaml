@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: powerdns
+  tag: powerdns-v1.0.0
+  sha: 594332596eb3017760e4336039e55b09df508f43
+owners: [3042152]
+exceptions: []
