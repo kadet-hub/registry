@@ -2,7 +2,7 @@ parameters:
   components:
     valkey:
       application: valkey
-      image: docker.io/valkey/valkey:${applications.valkey.version}@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+      image: docker.io/valkey/valkey:9.1.2@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
       command:
         - valkey-server
       args:

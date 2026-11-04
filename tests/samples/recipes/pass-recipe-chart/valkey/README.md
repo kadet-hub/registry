@@ -56,7 +56,7 @@ your choice. Without it the compile stops with
 
 | Chart value | Inventory |
 |---|---|
-| `image.tag` | `applications.valkey.version`, together with the digest in `components.valkey.image` |
+| `image.tag` | `components.valkey.image`, tag and digest |
 | `auth.aclUsers.default.password` | `applications.valkey.password` |
 | `valkeyConfig` | `applications.valkey.config` |
 | `valkeyLogLevel` | `components.valkey.env.VALKEY_LOG_LEVEL` |
