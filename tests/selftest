@@ -119,6 +119,9 @@ derive_recipe fail-recipe-no-license "REC-15: vendor/demo.crds.yaml is vendored 
 rm -- "$work/recipes/fail-recipe-no-license/demo/vendor/demo.crds.yaml.LICENSE"
 derive_recipe fail-recipe-token "gitleaks: aws-access-token: tests/values.yaml"
 printf 'aws_access_key_id: %s\n' "$key" >>"$work/recipes/fail-recipe-token/demo/tests/values.yaml"
+# The same 64 hex digits under another key than checksum/ are still a finding.
+derive_recipe fail-recipe-hex-key "gitleaks: generic-api-key: demo.yml"
+sed -i 's#checksum/secret:#api_key:#' "$work/recipes/fail-recipe-hex-key/demo/demo.yml"
 derive_recipe fail-recipe-oc-env "REC-5: init.yml: uses the resolver oc.env (RCP-17)"
 sed -i 's/version: 1.0.0/version: ${oc.env:HOME}/' "$work/recipes/fail-recipe-oc-env/demo/init.yml"
 derive_recipe fail-recipe-include "REC-5: init.yml: class recipes.other.vendor.x is neither"
