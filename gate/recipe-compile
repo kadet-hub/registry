@@ -75,11 +75,13 @@ rendered=()
 case $kind in
   chart | http)
     # helm template's whole output, CRDs and hooks included, as check reads it (RCP-34).
+    # The schema is not validated: the sandbox has no network for a remote $ref (REC-7).
     mkdir -- "$work/chart"
     cp -- "$work"/fetch/chart/*.tgz "$work/chart/chart.tgz"
     cp -- "$recipes/$name/tests/values.yaml" "$work/chart/values.yaml"
     "$root/sandbox/run" --allow helm-template --program helm --stdout "$work/rendered.yaml" "$work/chart" \
-      template "$name" /project/chart.tgz "--namespace=$namespace" -f /project/values.yaml --include-crds || exit 1
+      template "$name" /project/chart.tgz "--namespace=$namespace" -f /project/values.yaml --include-crds \
+      --skip-schema-validation || exit 1
     rendered=(/work/rendered.yaml)
     ;;
   manifest)

@@ -321,6 +321,13 @@ the rules it is judged by.
   index entry's `digest` as a cache key without comparing it with the
   archive. So the gate checks the archive itself, as `check` does.
 
+  The gate adds `--skip-schema-validation`. A chart's `values.schema.json`
+  may reference a schema by URL, as immich's does for bjw-s' common
+  library, and helm fetches it while it validates, which fails in the
+  sandbox without network. The schema checks the values and not the
+  output, and kadet-hub/recipes CI renders the same chart and
+  `tests/values.yaml` with validation (RCP-23 there). Changed in #505.
+
   `check` reads the render as `helm template`'s own output (RCP-34). It
   leaves the hooks out and lists them itself (RCP-25), and the CRDs are
   part of the comparison. The output rules of REC-8 take the chart's
