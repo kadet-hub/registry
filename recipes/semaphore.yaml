@@ -1,7 +1,7 @@
 source:
   repo: https://github.com/kadet-hub/recipes.git
   path: semaphore
-  tag: semaphore-v1.0.0
-  sha: 594332596eb3017760e4336039e55b09df508f43
+  tag: semaphore-v1.0.1
+  sha: d1ff73d864997b80f4eea29db86a50863ad833d2
 owners: [3042152]
 exceptions: []
