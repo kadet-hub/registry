@@ -191,6 +191,7 @@ remembered in the browser's `localStorage`.
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | timoni kubernetes, timoni bundle (checked 2026-11-05) | blog post "Timoni vs Kapitan for Kubernetes: CUE modules, OCI bundles" |
   | kcl kubernetes, kcl kubernetes example (checked 2026-11-05) | blog post "KCL vs Kapitan for Kubernetes: typed schemas and OCI modules" |
+  | external secrets operator vault (also "external secrets operator vault example", "external secrets operator vault approle"), external secrets operator rotation (checked 2026-11-05) | blog post "External Secrets Operator with Vault AppRole and Kapitan refs" |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
   | kubectl wait for condition (checked 2026-11-02) | blog post "kubectl wait for condition fails on null conditions" |
