@@ -1,0 +1,114 @@
+[
+  {
+    "name": "approved",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "neat-bot"}, "state": "COMMENTED", "commit_id": "1111111111111111111111111111111111111111", "submitted_at": "2026-11-05T10:00:00Z", "body": "1. `gate/run` drops the exit code of the scan."},
+      {"id": 2, "user": {"login": "neat-bot"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:30:00Z", "body": "Both findings are fixed."}
+    ],
+    "pass": true
+  },
+  {
+    "name": "commented with findings",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "neat-bot"}, "state": "COMMENTED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:00:00Z", "body": "1. The test does not cover the dismissed review."}
+    ],
+    "pass": false
+  },
+  {
+    "name": "approved, then commented with findings",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "neat-bot"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:00:00Z", "body": ""},
+      {"id": 2, "user": {"login": "neat-bot"}, "state": "COMMENTED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:05:00Z", "body": "One more: the retry loop never ends."}
+    ],
+    "pass": false
+  },
+  {
+    "name": "stale approval of an older commit",
+    "author": "kadet-hub-agent[bot]",
+    "head": "3333333333333333333333333333333333333333",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "neat-bot"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:30:00Z", "body": ""}
+    ],
+    "pass": false
+  },
+  {
+    "name": "maintainer requested changes",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "Moep90"}, "state": "CHANGES_REQUESTED", "commit_id": "1111111111111111111111111111111111111111", "submitted_at": "2026-11-05T09:00:00Z", "body": "Not this way."},
+      {"id": 2, "user": {"login": "Moep90"}, "state": "COMMENTED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:10:00Z", "body": "Looking again later."},
+      {"id": 3, "user": {"login": "neat-bot"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:30:00Z", "body": ""}
+    ],
+    "pass": false
+  },
+  {
+    "name": "maintainer change request dismissed",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "Moep90"}, "state": "DISMISSED", "commit_id": "1111111111111111111111111111111111111111", "submitted_at": "2026-11-05T09:00:00Z", "body": "Not this way."},
+      {"id": 2, "user": {"login": "neat-bot"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:30:00Z", "body": ""}
+    ],
+    "pass": true
+  },
+  {
+    "name": "maintainer approved after requesting changes",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "Moep90"}, "state": "CHANGES_REQUESTED", "commit_id": "1111111111111111111111111111111111111111", "submitted_at": "2026-11-05T09:00:00Z", "body": "Not this way."},
+      {"id": 2, "user": {"login": "Moep90"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:20:00Z", "body": ""},
+      {"id": 3, "user": {"login": "neat-bot"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:30:00Z", "body": ""}
+    ],
+    "pass": true
+  },
+  {
+    "name": "change request without write access",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [
+      {"id": 1, "user": {"login": "drive-by"}, "state": "CHANGES_REQUESTED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:00:00Z", "body": "Please rename it."},
+      {"id": 2, "user": {"login": "neat-bot"}, "state": "APPROVED", "commit_id": "2222222222222222222222222222222222222222", "submitted_at": "2026-11-05T10:30:00Z", "body": ""}
+    ],
+    "pass": true
+  },
+  {
+    "name": "no review yet",
+    "author": "kadet-hub-agent[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [],
+    "pass": false
+  },
+  {
+    "name": "maintainer pull request without a review",
+    "author": "Moep90",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [],
+    "pass": false
+  },
+  {
+    "name": "renovate pull request",
+    "author": "renovate[bot]",
+    "head": "2222222222222222222222222222222222222222",
+    "write": ["Moep90"],
+    "reviews": [],
+    "pass": true
+  }
+]

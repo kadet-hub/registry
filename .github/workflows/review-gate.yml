@@ -1,0 +1,25 @@
+name: review-gate
+
+# AGT-11. pull_request and pull_request_review give a fork pull request a
+# read-only token; the action reads reviews through the API and checks out
+# nothing. Each run judges the head commit its check attaches to, and a newer
+# event cancels an older run, so a stale result cannot land last.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: review-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: $/.github/actions/review-gate

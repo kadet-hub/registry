@@ -1,7 +1,7 @@
 name: workflows
 
-# GI-6, GI-10, GI-11, GI-15 on pull requests that change workflows, actions
-# or the sandbox image's downloads.
+# GI-6, GI-10, GI-11, GI-15 and the review gate's unit tests (AGT-11) on pull
+# requests that change workflows, actions or the sandbox image's downloads.
 on:
   pull_request:
     paths:
@@ -50,3 +50,6 @@ jobs:
 
       - name: zizmor
         run: zizmor --offline --format plain .github
+
+      - name: Review gate unit tests
+        run: python3 -m unittest discover -s .github/actions/review-gate -v

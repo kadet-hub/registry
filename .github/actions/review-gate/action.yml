@@ -1,0 +1,18 @@
+name: review-gate
+description: >-
+  AGT-11: fail a pull request until neat-bot's latest review approves its
+  head commit and no user with write access has an open change request;
+  pass Renovate's pull requests. Runs on pull_request and
+  pull_request_review, reads reviews through the API and checks out nothing.
+runs:
+  using: composite
+  steps:
+    - name: Decide
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        PR: ${{ github.event.pull_request.number }}
+        AUTHOR: ${{ github.event.pull_request.user.login }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: python3 "$GITHUB_ACTION_PATH/review_gate.py"
