@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Consumers
 
 Status: Approved
-Code: `consumer/`, `sandbox/gitlab-ci.yml`, `.github/workflows/consumer.yml`, `.github/actions/consumer/`, `tests/consumers/`, `docs/consumers.md`, `policy/consumer.schema.json` (CON-4)
+Code: `consumer/`, `sandbox/gitlab-ci.yml`, `.github/workflows/consumer.yml`, `.github/actions/consumer/`, `tests/consumers/`, `docs/consumers.md`, `policy/consumer.schema.json` (CON-4), `CHANGELOG.md` (CON-10)
 Verified against: main @ 970a5d4
 
 Related: [marketplace.md](marketplace.md) holds the problem, threat model, decisions,
@@ -340,3 +340,35 @@ without its included recipes, or an included recipe without its parent,
 then fails with a CON-9 finding that names the pin. Deleting the pins of
 included recipes resolves it and keeps later updates consistent. A pin at
 another digest failed before #536 as well.
+
+## Release notes
+
+A consumer pins the workflow by commit and moves the pin by hand or with
+Renovate. Before the move it needs to know what changes for its project
+and what it has to do. The index releases `index-<serial>` (PUB-12) are
+the registry's only releases, and their tags are commits of `main`, so
+they carry the consumer changes as well.
+
+- CON-10: A pull request that changes the consumer workflow in a way a
+  consumer pinned to a commit can notice MUST add a section to
+  `CHANGELOG.md`. The section heading names the date and the pull
+  request. The text says what changes and what a consumer has to do when
+  it moves its pin.
+
+  The consumer workflow is `.github/workflows/consumer.yml`, the actions
+  `consumer`, `compile-diff` and `compile-diff-comment`, `consumer/`,
+  `sandbox/gitlab-ci.yml`, `policy/consumer.schema.json` and the sandbox
+  image these run. Tool updates that Renovate merges on its own (REV-5)
+  get no section. The commit history of `sandbox/` lists them.
+
+  The release of the next index serial copies each section added since
+  the previous serial's release into its notes, so its tag is the first
+  commit to pin for the change. Sections are matched by heading, and a
+  heading does not change once a release has listed it. When
+  `CHANGELOG.md` at the previous release's tag cannot be read, the notes
+  leave the sections out and the run prints a warning. This is the case
+  for the first release after this change, because the file did not
+  exist before.
+
+  - Test: `release/test_release.py` (`Index.test_release_notes_with_changelog`, `PublishIndex.test_changelog_sections_since_the_previous_release`); whether a change needs a section is reviewed
+  - Since: this change

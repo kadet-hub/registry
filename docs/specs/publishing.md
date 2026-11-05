@@ -473,7 +473,9 @@ since the documented package API has no visibility call.
   a GitHub release tagged `index-<serial>` at the run's commit, with the
   assets `index.json`, its Sigstore bundle `index.json.sigstore.json` and
   its in-toto bundle `index.json.intoto.jsonl`, and with notes that name
-  the serial and the versions added and yanked since the previous serial.
+  the serial and the versions added and yanked since the previous serial,
+  followed by the `CHANGELOG.md` sections added since the previous
+  serial's release (CON-10).
 
   OpenSSF Scorecard (GI-12) scores Signed-Releases from release assets
   alone, so the attested index on ghcr.io left the check at "no releases
@@ -524,8 +526,9 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py::Index.test_release_notes`; manual: the
     first release run after the merge creates `index-<serial>` and the
-    documented verification passes on its assets
-  - Since: #249
+    documented verification passes on its assets; the changelog sections:
+    see CON-10
+  - Since: #249; changelog sections: this change
 
 ## Mirrored images
 
