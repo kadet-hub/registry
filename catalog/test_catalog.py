@@ -1939,6 +1939,24 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         self.assertIn("helm template output, rendered when this site was built", page)
         self.assertIn("Not compiled in your browser and not affected by your edits", page)
 
+    def test_highlight_colours_reach_aa(self):  # PG-25: every token colour on pre's background, light and dark
+        with open(os.path.join(HERE, "site", "static", "style.css"), encoding="utf-8") as f:
+            css = f.read()
+        colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
+        used = set(re.findall(r"\.token\.[^{]*\{[^}]*color: var\(--([\w-]+)\)", css))
+        self.assertEqual(re.search(r"^pre \{[^}]*background: var\(--([\w-]+)\)", css, re.M).group(1), "bg-subtle")
+
+        def luminance(hex_colour):
+            rgb = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+            r, g, b = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        self.assertEqual(used, {"text-muted", "accent", "ok", "warn"})
+        for name in used:
+            for theme in (0, 1):
+                fg, bg = luminance(colours[name][theme]), luminance(colours["bg-subtle"][theme])
+                self.assertGreaterEqual((max(fg, bg) + 0.05) / (min(fg, bg) + 0.05), 4.5, (name, ("light", "dark")[theme]))
+
     def test_build_takes_the_latest_listed_version_and_the_gate_hashes(self):  # PG-1, PG-5
         sys.path.insert(0, os.path.join(HERE, "playground"))
         try:

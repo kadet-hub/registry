@@ -1,13 +1,13 @@
-"""Build the playground's static files (PG-1, PG-5, PG-8, PG-11, PG-12). Standard library only.
+"""Build the playground's static files (PG-1, PG-5, PG-8, PG-11, PG-12, PG-24). Standard library only.
 
 Usage: build.py --index <index.json> --out <dir> --data <playground.json> [--projects <dir>] [--outputs <dir>]
 
 Needs network, oras, node, and `npm ci` run in this directory. --out receives
 the page's scripts from catalog/site/static/playground, pyodide/ with the
-Pyodide runtime and every package the playground loads, packages.json and
-examples.json. Each downloaded file is checked against the npm lockfile's
-integrity (npm ci), the sha256 of pyodide-lock.json or the hashes of
-sandbox/requirements.txt. compile.mjs then compiles every example under each
+Pyodide runtime and every package the playground loads, prism/ with the
+highlighter and its licence, packages.json and examples.json. Each
+downloaded file is checked against the npm lockfile's integrity (npm ci),
+the sha256 of pyodide-lock.json or the hashes of sandbox/requirements.txt. compile.mjs then compiles every example under each
 of its backends in Pyodide, fails on an error or an empty output, and writes
 the bytecode archives (DEC-44). --projects receives each example as a Kapitan
 project, --outputs its compiled files per backend, for check (PG-6).
@@ -37,9 +37,11 @@ FROM_PYODIDE = ["pyyaml", "jinja2", "markupsafe", "pydantic", "regex", "six", "p
 # Pure-Python wheels at the gate's versions (DEC-41).
 FROM_PYPI = ["kapitan", "kadet", "python-box", "typeguard", "pydantic-settings", "python-dotenv",
              "kapicorp-reclass", "filetype", "toml", "omegaconf"]
+# Prism's core and the grammars of the output panes, from the npm package the lock file pins (PG-24).
+PRISM = ["prism-core.min.js", "prism-markup.min.js", "prism-markdown.min.js", "prism-yaml.min.js", "prism-json.min.js"]
 # Files the page fetches when the visitor starts it, besides the wheels.
-STARTUP = ["worker.js", "kapitan_wasm.py", "packages.json", "examples.json", "pyodide/site-packages-pyc.zip"] + \
-    [f"pyodide/{f}" for f in CORE]
+STARTUP = ["worker.js", "kapitan_wasm.py", "syntax.js", "packages.json", "examples.json", "pyodide/site-packages-pyc.zip"] + \
+    [f"pyodide/{f}" for f in CORE] + [f"prism/{f}" for f in PRISM]
 
 
 def norm(name):
@@ -207,14 +209,20 @@ def main():
     for name in os.listdir(SITE_FILES):
         shutil.copyfile(os.path.join(SITE_FILES, name), os.path.join(out, name))
 
-    npm = os.path.join(HERE, "node_modules", "pyodide")
     with open(os.path.join(HERE, "package.json"), encoding="utf-8") as f:
-        pinned = json.load(f)["dependencies"]["pyodide"]
-    with open(os.path.join(npm, "package.json"), encoding="utf-8") as f:
-        if json.load(f)["version"] != pinned:
-            sys.exit(f"build.py: node_modules has another pyodide than {pinned}; run npm ci")
+        deps = json.load(f)["dependencies"]
+    for dep, version in deps.items():
+        with open(os.path.join(HERE, "node_modules", dep, "package.json"), encoding="utf-8") as f:
+            if json.load(f)["version"] != version:
+                sys.exit(f"build.py: node_modules has another {dep} than {version}; run npm ci")
+    npm, pinned = os.path.join(HERE, "node_modules", "pyodide"), deps["pyodide"]
     for name in CORE:
         shutil.copyfile(os.path.join(npm, name), os.path.join(out, "pyodide", name))
+    prism = os.path.join(HERE, "node_modules", "prismjs")
+    os.makedirs(os.path.join(out, "prism"), exist_ok=True)
+    for name in PRISM:
+        shutil.copyfile(os.path.join(prism, "components", name), os.path.join(out, "prism", name))
+    shutil.copyfile(os.path.join(prism, "LICENSE"), os.path.join(out, "prism", "LICENSE"))
     with open(os.path.join(npm, "pyodide-lock.json"), encoding="utf-8") as f:
         lock = json.load(f)["packages"]
     by_norm = {norm(k): k for k in lock}
