@@ -8,10 +8,11 @@ and `compile-diff-comment`, `consumer/`, the GitLab template
 image they run. Tool updates that Renovate merges on its own are in the
 commit history of `sandbox/`.
 
-The next index release ([`index-<serial>`](https://github.com/kadet-hub/registry/releases))
-after a change repeats its section in the release notes, and the release's
-tag is the first commit to pin for it. Earlier changes are in the commit
-history of the paths above.
+Each index release ([`index-<serial>`](https://github.com/kadet-hub/registry/releases))
+repeats the sections added since the previous one in its notes, and its
+tag is the first commit to pin for them. The sections for #536 and #537
+are older than that and appear in no release notes. Earlier changes are in
+the commit history of the paths above.
 
 ## 2026-11-05: included recipes come from the index (#536)
 
