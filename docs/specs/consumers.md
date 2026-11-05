@@ -269,7 +269,7 @@ CON-1 checks, fetches and verifies them like any generator.
   - Test: none; `manual:` with Kapitan 0.36.3, `random:special:40:` gave
     40 letters and digits and `random:special:40:._~` added only `.` and
     `~` (2026-11-05)
-  - Since: #397; included recipes: #536; parameter characters: tbd
+  - Since: #397; included recipes: #536; parameter characters: #564
 
 ### Included recipes
 
