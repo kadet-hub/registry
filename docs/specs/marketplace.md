@@ -120,6 +120,10 @@ the build job (RISK-10).
 - DEC-24 to DEC-27: kadet-hub/kapitan builds `next` from open upstream
   PRs with the workflow of kapicorp/kapitan#1637
   ([kapitan-next.md](kapitan-next.md)).
+- DEC-31 to DEC-36: two composite actions compile a consumer pull
+  request's base and merge commit through the consumer flow and post the
+  diff of `compiled/` as one comment, from a `workflow_run` job that runs
+  nothing from the pull request ([compile-diff.md](compile-diff.md)).
 
 ## Area specs
 
@@ -135,6 +139,7 @@ Requirements live in the spec of their area; IDs are unchanged by the split.
 | [legal.md](legal.md) | Legal | LEG |
 | [recipes.md](recipes.md) | Recipes: registration, gate, artifact and index | REC |
 | [kapitan-next.md](kapitan-next.md) | The kadet-hub/kapitan `next` build and its image | NXT |
+| [compile-diff.md](compile-diff.md) | Compile diff of consumer pull requests | CD |
 | [playground.md](playground.md) | The Kapitan playground in the browser | PG |
 
 ## Verification
@@ -158,7 +163,7 @@ cover none of the changed files.
   | Job | Workflow | Inputs |
   |---|---|---|
   | `gate-selftest` | `selftest.yml` | `sandbox/`, `scan/`, `gate/`, `policy/`, `consumer/unpack.py`, `tests/selftest`, `tests/samples/`, actions `setup-gate`, `setup-check`, `setup-gvisor`, `setup-kind` |
-  | `consumer-selftest` | `consumer-selftest.yml` | `consumer/`, `sandbox/`, `gate/fetch_tree.py`, `policy/output/`, `policy/binaries.txt`, `tests/consumer-selftest`, `tests/consumers/`, action `setup-gvisor` |
+  | `consumer-selftest` | `consumer-selftest.yml` | `consumer/`, `sandbox/`, `gate/fetch_tree.py`, `policy/output/`, `policy/binaries.txt`, `tests/consumer-selftest`, `tests/consumers/`, actions `setup-gvisor`, `compile-diff` (CD-2) |
   | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, action `setup-hugo` |
   | `release-tests` | `release-tests.yml` | `release/` |
   | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
@@ -504,6 +509,7 @@ coverage is named at each:
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3, CON-6, PUB-12, PUB-13b, CAT-34d, CAT-34e |
+| `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py` | CD-1 to CD-9; paths in [compile-diff.md](compile-diff.md) |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |
