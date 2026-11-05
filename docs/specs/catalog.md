@@ -1625,6 +1625,82 @@ Related: CAT-15, CAT-30, CON-2.
     `navigator.share` present and absent
   - Since: #307
 
+- CAT-45: A blog post that puts several recipes or generators together
+  into one use case, backed by a project in kadet-hub/examples, MUST name
+  them in a front matter field `stack`. The listings of CAT-46 and CAT-48
+  MUST be built from that field alone.
+
+  Such a stack post walks through one project, such as Open WebUI with
+  SearXNG, whose `check` script deploys it on kind. The field holds what
+  the project pins, including a generator that comes only with a recipe:
+
+  ```yaml
+  stack:
+    recipes: [open-webui, ollama, searxng, valkey]
+    generators: [kubernetes]
+    example: open-webui-searxng
+  ```
+
+  `recipes` are names of recipe pages (CAT-37c), `generators` names of
+  generators in the index, and `example` the project's folder in
+  kadet-hub/examples. Either list may be left out. The post is the only
+  place that names its parts, so a new stack is one block in the pull
+  request that adds the post. A data file next to the posts was
+  considered; it would name every post a second time. A stack shows from
+  its post's date, because Hugo leaves a future-dated post out of the
+  build (CAT-36a).
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
+- CAT-46: The site MUST have a page at `/stacks/` that lists every
+  published stack post, newest first, with its title linked to the post,
+  its description, its recipes and generators each linked to its page,
+  and a link to its folder in kadet-hub/examples.
+
+  A generator the index does not list has no page, so its name shows
+  without a link, as a prerequisite without a page does on a recipe page
+  (CAT-37c). The release build's index lists every generator the posts
+  name. Without a published stack post the page says so.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`)
+  - Since: this change
+
+- CAT-47: The site navigation MUST link `/stacks/` after "Recipes", and
+  `/llms.txt` (CAT-16) MUST link it under "Using generators".
+
+  - Test: `catalog/test_catalog.py` (`Site.test_stacks_linked`)
+  - Since: this change
+
+- CAT-48: Every recipe page and every generator page MUST have a section
+  "Used in stacks" that links each published stack post naming it, newest
+  first, and MUST NOT have the section when none does.
+
+  On a recipe page the section comes before "Versions". On a generator
+  page it follows the README in the same column, and the "On this page"
+  list of CAT-19 links it between README and Versions. The Markdown
+  variants (CAT-28, CAT-37b) do not carry it.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_used_in_stacks`)
+  - Since: this change
+
+- CAT-49: The build MUST fail when a published stack post names a recipe
+  without a page at `/recipes/<name>/` or names no `example`.
+
+  Recipe pages are content pages, so the check runs the same offline and
+  in the release. A failed build stops the release's catalog job before
+  the Pages upload and the previous site stays live, as with CAT-37a.
+  Posts are usually merged days before their date, and the release build
+  would meet a wrong name only on the morning the post goes live. The
+  test therefore builds the site with Hugo's `--buildFuture`, which checks
+  queued posts in the pull request that adds them, and checks every
+  generator a stack post names against the entries in `generators/`. The
+  build does not check generators, because their pages come from the
+  index, and the fixture indexes of the tests leave most of them out.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
   `/recipes/<name>/` (CAT-37c).

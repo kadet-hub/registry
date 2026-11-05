@@ -3,6 +3,7 @@
 {{ $page := . }}
 {{ range where site.Data.catalog.generators "name" .Params.generator }}
 {{ $name := .name }}{{ $shared := .stars_shared }}{{ $gen := . }}
+{{ $stacks := (where (where site.RegularPages "Section" "blog") "Params.stack.generators" "intersect" (slice .name)).ByDate.Reverse }}
 <article class="generator">
 <header class="generator-head">
   <span class="monogram large hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
@@ -45,6 +46,7 @@
   <summary><h2 id="toc">On this page</h2></summary>
   <ol>
     {{ with .readme }}<li><a href="#readme">README</a></li>{{ end }}
+    {{ with $stacks }}<li><a href="#stacks">Used in stacks</a></li>{{ end }}
     <li><a href="#versions">Versions</a></li>
   </ol>
 </details>
@@ -54,6 +56,12 @@
 {{ with .readme }}
 <section class="readme" id="readme" aria-label="README">
   {{ $page.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .) }}
+</section>
+{{ end }}
+{{ with $stacks }}{{/* CAT-48 */}}
+<section class="stacks" aria-labelledby="stacks">
+<h2 id="stacks">Used in stacks</h2>
+<ul>{{ range . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}</ul>
 </section>
 {{ end }}
 </div>

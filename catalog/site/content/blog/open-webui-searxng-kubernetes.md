@@ -3,6 +3,10 @@ title: "Open WebUI with SearXNG on Kubernetes, from Kapitan recipes"
 date: 2026-11-07
 topics: [kapitan, helm, verification]
 description: "Open WebUI with SearXNG as its web search and Ollama on Kubernetes, from four Kapitan recipes, deployed on kind and tested through Open WebUI's API."
+stack:
+  recipes: [open-webui, ollama, searxng, valkey]
+  generators: [kubernetes]
+  example: open-webui-searxng
 ---
 
 A chat assistant that runs in your own cluster and can look things up on
