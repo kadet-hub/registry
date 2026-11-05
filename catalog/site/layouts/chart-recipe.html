@@ -50,11 +50,13 @@
 {{ range . }}<p class="warning">Version {{ $r.latest.version }} pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</p>
 {{ end }}<p>The consumer workflow rejects a yanked generator, so this page shows no fetch inventory for the version.</p>
 {{ else }}
-<p>A separate fetch inventory pins the recipe{{ with $r.latest.includes }} and the recipes it includes{{ end }} by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. This is <code>fetch/targets/recipes.yml</code> for version {{ $r.latest.version }}:</p>
+<p>A separate fetch inventory pins the recipe by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. This is <code>fetch/targets/recipes.yml</code> for version {{ $r.latest.version }}:</p>
 {{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" $r.fetch "event" (printf "copy-fetch-inventory/recipes/%s" $r.name)) }}
-<p>The first command fetches the recipe into <code>inventory/classes/recipes/{{ $r.name }}</code>, the second the generators and compiles:</p>
+{{ with $r.included }}<p>Version {{ $r.latest.version }} includes {{ . }}. The consumer workflow adds the included recipes at the digests the index lists. Kapitan's <code>--fetch</code> reads no index, so for a local compile pull them by digest first:</p>
+{{ partial "snippet.html" (dict "id" "pull" "label" "pull commands" "text" $r.pull) }}
+{{ end }}<p>The first command fetches the recipe into <code>inventory/classes/recipes/{{ $r.name }}</code>, the second the generators and compiles:</p>
 {{ partial "snippet.html" (dict "id" "commands" "label" "commands" "text" $r.commands) }}
-<p>The first command exits with status 1 because the fetch target compiles nothing. Kapitan's <code>--fetch</code> checks neither the digest nor the attestation. This verifies the attestation of each recipe the fetch inventory pins:</p>
+<p>The first command exits with status 1 because the fetch target compiles nothing. Kapitan's <code>--fetch</code> checks neither the digest nor the attestation. This verifies the attestation of the recipe{{ with $r.included }} and of the recipes it includes{{ end }}:</p>
 {{ partial "snippet.html" (dict "id" "verify" "label" "verify commands" "text" $r.verify "event" (printf "copy-verify/recipes/%s" $r.name)) }}
 <p>The attested index must also list each digest under its recipe with the pinned version, and not as yanked. <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#verifying-by-hand">Verifying by hand</a> shows how to read it.</p>
 {{ with $r.policy }}<p>The output rules found {{ range $i, $c := $r.latest.output_capabilities }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ end }} in the compiled output of the recipe's test target. The consumer workflow fails unless the policy <code>.kapitan-sandbox.yaml</code> accepts these capabilities for the target's output path:</p>
@@ -70,6 +72,9 @@
 {{ range $r.sections }}
 <h2>{{ .heading }}</h2>
 {{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .body) }}
+{{ end }}
+{{ with (where (where site.RegularPages "Section" "blog") "Params.stack.recipes" "intersect" (slice $r.name)).ByDate.Reverse }}<h2>Used in stacks</h2>{{/* CAT-48 */}}
+<ul>{{ range . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}</ul>
 {{ end }}
 {{ with $r.record }}
 <h2>Versions</h2>

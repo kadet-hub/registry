@@ -1625,6 +1625,82 @@ Related: CAT-15, CAT-30, CON-2.
     `navigator.share` present and absent
   - Since: #307
 
+- CAT-45: A blog post that puts several recipes or generators together
+  into one use case, backed by a project in kadet-hub/examples, MUST name
+  them in a front matter field `stack`. The listings of CAT-46 and CAT-48
+  MUST be built from that field alone.
+
+  Such a stack post walks through one project, such as Open WebUI with
+  SearXNG, whose `check` script deploys it on kind. The field holds what
+  the project pins, including a generator that comes only with a recipe:
+
+  ```yaml
+  stack:
+    recipes: [open-webui, ollama, searxng, valkey]
+    generators: [kubernetes]
+    example: open-webui-searxng
+  ```
+
+  `recipes` are names of recipe pages (CAT-37c), `generators` names of
+  generators in the index, and `example` the project's folder in
+  kadet-hub/examples. Either list may be left out. The post is the only
+  place that names its parts, so a new stack is one block in the pull
+  request that adds the post. A data file next to the posts was
+  considered; it would name every post a second time. A stack shows from
+  its post's date, because Hugo leaves a future-dated post out of the
+  build (CAT-36a).
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
+- CAT-46: The site MUST have a page at `/stacks/` that lists every
+  published stack post, newest first, with its title linked to the post,
+  its description, its recipes and generators each linked to its page,
+  and a link to its folder in kadet-hub/examples.
+
+  A generator the index does not list has no page, so its name shows
+  without a link, as a prerequisite without a page does on a recipe page
+  (CAT-37c). The release build's index lists every generator the posts
+  name. Without a published stack post the page says so.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`)
+  - Since: this change
+
+- CAT-47: The site navigation MUST link `/stacks/` after "Recipes", and
+  `/llms.txt` (CAT-16) MUST link it under "Using generators".
+
+  - Test: `catalog/test_catalog.py` (`Site.test_stacks_linked`)
+  - Since: this change
+
+- CAT-48: Every recipe page and every generator page MUST have a section
+  "Used in stacks" that links each published stack post naming it, newest
+  first, and MUST NOT have the section when none does.
+
+  On a recipe page the section comes before "Versions". On a generator
+  page it follows the README in the same column, and the "On this page"
+  list of CAT-19 links it between README and Versions. The Markdown
+  variants (CAT-28, CAT-37b) do not carry it.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_used_in_stacks`)
+  - Since: this change
+
+- CAT-49: The build MUST fail when a published stack post names a recipe
+  without a page at `/recipes/<name>/` or names no `example`.
+
+  Recipe pages are content pages, so the check runs the same offline and
+  in the release. A failed build stops the release's catalog job before
+  the Pages upload and the previous site stays live, as with CAT-37a.
+  Posts are usually merged days before their date, and the release build
+  would meet a wrong name only on the morning the post goes live. The
+  test therefore builds the site with Hugo's `--buildFuture`, which checks
+  queued posts in the pull request that adds them, and checks every
+  generator a stack post names against the entries in `generators/`. The
+  build does not check generators, because their pages come from the
+  index, and the fixture indexes of the tests leave most of them out.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
   `/recipes/<name>/` (CAT-37c).
@@ -1965,13 +2041,16 @@ Related: CAT-15, CAT-30, CON-2.
   reads it from `$CATALOG_ARTIFACTS/recipes/<name>.tar`. Relative links in
   the README sections point into kadet-hub/recipes at `source.sha`.
 
-  The fetch inventory holds one `oci` dependency for the recipe and one for
-  each recipe its record lists under `includes`. It sets no `vars`, because
-  CON-4 accepts nothing but `dependencies` there. The verification commands
-  run `gh attestation verify` on each of these artifacts, and the page
-  links "Verifying by hand" in `docs/consumers.md` for the index check of
-  CON-5. The policy line names `compiled/<target>/*`, because the record
-  leaves out the output paths (REC-13).
+  The fetch inventory holds one `oci` dependency, for the recipe. It sets
+  no `vars`, because CON-4 accepts nothing but `dependencies` there. The
+  consumer workflow adds the recipes the record lists under `includes`
+  (CON-7). Kapitan's `--fetch` reads no index, so for a version with
+  includes the page names them and gives the commands that pull each of
+  them by digest for a local compile (CON-6). The verification commands
+  run `gh attestation verify` on the recipe and on each included recipe,
+  and the page links "Verifying by hand" in `docs/consumers.md` for the
+  index check of CON-5. The policy line names `compiled/<target>/*`,
+  because the record leaves out the output paths (REC-13).
 
   The version list gives each version's date and digest, and the reason
   when the version or a generator version it pins is yanked. Only the
@@ -1980,7 +2059,7 @@ Related: CAT-15, CAT-30, CON-2.
   version list.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`)
-  - Since: #399
+  - Since: #399; included recipes left to the consumer workflow: #536
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 
@@ -2024,9 +2103,9 @@ Related: CAT-15, CAT-30, CON-2.
   kind cluster, in this order: create the cluster, install Kapitan, write
   the project, verify the recipe, compile, apply, open the app, delete
   the cluster. Every step MUST say what its commands do. The fetch
-  inventory, the include snippet, the verify command and the compile
-  commands MUST be the ones `/recipes/uptime-kuma/` shows (CAT-37c,
-  CAT-38).
+  inventory, the include snippet, the verify command, the compile
+  commands and, for a version that includes recipes, their pull commands
+  MUST be the ones `/recipes/uptime-kuma/` shows (CAT-37c, CAT-38).
 
   A reader who arrives from a post on Helm or Kustomize had no path from
   reading to a running app: the recipe pages assume Kapitan is installed
@@ -2080,7 +2159,7 @@ Related: CAT-15, CAT-30, CON-2.
     already on the host and Python, Kapitan and the Uptime Kuma image
     downloaded. `http://localhost:3001` showed "Create your admin account";
     the port-forward ran in the background for that check.
-  - Since: #540
+  - Since: #540; pull commands of included recipes: #536
 
 - CAT-40a: The site navigation MUST link the quickstart as its first
   entry, and every recipe page MUST link it under "Fetching it".
