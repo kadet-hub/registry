@@ -2473,7 +2473,7 @@ def stack_build(tmp, posts, *args):
     return out, subprocess.run(["hugo", "--logLevel", "error", "--source", site, "--destination", out, *args], capture_output=True, text=True)
 
 
-class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
+class Stacks(unittest.TestCase):  # CAT-45 to CAT-50
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
@@ -2528,12 +2528,21 @@ class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
         for line in re.findall(r"<p>Generators: (.*?)</p>", page):
             for name in re.findall(r"<code>([^<]+)</code>", line):
                 self.assertIn(name, entries)
+        projects = re.findall(rf'<li><a href="\.\./blog/([^/]+)/">.*?<p>Project: <a href="https://github\.com/{OWNER}/examples/tree/main/([^"]+)">', page, re.S)
+        self.assertEqual(len(projects), len(stack_posts()))
+        for name, example in projects:  # CAT-50: the post's own project link
+            with open(os.path.join(HERE, "site", "content", "blog", name + ".md"), encoding="utf-8") as f:
+                link = f"(https://github.com/kadet-hub/examples/tree/main/{example})"
+                self.assertTrue(link in f.read().split("\n---\n", 1)[1], f"{name}.md does not link {link}")
 
     def test_unknown_recipe_fails_the_build(self):  # CAT-49
         front = STACK_POSTS["stack-b"]
         for case, post, error in (("recipe", front.replace("[valkey]", "[valkey, no-such-recipe]"),
                                    "blog/stack-b.md: stack names the recipe no-such-recipe, which has no page at /recipes/no-such-recipe/"),
-                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example")):
+                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example"),
+                                  *((f"example {bad}", front.replace("example: stack-b", f"example: {bad}"),  # CAT-50
+                                     f"blog/stack-b.md: stack names the example {bad}, which is not a folder name of lowercase letters, digits and hyphens")
+                                    for bad in ("Stack-B", "stack-b/", "stack-b/sub", "stack--b"))):
             with self.subTest(case), tempfile.TemporaryDirectory() as tmp:
                 _, built = stack_build(tmp, {"stack-b": post})
                 self.assertNotEqual(built.returncode, 0)
