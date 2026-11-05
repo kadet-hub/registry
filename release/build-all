@@ -5,7 +5,7 @@
 # yet published and record the run, the krab result, the output diff, the
 # kinds of the output and the backends it compiled on in meta.json. For a
 # recipe version, rerun the gate's recipe checks and renders proof and record
-# what REC-13 lists and the images of REC-12 instead.
+# what REC-13 lists, the images of REC-12 and recipe.yaml (REC-18) instead.
 #
 # Usage: build-all <out dir>
 # Needs: the sandbox image $SANDBOX_IMAGE, yq, jq, oras, REGISTRY, what
@@ -72,7 +72,7 @@ build_recipe() {
   echo "## recipe $name $version: renders"
   "$root/gate/recipe-renders" "$dir/recipes" "$name" "$dir/proof" || { echo "REC-12: recipe $name $version: the renders proof failed"; exit 1; }
   # REC-13: the Source and Level lines as the pinned check reads them (REC-7), the kinds of the recipe's own output (PUB-10)
-  # and the container images it names (REC-12).
+  # and the container images it names (REC-12); recipe.yaml's required and backends from check_recipe.py (REC-18).
   docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
     --mount "type=bind,src=$root,dst=/base,readonly" --mount "type=bind,src=$check,dst=/check,readonly" \
     --mount "type=bind,src=$dir,dst=/recipe,readonly" \
@@ -94,6 +94,7 @@ print(json.dumps({"source": source, "level": level, "kinds": tag_check.kinds(out
     | .generators = [$r.pins[] | capture("^ghcr\\.io/kadet-hub/(?<name>[^:]+):(?<version>[^@]+)@(?<digest>.+)$")]
     | .includes = [$r.recipes | to_entries[] | select(.value.rule == "REC-16") | {name: .key, version: .value.version, digest: .value.digest}]
     | .output_capabilities = $caps | .kinds = $f.kinds | .images = $f.images | .scan = $scan[0] | .output_diff = $diff[0]
+    | if $r.declared then .required = $r.declared.required | .backends = $r.declared.backends else . end
     | if $kind == "chart" then .chart = {repo: $s[0], version: $s[1], digest: $s[2]}
       elif $kind == "http" then .chart = {repo: "\($s[0])/\($s[1])", version: $s[2], digest: $s[3]}
       elif $kind == "manifest" then .manifest = {url: "https://github.com/\($s[0])/releases/download/\($s[1])/\($s[2])", digest: $s[3]}

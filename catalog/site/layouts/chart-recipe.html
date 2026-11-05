@@ -23,6 +23,7 @@
 {{- end }}
 {{ with $r.latest }}<li>{{ with $r.renders }}<code>renders</code> passed in the <a href="{{ .run }}">release run</a> of <time datetime="{{ .at }}">{{ substr .at 0 10 }}</time> with {{ .tool }}{{ else }}No <code>renders</code> result in the release run's record{{ end }}</li>
 <li>Output capabilities: {{ range $i, $c := .output_capabilities }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ else }}none{{ end }}</li>
+{{ with .backends }}<li>Inventory backends: {{ range $i, $b := . }}{{ if $i }}, {{ end }}<code>{{ $b }}</code>{{ end }}</li>{{ end }}
 {{ end -}}
 {{ with $r.requires }}<li>Prerequisites, installed once per cluster before the recipe: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/recipes/%s" $n) }}<a href="{{ printf "/recipes/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}<code>{{ $n }}</code>{{ end }}{{ end }}</li>
 {{ end -}}

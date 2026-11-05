@@ -225,7 +225,10 @@ nothing else, and each dependency is a recipe at
 `classes/` directory next to `targets/`, which may hold only a `.gitkeep`.
 
 Your targets include the recipe as `recipes.<name>`. The recipe's README
-lists its options.
+lists its options. The index record lists under `required` the parameters
+a target must set, with `secret: true` for those you set as a ref, and
+under `backends` the inventory backends the recipe resolves on, so far
+`omegaconf` only. Versions published before REC-18 have neither key.
 
 ```yaml
 # inventory/targets/cert-manager.yml

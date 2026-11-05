@@ -651,12 +651,12 @@ echo '[]' >"$out/names.json"
         with open(os.path.join(out, "licenses.txt"), encoding="utf-8") as f:
             self.assertEqual(f.read(), f"./demo.LICENSE:license at {'c' * 40}:LICENSE\n")
 
-    def build_recipe(self, source, renders_rc=0, rev="d" * 40):  # REC-12, REC-13
+    def build_recipe(self, source, renders_rc=0, rev="d" * 40, declared=None):  # REC-12, REC-13, REC-18
         recipe = {"pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:{'a' * 64}", f"ghcr.io/kadet-hub/certmanager:1.0.2@sha256:{'b' * 64}"],
                   "recipes": {"other": {"rule": "REC-16", "version": "1.0.0", "digest": "sha256:" + "d" * 64},
                               "req": {"rule": "REC-17", "version": "2.0.0", "digest": "sha256:" + "e" * 64}},
                   "included": ["other"], "required": {"req": []}, "source": ["Source: x"], "level": ["Level: x"],
-                  "description": "Demo recipe.", "license": "Apache-2.0"}
+                  "description": "Demo recipe.", "license": "Apache-2.0", "declared": declared}
         fields = {"source": source, "level": "deploys", "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
                   "images": ["quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:" + "f" * 64]}
         sec12 = (f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole x\nSEC-12: admission-webhook: compiled/demo/w.yml: x\n"
@@ -731,6 +731,11 @@ exit {renders_rc}
         for source in (["design", ["docker.io/library/rabbitmq", "4.3.6-management", "sha256:" + "c" * 64]], None):
             meta = self.build_recipe(source)[2]
             self.assertEqual(("chart" in meta, "manifest" in meta, meta["level"]), (False, False, "deploys"))
+        # REC-18: recipe.yaml's keys when the version has the file, neither key without it.
+        self.assertEqual(("required" in meta, "backends" in meta), (False, False))
+        required = [{"path": "applications.demo.password", "description": "Password of the demo.", "secret": True}]
+        meta = self.build_recipe(None, declared={"backends": ["omegaconf"], "required": required})[2]
+        self.assertEqual((meta["backends"], meta["required"]), (["omegaconf"], required))
 
     def test_recipe_checks_and_renders_fail_the_build(self):  # REC-12
         p, _, _ = self.build_recipe(None, renders_rc=1)

@@ -1,4 +1,4 @@
-"""Checks on a recipe's files (REC-4, the include rule of REC-5, REC-6, REC-15 to REC-17, REC-13).
+"""Checks on a recipe's files (REC-4, the include rule of REC-5, REC-6, REC-15 to REC-18, REC-13).
 
 Usage: check_recipe.py --tree DIR --index FILE --policy DIR [--license FILE] [--requires FILE] --out FILE
 
@@ -10,8 +10,8 @@ requires (REC-17). Writes to --out as JSON the generators whose
 attestation the gate verifies with where they unpack, the binaries the
 index lists for them, the included and required recipes and the
 published versions they resolve to (REC-8, REC-16, REC-17), what REC-10
-shows, and the description and license the index records (REC-13).
-Prints findings; exits 1 on any.
+shows, the description and license the index records (REC-13), and what
+recipe.yaml declares, as `declared` (REC-18). Prints findings; exits 1 on any.
 """
 
 import argparse
@@ -34,6 +34,10 @@ INCLUDED = re.compile(r"^recipes\.(?P<other>[a-z][a-z0-9-]{1,38})(\.[A-Za-z0-9_-
 README_LINE = {"source": re.compile(r"^Source: .*$", re.M), "level": re.compile(r"^Level: .*$", re.M)}
 # QA-5a: the characters manifest.schema.json bans from a description; tab, line feed and carriage return are whitespace here.
 CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")
+# REC-18: recipe.yaml of kadet-hub/recipes (RCP-260 there).
+BACKENDS = ("omegaconf", "reclass", "reclass-rs")
+PARAMETER_PATH = re.compile(r"^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*$")
+OPTION = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def get(data, *keys):
@@ -105,6 +109,44 @@ def description(readme, findings):
     return text
 
 
+def declared(tree, shipped, findings):
+    """REC-18: the backends and required parameters of recipe.yaml, None without the file or with a finding on it."""
+    if "recipe.yaml" not in shipped:
+        return None
+    try:
+        with open(os.path.join(tree, "recipe.yaml"), encoding="utf-8") as fh:
+            doc = yaml.safe_load(fh)
+    except (UnicodeDecodeError, yaml.YAMLError, RecursionError) as e:
+        findings.append(f"REC-18: recipe.yaml is not YAML: {str(e)[:200]}")
+        return None
+    if not isinstance(doc, dict) or set(doc) != {"backends", "required"}:
+        findings.append("REC-18: recipe.yaml has the keys backends and required and no other")
+        return None
+    before = len(findings)
+    names = [str(b) for b in items(doc["backends"])]
+    if not isinstance(doc["backends"], list) or "omegaconf" not in names or len(set(names)) != len(names) or not set(names) <= set(BACKENDS):
+        findings.append("REC-18: recipe.yaml: backends lists omegaconf and may list reclass and reclass-rs, each once")
+    if not isinstance(doc["required"], list):
+        findings.append("REC-18: recipe.yaml: required is a list")
+    paths = []
+    for n, e in enumerate(items(doc["required"])):
+        where = f"REC-18: recipe.yaml: required[{n}]"
+        if not isinstance(e, dict) or not {"path", "description", "secret"} <= set(e) <= {"path", "description", "secret", "option"}:
+            findings.append(f"{where} has path, description, secret and optionally option")
+            continue
+        p, d = e["path"], e["description"]
+        if not isinstance(p, str) or not PARAMETER_PATH.match(p) or p in paths:
+            findings.append(f"{where}: path is a dotted parameter path that no other entry has")
+        paths.append(p)
+        if not isinstance(d, str) or not d.strip() or len(d) > 300 or CONTROL.search(d) or re.search(r"[\t\n\r]", d):
+            findings.append(f"{where}: description is one line of at most 300 characters (QA-5a)")
+        if not isinstance(e["secret"], bool):
+            findings.append(f"{where}: secret is true or false")
+        if "option" in e and not (isinstance(e["option"], str) and OPTION.match(e["option"]) and f"{e['option']}.yml" in shipped):
+            findings.append(f"{where}: option names no class file <option>.yml at the root")
+    return {"backends": doc["backends"], "required": doc["required"]} if len(findings) == before else None
+
+
 def published(index, recipe, rule, findings):
     """REC-16: the oldest version the index lists, not yanked, with the tree of the recipe's directory without tests."""
     name = os.path.basename(recipe)
@@ -140,9 +182,9 @@ def check(tree, index, policy, license_path, required=()):
             findings.append(f"REC-4: {f}: the shipped tree holds no Python file")
         elif f.startswith("vendor/") and f.endswith((".yml", ".yaml")) and f not in copies:
             findings.append(f"REC-4: {f}: YAML below vendor/ that no copy entry names would be a class file")
-        elif not (f == "README.md" or f.startswith("vendor/") or top and f.endswith(".yml")
+        elif not (f in ("README.md", "recipe.yaml") or f.startswith("vendor/") or top and f.endswith(".yml")
                   or top and f.endswith((".yml.LICENSE", ".yml.NOTICE")) and f.rsplit(".", 1)[0] in shipped):
-            findings.append(f"REC-4: {f}: the shipped tree holds only README.md, class files *.yml at the root"
+            findings.append(f"REC-4: {f}: the shipped tree holds only README.md, recipe.yaml, class files *.yml at the root"
                             " with their .LICENSE and .NOTICE, and files below vendor/")
     # REC-15: the license next to each vendored file.
     for c in sorted(copies):
@@ -182,7 +224,7 @@ def check(tree, index, policy, license_path, required=()):
     readme = read_text(os.path.join(tree, "README.md"))
     result = {"pull": pull, "binaries": binaries, "included": sorted(included), "required": {}, "recipes": {},
               "pins": sorted(deps), **{k: r.findall(readme or "")[:1] for k, r in README_LINE.items()},
-              "description": description(readme, findings), "license": spdx}
+              "description": description(readme, findings), "license": spdx, "declared": declared(tree, shipped, findings)}
     for r in required:
         _, pull, result["required"][r] = generators(index, classes_of([r]), f"requires/{r}/lib", findings)
         result["pull"] += pull
