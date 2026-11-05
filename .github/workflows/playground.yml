@@ -1,10 +1,10 @@
 name: playground
 
-# PG-6, AC-40, AC-41: compile every playground example in Pyodide and in the
-# gate's sandbox image, and run the page in Chrome, on pull requests that
-# change the playground or the versions it takes from sandbox/. PG-14: daily
-# against the index published that day; a failed scheduled run opens or
-# updates one issue.
+# PG-6, AC-40, AC-41, AC-44: compile every playground example in Pyodide and
+# in the gate's sandbox image, test the provenance replay, and run the page in
+# Chrome, on pull requests that change the playground or the versions it takes
+# from sandbox/. PG-14: daily against the index published that day; a failed
+# scheduled run opens or updates one issue.
 on:
   pull_request:
     paths:
@@ -39,6 +39,12 @@ jobs:
 
       - name: Build the sandbox image
         run: docker build -t kadet-hub/sandbox sandbox
+
+      - name: Unit tests of the provenance replay (PG-15 to PG-19)
+        run: |
+          docker run --rm --network none --read-only --tmpfs /tmp \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/catalog,dst=/catalog,readonly" \
+            kadet-hub/sandbox python3 -I /catalog/playground/test_provenance.py
 
       - name: Build the playground from the published index (PG-1, PG-5, PG-12)
         run: |
