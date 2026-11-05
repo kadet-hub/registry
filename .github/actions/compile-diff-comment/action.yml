@@ -1,0 +1,56 @@
+name: compile-diff-comment
+description: >-
+  Post the compile-diff artifact of a pull_request run as one comment on its
+  pull request and edit that comment on later runs (CD-5 to CD-9). Runs on
+  workflow_run; checks out nothing and treats the artifact as text.
+runs:
+  using: composite
+  steps:
+    - name: Check the event
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        RUN_EVENT: ${{ github.event.workflow_run.event }}
+      run: |
+        [[ $EVENT == workflow_run && $RUN_EVENT == pull_request ]] \
+          || { echo "compile-diff-comment runs on workflow_run of a pull_request run, not $EVENT of $RUN_EVENT"; exit 1; }
+
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      if: github.event.workflow_run.conclusion == 'success'
+      continue-on-error: true # no artifact when nothing changed
+      with:
+        name: compile-diff
+        path: ${{ runner.temp }}/compile-diff
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ github.token }}
+
+    - name: Post or update the compile diff comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+        HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        RUN_URL: ${{ github.event.workflow_run.html_url }}
+      run: |
+        # CD-6: the pull request comes from the API, never from the artifact.
+        open=$(gh api -X GET --paginate "repos/$REPO/pulls" -f state=open -f head="$HEAD_OWNER:$HEAD_BRANCH" \
+          --jq '.[] | [.number, .head.sha] | @tsv')
+        mapfile -t prs < <(awk -v sha="$HEAD_SHA" '$2 == sha { print $1 }' <<<"$open")
+        if ((${#prs[@]} != 1)); then
+          echo "${#prs[@]} open pull requests have head $HEAD_OWNER:$HEAD_BRANCH at $HEAD_SHA; nothing posted"
+          exit 0
+        fi
+        pr=${prs[0]}
+        python3 -I "$GITHUB_ACTION_PATH/../../../consumer/compile_diff.py" render \
+          "$RUNNER_TEMP/compile-diff" "$CONCLUSION" "$HEAD_SHA" "$RUN_URL" >"$RUNNER_TEMP/compile-diff-body.md"
+        id=$(gh api --paginate "repos/$REPO/issues/$pr/comments" \
+          --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- kadet-hub-compile-diff -->"))) | .id' | head -n 1)
+        if [[ -n $id ]]; then
+          gh api -X PATCH "repos/$REPO/issues/comments/$id" -F body=@"$RUNNER_TEMP/compile-diff-body.md" >/dev/null
+        else
+          gh api -X POST "repos/$REPO/issues/$pr/comments" -F body=@"$RUNNER_TEMP/compile-diff-body.md" >/dev/null
+        fi
+        echo "compile diff posted on #$pr"

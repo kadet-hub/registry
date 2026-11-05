@@ -1,0 +1,75 @@
+name: compile-diff
+description: >-
+  Compile a pull request's base and merge commit with the consumer flow and
+  upload the diff of compiled/ per target as the artifact compile-diff
+  (CD-1 to CD-3). Runs on pull_request; compile-diff-comment posts it.
+inputs:
+  working-directory:
+    description: Kapitan project inside the repository, holding .kapitan-sandbox.yaml
+    required: false
+    default: .
+  targets:
+    description: Glob over target names; only matching targets are diffed
+    required: false
+    default: "*"
+outputs:
+  path:
+    description: Directory with one <target>.diff per changed target
+    value: ${{ steps.diff.outputs.path }}
+runs:
+  using: composite
+  steps:
+    - name: Check the event and the working directory
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        DIR: ${{ inputs.working-directory }}
+      run: |
+        [[ $EVENT == pull_request ]] || { echo "compile-diff runs on pull_request, not $EVENT"; exit 1; }
+        case /$DIR/ in //* | */../*) echo "working-directory must be a path inside the repository"; exit 1 ;; esac
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+        path: .compile-diff/base
+        persist-credentials: false
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ github.sha }}
+        path: .compile-diff/head
+        persist-credentials: false
+
+    - uses: $/.github/actions/setup-gvisor
+
+    - uses: $/.github/actions/setup-oras
+      with:
+        token: ${{ github.token }}
+
+    - name: Compile base and merge commit, diff compiled/
+      id: diff
+      shell: bash
+      env:
+        OWNER: kadet-hub
+        GH_TOKEN: ${{ github.token }}
+        DIR: ${{ inputs.working-directory }}
+        TARGETS: ${{ inputs.targets }}
+      run: |
+        root=$GITHUB_ACTION_PATH/../../..
+        out=$RUNNER_TEMP/compile-diff
+        mkdir -p -- "$out/base/compiled" "$out/head" "$out/diff"
+        # DEC-33: a base without the project compiles to nothing.
+        if [[ -f .compile-diff/base/$DIR/.kapitan-sandbox.yaml ]]; then
+          "$root/consumer/run" ".compile-diff/base/$DIR" "$out/base"
+        else
+          echo "The base has no .kapitan-sandbox.yaml in $DIR; every file counts as added."
+        fi
+        "$root/consumer/run" ".compile-diff/head/$DIR" "$out/head"
+        python3 -I "$root/consumer/compile_diff.py" diff "$out/base/compiled" "$out/head/compiled" "$out/diff" "$TARGETS"
+        echo "path=$out/diff" >>"$GITHUB_OUTPUT"
+
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: compile-diff
+        path: ${{ steps.diff.outputs.path }}
+        if-no-files-found: ignore
