@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: strimzi
-  tag: strimzi-v1.1.0
-  sha: 2442bb7cd9ba0dc445a7a1b726bba527a0446d00
+  tag: strimzi-v1.1.1
+  sha: d2acfd07c1d3a811f012ed0d4046cb2efa8c051c
 owners: [3042152]
