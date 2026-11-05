@@ -1,0 +1,46 @@
+{{ define "main" }}{{/* PG-4, PG-9, PG-11 */}}
+{{ $pg := site.Data.playground }}
+<section class="prose-page wide playground">
+<h1>{{ .Title }}</h1>
+<div class="lead">{{ .Content }}</div>
+{{ with $pg }}
+{{ $mb := printf "%.1f MB" (div (float .download) 1000000) }}
+<div id="pg-intro">
+<p><button type="button" id="pg-start" class="button primary" data-size="{{ $mb }}">Start the playground</button></p>
+<p>Starting downloads about {{ $mb }} from this site: Pyodide {{ .pyodide }} and Kapitan {{ .kapitan }}, the version the gate compiles with.</p>
+</div>
+<div id="pg-app" hidden>
+<div class="pg-bar">
+  <label>Example <select id="pg-example"></select></label>
+  <label>Inventory backend <select id="pg-backend"><option value="omegaconf">omegaconf</option><option value="reclass">reclass</option></select></label>
+  <button type="button" id="pg-compile" class="button primary">Compile</button>
+  <span id="pg-status" role="status" aria-live="polite"></span>
+</div>
+<p id="pg-description"></p>
+<div class="pg-grid">
+  <div>
+    <div id="pg-files" class="pg-files" aria-label="Project files"></div>
+    <label for="pg-editor" id="pg-editor-label" class="pg-editor-label"></label>
+    <textarea id="pg-editor" class="pg-editor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    <p class="pg-note">Ctrl+Enter compiles. This example is tested with the <span id="pg-tested"></span> backend. <span id="pg-libs"></span></p>
+  </div>
+  <div>
+    <h2 class="pg-h">Kapitan output, compiled in your browser</h2>
+    <div id="pg-outputs" class="pg-outputs"></div>
+    <pre id="pg-log" class="pg-log" hidden></pre>
+    <div id="pg-helm" hidden>
+      <h2 class="pg-h">helm template output, rendered when this site was built</h2>
+      <p class="pg-note">Not compiled in your browser and not affected by your edits: <code id="pg-helm-source"></code>.</p>
+      <pre id="pg-helm-output"></pre>
+    </div>
+  </div>
+</div>
+</div>
+{{ else }}
+<p class="warning">The playground is not part of this build of the site.</p>
+{{ end }}
+<h2>What runs here</h2>
+<p>Kapitan compiles in a Web Worker of this page, with the omegaconf or the reclass inventory backend and the kadet and Jinja2 inputs. Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs, fetching dependencies, and refs.</p>
+</section>
+{{ with $pg }}<script type="module" src="{{ "playground/playground.js" | relURL }}"></script>{{ end }}
+{{ end }}

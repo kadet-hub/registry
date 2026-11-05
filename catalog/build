@@ -14,7 +14,9 @@
 # recipes.sha of kadet-hub/recipes from $CATALOG_RECIPES/inventory/classes
 # (CAT-37a, CAT-37c) and the layers of the recipes the index lists from
 # $CATALOG_ARTIFACTS/recipes/<name>.tar (CAT-38) and the image report of the
-# rescan from $CATALOG_SECURITY (CAT-39c) instead. Online, the
+# rescan from $CATALOG_SECURITY (CAT-39c) and the playground's files, if any,
+# from $CATALOG_PLAYGROUND (PG-13) instead. Online, the playground needs node
+# and npm (catalog/playground/build.py), and the
 # previous build's published catalog.json supplies README, CHANGELOG sections,
 # the software of the schema groups (CAT-29c), log index and SBOM of every
 # unchanged digest, and its output diffs are kept when their
@@ -173,6 +175,17 @@ else
     gh run download "$run" -R "$OWNER/registry" -n security-report -D "$work/image-report" 2>/dev/null && break
   done
   [[ -f $security ]] || echo "::warning::image report not read; the pages say they are not scanned"
+fi
+# PG-13: the playground's files, built here, or offline prebuilt in $CATALOG_PLAYGROUND;
+# without them its page says the playground is not part of this build.
+playground=${CATALOG_PLAYGROUND:-$work/playground}
+if [[ ${CATALOG_OFFLINE:-} != 1 ]] && ! { (cd -- "$here/playground" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null) \
+  && python3 -I "$here/playground/build.py" --index "$index" --out "$playground/static" --data "$playground/playground.json"; }; then
+  echo "::warning::playground not built; its page says so"
+fi
+if [[ -f $playground/playground.json ]]; then
+  cp -R -- "$playground/static/." "$work/static/playground/"
+  cp -- "$playground/playground.json" "$work/data/playground.json"
 fi
 for dir in "$sboms" "$diffs"; do
   if [[ -d $dir ]]; then

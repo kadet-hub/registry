@@ -1,0 +1,19 @@
+# An application class: it includes common, overrides some of its values and
+# says what to compile.
+classes:
+  - common
+parameters:
+  app:
+    name: web
+    replicas: 2
+  kapitan:
+    compile:
+      - output_path: manifests
+        input_type: kadet
+        output_type: yaml
+        input_paths:
+          - components/web
+      - output_path: docs
+        input_type: jinja2
+        input_paths:
+          - templates/README.md

@@ -1,0 +1,2 @@
+# The values helm template renders the chart with, the recipe proof's tests/values.yaml.
+{}
