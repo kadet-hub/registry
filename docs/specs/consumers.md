@@ -314,12 +314,12 @@ fetch inventory pins no included recipe.
 
 - CON-9: The workflow MUST fail when the fetch inventory pins an included
   recipe at a digest other than the one the including record lists, and
-  MUST accept a pin at that digest (DEC-31).
+  MUST accept a pin at that digest (DEC-45).
 
   - Test: `consumer/test_consumer.py` (`Includes.test_pin_of_an_included_recipe`)
   - Since: #397 (another digest fails); #536 (the pin is optional)
 
-- DEC-31: A pin of an included recipe in the fetch inventory is accepted
+- DEC-45: A pin of an included recipe in the fetch inventory is accepted
   when its digest is the one the including record lists, and refused
   otherwise.
 

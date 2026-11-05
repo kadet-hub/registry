@@ -120,7 +120,7 @@ the build job (RISK-10).
 - DEC-24 to DEC-27: kadet-hub/kapitan builds `next` from open upstream
   PRs with the workflow of kapicorp/kapitan#1637
   ([kapitan-next.md](kapitan-next.md)).
-- DEC-31: the consumer workflow takes the recipes a pinned recipe
+- DEC-45: the consumer workflow takes the recipes a pinned recipe
   includes from the index, and accepts a pin of an included recipe only
   at the digest the including record lists ([consumers.md](consumers.md)).
 

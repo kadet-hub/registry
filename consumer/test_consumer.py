@@ -317,7 +317,7 @@ class Includes(unittest.TestCase):  # CON-7 to CON-9
                                     "inventory/classes/recipes/pgbouncer holds one version: "
                                     "pin versions that include the same pgbouncer"])
 
-    def test_pin_of_an_included_recipe(self):  # CON-9, DEC-31: accepted at the listed digest only
+    def test_pin_of_an_included_recipe(self):  # CON-9, DEC-45: accepted at the listed digest only
         records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[self.VALKEY])},
                    "valkey": {"1.0.0": recipe_record(digest("d")), "1.1.0": recipe_record(digest("e"))}}
         deps, findings = self.check([self.pin("nextcloud", digest("a")), self.pin("valkey", digest("d"))], records)
