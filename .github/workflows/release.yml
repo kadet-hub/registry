@@ -11,6 +11,7 @@ on:
       - tests/**
       - "*.md"
       - renovate.json
+      - ruff.toml
       - .github/ISSUE_TEMPLATE/**
       - .github/pull_request_template.md
       - .github/CODEOWNERS
@@ -24,6 +25,7 @@ on:
       - .github/workflows/codeql.yml
       - .github/workflows/fuzz.yml
       - .github/workflows/sandbox-advisories.yml
+      - .github/workflows/code-lint.yml
       - .clusterfuzzlite/**
   schedule:
     - cron: "17 4 * * *" # CAT-20: refresh the 👍 counts and stars daily

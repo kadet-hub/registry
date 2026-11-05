@@ -21,7 +21,7 @@ by editing the spec it touches, in the same pull request, as its first
 commit; [docs/specs/README.md](docs/specs/README.md) describes the format.
 Each requirement names the test that checks it. Use Conventional Commits.
 CI runs the catalog tests, the gate
-self-test and the workflow linters on every pull request.
+self-test, the workflow linters and the code linters on every pull request.
 
 Questions that are neither go to
 [Discussions](https://github.com/kadet-hub/registry/discussions).
@@ -50,6 +50,10 @@ tests/selftest            # every gate sample, needs gVisor (runsc), and kind, k
 tests/consumer-selftest   # the consumer workflow against its samples
 tests/workflow-policy     # pinned actions and permissions
 ```
+
+The code linters are ruff with `ruff.toml` (`ruff check` at the
+repository root) and shellcheck on every shell script, in the versions
+`.github/workflows/code-lint.yml` pins.
 
 The recipe sample `pass-recipe-gateway-api` runs cloud-provider-kind, which
 manages every kind cluster on the Docker host, so run the selftest where no

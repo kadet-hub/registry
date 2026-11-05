@@ -164,6 +164,7 @@ else
     --jq '.[] | select(.pull_request == null) | {number, title, up: .reactions["+1"], created: .created_at, updated: .updated_at}' \
     | jq -s . >"$wanted_recipes" || { rm -f -- "$wanted_recipes"; echo "::warning::recipe requests not read; the wanted page says so"; }
   # CAT-33: every pull request's changed paths and comments with their edit history; view.py keeps counts only.
+  # shellcheck disable=SC2016 # $o and $endCursor are GraphQL variables
   gh api graphql --paginate -f o="$OWNER" -f query='query($o: String!, $endCursor: String) { repository(owner: $o, name: "registry") {
     pullRequests(first: 20, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { number files(first: 100) { nodes { path } }
       comments(first: 100) { nodes { author { login } body userContentEdits(first: 100) { nodes { diff } } } } } } } }' \

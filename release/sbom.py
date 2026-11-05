@@ -15,7 +15,7 @@ import json
 import re
 import sys
 import tarfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def verification_code(files):
@@ -175,7 +175,7 @@ def main():
     if a.schemas:
         with open(a.schemas, encoding="utf-8") as f:
             schemas = json.load(f)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(sbom(a.tar, meta, a.ref, a.digest, now, schemas), f, sort_keys=True, indent=1)
     return 0

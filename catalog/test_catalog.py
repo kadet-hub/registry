@@ -1,6 +1,7 @@
-import hashlib
-import json
 import glob
+import hashlib
+import itertools
+import json
 import os
 import posixpath
 import re
@@ -15,11 +16,22 @@ import unittest.mock
 import urllib.parse
 import xml.etree.ElementTree as ET
 from html import unescape as _unescape
+from typing import ClassVar
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEO_CHECK = os.path.join(HERE, "seo_check.py")
 sys.path.insert(0, HERE)
-from view import README_MAX, grade, readme, registry_page, releases, schema_kinds, schema_sources, security, view
+from view import (
+    README_MAX,
+    grade,
+    readme,
+    registry_page,
+    releases,
+    schema_kinds,
+    schema_sources,
+    security,
+    view,
+)
 
 OWNER = "kadet-hub"
 
@@ -610,7 +622,7 @@ class Site(unittest.TestCase):
         with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
             css = f.read()
         self.assertIn("#menu, #tag-toggle { display: none; }", css)
-        narrow = re.search(r"@media \(max-width: 48rem\) \{(.*?)\n\}", css, re.S).group(1)
+        narrow = re.search(r"@media \(max-width: 48rem\) \{(.*?)\n\}", css, re.DOTALL).group(1)
         for rule in ('header.site[data-menu="closed"] nav { display: none; }', '.filters[data-tags="closed"] .tag-filter { display: none; }',
                      ".filters { position: static; }"):
             self.assertIn(rule, narrow)
@@ -623,7 +635,7 @@ class Site(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(HERE, "..", ".github", "ISSUE_TEMPLATE", f"{form}.yml")))
 
     def test_quickstart_linked(self):  # CAT-40, CAT-40a, CAT-40b
-        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.S).group(1)
+        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.DOTALL).group(1)
         self.assertRegex(nav, r'^\s*<a href="\./quickstart/">Quickstart</a>\s*<a href="[^"]*/docs/consumers\.md">Use</a>')
         recipes = glob.glob(os.path.join(self.out, "recipes", "*", "index.html"))
         self.assertGreater(len(recipes), 30)
@@ -647,7 +659,7 @@ class Site(unittest.TestCase):
                 self.assertTrue(os.path.isfile(os.path.join(self.out, post.strip("/"), "index.html")), post)
 
     def test_stacks_linked(self):  # CAT-47
-        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.S).group(1)
+        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.DOTALL).group(1)
         self.assertRegex(nav, r'<a href="\./recipes/">Recipes</a>\s*<a href="\./stacks/">Stacks</a>')
         with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
             using = f.read().split("\n## Using generators\n", 1)[1].split("\n## ", 1)[0]
@@ -703,7 +715,7 @@ class Site(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         for i in ids:
             self.assertRegex(i, r"^[a-z]+(-[a-z]+)*$")
-        ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)]
+        ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)]
         (terms_ld,) = [b for b in ld if b.get("@type") == "DefinedTermSet"]
         self.assertEqual([(t["@type"], t["url"], t["name"]) for t in terms_ld["hasDefinedTerm"]],
                          [("DefinedTerm", f"https://kadet-hub.org/glossary/#{i}", n) for i, n in terms])
@@ -767,7 +779,7 @@ class Site(unittest.TestCase):
         html = self.page("generators", "demo")
         latest = html[html.index('id="v1.10.0"'):html.index('id="v1.2.0"')]
         self.assertIn('Fixture output against <a href="#v1.2.0">1.2.0</a>: 1 file, 1 hunk.', latest)
-        code = re.search(r'<pre class="diff"><code>(.*?)</code></pre>', latest, re.S).group(1)
+        code = re.search(r'<pre class="diff"><code>(.*?)</code></pre>', latest, re.DOTALL).group(1)
         self.assertIn("-&lt;script&gt;alert(4)&lt;/script&gt;", code)  # text, not markup
         self.assertNotIn("<", code)
         clean = DIFF.replace("\x1b", "").replace("\u202e", "").replace("\r", "")
@@ -779,10 +791,10 @@ class Site(unittest.TestCase):
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
         self.assertIn("No output diff recorded", older)
         self.assertIn("No output diff: no earlier listed version.", self.page("generators", "plain"))
-        with tempfile.TemporaryDirectory() as tmp:  # a record without a verified text
-            with open(os.path.join(build({"serial": 1, "generators": {"g": {"1.0.0": dict(record("e"), output_diff=OUTPUT_DIFF)}}}, tmp),
-                                   "generators", "g", "index.html"), encoding="utf-8") as f:
-                page = f.read()
+        with (tempfile.TemporaryDirectory() as tmp,  # a record without a verified text
+              open(os.path.join(build({"serial": 1, "generators": {"g": {"1.0.0": dict(record("e"), output_diff=OUTPUT_DIFF)}}}, tmp),
+                                "generators", "g", "index.html"), encoding="utf-8") as f):
+            page = f.read()
         self.assertIn("The diff text has no verified attestation.", page)
         self.assertNotIn("output.diff", page)
 
@@ -817,7 +829,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- Built for (schema-checked): External Secrets Operator 2.11.0\n", demo)
         self.assertIn("\n- Page: https://kadet-hub.org/generators/demo/\n", demo)
         for block in ("entry-0", "verify-0"):  # the latest version's entry and command, as on the page
-            text = _unescape(re.search(rf'<pre id="{block}"><code>(.*?)</code></pre>', html, re.S).group(1))
+            text = _unescape(re.search(rf'<pre id="{block}"><code>(.*?)</code></pre>', html, re.DOTALL).group(1))
             self.assertIn(f"\n```{'yaml' if block == 'entry-0' else 'sh'}\n{text}\n```\n", demo)
         self.assertIn(f"Relative links in the README resolve against https://github.com/example/demo/blob/{'c' * 40}/.\n\n" + README, demo)
         self.assertTrue(self.markdown("generators", "plain").startswith("# plain\n\n> Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n"))
@@ -960,7 +972,7 @@ class Site(unittest.TestCase):
         page = self.page("recipes", "external-dns-powerdns")
         self.assertIn(f"<li>Source chart: <code>{HTTP_CHART_SOURCE}</code></li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
+        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["external-dns-powerdns", "powerdns"])  # the recipe it includes, REC-16
         self.assertEqual(re.findall(r"output_path: inventory/classes/recipes/(\S+)", fetch), ["external-dns-powerdns", "powerdns"])
         self.assertEqual(fetch.count(f"ref: {CHART_RECIPE_SHA}\n"), 2)
@@ -970,7 +982,7 @@ class Site(unittest.TestCase):
         page = self.page("recipes", "kafka")
         self.assertIn('<li>Prerequisites, installed once per cluster before the recipe: <a href="../../recipes/strimzi/"><code>strimzi</code></a></li>', page)
         self.assertRegex(page, r"(?s)Proof level</a>: .*Prerequisites, .*<li>Generators: ")
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
+        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["kafka"])  # strimzi has its own target and page
         self.assertIn("\n- Prerequisites, installed once per cluster before the recipe: strimzi\n- Generators: ", self.markdown("recipes", "kafka"))
         self.assertIn('<li>Prerequisites, installed once per cluster before the recipe: <a href="../../recipes/cnpg/"><code>cnpg</code></a></li>',
@@ -986,7 +998,7 @@ class Site(unittest.TestCase):
         keycloak = self.page("recipes", "keycloak")  # cnpg is required by the included postgresql
         links = ", ".join(f'<a href="../../recipes/{n}/"><code>{n}</code></a>' for n in ("keycloak-operator", "cert-manager", "cnpg"))
         self.assertIn(f"<li>{both[0]}{links}</li>", keycloak)
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', keycloak, re.S).group(1))
+        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', keycloak, re.DOTALL).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["keycloak", "postgresql"])
         self.assertIn(f"\n- {both[0]}keycloak-operator, cert-manager, cnpg\n- Generators: ", self.markdown("recipes", "keycloak"))
         self.assertNotIn("Prerequisites", self.page("recipes", "keycloak-operator"))
@@ -1012,7 +1024,7 @@ class Site(unittest.TestCase):
         self.assertIn("<li><code>recipes.cert-manager.webhook</code> (<code>webhook.yml</code>): <code>cert-manager-webhook</code></li>", page)
         self.assertIn("<li><code>recipes.cert-manager.crds</code> (<code>crds.yml</code>), an option</li>", page)
         self.assertIn('<pre id="include"><code>classes:\n  - recipes.cert-manager\n  - recipes.cert-manager.crds   # the chart&#39;s crds.enabled</code></pre>', page)
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1))
+        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
         self.assertIn(f"      - type: git\n        source: https://github.com/{OWNER}/recipes.git\n        ref: {CHART_RECIPE_SHA}\n"
                       "        subdir: cert-manager\n        output_path: inventory/classes/recipes/cert-manager", fetch)
         self.assertIn('<pre id="commands"><code>kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch</code></pre>', page)
@@ -1060,7 +1072,7 @@ class Site(unittest.TestCase):
                       "<code>Interpolation key 'applications.miniflux.admin.password' not found</code>.</p>", page)
         self.assertIn("        password: &lt;ref&gt;</code></pre>", page)
         self.assertIn("<td>service <code>db</code></td>", page)
-        self.assertIn("        subdir: miniflux\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1)))
+        self.assertIn("        subdir: miniflux\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
         md = self.markdown("recipes", "miniflux")
         self.assertIn(f"\n- Source: Docker Compose file miniflux/v2@{'2' * 40} (contrib/docker-compose/basic.yml), sha256:{'f' * 64}: {COMPOSE_SOURCE}\n"
                       "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
@@ -1078,7 +1090,7 @@ class Site(unittest.TestCase):
         self.assertIn("<li><code>recipes.mysql.mysql</code> (<code>mysql.yml</code>): <code>mysql</code></li>", page)
         self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
                          ["Replaces", "What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Proof"])
-        self.assertIn("        subdir: mysql\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.S).group(1)))
+        self.assertIn("        subdir: mysql\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
         md = self.markdown("recipes", "mysql")
         self.assertIn(f"\n- Source: container image {DESIGN_SOURCE}, recipe designed in kadet-hub\n"
                       "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
@@ -1174,7 +1186,7 @@ class Site(unittest.TestCase):
         post = self.page("blog", "kapitan-generators-as-supply-chain-artifacts")
         self.assertRegex(post, r'<p class="byline">By <a href="https://github.com/[^"]+">kadet-hub maintainers</a> · Published <time datetime="2026-10-17">17 October 2026</time> · \d+ min read</p>')
         self.assertIn('<meta property="og:type" content="article">', post)
-        ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', post, re.S)]
+        ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', post, re.DOTALL)]
         self.assertEqual([(b["@type"], b["datePublished"], b["author"]["@type"]) for b in ld], [("BlogPosting", "2026-10-17T00:00:00Z", "Organization")])
         self.assertIn('<h2 id="what-a-version-goes-through">What a version goes through <a class="anchor" href="#what-a-version-goes-through" aria-label="Link to What a version goes through"></a></h2>', post)  # "#" only from CSS
         self.assertIn('/registry/blob/main/catalog/site/content/blog/kapitan-generators-as-supply-chain-artifacts.md">Edit this post</a>', post)
@@ -1218,9 +1230,9 @@ class Site(unittest.TestCase):
             names = sorted(f[:-3] for f in os.listdir(os.path.join(HERE, "site", "content", section)))
             for name in names:
                 with open(os.path.join(HERE, "site", "content", section, name + ".md"), encoding="utf-8") as f:
-                    day = re.search(r"^lastmod: (\d{4}-\d{2}-\d{2})$", f.read(), re.M)
+                    day = re.search(r"^lastmod: (\d{4}-\d{2}-\d{2})$", f.read(), re.MULTILINE)
                 self.assertTrue(day, name)
-                ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', self.page(section, name), re.S)]
+                ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', self.page(section, name), re.DOTALL)]
                 self.assertIn(("TechArticle", day.group(1)), [(b["@type"], b.get("dateModified")) for b in ld], name)
                 self.assertRegex(sitemap, rf"/{section}/{name}/</loc>\s*<lastmod>{day.group(1)}")
         titles = re.findall(r'<li><a href="[^"]*">([^<]*)</a>', self.page("guides"))
@@ -1234,7 +1246,7 @@ class Site(unittest.TestCase):
                 with open(os.path.join(content, section, f), encoding="utf-8") as fh:
                     body = fh.read().split("---", 2)[2]
                 for name in names:
-                    mentioned = re.search(rf"(?<![\w/-])`?{re.escape(name)}`? generators?\b", body, re.I)
+                    mentioned = re.search(rf"(?<![\w/-])`?{re.escape(name)}`? generators?\b", body, re.IGNORECASE)
                     if mentioned:
                         self.assertTrue(f"](/generators/{name}/" in body, f"{section}/{f}: {name} generator not linked")
 
@@ -1260,7 +1272,7 @@ class Site(unittest.TestCase):
         ])
         self.assertIn(f'<div class="share" data-title="{title}" data-url="{url}">', post)
         self.assertRegex(post, r'<button type="button" class="share-native icon-button" aria-label="[^"]+" hidden>')
-        form = re.search(r'<form class="share-mastodon" hidden>.*?</form>', post, re.S)[0]
+        form = re.search(r'<form class="share-mastodon" hidden>.*?</form>', post, re.DOTALL)[0]
         self.assertIn('<label for="mastodon-server">', form)
         pattern = _unescape(re.search(r'<input id="mastodon-server" name="server" [^>]*pattern="([^"]+)"', form)[1])
         for host, ok in [("mastodon.social", True), (" hachyderm.io ", True), ("https://mastodon.social", False),
@@ -1372,16 +1384,14 @@ class Site(unittest.TestCase):
         self.assertIn("Version: 1.10.0", query["body"][0])
         self.assertIn("Catalog: https://kadet-hub.org/generators/demo/", query["body"][0])
         gitlab = dict(INDEX, generators={"g": {"1.0.0": dict(record("e"), source=dict(record("e")["source"], repo="https://gitlab.com/group/proj.git"))}})
-        with tempfile.TemporaryDirectory() as tmp:
-            with open(os.path.join(build(gitlab, tmp), "generators", "g", "index.html"), encoding="utf-8") as f:
-                page = f.read()
+        with tempfile.TemporaryDirectory() as tmp, open(os.path.join(build(gitlab, tmp), "generators", "g", "index.html"), encoding="utf-8") as f:
+            page = f.read()
         link = re.search(r'<a class="button" href="([^"]+)">Request a feature</a>', page).group(1)
         self.assertTrue(link.startswith("https://gitlab.com/group/proj/-/issues/new?"))
         self.assertIn("issue[title]", urllib.parse.unquote(_unescape(link)))
         own = dict(INDEX, generators={"g": {"1.0.0": dict(record("e"), source=dict(record("e")["source"], repo=f"https://github.com/{OWNER}/generators.git"))}})
-        with tempfile.TemporaryDirectory() as tmp:
-            with open(os.path.join(build(own, tmp), "generators", "g", "index.html"), encoding="utf-8") as f:
-                page = f.read()
+        with tempfile.TemporaryDirectory() as tmp, open(os.path.join(build(own, tmp), "generators", "g", "index.html"), encoding="utf-8") as f:
+            page = f.read()
         link = re.search(r'<a class="button" href="([^"]+)">Request a feature</a>', page).group(1)
         query = urllib.parse.parse_qs(urllib.parse.urlsplit(_unescape(link)).query)
         self.assertTrue(link.startswith(f"https://github.com/{OWNER}/generators/issues/new?"))
@@ -1447,7 +1457,7 @@ class Site(unittest.TestCase):
         html = self.page("generators", "demo")
         section = html[html.index('<details class="badge-snippet">'):html.index("</details>", html.index('<details class="badge-snippet">'))]
         self.assertLess(html.index('<details class="badge-snippet">'), html.index('class="toc"'))  # below the actions, not a section
-        code = _unescape(re.search(r'<pre id="badge-markdown"><code>(.*?)</code></pre>', section, re.S).group(1))
+        code = _unescape(re.search(r'<pre id="badge-markdown"><code>(.*?)</code></pre>', section, re.DOTALL).group(1))
         self.assertEqual(code, "[![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/demo/badge.json)]"
                                "(https://kadet-hub.org/generators/demo/)")
         self.assertIn('data-copy="badge-markdown"', section)
@@ -1555,10 +1565,10 @@ class Site(unittest.TestCase):
         self.assertNotIn("Thumbs up</dt>", self.page("generators", "old"))
 
     def test_seo(self):
-        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True, check=False)
         self.assertEqual((result.returncode, result.stdout), (0, ""))  # CAT-11d: every page
         self.assertIn('<link rel="canonical" href="https://kadet-hub.org/">', self.page())
-        ld = re.search(r'<script type="application/ld\+json">(.*?)</script>', self.page("generators", "demo"), re.S).group(1)
+        ld = re.search(r'<script type="application/ld\+json">(.*?)</script>', self.page("generators", "demo"), re.DOTALL).group(1)
         self.assertNotIn("<", ld)
         self.assertEqual(json.loads(ld)["description"], "<script>alert(1)</script>")
 
@@ -1578,7 +1588,7 @@ class Site(unittest.TestCase):
             with open(os.path.join(out, "generators", "renamed", "index.html"), "w", encoding="utf-8") as f:
                 f.write('<!DOCTYPE html><html><head><title>https://kadet-hub.org/generators/demo/</title>'
                         '<meta http-equiv="refresh" content="0; url=https://kadet-hub.org/generators/demo/"></head></html>')
-            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout.splitlines(), [
             "CAT-11: privacy/index.html: 2 h1, not one",
@@ -1611,7 +1621,7 @@ class Site(unittest.TestCase):
                             ("argocd-vs-flux", "Argo CD vs Flux"),
                             ("patch-helm-chart", "Patch a Helm chart")):
             self.assertIn(f"<h1>{start}", self.page("guides", slug))
-        ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
+        ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL).group(1))
         types = {node["@type"]: node for node in ld["@graph"]}
         self.assertEqual(types["WebSite"]["url"], "https://kadet-hub.org/")
         self.assertEqual(types["Organization"]["sameAs"], [f"https://github.com/{OWNER}"])
@@ -1623,7 +1633,7 @@ class Site(unittest.TestCase):
                       ("blog", "kapitan-generators-as-supply-chain-artifacts")):
             levels = [int(h) for h in re.findall(r"<h([1-6])\b", self.page(*parts))]
             self.assertEqual(levels[0], 1, parts)
-            for before, after in zip(levels, levels[1:]):
+            for before, after in itertools.pairwise(levels):
                 self.assertLessEqual(after, before + 1, parts)
         for parts in ((), ("tags", "helm")):
             cards = self.page(*parts).split('<ul class="cards')[1]
@@ -1720,9 +1730,11 @@ class Site(unittest.TestCase):
             for name, version in (("c", "1.0.0"), ("e", "1.1.0")):  # e has a record, so its SBOM is not read
                 sbom(os.path.join(sboms, name, f"{version}.spdx.json"), ["./schemas/gateway.networking.k8s.io/httproute_v1.json"])
             out = build(index, tmp, sboms=sboms)
-            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True, check=False)
             pages = sorted(os.path.relpath(os.path.join(d, n), out) for d, _, names in os.walk(os.path.join(out, "kinds")) for n in names)
-            read = lambda *parts: open(os.path.join(out, "kinds", *parts, "index.html"), encoding="utf-8").read()
+            def read(*parts):
+                with open(os.path.join(out, "kinds", *parts, "index.html"), encoding="utf-8") as f:
+                    return f.read()
             page, kinds = read("gateway.networking.k8s.io", "httproute"), read()
             titles = [re.search(r"<title>([^<]*)</title>", read(*p)).group(1) for p in
                       (("insights.azure.upbound.io", "applicationinsightsworkbooktemplate"), (far["group"], "averyveryverylongkindnamethatgoeson"))]
@@ -1739,7 +1751,7 @@ class Site(unittest.TestCase):
         self.assertIn('<dt>Schema shipped by</dt><dd><a href="../../../generators/c/">c</a></dd>', page)
         self.assertEqual(re.findall(r'data-name="([^"]+)"', page.split('<ul class="cards')[1]), ["a", "b"])
         levels = [int(h) for h in re.findall(r"<h([1-6])\b", page)]
-        self.assertEqual((levels[0], max(b - a for a, b in zip(levels, levels[1:]))), (1, 1))
+        self.assertEqual((levels[0], max(b - a for a, b in itertools.pairwise(levels))), (1, 1))
         self.assertIn('<li><a href="../kinds/gateway.networking.k8s.io/httproute/"><code>HTTPRoute</code></a>: rendered by '
                       '<a href="../generators/a/">a</a>, <a href="../generators/b/">b</a>; schema shipped by <a href="../generators/c/">c</a></li>', kinds)
         self.assertEqual(titles, ["ApplicationInsightsWorkbookTemplate (insights.azure.upbound.io)",
@@ -1765,13 +1777,15 @@ class Site(unittest.TestCase):
                   "multi": {"kyverno.io": "Kyverno", "cert-manager.io": "cert-manager"}}
         with tempfile.TemporaryDirectory() as tmp:
             out = build(index, tmp, artifacts=sources_layers(tmp, layers))
-            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
-            read = lambda *parts: open(os.path.join(out, "kinds", *parts, "index.html"), encoding="utf-8").read()
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True, check=False)
+            def read(*parts):
+                with open(os.path.join(out, "kinds", *parts, "index.html"), encoding="utf-8") as f:
+                    return f.read()
             kinds, core, talos = read(), read("core", "configmap"), read("v1alpha1", "configmap")
             with open(os.path.join(out, "sitemap.xml"), encoding="utf-8") as f:
                 sitemap = f.read()
             with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:  # CAT-34e
-                command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq -r --arg kind .*?)\n```", f.read(), re.S).group(1)
+                command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq -r --arg kind .*?)\n```", f.read(), re.DOTALL).group(1)
             lookup = subprocess.run(shlex.split(command) + [os.path.join(out, "catalog.json")], capture_output=True, text=True, check=True)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
         self.assertEqual(lookup.stdout, "core k8s-a k8s-b\nv1alpha1 talos-a talos-b\n")
@@ -1814,7 +1828,7 @@ class Site(unittest.TestCase):
                   "tm": {"trust.cert-manager.io": "trust-manager"}, "multus": {"k8s.cni.cncf.io": "Multus CNI"}, "talos": {"core/v1alpha1": "Talos"}}
         with tempfile.TemporaryDirectory() as tmp:
             out = build(index, tmp, artifacts=sources_layers(tmp, layers))
-            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True, check=False)
             with open(os.path.join(out, "kinds", "index.html"), encoding="utf-8") as f:
                 kinds = f.read()
             with open(os.path.join(out, "catalog.json"), encoding="utf-8") as f:
@@ -1992,7 +2006,7 @@ class PlaygroundReport(unittest.TestCase):  # PG-14, AC-43
         self.assertIn("basics (omegaconf): differs from the Pyodide output", body)
 
     def test_updates_the_open_issue_with_its_title(self):
-        calls, body = self.report([{"number": 3, "title": f"{self.TITLE} (old)"}, {"number": 7, "title": self.TITLE}], self.DIFF)
+        calls, _body = self.report([{"number": 3, "title": f"{self.TITLE} (old)"}, {"number": 7, "title": self.TITLE}], self.DIFF)
         self.assertTrue(calls[-1].startswith(f"issue edit 7 -R {OWNER}/registry --body-file "), calls)
         self.assertFalse(any(c.startswith("issue create") for c in calls))
 
@@ -2017,7 +2031,7 @@ class Diagrams(unittest.TestCase):
             version = re.search(r"Generated by graphviz version (\S+)", svg).group(1)
             self.assertIn(f"Rendered with Graphviz {version};", dot, name)
             self.assertLessEqual(float(re.search(r'<svg width="([\d.]+)pt"', svg).group(1)), 340, name)  # readable at 360 px
-            fails = re.findall(r'<g id="[^"]+" class="(?:node|edge) fail">.*?</g>', svg, re.S)
+            fails = re.findall(r'<g id="[^"]+" class="(?:node|edge) fail">.*?</g>', svg, re.DOTALL)
             for group in fails:
                 self.assertIn('stroke-dasharray="', group, name)  # never colour alone
             if fails:
@@ -2123,7 +2137,7 @@ class Match(unittest.TestCase):  # CAT-34
                                                "trust-manager": ["0.25.0"]})
 
     def test_seo(self):  # CAT-11d over the new markup
-        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True, check=False)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
 
     def test_consumer_docs_lookup(self):  # CAT-34d
@@ -2131,10 +2145,10 @@ class Match(unittest.TestCase):  # CAT-34
             doc = f.read()
         start = doc.index("\n## Picking a version by what it is built for\n")
         section = doc[start:doc.index("\n## ", start + 1)]
-        command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq .*?)\n```", section, re.S).group(1)
+        command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq .*?)\n```", section, re.DOTALL).group(1)
         result = subprocess.run(shlex.split(command) + [os.path.join(self.out, "catalog.json")], capture_output=True, text=True, check=True)
         self.assertEqual(result.stdout, f"1.0.1 sha256:{'a' * 64}\n1.0.0 sha256:{'b' * 64}\n")  # not the yanked 0.8.0
-        recipe = json.loads(re.search(r"```json\n(.*?)\n```", section, re.S).group(1))
+        recipe = json.loads(re.search(r"```json\n(.*?)\n```", section, re.DOTALL).group(1))
         (name, datasource), = recipe["customDatasources"].items()
         self.assertEqual(datasource["defaultRegistryUrlTemplate"], "https://kadet-hub.org/catalog.json")
         self.assertEqual([m["datasourceTemplate"] for m in recipe["customManagers"]], [f"custom.{name}"])
@@ -2159,7 +2173,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
             return f.read()
 
     def snippet(self, page, id):
-        return _unescape(re.search(rf'<pre id="{id}"><code>(.*?)</code></pre>', page, re.S).group(1))
+        return _unescape(re.search(rf'<pre id="{id}"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
 
     def test_page_from_the_artifact(self):  # CAT-38: README sections, chart, level and generators of the latest listed version
         page = self.page("recipes", "cert-manager")
@@ -2295,7 +2309,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
                 env = dict(os.environ, OWNER=OWNER, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], LOG=log, RECIPES=recipes,
                            RECIPES_SHA=CHART_RECIPE_SHA, ORAS_TYPE=artifact_type, LAYERS=recipe_layers(os.path.join(tmp, "layers")))
                 env.pop("CATALOG_OFFLINE", None)
-                p = subprocess.run([os.path.join(HERE, "build"), os.path.join(tmp, "index.json"), os.path.join(tmp, "out")], env=env, capture_output=True, text=True)
+                p = subprocess.run([os.path.join(HERE, "build"), os.path.join(tmp, "index.json"), os.path.join(tmp, "out")], env=env, capture_output=True, text=True, check=False)
                 with open(log, encoding="utf-8") as f:
                     fetched = f.read()
                 self.assertIn(f"oras manifest ghcr.io/{OWNER}/recipes/cert-manager@sha256:{'b' * 64}\n", fetched)  # 1.1.0, not the yanked 1.0.0
@@ -2343,13 +2357,13 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertEqual(re.findall(r'<tr id="([^"]+)">', self.page("compatibility")), ["kubernetes"])
 
     def test_seo(self):  # CAT-11d over the new markup
-        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True, check=False)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
 
     def test_consumer_docs_lookup(self):  # CAT-38b, as CAT-34d
         with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
             doc = f.read()
-        command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq [^`]*?\.recipes\[\].*?)\n```", doc, re.S).group(1)
+        command = re.search(r"```sh\ncurl -fsSL https://kadet-hub\.org/catalog\.json \| (jq [^`]*?\.recipes\[\].*?)\n```", doc, re.DOTALL).group(1)
         for name, expected in (("cert-manager", f"1.1.0 sha256:{'b' * 64}\n"), ("valkey", "")):  # not the yanked 1.0.0; valkey pins a yanked generator
             result = subprocess.run(shlex.split(command.replace("cert-manager", name)) + [os.path.join(self.out, "catalog.json")],
                                     capture_output=True, text=True, check=True)
@@ -2379,7 +2393,7 @@ class Quickstart(unittest.TestCase):  # CAT-40
 
     @staticmethod
     def snippets(page):
-        return [(i, _unescape(t)) for i, t in re.findall(r'<pre id="([^"]+)"><code>(.*?)</code></pre>', page, re.S)]
+        return [(i, _unescape(t)) for i, t in re.findall(r'<pre id="([^"]+)"><code>(.*?)</code></pre>', page, re.DOTALL)]
 
     def test_commands(self):  # every command in order; the manual run on kind is redone when this list changes
         page = self.page("quickstart")
@@ -2390,14 +2404,14 @@ class Quickstart(unittest.TestCase):  # CAT-40
         self.assertEqual(self.snippets(page), [
             ("cluster", "kind create cluster --name quickstart-uptime-kuma"),
             ("install", "uv tool install --python 3.13 --with omegaconf==2.4.0.dev4 --with oras 'kapitan[omegaconf,reclass-rs]==0.36.3'"),
-            ("project", "mkdir -p uptime-kuma/fetch/targets uptime-kuma/inventory/targets\ncd uptime-kuma\n"
-                        "cat > .kapitan <<'EOF'\nglobal:\n  inventory-backend: omegaconf\nEOF"),
+            ("project", ("mkdir -p uptime-kuma/fetch/targets uptime-kuma/inventory/targets\ncd uptime-kuma\n"
+                         "cat > .kapitan <<'EOF'\nglobal:\n  inventory-backend: omegaconf\nEOF")),
             ("fetch", f"cat > fetch/targets/recipes.yml <<'EOF'\n{fetch}\nEOF"),
             ("target", f"cat > inventory/targets/uptime-kuma.yml <<'EOF'\n{recipe['include']}\nEOF"),
             ("verify", f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/recipes/uptime-kuma@{digest} \\\n  --owner {OWNER} \\\n  --cert-identity {IDENTITY}"),
             ("compile", "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"),
-            ("apply", "kubectl create namespace uptime-kuma\nkubectl apply -R -f compiled/uptime-kuma\n"
-                      "kubectl -n uptime-kuma rollout status statefulset/uptime-kuma --timeout=5m"),
+            ("apply", ("kubectl create namespace uptime-kuma\nkubectl apply -R -f compiled/uptime-kuma\n"
+                       "kubectl -n uptime-kuma rollout status statefulset/uptime-kuma --timeout=5m")),
             ("open", "kubectl -n uptime-kuma port-forward service/uptime-kuma 3001:3001"),
             ("cleanup", "kind delete cluster --name quickstart-uptime-kuma")])
         # The recipe page's own snippets (CAT-37c, CAT-38), and the install command of docs/consumers.md with oras.
@@ -2426,7 +2440,7 @@ class Quickstart(unittest.TestCase):  # CAT-40
         self.assertIn(">Coming from Helm?</h2>", page)
 
     def test_seo(self):  # CAT-11d over the new page
-        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True, check=False)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
 
 
@@ -2470,7 +2484,7 @@ def stack_build(tmp, posts, *args):
     with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
         json.dump(view(index, OWNER, lambda _: None), f)
     out = os.path.join(tmp, "out")
-    return out, subprocess.run(["hugo", "--logLevel", "error", "--source", site, "--destination", out, *args], capture_output=True, text=True)
+    return out, subprocess.run(["hugo", "--logLevel", "error", "--source", site, "--destination", out, *args], capture_output=True, text=True, check=False)
 
 
 class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
@@ -2540,7 +2554,7 @@ class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
                 self.assertIn(error, built.stderr)
 
     def test_seo(self):  # CAT-11d over the new page and sections
-        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True, check=False)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
 
 
@@ -2562,7 +2576,7 @@ SECURITY = {"scanned": "2026-10-29T04:31:07Z", "trivy": "0.76.1", "db": "2026-10
             "images": {IMAGE.format("a"): {"digest": "sha256:" + "f" * 64, "vulnerabilities": [
                            {"id": "CVE-2026-3", "severity": "UNKNOWN", "package": "zlib", "installed": "1.3", "fixed": ""},
                            {"id": "CVE-2026-2", "severity": "LOW", "package": "zlib", "installed": "1.3", "fixed": "1.3.1"},
-                           {"id": "CVE-2026-1", "severity": "HIGH", "package": "<script>alert(10)</script>", "installed": "1.0‮", "fixed": ""}]},
+                           {"id": "CVE-2026-1", "severity": "HIGH", "package": "<script>alert(10)</script>", "installed": "1.0\u202e", "fixed": ""}]},
                        IMAGE.format("b"): {"digest": "sha256:" + "f" * 64, "vulnerabilities": [
                            {"id": "CVE-2026-1", "severity": "HIGH", "package": "openssl", "installed": "3.0.1", "fixed": "3.0.2"},
                            {"id": "GHSA-aaaa-bbbb-cccc", "severity": "MEDIUM", "package": "golang.org/x/net", "installed": "0.1.0", "fixed": "0.2.0"}]},
@@ -2667,7 +2681,7 @@ class Security(unittest.TestCase):  # CAT-39 to CAT-39c
         self.assertIn("<h1>Image security report: cert-manager recipe</h1>", self.page("security", "recipes", "cert-manager"))
 
     def test_seo(self):  # CAT-11d over the new pages
-        p = subprocess.run([sys.executable, SEO_CHECK, self.out], capture_output=True, text=True)
+        p = subprocess.run([sys.executable, SEO_CHECK, self.out], capture_output=True, text=True, check=False)
         self.assertEqual(p.returncode, 0, p.stdout)
 
     def test_build_reads_the_newest_report(self):  # CAT-39c: the online build with gh, curl, git and oras faked
@@ -2808,7 +2822,7 @@ class View(unittest.TestCase):
 
 
 class ReleaseDigest(unittest.TestCase):  # CAT-36b
-    INDEX = {"serial": 9, "generators": {
+    INDEX: ClassVar[dict] = {"serial": 9, "generators": {
         "demo": {"1.0.0": dict(record("a"), published="2026-10-09T05:00:00Z"),  # the import week: no post
                  "1.1.0": dict(record("b"), published="2026-10-13T08:00:00Z"),
                  "1.2.0": dict(record("c"), published="2026-10-18T23:59:59Z"),
@@ -2890,7 +2904,7 @@ class ReleaseDigest(unittest.TestCase):  # CAT-36b
                 html = f.read()
             with open(os.path.join(out, "blog", "releases-2026-10-26", "index.md"), encoding="utf-8") as f:
                 plain = f.read()
-            seo = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True)
+            seo = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True, check=False)
         self.assertEqual(seo.returncode, 0, seo.stdout)  # CAT-11b: headings do not skip a level
         self.assertIn("| [demo](/generators/demo/) | 1.1.0, 1.2.0 | [CHANGELOG](", md)  # the line stays
         self.assertIn("\n## demo\n\n### demo 1.2.0\n\n#### Fixed\n\n- fix <script>alert(8)</script> one,", md)

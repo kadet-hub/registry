@@ -4,8 +4,8 @@ import sys
 import tarfile
 import tempfile
 import unittest
-from unittest import mock
 import zipfile
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import unpack

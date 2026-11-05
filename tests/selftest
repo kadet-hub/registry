@@ -30,6 +30,7 @@ printf 'aws_access_key_id: %s\n' "$key" >"$work/fail-token/settings.yml"
 derive fail-token-allowed "gitleaks: aws-access-token: keys.py"
 printf 'KEY = "%s"  # gitleaks:allow\n' "$key" >"$work/fail-token-allowed/keys.py"
 derive fail-eicar "clamav: eicar.txt"
+# shellcheck disable=SC2016 # the EICAR test string is literal
 printf '%s%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$' 'EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' >"$work/fail-eicar/eicar.txt"
 derive fail-case-collision "collides with"
 touch "$work/fail-case-collision/README.md" "$work/fail-case-collision/Readme.md"
@@ -123,6 +124,7 @@ printf 'aws_access_key_id: %s\n' "$key" >>"$work/recipes/fail-recipe-token/demo/
 derive_recipe fail-recipe-hex-key "gitleaks: generic-api-key: demo.yml"
 sed -i 's#checksum/secret:#api_key:#' "$work/recipes/fail-recipe-hex-key/demo/demo.yml"
 derive_recipe fail-recipe-oc-env "REC-5: init.yml: uses the resolver oc.env (RCP-17)"
+# shellcheck disable=SC2016 # ${oc.env:HOME} is the OmegaConf resolver the check must reject
 sed -i 's/version: 1.0.0/version: ${oc.env:HOME}/' "$work/recipes/fail-recipe-oc-env/demo/init.yml"
 derive_recipe fail-recipe-include "REC-5: init.yml: class recipes.other.vendor.x is neither"
 yq -i '.classes += ["recipes.other.vendor.x"]' "$work/recipes/fail-recipe-include/demo/init.yml"

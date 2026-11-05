@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from typing import ClassVar
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from plan import check_index, dependencies, schema_errors
@@ -166,8 +167,8 @@ class FetchInventory(unittest.TestCase):  # CON-4 step 2
                            ("vars", {"target": "recipes"}), ("labels", {"a": "b"})):
             with self.subTest(key=key):
                 _, findings = self.check(fetch_inventory(recipe(), **{key: value}))
-                self.assertEqual(findings, [f"CON-4: recipes: parameters.kapitan sets {key}, "
-                                            "a fetch target sets only dependencies"])
+                self.assertEqual(findings, [(f"CON-4: recipes: parameters.kapitan sets {key}, "
+                                             "a fetch target sets only dependencies")])
 
     def test_malformed_targets_fail(self):
         for target in ("x", {"parameters": {"kapitan": {"dependencies": "x"}}}):
@@ -245,7 +246,7 @@ class RecipeIndex(unittest.TestCase):  # CON-5
 
 
 class Includes(unittest.TestCase):  # CON-7 to CON-9
-    VALKEY = {"name": "valkey", "version": "1.0.0", "digest": digest("d")}
+    VALKEY: ClassVar[dict] = {"name": "valkey", "version": "1.0.0", "digest": digest("d")}
 
     def check(self, pins, records):
         deps, findings = dependencies(fetch_inventory(*pins), POLICY, "kadet-hub", fetch=True)
@@ -312,10 +313,10 @@ class Includes(unittest.TestCase):  # CON-7 to CON-9
         self.assertEqual(findings, [])
         self.assertEqual([d["recipe"] for d in deps], ["gitea", "postgresql", "pgbouncer"])
         _, findings = self.check([self.pin("gitea", digest("a")), self.pin("netbox", digest("b"))], records)
-        self.assertEqual(findings, [f"CON-8: recipe netbox 1.0.0 includes pgbouncer 1.1.0 at {digest('9')} and "
-                                    f"recipe postgresql 1.0.0 includes pgbouncer 1.0.0 at {digest('f')}, but "
-                                    "inventory/classes/recipes/pgbouncer holds one version: "
-                                    "pin versions that include the same pgbouncer"])
+        self.assertEqual(findings, [(f"CON-8: recipe netbox 1.0.0 includes pgbouncer 1.1.0 at {digest('9')} and "
+                                     f"recipe postgresql 1.0.0 includes pgbouncer 1.0.0 at {digest('f')}, but "
+                                     "inventory/classes/recipes/pgbouncer holds one version: "
+                                     "pin versions that include the same pgbouncer")])
 
     def test_pin_of_an_included_recipe(self):  # CON-9, DEC-45: accepted at the listed digest only
         records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[self.VALKEY])},
@@ -325,9 +326,9 @@ class Includes(unittest.TestCase):  # CON-7 to CON-9
         self.assertEqual([d["recipe"] for d in deps], ["nextcloud", "valkey"])  # the pin, not a second dependency
         deps, findings = self.check([self.pin("nextcloud", digest("a")), self.pin("valkey", digest("e"), "1.1.0")],
                                     records)
-        self.assertEqual(findings, [f"CON-9: recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, "
-                                    f"the fetch inventory pins valkey at {digest('e')}: "
-                                    "delete that pin, the workflow adds the included recipe from the index"])
+        self.assertEqual(findings, [(f"CON-9: recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, "
+                                     f"the fetch inventory pins valkey at {digest('e')}: "
+                                     "delete that pin, the workflow adds the included recipe from the index")])
         self.assertEqual([d["recipe"] for d in deps], ["nextcloud", "valkey"])
 
     def test_two_parents_with_different_digests_are_both_named(self):  # CON-8
@@ -336,10 +337,10 @@ class Includes(unittest.TestCase):  # CON-7 to CON-9
                                                                                 digest=digest("e"))])},
                    "valkey": {"1.0.0": recipe_record(digest("d")), "1.1.0": recipe_record(digest("e"))}}
         _, findings = self.check([self.pin("nextcloud", digest("a")), self.pin("gitea", digest("b"))], records)
-        self.assertEqual(findings, [f"CON-8: recipe gitea 1.0.0 includes valkey 1.1.0 at {digest('e')} and "
-                                    f"recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, but "
-                                    "inventory/classes/recipes/valkey holds one version: "
-                                    "pin versions that include the same valkey"])
+        self.assertEqual(findings, [(f"CON-8: recipe gitea 1.0.0 includes valkey 1.1.0 at {digest('e')} and "
+                                     f"recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, but "
+                                     "inventory/classes/recipes/valkey holds one version: "
+                                     "pin versions that include the same valkey")])
 
 
 if __name__ == "__main__":

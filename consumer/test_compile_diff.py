@@ -102,7 +102,7 @@ class Render(unittest.TestCase):  # CD-7, CD-9
         self.assertIn("+  replicas: 2\n```\n", body)
 
     def test_hostile_artifact_stays_text(self):
-        text = "+@someone <img src=x> [x](https://example.org) ‮evil‬ ü\n+``````\n+</details>\n"
+        text = "+@someone <img src=x> [x](https://example.org) \u202eevil\u202c ü\n+``````\n+</details>\n"
         self.diff("x<b>y", text)
         write(os.path.join(self.dir, "notes.md"), b"**injected**")
         os.symlink("/etc/passwd", os.path.join(self.dir, "link.diff"))
