@@ -245,6 +245,28 @@ as the consumer workflow already requires.
   - Test: `consumer/test_compile_diff.py` (`Render`); manual: AC-15
   - Since: #537
 
+A successful compile run always uploads `compile-diff`, so "no change" is
+something the artifact says, not something its absence implies. The comment
+action tells the two cases apart by the marker file `compile-diff.txt`.
+Without it, the artifact was not uploaded, has expired, or could not be
+downloaded, for example because the job lacks `actions: read`. The comment
+then says the result is missing, in place of a diff that would look clean,
+and the job fails so the run shows it.
+
+- CD-10: After both compiles succeed, `compile-diff` MUST upload the
+  artifact `compile-diff` with the marker file `compile-diff.txt`, also when
+  no target changed.
+
+  - Test: `consumer/test_compile_diff.py` (`Diff.test_marker_without_changes`)
+  - Since: #560
+
+- CD-11: When the compile run succeeded and the downloaded artifact holds no
+  `compile-diff.txt`, `compile-diff-comment` MUST post a comment that names
+  the result as missing, without a diff or "no change", and MUST fail.
+
+  - Test: `consumer/test_compile_diff.py` (`Render.test_missing_marker`)
+  - Since: #560
+
 ## Verification
 
 - AC-15 (CD-1, CD-3, CD-4, CD-8, CD-9): in a repository whose default
@@ -298,8 +320,8 @@ as the consumer workflow already requires.
 
 | Path | Content |
 |---|---|
-| `.github/actions/compile-diff/action.yml` | CD-1 to CD-3: checkouts, setup actions, `consumer/run` per side, diff, upload |
-| `.github/actions/compile-diff-comment/action.yml` | CD-5 to CD-9: download, pull request lookup, render, post or edit |
-| `consumer/compile_diff.py` | `diff` (CD-3) and `render` (CD-7, CD-9) |
+| `.github/actions/compile-diff/action.yml` | CD-1 to CD-3, CD-10: checkouts, setup actions, `consumer/run` per side, diff, upload |
+| `.github/actions/compile-diff-comment/action.yml` | CD-5 to CD-9, CD-11: download, pull request lookup, render, post or edit |
+| `consumer/compile_diff.py` | `diff` (CD-3, CD-10) and `render` (CD-7, CD-9, CD-11) |
 | `consumer/test_compile_diff.py` | Unit tests, run by `consumer-selftest` |
 | `docs/consumers.md` | The two consumer workflows (CD-4, CD-5) |

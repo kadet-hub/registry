@@ -17,7 +17,7 @@ runs:
 
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       if: github.event.workflow_run.conclusion == 'success'
-      continue-on-error: true # no artifact when nothing changed
+      continue-on-error: true # CD-11: render reports a failed download
       with:
         name: compile-diff
         path: ${{ runner.temp }}/compile-diff
@@ -44,8 +44,11 @@ runs:
           exit 0
         fi
         pr=${prs[0]}
+        # CD-11: exit 1 when the artifact is missing; post that, then fail.
+        status=0
         python3 -I "$GITHUB_ACTION_PATH/../../../consumer/compile_diff.py" render \
-          "$RUNNER_TEMP/compile-diff" "$CONCLUSION" "$HEAD_SHA" "$RUN_URL" >"$RUNNER_TEMP/compile-diff-body.md"
+          "$RUNNER_TEMP/compile-diff" "$CONCLUSION" "$HEAD_SHA" "$RUN_URL" >"$RUNNER_TEMP/compile-diff-body.md" || status=$?
+        [[ -s $RUNNER_TEMP/compile-diff-body.md ]] || exit 1
         id=$(gh api --paginate "repos/$REPO/issues/$pr/comments" \
           --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- kadet-hub-compile-diff -->"))) | .id' | head -n 1)
         if [[ -n $id ]]; then
@@ -54,3 +57,4 @@ runs:
           gh api -X POST "repos/$REPO/issues/$pr/comments" -F body=@"$RUNNER_TEMP/compile-diff-body.md" >/dev/null
         fi
         echo "compile diff posted on #$pr"
+        exit "$status"
