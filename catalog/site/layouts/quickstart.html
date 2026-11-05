@@ -28,7 +28,9 @@
 <p>It does not check that the index still lists the digest, nor the generator the recipe pins. <a href="{{ $consumers }}#verifying-a-recipe-by-hand">Verifying a recipe by hand</a> does both and pulls exactly the verified digest.</p>
 <h2>5. Compile</h2>
 <p>The first command fetches the recipe into <code>inventory/classes/recipes/uptime-kuma</code> and then exits with status 1 and <code>No such file or directory: .../compiled</code>, because the fetch target compiles nothing. The second fetches the <a href="{{ "/generators/kubernetes/" | relURL }}">kubernetes</a> generator the recipe pins into <code>lib/kubernetes</code> and writes a StatefulSet and a Service to <code>compiled/uptime-kuma/manifests/</code>. It warns that the container sets no resource requests; a target sets them under <code>components.uptime-kuma.resources</code>.</p>
-{{ partial "snippet.html" (dict "id" "compile" "label" "compile commands" "text" $r.commands) }}
+{{ with $r.included }}<p>Version {{ $r.latest.version }} includes {{ . }}. Kapitan's <code>--fetch</code> reads no index, so pull the included recipes by digest before the second command:</p>
+{{ partial "snippet.html" (dict "id" "pull" "label" "pull commands" "text" $r.pull) }}
+{{ end }}{{ partial "snippet.html" (dict "id" "compile" "label" "compile commands" "text" $r.commands) }}
 <h2>6. Apply</h2>
 <p>The recipe renders no Namespace, so the first command creates it. <code>rollout status</code> waits until the pod is ready. Its readiness probe runs every 60 seconds, so this takes a minute or two after the image is pulled.</p>
 {{ partial "snippet.html" (dict "id" "apply" "label" "apply commands" "text" "kubectl create namespace uptime-kuma\nkubectl apply -R -f compiled/uptime-kuma\nkubectl -n uptime-kuma rollout status statefulset/uptime-kuma --timeout=5m") }}

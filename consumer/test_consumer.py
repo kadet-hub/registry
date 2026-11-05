@@ -244,43 +244,102 @@ class RecipeIndex(unittest.TestCase):  # CON-5
                                  [f"CON-5: {RECIPE}: the index does not list this digest for recipe cert-manager"])
 
 
-class Includes(unittest.TestCase):  # CON-4 step 3
+class Includes(unittest.TestCase):  # CON-7 to CON-9
     VALKEY = {"name": "valkey", "version": "1.0.0", "digest": digest("d")}
 
-    def findings(self, pins, records):
+    def check(self, pins, records):
         deps, findings = dependencies(fetch_inventory(*pins), POLICY, "kadet-hub", fetch=True)
         self.assertEqual(findings, [])
-        return check_index(recipe_index(records), POLICY, deps)[1]
+        return deps, check_index(recipe_index(records), POLICY, deps)[1]
 
     def pin(self, name, d, version="1.0.0"):
         return recipe(f"ghcr.io/kadet-hub/recipes/{name}:{version}@{d}", name)
 
-    def test_included_recipe_pinned_at_the_listed_digest_passes(self):
+    def sources(self, deps):
+        return [(d["source"], d["output_path"], d["recipe"]) for d in deps]
+
+    def test_included_recipes_are_added_from_the_record(self):  # CON-7: the fetch inventory pins only the parent
         records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[self.VALKEY])},
                    "valkey": {"1.0.0": recipe_record(digest("d"))}}
-        pins = [self.pin("nextcloud", digest("a")), self.pin("valkey", digest("d"))]
-        self.assertEqual(self.findings(pins, records), [])
+        deps, findings = self.check([self.pin("nextcloud", digest("a"))], records)
+        self.assertEqual(findings, [])
+        self.assertEqual(self.sources(deps)[1:], [(f"ghcr.io/kadet-hub/recipes/valkey:1.0.0@{digest('d')}",
+                                                   "inventory/classes/recipes/valkey", "valkey")])
+        self.assertEqual((deps[1]["host"], deps[1]["repo"], deps[1]["tag"], deps[1]["digest"], deps[1]["marketplace"]),
+                         ("ghcr.io", "kadet-hub/recipes/valkey", "1.0.0", digest("d"), None))
 
-    def test_included_recipe_at_another_digest_or_missing_fails(self):
+    def test_parent_moved_alone(self):  # CON-7: a Renovate update of the parent alone takes its new includes along
+        records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[self.VALKEY]),
+                                 "1.1.0": recipe_record(digest("b"), includes=[dict(self.VALKEY, version="1.1.0",
+                                                                                    digest=digest("e"))])},
+                   "valkey": {"1.0.0": recipe_record(digest("d")), "1.1.0": recipe_record(digest("e"))}}
+        deps, findings = self.check([self.pin("nextcloud", digest("b"), "1.1.0")], records)
+        self.assertEqual(findings, [])
+        self.assertEqual([d["source"] for d in deps], [f"ghcr.io/kadet-hub/recipes/nextcloud:1.1.0@{digest('b')}",
+                                                       f"ghcr.io/kadet-hub/recipes/valkey:1.1.0@{digest('e')}"])
+
+    def test_included_recipe_is_checked_like_a_pin(self):  # CON-7, CON-5
+        source = f"ghcr.io/kadet-hub/recipes/valkey:1.0.0@{digest('d')}"
+        cases = [
+            ({"valkey": {"1.0.0": recipe_record(digest("d"), yanked="broken")}},
+             "CON-5: recipe valkey 1.0.0 is yanked: broken"),
+            ({"valkey": {"1.0.0": recipe_record(digest("e"))}},
+             f"CON-5: {source}: the index does not list this digest for recipe valkey"),
+            ({"valkey": {"1.1.0": recipe_record(digest("d"))}},
+             f"CON-5: {source}: tag 1.0.0 is not 1.1.0, the version the index lists for this digest"),
+        ]
+        for valkey, want in cases:
+            with self.subTest(want=want):
+                records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[self.VALKEY])}, **valkey}
+                self.assertEqual(self.check([self.pin("nextcloud", digest("a"))], records)[1], [want])
+        for bad in ({"name": "../valkey"}, {"digest": "sha256:d"}):
+            with self.subTest(bad=bad):
+                records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[dict(self.VALKEY, **bad)])}}
+                deps, findings = self.check([self.pin("nextcloud", digest("a"))], records)
+                self.assertEqual(len(deps), 1)
+                self.assertEqual(len(findings), 1)
+                self.assertRegex(findings[0], r"^CON-7: recipe nextcloud 1\.0\.0 includes .*, which is not a recipe source$")
+
+    def test_transitive_include(self):  # CON-7, CON-8: the records of added recipes are read in turn
+        pgbouncer = {"name": "pgbouncer", "version": "1.0.0", "digest": digest("f")}
+        records = {"gitea": {"1.0.0": recipe_record(digest("a"), includes=[{"name": "postgresql", "version": "1.0.0",
+                                                                             "digest": digest("c")}])},
+                   "postgresql": {"1.0.0": recipe_record(digest("c"), includes=[pgbouncer])},
+                   "pgbouncer": {"1.0.0": recipe_record(digest("f")), "1.1.0": recipe_record(digest("9"))},
+                   "netbox": {"1.0.0": recipe_record(digest("b"), includes=[dict(pgbouncer, version="1.1.0",
+                                                                                 digest=digest("9"))])}}
+        deps, findings = self.check([self.pin("gitea", digest("a"))], records)
+        self.assertEqual(findings, [])
+        self.assertEqual([d["recipe"] for d in deps], ["gitea", "postgresql", "pgbouncer"])
+        _, findings = self.check([self.pin("gitea", digest("a")), self.pin("netbox", digest("b"))], records)
+        self.assertEqual(findings, [f"CON-8: recipe netbox 1.0.0 includes pgbouncer 1.1.0 at {digest('9')} and "
+                                    f"recipe postgresql 1.0.0 includes pgbouncer 1.0.0 at {digest('f')}, but "
+                                    "inventory/classes/recipes/pgbouncer holds one version: "
+                                    "pin versions that include the same pgbouncer"])
+
+    def test_pin_of_an_included_recipe(self):  # CON-9, DEC-45: accepted at the listed digest only
         records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[self.VALKEY])},
                    "valkey": {"1.0.0": recipe_record(digest("d")), "1.1.0": recipe_record(digest("e"))}}
-        other = self.findings([self.pin("nextcloud", digest("a")), self.pin("valkey", digest("e"), "1.1.0")], records)
-        self.assertEqual(other, [f"CON-4: recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, "
-                                 f"the fetch inventory pins valkey at {digest('e')}"])
-        missing = self.findings([self.pin("nextcloud", digest("a"))], records)
-        self.assertEqual(missing, [f"CON-4: recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, "
-                                   "the fetch inventory does not pin valkey"])
+        deps, findings = self.check([self.pin("nextcloud", digest("a")), self.pin("valkey", digest("d"))], records)
+        self.assertEqual(findings, [])
+        self.assertEqual([d["recipe"] for d in deps], ["nextcloud", "valkey"])  # the pin, not a second dependency
+        deps, findings = self.check([self.pin("nextcloud", digest("a")), self.pin("valkey", digest("e"), "1.1.0")],
+                                    records)
+        self.assertEqual(findings, [f"CON-9: recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, "
+                                    f"the fetch inventory pins valkey at {digest('e')}: "
+                                    "delete that pin, the workflow adds the included recipe from the index"])
+        self.assertEqual([d["recipe"] for d in deps], ["nextcloud", "valkey"])
 
-    def test_two_parents_with_different_digests_are_both_named(self):
+    def test_two_parents_with_different_digests_are_both_named(self):  # CON-8
         records = {"nextcloud": {"1.0.0": recipe_record(digest("a"), includes=[self.VALKEY])},
                    "gitea": {"1.0.0": recipe_record(digest("b"), includes=[dict(self.VALKEY, version="1.1.0",
                                                                                 digest=digest("e"))])},
                    "valkey": {"1.0.0": recipe_record(digest("d")), "1.1.0": recipe_record(digest("e"))}}
-        findings = self.findings([self.pin("nextcloud", digest("a")), self.pin("gitea", digest("b")),
-                                  self.pin("valkey", digest("d"))], records)
-        self.assertEqual(findings, [f"CON-4: recipe gitea 1.0.0 includes valkey 1.1.0 at {digest('e')} and "
-                                    f"recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, "
-                                    "the fetch inventory can pin only one"])
+        _, findings = self.check([self.pin("nextcloud", digest("a")), self.pin("gitea", digest("b"))], records)
+        self.assertEqual(findings, [f"CON-8: recipe gitea 1.0.0 includes valkey 1.1.0 at {digest('e')} and "
+                                    f"recipe nextcloud 1.0.0 includes valkey 1.0.0 at {digest('d')}, but "
+                                    "inventory/classes/recipes/valkey holds one version: "
+                                    "pin versions that include the same valkey"])
 
 
 if __name__ == "__main__":

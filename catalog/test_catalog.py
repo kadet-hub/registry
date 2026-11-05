@@ -2203,13 +2203,25 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn(f"\n```yaml\n{self.snippet(page, 'fetch')}\n```\n", md)
         self.assertIn(f"\n```sh\n{self.snippet(page, 'verify')}\n```\n", md)
         self.assertIn('\n```yaml\noutput_capabilities:\n  "compiled/<target>/*": [admission-webhook]\n```\n', md)
-        # An included recipe is pinned and verified at the version the record lists (REC-16, CON-4).
+        self.assertIn("pins the recipe by version", page)
+        self.assertNotIn('id="pull"', page)
+        self.assertIn("This verifies the attestation of the recipe:", page)
+        # The workflow adds an included recipe (CON-7); a local compile pulls it, and both verify it (REC-16, CON-6).
         page = self.page("recipes", "external-dns-powerdns")
         self.assertEqual(re.findall(r"source: (\S+)\n", self.snippet(page, "fetch") + "\n"),
-                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns:1.0.0@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns:1.0.0@sha256:{'5' * 64}"])
+                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns:1.0.0@sha256:{'4' * 64}"])
+        self.assertIn("<p>Version 1.0.0 includes powerdns 1.0.0. The consumer workflow adds the included recipes", page)
+        pull = ('tmp=$(mktemp -d)\n'
+                f'oras pull -o "$tmp" ghcr.io/{OWNER}/recipes/powerdns@sha256:{"5" * 64}\n'
+                'mkdir -p inventory/classes/recipes/powerdns\n'
+                'tar -xf "$tmp/powerdns.tar" -C inventory/classes/recipes/powerdns --no-same-owner')
+        self.assertEqual(self.snippet(page, "pull"), pull)
         self.assertEqual(re.findall(r"oci://(\S+)", self.snippet(page, "verify")),
                          [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns@sha256:{'5' * 64}"])
-        self.assertIn("pins the recipe and the recipes it includes by version", page)
+        self.assertIn("This verifies the attestation of the recipe and of the recipes it includes:", page)
+        md = self.page("recipes", "external-dns-powerdns", name="index.md")
+        self.assertIn(f"\n```yaml\n{self.snippet(page, 'fetch')}\n```\n\nexternal-dns-powerdns 1.0.0 includes powerdns 1.0.0. ", md)
+        self.assertIn(f"\n```sh\n{pull}\n```\n", md)
         self.assertIn("<li>No <code>renders</code> result in the release run's record</li>", page)  # a scan record without it
         self.assertIn("<li>Output capabilities: none</li>", page)
         self.assertNotIn('id="policy"', page)
@@ -2389,8 +2401,9 @@ class Quickstart(unittest.TestCase):  # CAT-40
             ("open", "kubectl -n uptime-kuma port-forward service/uptime-kuma 3001:3001"),
             ("cleanup", "kind delete cluster --name quickstart-uptime-kuma")])
         # The recipe page's own snippets (CAT-37c, CAT-38), and the install command of docs/consumers.md with oras.
-        self.assertEqual((recipe["fetch"], recipe["verify"], recipe["commands"]),
-                         (fetch, dict(self.snippets(page))["verify"], dict(self.snippets(page))["compile"]))
+        self.assertEqual((recipe["fetch"], recipe["verify"], recipe["commands"], recipe.get("pull")),
+                         (fetch, dict(self.snippets(page))["verify"], dict(self.snippets(page))["compile"],
+                          dict(self.snippets(page)).get("pull")))  # uptime-kuma includes no recipe (CON-7)
         self.assertTrue(recipe["include"].startswith("classes:\n  - recipes.uptime-kuma\n"))
         with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
             install = re.search(r"```sh\n(uv tool install [^\n]*)\n```", f.read()).group(1)

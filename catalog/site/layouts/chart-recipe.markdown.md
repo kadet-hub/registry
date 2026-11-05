@@ -62,12 +62,18 @@ fetch/targets/recipes.yml for {{ $r.name }} {{ .version }}:
 ```yaml
 {{ $r.fetch }}
 ```
+{{ with $r.included }}
+{{ $r.name }} {{ $r.latest.version }} includes {{ . }}. The consumer workflow adds the included recipes at the digests the index lists. Kapitan's --fetch reads no index, so for a local compile pull them by digest first:
 
+```sh
+{{ $r.pull }}
+```
+{{ end }}
 ```sh
 {{ $r.commands }}
 ```
 
-The first command exits with status 1 because the fetch target compiles nothing. Verifying the attestation of each recipe the fetch inventory pins:
+The first command exits with status 1 because the fetch target compiles nothing. Verifying the attestation of the recipe{{ with $r.included }} and of the recipes it includes{{ end }}:
 
 ```sh
 {{ $r.verify }}
