@@ -396,9 +396,22 @@ carry `Logged in as <user>`.
 
 ## What the CI run showed {#ci}
 
-A local run of `check` at commit `587e44b` of
+[Run 42114834453](https://github.com/kadet-hub/examples/actions/runs/42114834453)
+of the examples workflow tested commit `587e44b` of
 [kadet-hub/examples#156](https://github.com/kadet-hub/examples/pull/156)
-on 5 November 2026 printed this after the deploy:
+on 5 November 2026, on GitHub's `ubuntu-24.04` runner. The durations
+below come from the log's timestamps or from what `check` printed, in
+whole seconds.
+
+Verifying the index, the ten recipes and the four generators, and
+pulling them, took 70 seconds. Creating the CA and the refs, installing
+Kapitan with uv and the two compiles took 13 more, for 126 files, and
+the compiles of the moved copy 5. kind had the cluster ready 39 seconds
+later. The three operators had rolled out 24 seconds after that. Keycloak's
+PostgreSQL was ready 30 seconds later, Keycloak after 28 more, and the
+realm import done after another 23, 105 seconds after the cluster in
+all. The apps took 91 seconds more, image pulls included. Then `check`
+printed this within 4 seconds:
 
 ```text
 issuer https://sso.example.test:8443/realms/home
