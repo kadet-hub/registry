@@ -264,26 +264,35 @@ FTL answers the API before it reloads its lists, so `check` asks again
 for up to 20 seconds. Then Pi-hole answers `0.0.0.0`, the answer of its
 default blocking mode, over UDP and TCP.
 
-## What the check showed
+## What the CI run showed
 
-A run of `check` on 5 November 2026, before CI ran it, used the kind
-node image `kindest/node:v1.37.0`. The compile rendered 10 files for
-`dns` and 3 for `pihole`. From the first `kubectl apply` until Pi-hole's
-rollout finished took 66 seconds, image pulls included.
+[Run 41952672519](https://github.com/kadet-hub/examples/actions/runs/41952672519)
+of the examples workflow tested commit `32c55f0` of
+[kadet-hub/examples#138](https://github.com/kadet-hub/examples/pull/138)
+on 5 November 2026, on GitHub's `ubuntu-24.04` runner, with the kind
+node image `kindest/node:v1.37.0`. The durations below come from the
+log's timestamps or are what `check` printed, in whole seconds.
+
+Verifying the index, the three recipes and the generator and pulling them
+took 24 seconds. Installing Kapitan with uv and the two compiles took 11
+more. kind had the cluster ready 43 seconds later. From the first
+`kubectl apply` until Pi-hole's rollout finished took 53 seconds, image
+pulls included. Starting the client pod, the queries and the deny entry
+took 2 seconds together.
 
 external-dns had written `pihole.home.example` into PowerDNS by the first
 query, and Pi-hole answered it with the Service's cluster IP over UDP and
-TCP. For `missing.home.example`, Pi-hole returned NXDOMAIN with the flag
-`aa` and this authority section:
+TCP. For `missing.home.example`, Pi-hole returned NXDOMAIN with this
+SOA record in the authority section:
 
 ```text
-home.example.		3600	IN	SOA	a.misconfigured.dns.server.invalid. hostmaster.home.example. 2026110501 10800 3600 604800 3600
+home.example. 3600 IN SOA a.misconfigured.dns.server.invalid. hostmaster.home.example. 2026110501 10800 3600 604800 3600
 ```
 
 `ads.example` was NXDOMAIN before the deny entry and `0.0.0.0` over UDP
 and TCP after it.
 
-The wiring is the one line in `misc.dnsmasq_lines`. In a second run
+The wiring is the one line in `misc.dnsmasq_lines`. In a local run
 without it, external-dns still wrote the record into PowerDNS, but Pi-hole
 returned no address for `pihole.home.example`, and `check` failed. The
 cluster's DNS, Pi-hole's only upstream then, knows nothing about
