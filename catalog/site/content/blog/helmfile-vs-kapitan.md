@@ -235,8 +235,8 @@ repository.
 Helmfile reads it through [vals](https://github.com/helmfile/vals), which
 resolves `ref+` values before Helm sees them. Here the value is
 `ref+envsubst://$VALKEY_PASSWORD`, which reads an environment variable.
-Helmfile's documentation lists vals backends such as Vault and AWS SSM in
-its place, which the example does not test. The chart writes the password
+Helmfile's documentation shows backends such as Vault and AWS SSM instead,
+which the example does not test. The chart writes the password
 into `valkey-auth`, base64-encoded, and `check` finds it in the output of
 `helmfile template`.
 
