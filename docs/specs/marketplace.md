@@ -127,6 +127,10 @@ the build job (RISK-10).
 - DEC-45: the consumer workflow takes the recipes a pinned recipe
   includes from the index, and accepts a pin of an included recipe only
   at the digest the including record lists ([consumers.md](consumers.md)).
+- DEC-48 to DEC-53: coding agents act as the GitHub App `kadet-hub-agent`
+  from sessions that hold no other credential, merge through a ruleset
+  bypass only after `neat-bot` approved the head commit, and leave tags,
+  releases and sign-offs to the maintainer ([agents.md](agents.md)).
 
 ## Area specs
 
@@ -144,6 +148,7 @@ Requirements live in the spec of their area; IDs are unchanged by the split.
 | [kapitan-next.md](kapitan-next.md) | The kadet-hub/kapitan `next` build and its image | NXT |
 | [compile-diff.md](compile-diff.md) | Compile diff of consumer pull requests | CD |
 | [playground.md](playground.md) | The Kapitan playground in the browser | PG |
+| [agents.md](agents.md) | Agent identity: the GitHub App, agent sessions, commits and the review gate | AGT |
 
 ## Verification
 
@@ -185,7 +190,8 @@ cover none of the changed files.
   Markdown files at the repository root, `renovate.json`, issue and pull
   request templates, `CODEOWNERS`, the rulesets `.github/ruleset*.json`,
   the test-only workflows of CI-1, the `scorecard`, `codeql` and `fuzz`
-  workflows and `.clusterfuzzlite/` (GI-12 to GI-14).
+  workflows and `.clusterfuzzlite/` (GI-12 to GI-14), and the review gate
+  (AGT-11).
 
   This list ignores paths instead of listing them, so a new file a release
   job reads still triggers a release; the daily scheduled run (CAT-20)
@@ -428,6 +434,10 @@ cover none of the changed files.
   `helm pull` in `gate/fetch-charts`. `sandbox/.trivyignore.yaml` lists
   each advisory until a release carries its fix.
 
+- RISK-15 to RISK-17: the agent app's key, agent sessions that can still
+  reach the maintainer's credentials, and a passing check forged by a
+  workflow on an agent branch ([agents.md](agents.md)).
+
 ## Out of scope
 
 - Ratings, download counts and install telemetry.
@@ -524,6 +534,7 @@ coverage is named at each:
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
 | `.github/ruleset-branches.json`, `.github/ruleset-renovate.json` | REV-3; applied with `gh api` |
 | `.github/workflows/request-review.yml` | REV-4 |
+| `.github/actions/review-gate/`, `.github/workflows/review-gate.yml` | AGT-11; paths in [agents.md](agents.md) |
 | `.github/workflows/workflows.yml`, `tests/workflow-policy` | GI-6, GI-10, GI-11, GI-15 |
 | `.github/workflows/scorecard.yml` | GI-12 |
 | `.github/workflows/codeql.yml` | GI-13 |
