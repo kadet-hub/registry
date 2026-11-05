@@ -143,6 +143,7 @@ Requirements live in the spec of their area; IDs are unchanged by the split.
 | [recipes.md](recipes.md) | Recipes: registration, gate, artifact and index | REC |
 | [kapitan-next.md](kapitan-next.md) | The kadet-hub/kapitan `next` build and its image | NXT |
 | [compile-diff.md](compile-diff.md) | Compile diff of consumer pull requests | CD |
+| [playground.md](playground.md) | The Kapitan playground in the browser | PG |
 
 ## Verification
 

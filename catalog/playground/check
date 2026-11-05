@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# PG-6: compile every example in the gate's sandbox image and compare its
+# output with what build.py compiled in Pyodide.
+#
+# Usage: check <projects dir> <outputs dir>, both written by build.py.
+# Needs docker, python3 and the image $SANDBOX_IMAGE (default
+# kadet-hub/sandbox, built from sandbox/). Exits 1 on any difference.
+set -euo pipefail
+here=$(cd -- "$(dirname -- "$0")" && pwd)
+projects=$(realpath -- "$1")
+outputs=$(realpath -- "$2")
+image=${SANDBOX_IMAGE:-kadet-hub/sandbox}
+native=$(mktemp -d)
+trap 'rm -rf -- "$native"' EXIT
+status=0
+while read -r name backend; do
+  out=$native/$name/$backend
+  mkdir -p -- "$out"
+  if ! docker run --rm --network none --read-only --user "$(id -u):$(id -g)" --tmpfs /tmp:size=64m \
+    --mount "type=bind,src=$projects/$name,dst=/project,readonly" --mount "type=bind,src=$out,dst=/out" \
+    --workdir /project "$image" kapitan compile --inventory-backend "$backend" --ignore-version-check --output-path /out >"$native/log" 2>&1; then
+    echo "$name ($backend): the gate image failed"
+    tail -n 20 -- "$native/log"
+    status=1
+  elif ! diff -r -- "$out/compiled" "$outputs/$name/$backend"; then
+    echo "$name ($backend): differs from the Pyodide output"
+    status=1
+  else
+    echo "$name ($backend): identical, $(find "$out/compiled" -type f | wc -l) files"
+  fi
+done < <(python3 -I -c 'import json, sys
+for e in json.load(open(sys.argv[1])):
+    for b in e["backends"]:
+        print(e["name"], b)' "$here/examples.json")
+exit "$status"

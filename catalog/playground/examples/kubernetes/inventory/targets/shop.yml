@@ -1,0 +1,57 @@
+# The usage example of the kubernetes generator's README. The generator's
+# files are in lib/kubernetes, as kapitan.dependencies would fetch them.
+parameters:
+  kapitan:
+    vars:
+      target: shop
+    compile:
+      - output_path: manifests/
+        input_type: kadet
+        output_type: yml
+        input_paths:
+          - lib/kubernetes
+
+  namespace: shop
+
+  generators:
+    manifest:
+      default_config:           # merged into every component; component keys win
+        recommended_labels: true
+        security_profile: restricted
+      resource_defaults:
+        deployment:             # merged into components of this type
+          revision_history_limit: 5
+
+  components:
+    web:
+      image: registry.example.com/shop/web:1.4.2
+      replicas: 2
+      ports:
+        http:
+          container_port: 8080
+          service_port: 80
+      healthcheck:
+        readiness:
+          type: http
+          port: http
+          path: /ready
+      resources:
+        requests: {cpu: 100m, memory: 128Mi}
+        limits: {memory: 256Mi}
+      env:
+        LOG_LEVEL: info
+        CHECKOUT_URL:
+          configMapKeyRef:
+            key: checkout_url   # name resolved to the component's ConfigMap
+      config_maps:
+        config:
+          mount: /etc/web
+          data:
+            checkout_url:
+              value: https://shop.example.com/checkout
+      service:
+        type: ClusterIP
+      hpa:
+        min_replicas: 2
+        max_replicas: 6
+      pdb_min_available: 1

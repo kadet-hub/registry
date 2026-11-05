@@ -1,0 +1,34 @@
+[
+  {
+    "name": "basics",
+    "title": "Inventory basics",
+    "description": "Two classes merge into a target, interpolation fills in values, a kadet component and a Jinja2 template read the result.",
+    "dir": "basics",
+    "backends": ["omegaconf"]
+  },
+  {
+    "name": "kubernetes",
+    "title": "kubernetes generator",
+    "description": "The usage example of the kubernetes generator: a Deployment with its Service, ConfigMap, autoscaler and disruption budget from one component.",
+    "dir": "kubernetes",
+    "generator": "kubernetes",
+    "backends": ["omegaconf", "reclass"]
+  },
+  {
+    "name": "uptime-kuma",
+    "title": "Recipe uptime-kuma",
+    "description": "The uptime-kuma recipe, which rebuilds Uptime Kuma's Docker Compose file as a StatefulSet and a Service.",
+    "dir": "uptime-kuma",
+    "recipe": "uptime-kuma",
+    "backends": ["omegaconf"]
+  },
+  {
+    "name": "blackbox-exporter",
+    "title": "Recipe blackbox-exporter next to its Helm chart",
+    "description": "The blackbox-exporter recipe compiled in your browser, next to helm template's output of the chart it rebuilds.",
+    "dir": "blackbox-exporter",
+    "recipe": "blackbox-exporter",
+    "helm": {"values": "values.yaml", "release": "blackbox-exporter", "namespace": "blackbox-exporter"},
+    "backends": ["omegaconf"]
+  }
+]

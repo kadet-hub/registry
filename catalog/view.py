@@ -1,6 +1,6 @@
 """Turn the index into the catalog's view model (CAT-1, CAT-2). Standard library only.
 
-Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] [--wanted FILE] [--gate FILE] [--security FILE --security-out FILE] --out FILE
+Usage: view.py --index FILE --owner OWNER [--offline] [--artifacts DIR] [--sboms DIR] [--rekor FILE] [--discussions FILE] [--pages DIR] [--previous FILE] [--diffs DIR] [--wanted FILE] [--wanted-recipes FILE] [--gate FILE] [--security FILE --security-out FILE] --out FILE
 
 Sorts versions, picks each generator's latest version that is not yanked,
 and adds display data from the GitHub API: owner logins and source stars.
@@ -19,7 +19,8 @@ downloads" are the pulls of the popularity score (CAT-23). --previous is the
 catalog.json of the last build; its README and CHANGELOG sections are used when the latest digest
 is unchanged and no artifact layer was fetched. --diffs DIR/<name>/<version>.output.diff
 is a version's verified output diff; its first lines are shown (CAT-27).
---wanted is the list of open generator requests (CAT-31).
+--wanted is the list of open generator requests (CAT-31), --wanted-recipes
+that of open recipe requests (CAT-41).
 --gate is the registry's pull requests with their changed paths and comments;
 only counts and requirement IDs are kept (CAT-33).
 The index's recipes become recipes[] (CAT-38b).
@@ -448,6 +449,27 @@ def grade(counts):
     return next((GRADES[s] for s in SEVERITIES if counts[s]), "A")
 
 
+REPOSITORY = re.compile(r"[a-z0-9]+(?:[._/-][a-z0-9]+)*")
+
+
+def registry_page(ref):
+    """CAT-39: an image reference's repository and its page on Docker Hub, ghcr.io or Quay, or None as the page."""
+    repo = re.sub(r":[^/]*$", "", ref.split("@")[0])  # without digest and tag
+    host, _, path = repo.partition("/")
+    if not path or not ("." in host or ":" in host or host == "localhost"):  # no registry host: Docker Hub
+        host, path = "docker.io", repo
+    page = None
+    if REPOSITORY.fullmatch(path):
+        if host == "docker.io":
+            name = path.removeprefix("library/")
+            page = f"https://hub.docker.com/_/{name}" if "/" not in name else f"https://hub.docker.com/r/{path}"
+        elif host == "ghcr.io":
+            page = f"https://ghcr.io/{path}"
+        elif host == "quay.io":
+            page = f"https://quay.io/repository/{path}"
+    return repo, page
+
+
 def load_security(path):
     """CAT-39c: the rescan's image report (SEC-19), None when it was not read or has another form."""
     try:
@@ -481,8 +503,10 @@ def security(report, generators, recipes):
             rows = sorted(({"id": text(v.get("id")), "severity": v.get("severity") if v.get("severity") in SEVERITIES else "UNKNOWN",
                             "package": text(v.get("package")), "installed": text(v.get("installed")), "fixed": text(v.get("fixed"))}
                            for v in found if isinstance(v, dict)), key=lambda r: (SEVERITIES.index(r["severity"]), r["id"], r["package"]))
+            repository, page = registry_page(text(ref))
             images.append({"ref": text(ref), "tag": tag, "digest": text(scan.get("digest")), "error": None, "missing": False,
-                           "findings": rows, "counts": {s: sum(r["severity"] == s for r in rows) for s in SEVERITIES}})
+                           "findings": rows, "counts": {s: sum(r["severity"] == s for r in rows) for s in SEVERITIES},
+                           "repository": repository, "page": page})
         scanned = [i for i in images if not i["missing"]]  # a tag no registry serves names no image
         failed = sum(i["error"] is not None for i in scanned)
         counts = None if failed or not scanned else {s: sum(i["counts"][s] for i in scanned) for s in SEVERITIES}
@@ -538,6 +562,7 @@ def main():
     p.add_argument("--previous")
     p.add_argument("--diffs")
     p.add_argument("--wanted")
+    p.add_argument("--wanted-recipes")
     p.add_argument("--gate")
     p.add_argument("--security")
     p.add_argument("--security-out")
@@ -548,6 +573,7 @@ def main():
     result = view(index, a.owner, (lambda _: None) if a.offline else api, a.artifacts, a.sboms, load_rekor(a.rekor),
                   load_discussions(a.discussions, a.owner), a.pages, load_previous(a.previous), a.diffs)
     result["wanted"] = load_wanted(a.wanted)
+    result["wanted_recipes"] = load_wanted(a.wanted_recipes)
     result["stats"] = stats(result["generators"], load_gate(a.gate))
     if a.security_out:
         with open(a.security_out, "w", encoding="utf-8") as f:
