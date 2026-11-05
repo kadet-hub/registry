@@ -1752,7 +1752,7 @@ Related: CAT-15, CAT-30, CON-2.
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
     recipes' prerequisites: #368; nextcloud: #402;
     authentik, blackbox-exporter, gitea, immich, jellyfin, n8n, netbox,
-    ollama, open-webui and semaphore: #507
+    ollama, open-webui and semaphore: #507; forgejo: this change
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1818,7 +1818,9 @@ Related: CAT-15, CAT-30, CON-2.
   mariadb Helm chart alternative:", because that chart is what readers
   search a replacement for. wordpress, designed on the Docker Official
   Image with mariadb included, follows it as "WordPress on Kubernetes with
-  Kapitan" and "Bitnami wordpress Helm chart alternative:".
+  Kapitan" and "Bitnami wordpress Helm chart alternative:". memcached,
+  designed on the Docker Official Image, follows it as "Memcached on
+  Kubernetes with Kapitan" and "Bitnami memcached Helm chart alternative:".
 
   powerdns is the PowerDNS part of the kadet-hub/examples recipe
   `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
@@ -1854,7 +1856,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
     keycloak: #368; mariadb: #509;
-    wordpress: #511
+    wordpress: #511; memcached: this change
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
