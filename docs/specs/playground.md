@@ -157,14 +157,27 @@ the playground from the published index, compiles every example under each of
 its backends in Pyodide (`compile.mjs`, in Node, from the files the page
 serves) and in the sandbox image built from `sandbox/`, and compares the two
 trees. Because the examples come from the index, a new recipe or generator
-version changes them without a pull request here; the release's catalog job
-then compiles them in Pyodide and fails the playground on an error (PG-13),
-but compares with the gate image only on pull requests (OQ-43).
+version changes them without a pull request here, so the workflow also runs
+daily on `main` against the index published at that time.
 
 - PG-6: Every example MUST compile under each backend it names, in Pyodide,
   to the same files with the same bytes as in the gate's sandbox image.
 
   - Test: `.github/workflows/playground.yml` (`catalog/playground/check`)
+  - Since: this change
+
+- PG-14: The `playground` workflow MUST run daily against the published
+  index. When a scheduled run fails, it MUST open one issue titled
+  "Playground differs from the gate image" with the summary of `check` and
+  a link to the run, or update the body of the open issue with that title.
+  `issues: write` MUST be held only by the job that writes the issue, which
+  holds `contents: read` besides.
+
+  The issue covers a failure before the comparison too, such as an example
+  that no longer compiles in Pyodide; its body then says that the
+  comparison did not run. Decided with #543, formerly OQ-43.
+
+  - Test: `catalog/test_catalog.py` (`PlaygroundReport`); `.github/workflows/playground.yml` (job `report`)
   - Since: this change
 
 ## Loading, CSP and hosting
@@ -278,6 +291,9 @@ wheels and the standard library are deflate archives already: gzip saves
 - AC-42 (PG-4, PG-9, PG-13): the catalog tests find the start control with
   the download size, the backend order, the list of what is not supported,
   and the note of a build without the playground.
+- AC-43 (PG-14): with a stand-in for `gh`, `report` creates the issue when
+  no open issue has its title, edits the body of the open one that has it,
+  and ignores issues whose title only contains it.
 
 ## Alternatives
 
@@ -297,9 +313,6 @@ wheels and the standard library are deflate archives already: gzip saves
   stand-in above is measured.
 - OQ-42: Should a start count as a GoatCounter event, to see how much of the
   Pages bandwidth the playground takes?
-- OQ-43: Should the `playground` workflow also run on a schedule, so a new
-  recipe or generator version in the index is compared with the gate image
-  before the next pull request?
 
 ## Implementation inventory
 
@@ -308,13 +321,14 @@ wheels and the standard library are deflate archives already: gzip saves
 | `catalog/playground/build.py` | Fetches and checks Pyodide and the wheels, assembles the examples, renders the Helm side, runs `compile.mjs`, writes `data/playground.json` (PG-1, PG-5, PG-11, PG-12) |
 | `catalog/playground/compile.mjs` | Compiles every example in Pyodide in Node, writes the bytecode archives (PG-6, PG-12) |
 | `catalog/playground/check` | Compiles every example in the sandbox image and compares (PG-6) |
+| `catalog/playground/report` | Opens or updates the issue of a failed scheduled run (PG-14) |
 | `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11) |
 | `catalog/playground/examples.json`, `examples/` | The examples |
 | `catalog/playground/package.json`, `package-lock.json` | Pyodide and playwright-core pins; Renovate's npm manager moves them |
 | `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3) |
 | `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13) |
 | `catalog/build` | Runs `build.py` online, copies `$CATALOG_PLAYGROUND` offline (PG-13) |
-| `.github/workflows/playground.yml` | AC-40, AC-41 |
+| `.github/workflows/playground.yml` | AC-40, AC-41, PG-14 |
 
 | Value | Setting |
 |---|---|
