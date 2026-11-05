@@ -1924,7 +1924,7 @@ Related: CAT-15, CAT-30, CON-2.
   version list.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`)
-  - Since: #399; included recipes left to the consumer workflow: this change
+  - Since: #399; included recipes left to the consumer workflow: #536
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 

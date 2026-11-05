@@ -230,7 +230,7 @@ CON-1 checks, fetches and verifies them like any generator.
   so the GitHub workflow and the GitLab template run them alike.
 
   - Test: `consumer/test_consumer.py` (`FetchInventory`, `Dependencies.test_recipe_in_main_inventory`); `consumer-selftest` (`fail-recipe-main-inventory`, `fail-fetch-inventory-shape`); manual: `consumer/run` with `SANDBOX_TRACE=0` on a cert-manager fetch inventory against index serial 64 (2026-10-26) (partial: the AC-12 samples that fetch from ghcr.io and the AC-14 samples are not written, since `consumer-selftest` has neither oras nor a token for `gh attestation verify`, and no published recipe includes another yet)
-  - Since: #397; included recipes from the index: this change
+  - Since: #397; included recipes from the index: #536
 
 - CON-5: Verification of a recipe MUST check the artifact attestation as
   CON-2 does for `oci://ghcr.io/kadet-hub/recipes/<name>@sha256:<digest>`,
@@ -258,7 +258,7 @@ CON-1 checks, fetches and verifies them like any generator.
   (CON-7) are pulled by hand.
 
   - Test: none
-  - Since: #397; included recipes: this change
+  - Since: #397; included recipes: #536
 
 ### Included recipes
 
@@ -270,7 +270,7 @@ request that moves one pin, such as a Renovate update of `immich`, thereby
 also moves `postgresql` and `valkey` to the digests the new `immich` record
 lists.
 
-Before this change the fetch inventory pinned every included recipe as
+Before #536 the fetch inventory pinned every included recipe as
 well, and the workflow failed unless each of those pins matched the
 parent's record. Renovate reads tags, not the index, and moves each pin to
 the newest version of its recipe. It proposed an included recipe past the
@@ -299,7 +299,7 @@ fetch inventory pins no included recipe.
   the GitHub workflow and the GitLab template add them alike.
 
   - Test: `consumer/test_consumer.py` (`Includes.test_included_recipes_are_added_from_the_record`, `Includes.test_parent_moved_alone`, `Includes.test_included_recipe_is_checked_like_a_pin`, `Includes.test_transitive_include`); manual: `consumer/plan.py` against index serial 113 with a fetch inventory that pins only `immich` 1.0.0 (2026-11-05)
-  - Since: this change
+  - Since: #536
 
 - CON-8: The workflow MUST fail when two recipes include the same recipe
   at different digests, and name each of them with the version and digest
@@ -310,14 +310,14 @@ fetch inventory pins no included recipe.
   versions of the two parents that include the same one.
 
   - Test: `consumer/test_consumer.py` (`Includes.test_two_parents_with_different_digests_are_both_named`, `Includes.test_transitive_include`); manual: the CON-7 run with `nextcloud` 1.0.0 pinned as well
-  - Since: #397; included recipes of added recipes: this change
+  - Since: #397; included recipes of added recipes: #536
 
 - CON-9: The workflow MUST fail when the fetch inventory pins an included
   recipe at a digest other than the one the including record lists, and
   MUST accept a pin at that digest (DEC-31).
 
   - Test: `consumer/test_consumer.py` (`Includes.test_pin_of_an_included_recipe`)
-  - Since: #397 (another digest fails); this change (the pin is optional)
+  - Since: #397 (another digest fails); #536 (the pin is optional)
 
 - DEC-31: A pin of an included recipe in the fetch inventory is accepted
   when its digest is the one the including record lists, and refused
@@ -327,16 +327,16 @@ fetch inventory pins no included recipe.
   reason of its own to pin `postgresql`, and the shared directory allows
   one version, the one `immich` lists. Refusing every pin of an included
   recipe was considered. It would fail every fetch inventory written
-  before this change at the next bump of the workflow pin, and leave that
+  before #536 at the next bump of the workflow pin, and leave that
   consumer no pin for its own use of `postgresql`. A pin at the same
   digest still moves on its own under Renovate, which brings back the
   refused updates for that recipe, so `docs/consumers.md` advises against
   it.
 
-Fetch inventories written before this change pin the included recipes at
+Fetch inventories written before #536 pin the included recipes at
 the listed digests, as the recipe pages and READMEs showed. The workflow
 accepts them unchanged (CON-9). The first update that moves a parent
 without its included recipes, or an included recipe without its parent,
 then fails with a CON-9 finding that names the pin. Deleting the pins of
 included recipes resolves it and keeps later updates consistent. A pin at
-another digest failed before this change as well.
+another digest failed before #536 as well.
