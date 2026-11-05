@@ -40,7 +40,6 @@ generator 1.14.0.
 - [external-dns-powerdns](/recipes/external-dns-powerdns/) 1.0.0 runs
   external-dns 0.23.0, rebuilt from the external-dns project's Helm chart
   1.23.0. It includes powerdns and writes into its zone through the API.
-  It reads Services only.
 
 ## The fetch inventory
 
