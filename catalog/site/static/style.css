@@ -368,3 +368,17 @@ details.version:target { border-color: var(--accent); }
 .pg-outputs summary { cursor: pointer; font: .875rem var(--mono); }
 .pg-outputs pre, .pg-log, #pg-helm-output { max-height: 32rem; overflow-y: auto; }
 .pg-log { color: var(--text-muted); }
+.pg-prov { margin-top: 1.5rem; }
+.pg-prov h3.pg-h { font-size: .9375rem; margin-top: 1rem; }
+.pg-bar input[type="search"] { min-height: 44px; width: min(24rem, 100%); padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: .875rem var(--mono); }
+.pg-bar label:has(input) { flex: 1 1 16rem; }
+.pg-classes, .pg-chain { margin: .25rem 0; padding-left: 1.75rem; }
+.pg-classes li, .pg-chain li { margin: .2rem 0; overflow-wrap: anywhere; }
+.pg-params details { border-top: 1px solid var(--border); padding: .4rem 0; overflow-wrap: anywhere; }
+.pg-params summary { cursor: pointer; }
+.pg-path { font-weight: 600; }
+.pg-src { color: var(--accent); font-weight: 600; }
+.pg-chain li { color: var(--text-muted); }
+.pg-chain li.pg-win { color: var(--text); }
+.pg-tag { display: inline-block; padding: 0 .4rem; border-radius: 6px; border: 1px solid var(--border-strong); font-size: .75rem; }
+.pg-win .pg-tag { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-strong); }
