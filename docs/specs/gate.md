@@ -1532,7 +1532,7 @@ code diff and the output diff, not only the verdict.
   head commit, also when it merges through the admin bypass. When
   `neat-bot` reports findings, each MUST be resolved before the merge: the
   author fixes it or answers in its thread, and `neat-bot` then approves
-  the new head. Renovate's own merges (REV-5) are the exception.
+  the head commit. Renovate's own merges (REV-5) are the exception.
 
   `neat-bot` is an automated reviewer, not a person. Its review is either
   an approval or a comment review with one thread per finding, each
