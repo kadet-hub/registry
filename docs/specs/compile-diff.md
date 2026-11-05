@@ -1,7 +1,7 @@
 # Kapitan generator marketplace: Compile diff
 
 Status: Draft
-Code: `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py`, `consumer/test_compile_diff.py`, `docs/consumers.md` (Compile diff)
+Code: `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py`, `consumer/test_compile_diff.py`, `docs/consumers.md` (Compile diff in pull requests)
 Verified against: main @ a82f7e2
 
 Related: [consumers.md](consumers.md) holds the consumer flow that compiles
