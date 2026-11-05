@@ -162,7 +162,7 @@ cover none of the changed files.
   | Job | Workflow | Inputs |
   |---|---|---|
   | `gate-selftest` | `selftest.yml` | `sandbox/`, `scan/`, `gate/`, `policy/`, `consumer/unpack.py`, `tests/selftest`, `tests/samples/`, actions `setup-gate`, `setup-check`, `setup-gvisor`, `setup-kind` |
-  | `consumer-selftest` | `consumer-selftest.yml` | `consumer/`, `sandbox/`, `gate/fetch_tree.py`, `policy/output/`, `policy/binaries.txt`, `tests/consumer-selftest`, `tests/consumers/`, action `setup-gvisor` |
+  | `consumer-selftest` | `consumer-selftest.yml` | `consumer/`, `sandbox/`, `gate/fetch_tree.py`, `policy/output/`, `policy/binaries.txt`, `tests/consumer-selftest`, `tests/consumers/`, actions `setup-gvisor`, `compile-diff` (CD-2) |
   | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, action `setup-hugo` |
   | `release-tests` | `release-tests.yml` | `release/` |
   | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
