@@ -40,6 +40,10 @@ multiprocessing pool and runs some inputs as subprocesses.
   import and leaves out cryptography, requests and jsonschema. Pyodide memory
   snapshots, importing Kapitan ahead of the first compile and recompressing
   the archives were measured and not adopted (Start-up).
+- DEC-46: The page shows where each parameter of a target comes from by
+  replaying the backend's merge in the runtime module and comparing the
+  replay with the inventory Kapitan rendered (Merge order and parameter
+  sources).
 
 ## Runtime
 
@@ -180,6 +184,98 @@ daily on `main` against the index published at that time.
   - Test: `catalog/test_catalog.py` (`PlaygroundReport`); `.github/workflows/playground.yml` (job `report`)
   - Since: this change
 
+## Merge order and parameter sources
+
+After a compile the page shows, for the target the visitor selects, the
+classes in the order the backend merged them and, for each parameter, the
+file that set its final value and the values it overrode. A visitor who
+wonders why `app.replicas` is 3 reads the answer there instead of following
+`classes:` through the files by hand.
+
+Kapitan 0.36.3 does not record where a value came from. The omegaconf
+backend (`OmegaConfInventory.load_parameters_from_file`) merges, for each
+entry of a file's `classes:`, that class's own classes first and then the
+class, and the target last, with `OmegaConf.unsafe_merge` and
+`ListMergeMode.EXTEND_UNIQUE`: a list gains the items it does not hold yet.
+A class listed twice is merged twice. Its `target.classes` is that merge
+order. reclass (`Core._recurse_entity`) walks the same way but merges a class
+only the first time. Its lists append every item, and a key with the prefix
+`~` replaces the value instead of merging into it. Its `classes` output is
+the union of the `classes:` lists in the order the files were merged, which
+is not the merge order: for a target that lists `a` and `e`, where `a` lists
+`b` and `e` lists `f`, reclass merges `b, a, f, e` and reports
+`b, f, a, e`. Both backends resolve `${...}` after the merge.
+
+So the runtime replays the merge (DEC-46). It walks the class files with the
+backend's own class lookup, `resolve_class_file_path` for omegaconf and
+reclass's storage, and merges each file's `parameters:` by the rules above.
+For every leaf it keeps the files that set it, in merge order, with the raw
+value each wrote. A leaf is a value that is not a non-empty mapping, so a
+list is one leaf. The resolved value comes from the inventory Kapitan
+rendered. Recording sources inside the backends would change Kapitan's code,
+which PG-2 rules out.
+
+What a backend starts from counts as a source: for omegaconf the target's
+name metadata and the defaults of Kapitan's inventory model, for reclass its
+automatic parameters `_reclass_`. Kapitan's compile sets
+`kapitan.target_full_path` after the inventory rendered, and the page names
+it as the source of that value. Defaults that Kapitan's inventory model adds
+for keys no file set, such as `prune` in a compile entry, are not part of the
+merge and are not listed.
+
+The replay is checked on every compile. Each leaf without an interpolation
+must equal the value Kapitan rendered, and each rendered leaf must be a leaf
+of the replay or the result of one of its interpolations. Features the
+replay does not model show up as differences: reclass's constant prefix
+`=`, omegaconf's `???`, an interpolation that a later mapping merges into,
+and class names that contain references.
+
+The page also says whether the other backend would merge the same class
+files in the same order. For the recipe examples it says that reclass cannot
+read them: a recipe's `init.yml` lists `.uptime-kuma`, which omegaconf reads
+as the file next to it and reclass as the class itself.
+
+- PG-15: After a compile whose inventory rendered, the page MUST list the
+  selected target's classes in the order the backend merged them, followed
+  by the target, each with the file whose `classes:` named it.
+
+  - Test: `catalog/playground/test_provenance.py` (`Provenance.test_class_order`), `browser.mjs` (PG-15)
+  - Since: this change
+
+- PG-16: The page MUST say whether the other backend merges the same class
+  files in the same order, and when it cannot read the inventory, why.
+
+  - Test: `test_provenance.py` (`Provenance.test_class_order`, `Provenance.test_other_backend_cannot_read`)
+  - Since: this change
+
+- PG-17: For every leaf of the target's merged parameters, the page MUST
+  name the file that set its final value and list the files that set it
+  before, with their raw values, in merge order.
+
+  A list that several files merged names each of them. A value with an
+  interpolation shows the raw and the resolved value.
+
+  - Test: `test_provenance.py` (`test_override_chain`, `test_list_merge`, `test_none_replaces_a_mapping`, `test_reclass_override_prefix`, `test_interpolation`), `browser.mjs` (PG-17)
+  - Since: this change
+
+- PG-18: The page MUST filter the parameters by a path the visitor types.
+
+  - Test: `browser.mjs` (PG-17, PG-18)
+  - Since: this change
+
+- PG-19: The runtime MUST compare the replay with the inventory Kapitan
+  rendered on every compile, and the page MUST name every path where they
+  differ.
+
+  - Test: `test_provenance.py` (`Provenance.test_difference_is_reported`), `browser.mjs` (PG-19)
+  - Since: this change
+
+- PG-20: Every example MUST compile under each backend it names with no
+  difference between the replay and Kapitan's inventory.
+
+  - Test: `.github/workflows/playground.yml` (`compile.mjs`, in the build step)
+  - Since: this change
+
 ## Loading, CSP and hosting
 
 The playground's files are part of the Pages artifact, about 20 MB under
@@ -294,6 +390,10 @@ wheels and the standard library are deflate archives already: gzip saves
 - AC-43 (PG-14): with a stand-in for `gh`, `report` creates the issue when
   no open issue has its title, edits the body of the open one that has it,
   and ignores issues whose title only contains it.
+- AC-44 (PG-15 to PG-20): in the `playground` workflow, `test_provenance.py`
+  passes in the sandbox image, `compile.mjs` finds no difference for any
+  example, and Chrome lists `common, apps.web, dev` for the basics example
+  and the chain of `app.replicas` (1, 2, then 3 from the target).
 
 ## Alternatives
 
@@ -304,6 +404,9 @@ wheels and the standard library are deflate archives already: gzip saves
 | Pyodide on the page's thread with `'wasm-unsafe-eval'` | Changes the CSP of the page, and the page freezes while Python starts and compiles |
 | All of Kapitan's dependencies installed | 45.2 MB of wheels for refs backends that cannot reach their services from a browser |
 | Output rendered at build time only, no editing | Shows output, not the effect of an edit |
+| Record sources inside the backends | Changes Kapitan's code (PG-2) |
+| Merge class by class with the backend and compare after each step | Works for omegaconf only: reclass keeps values in its own types until it interpolates the whole merge. It also costs one merge per class on every compile |
+| Take the class order from `target.classes` | For reclass it is not the merge order (Merge order and parameter sources) |
 
 ## Open questions
 
@@ -319,16 +422,17 @@ wheels and the standard library are deflate archives already: gzip saves
 | Path | Purpose |
 |---|---|
 | `catalog/playground/build.py` | Fetches and checks Pyodide and the wheels, assembles the examples, renders the Helm side, runs `compile.mjs`, writes `data/playground.json` (PG-1, PG-5, PG-11, PG-12) |
-| `catalog/playground/compile.mjs` | Compiles every example in Pyodide in Node, writes the bytecode archives (PG-6, PG-12) |
+| `catalog/playground/compile.mjs` | Compiles every example in Pyodide in Node, checks its provenance, writes the bytecode archives (PG-6, PG-12, PG-20) |
+| `catalog/playground/test_provenance.py` | Unit tests of the replay against fixture inventories, run in the sandbox image (PG-15 to PG-19) |
 | `catalog/playground/check` | Compiles every example in the sandbox image and compares (PG-6) |
 | `catalog/playground/report` | Opens or updates the issue of a failed scheduled run (PG-14) |
-| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11) |
+| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11, PG-15, PG-17 to PG-19) |
 | `catalog/playground/examples.json`, `examples/` | The examples |
 | `catalog/playground/package.json`, `package-lock.json` | Pyodide and playwright-core pins; Renovate's npm manager moves them |
-| `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3) |
-| `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13) |
+| `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19) |
+| `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13, PG-15 to PG-18) |
 | `catalog/build` | Runs `build.py` online, copies `$CATALOG_PLAYGROUND` offline (PG-13) |
-| `.github/workflows/playground.yml` | AC-40, AC-41, PG-14 |
+| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44, PG-14 |
 
 | Value | Setting |
 |---|---|
