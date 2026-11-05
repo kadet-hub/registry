@@ -1,4 +1,4 @@
-// PG-3, PG-7 to PG-10, PG-15, PG-17 to PG-19 in a browser: node browser.mjs <built site dir>
+// PG-3, PG-7 to PG-10, PG-15, PG-17 to PG-19, PG-21, PG-22 in a browser: node browser.mjs <built site dir>
 // Serves the site, opens /playground/ in Chrome ($CHROME, default
 // /usr/bin/google-chrome) and exits 1 on any finding.
 import { createServer } from "node:http";
@@ -67,6 +67,11 @@ try {
     r = await step(++runs, name);
     if (r.exit !== "0" || r.files === 0) fail(`${name}: no output`);
     if (!(await page.isVisible("#pg-params details")) || await page.isVisible("#pg-prov-warning")) fail(`PG-17, PG-19: ${name}: no trace, or it differs`);
+    if (name === "terraform") {
+      const outs = await page.$$eval("#pg-outputs summary", (ss) => ss.map((s) => s.textContent));
+      if (!outs.length || !outs.every((o) => o.endsWith(".tf.json"))) fail(`PG-21: terraform output ${outs.join(", ")}`);
+      if (!(await page.textContent("#pg-description")).includes("terraform plan does not run in your browser")) fail("PG-22: no note on terraform plan");
+    }
     if (await page.isVisible("#pg-helm") && !(await page.textContent("#pg-helm-output")).includes("kind:")) fail(`${name}: empty helm output`);
   }
   if (!(await page.isVisible("#pg-helm"))) fail("PG-11: no example shows the helm output");
