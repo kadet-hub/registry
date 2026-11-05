@@ -16,8 +16,13 @@ yourself.
 For a local compile, install Kapitan the way the sandbox does:
 
 ```sh
-uv tool install --with omegaconf==2.4.0.dev4 'kapitan[omegaconf,reclass-rs]==0.36.3'
+uv tool install --python 3.13 --with omegaconf==2.4.0.dev4 'kapitan[omegaconf,reclass-rs]==0.36.3'
 ```
+
+Python 3.13 is the sandbox's version. Kapitan 0.36.3 requires
+`regex<2025`, and regex 2024.11.6 has no wheel for Python 3.14, so uv
+would build it from source there, which fails without a C compiler and
+Python's headers (`fatal error: Python.h: No such file or directory`).
 
 omegaconf 2.4.0 removed `ListMergeMode`, so without the pin the OmegaConf
 backend fails with `ImportError: cannot import name 'ListMergeMode'`
