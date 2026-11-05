@@ -25,10 +25,10 @@ onmessage = async ({ data }) => {
   const { py, kw } = await ready;
   const files = py.toPy(data.files);
   try {
-    const [code, log, out] = kw.compile_project(files, data.backend).toJs({ dict_converter: Object.fromEntries });
-    postMessage({ type: "result", id: data.id, code, log, out });
+    const [code, log, out, prov] = kw.compile_project(files, data.backend).toJs({ dict_converter: Object.fromEntries });
+    postMessage({ type: "result", id: data.id, backend: data.backend, code, log, out, prov: JSON.parse(prov) });
   } catch (e) {
-    postMessage({ type: "result", id: data.id, code: -1, log: String(e), out: {} });
+    postMessage({ type: "result", id: data.id, backend: data.backend, code: -1, log: String(e), out: {}, prov: null });
   } finally {
     files.destroy();
   }
