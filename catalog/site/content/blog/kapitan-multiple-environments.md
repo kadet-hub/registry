@@ -251,21 +251,27 @@ miniflux itself. `check` logs in as the admin and reads the Google Reader
 API endpoint from the page `/integrations`, which miniflux builds from
 `BASE_URL`.
 
-In the run quoted here, stage and prod each had one pod that restarted
-once on the first start:
+At the end `check` lists how often each miniflux pod restarted. In the
+CI run quoted here, one pod of stage restarted twice:
 
 ```console
-  multienv-a miniflux/miniflux-8cb668c5-b55ht: restart count 1
-  multienv-b miniflux/miniflux-7d44975b79-vbgmw: restart count 1
+  multienv-a miniflux-dev/miniflux-5445c564dc-g7k26: restart count 0
+  multienv-a miniflux/miniflux-8cb668c5-2zmdl: restart count 0
+  multienv-a miniflux/miniflux-8cb668c5-8257z: restart count 2
+  multienv-b miniflux/miniflux-7d44975b79-4jbfr: restart count 0
+  multienv-b miniflux/miniflux-7d44975b79-57j9v: restart count 0
+  multienv-b miniflux/miniflux-7d44975b79-hvpp5: restart count 0
 ```
+
+In three local runs, one pod of stage and one of prod restarted once.
 
 miniflux 2.3.4 runs its database migrations without a lock. When two or
 three replicas start on an empty database, one of them can fail with an
 error such as `pq: column "karakeep_tags" of relation "integrations"
 already exists`. It exits, and the kubelet starts it again on the
-migrated schema. dev runs one replica, so it cannot race. Stage with two
-replicas hit the same race as prod, which a stage with one replica would
-not show.
+migrated schema, sometimes after a second collision. dev runs one
+replica, so it cannot race. Stage with two replicas runs into the race
+that prod's three can, which a stage with one replica would not show.
 
 ## Helm values files and Kustomize overlays {#helm-kustomize}
 
