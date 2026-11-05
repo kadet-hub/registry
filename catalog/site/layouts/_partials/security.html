@@ -1,4 +1,4 @@
-{{- /* CAT-39: the image security report of the version a page shows, or of main for a recipe without one, as {grade, class, text, full}. dict: report (generators or recipes), name, version. */ -}}
+{{- /* CAT-39: the image security report of the version a page shows, or of main for a recipe without one, as {grade, class, text, full, images}; images are the graded ones with repository and registry page. dict: report (generators or recipes), name, version. */ -}}
 {{- $s := site.Data.security -}}
 {{- $p := false }}{{ $of := "" -}}
 {{- if .version }}{{ $p = index (index $s .report) .name }}{{ $of = printf "version %s" .version -}}
@@ -22,7 +22,7 @@
     {{- $r = merge $r (dict "text" (printf "Not graded: %d of the %s could not be scanned on %s." (int $p.failed) $images $at)) -}}
   {{- else -}}
     {{- $c := $p.counts -}}
-    {{- $r = merge $r (dict "grade" $p.grade "class" (cond (eq $p.grade "-") "u" (lower $p.grade))
+    {{- $r = merge $r (dict "grade" $p.grade "class" (cond (eq $p.grade "-") "u" (lower $p.grade)) "images" (where $p.images "missing" false)
         "text" (printf "%d finding%s, one per advisory and package, in the %s: CRITICAL %d, HIGH %d, MEDIUM %d, LOW %d, UNKNOWN %d. Scanned %s."
           (int $p.total) (cond (eq (int $p.total) 1) "" "s") $images (int (index $c "CRITICAL")) (int (index $c "HIGH")) (int (index $c "MEDIUM")) (int (index $c "LOW")) (int (index $c "UNKNOWN")) $at)) -}}
   {{- end -}}

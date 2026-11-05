@@ -8,7 +8,8 @@
 # $CATALOG_SBOMS/<name>/<version>.spdx.json, output diffs from
 # $CATALOG_DIFFS/<name>/<version>.output.diff and transparency log indexes
 # from $CATALOG_REKOR (JSON {name: {version: index}}) and open generator
-# requests from $CATALOG_WANTED (CAT-31) and pull requests with their gate
+# requests from $CATALOG_WANTED (CAT-31) and open recipe requests from
+# $CATALOG_WANTED_RECIPES (CAT-41) and pull requests with their gate
 # comments from $CATALOG_GATE (CAT-33) and the recipe classes and the
 # recipes.sha of kadet-hub/recipes from $CATALOG_RECIPES/inventory/classes
 # (CAT-37a, CAT-37c) and the layers of the recipes the index lists from
@@ -38,6 +39,7 @@ diffs=${CATALOG_DIFFS:-$work/diffs}
 rekor=${CATALOG_REKOR:-$work/rekor.json}
 discussions=${CATALOG_DISCUSSIONS:-$work/discussions.json}
 wanted=${CATALOG_WANTED:-$work/wanted.json}
+wanted_recipes=${CATALOG_WANTED_RECIPES:-$work/wanted-recipes.json}
 gate=${CATALOG_GATE:-$work/gate.json}
 pages=${CATALOG_PAGES:-$work/pages}
 security=${CATALOG_SECURITY:-$work/image-report/security.json}
@@ -157,6 +159,10 @@ else
   gh api --paginate "repos/$OWNER/registry/issues?labels=generator-request&state=open&per_page=100" \
     --jq '.[] | select(.pull_request == null) | {number, title, up: .reactions["+1"], created: .created_at, updated: .updated_at}' \
     | jq -s . >"$wanted" || { rm -f -- "$wanted"; echo "::warning::generator requests not read; the wanted page says so"; }
+  # CAT-41: the open recipe requests of the recipes repository, the same fields.
+  gh api --paginate "repos/$OWNER/recipes/issues?labels=recipe-request&state=open&per_page=100" \
+    --jq '.[] | select(.pull_request == null) | {number, title, up: .reactions["+1"], created: .created_at, updated: .updated_at}' \
+    | jq -s . >"$wanted_recipes" || { rm -f -- "$wanted_recipes"; echo "::warning::recipe requests not read; the wanted page says so"; }
   # CAT-33: every pull request's changed paths and comments with their edit history; view.py keeps counts only.
   gh api graphql --paginate -f o="$OWNER" -f query='query($o: String!, $endCursor: String) { repository(owner: $o, name: "registry") {
     pullRequests(first: 20, after: $endCursor) { pageInfo { hasNextPage endCursor } nodes { number files(first: 100) { nodes { path } }
@@ -201,6 +207,6 @@ for page in $recipe_pages; do
 done
 previous_arg=()
 if [[ -f ${previous:-} ]]; then previous_arg=(--previous "$previous"); fi
-python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --gate "$gate" --security "$security" --security-out "$work/data/security.json" --out "$work/data/catalog.json"
+python3 -I "$here/view.py" --index "$index" --owner "$OWNER" "${offline[@]}" --artifacts "$artifacts" --sboms "$sboms" --rekor "$rekor" --discussions "$discussions" --pages "$pages" "${previous_arg[@]}" --diffs "$diffs" --wanted "$wanted" --wanted-recipes "$wanted_recipes" --gate "$gate" --security "$security" --security-out "$work/data/security.json" --out "$work/data/catalog.json"
 cp -- "$work/data/catalog.json" "$work/static/catalog.json"  # CAT-23: the next build reuses it
 hugo --logLevel error --source "$work" --destination "$out" --baseURL "${CATALOG_URL:-https://kadet-hub.org/}" >/dev/null  # CAT-1: errors on stderr

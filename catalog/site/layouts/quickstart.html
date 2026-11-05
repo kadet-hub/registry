@@ -1,0 +1,46 @@
+{{ define "main" }}{{/* CAT-40: the uptime-kuma recipe from an empty directory to its web UI on kind, with the commands of its recipe page. */}}
+{{ $r := partial "chart-recipe.html" (site.GetPage "/recipes/uptime-kuma") }}
+{{ $consumers := printf "https://github.com/%s/registry/blob/main/docs/consumers.md" site.Data.catalog.owner }}
+<section class="prose-page prose">
+<h1>{{ .Title }}</h1>
+<p class="lead">From an empty directory to Uptime Kuma, a self-hosted monitoring tool, on a kind cluster on your machine: install Kapitan, fetch the <a href="{{ "/recipes/uptime-kuma/" | relURL }}">uptime-kuma recipe</a> pinned by version and digest, verify it, compile it and apply the manifests. The steps take about five minutes, most of it waiting for the image and the first readiness probe.</p>
+{{ if or (not $r.latest) $r.blocked }}
+<p class="warning">The uptime-kuma recipe has no version this page can pin right now. Its <a href="{{ "/recipes/uptime-kuma/" | relURL }}">recipe page</a> says why.</p>
+{{ else }}
+<h2>What you need</h2>
+<p>Docker, <a href="https://kind.sigs.k8s.io/">kind</a>, kubectl, <a href="https://docs.astral.sh/uv/">uv</a> and the GitHub CLI <code>gh</code>, logged in with <code>gh auth login</code> for the verify step.</p>
+<h2>1. Create a kind cluster</h2>
+<p>kind runs a Kubernetes node as a container and points kubectl at it.</p>
+{{ partial "snippet.html" (dict "id" "cluster" "label" "cluster command" "text" "kind create cluster --name quickstart-uptime-kuma") }}
+<h2>2. Install Kapitan</h2>
+<p>This installs Kapitan 0.36.3 as a uv tool with the pins of the <a href="{{ $consumers }}">consumer docs</a>. omegaconf stays at 2.4.0.dev4 because later releases removed <code>ListMergeMode</code>, which Kapitan imports, and <code>oras</code> lets Kapitan fetch OCI artifacts. Python 3.13 is pinned because Kapitan requires <code>regex</code> below 2025, which has no wheels for newer Pythons, so uv would build it from source. uv puts <code>kapitan</code> into <code>~/.local/bin</code>.</p>
+{{ partial "snippet.html" (dict "id" "install" "label" "install command" "text" "uv tool install --python 3.13 --with omegaconf==2.4.0.dev4 --with oras 'kapitan[omegaconf,reclass-rs]==0.36.3'") }}
+<h2>3. Write the project</h2>
+<p>This creates the project directory and selects the omegaconf <a href="{{ "/glossary/#inventory" | relURL }}">inventory</a> backend:</p>
+{{ partial "snippet.html" (dict "id" "project" "label" "project commands" "text" "mkdir -p uptime-kuma/fetch/targets uptime-kuma/inventory/targets\ncd uptime-kuma\ncat > .kapitan <<'EOF'\nglobal:\n  inventory-backend: omegaconf\nEOF") }}
+<p>The fetch inventory pins the <a href="{{ "/glossary/#recipe" | relURL }}">recipe</a> by version {{ $r.latest.version }} and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. It is a separate inventory because Kapitan reads the inventory before it fetches, so a class cannot be fetched by the inventory that includes it:</p>
+{{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" (printf "cat > fetch/targets/recipes.yml <<'EOF'\n%s\nEOF" $r.fetch) "event" "copy-fetch-inventory/quickstart") }}
+<p>The <a href="{{ "/glossary/#target" | relURL }}">target</a> includes the recipe as a <a href="{{ "/glossary/#class" | relURL }}">class</a> and sets the namespace and the target's name, which is also its output directory under <code>compiled/</code>:</p>
+{{ partial "snippet.html" (dict "id" "target" "label" "target" "text" (printf "cat > inventory/targets/uptime-kuma.yml <<'EOF'\n%s\nEOF" $r.include)) }}
+<h2>4. Verify the recipe</h2>
+<p>Kapitan's <code>--fetch</code> checks neither the digest nor the <a href="{{ "/glossary/#attestation" | relURL }}">attestation</a>. This checks that kadet-hub's release workflow built the recipe at this digest and signed its provenance. On a terminal <code>gh</code> prints what it verified; in a script only the exit status tells.</p>
+{{ partial "snippet.html" (dict "id" "verify" "label" "verify command" "text" $r.verify "event" "copy-verify/quickstart") }}
+<p>It does not check that the index still lists the digest, nor the generator the recipe pins. <a href="{{ $consumers }}#verifying-a-recipe-by-hand">Verifying a recipe by hand</a> does both and pulls exactly the verified digest.</p>
+<h2>5. Compile</h2>
+<p>The first command fetches the recipe into <code>inventory/classes/recipes/uptime-kuma</code> and then exits with status 1 and <code>No such file or directory: .../compiled</code>, because the fetch target compiles nothing. The second fetches the <a href="{{ "/generators/kubernetes/" | relURL }}">kubernetes</a> generator the recipe pins into <code>lib/kubernetes</code> and writes a StatefulSet and a Service to <code>compiled/uptime-kuma/manifests/</code>. It warns that the container sets no resource requests; a target sets them under <code>components.uptime-kuma.resources</code>.</p>
+{{ partial "snippet.html" (dict "id" "compile" "label" "compile commands" "text" $r.commands) }}
+<h2>6. Apply</h2>
+<p>The recipe renders no Namespace, so the first command creates it. <code>rollout status</code> waits until the pod is ready. Its readiness probe runs every 60 seconds, so this takes a minute or two after the image is pulled.</p>
+{{ partial "snippet.html" (dict "id" "apply" "label" "apply commands" "text" "kubectl create namespace uptime-kuma\nkubectl apply -R -f compiled/uptime-kuma\nkubectl -n uptime-kuma rollout status statefulset/uptime-kuma --timeout=5m") }}
+<h2>7. Open Uptime Kuma</h2>
+<p>This forwards port 3001 on your machine to the Service until you stop it with Ctrl+C. Open <code>http://localhost:3001</code>. Uptime Kuma asks for an admin account on the first visit, without a login, and anyone who reaches the Service can claim it, so create the account before you expose the Service.</p>
+{{ partial "snippet.html" (dict "id" "open" "label" "port-forward command" "text" "kubectl -n uptime-kuma port-forward service/uptime-kuma 3001:3001") }}
+<h2>Clean up</h2>
+<p>This deletes the cluster and everything in it.</p>
+{{ partial "snippet.html" (dict "id" "cleanup" "label" "cleanup command" "text" "kind delete cluster --name quickstart-uptime-kuma") }}
+<h2>Next</h2>
+<p>The <a href="{{ "/recipes/uptime-kuma/" | relURL }}">recipe page</a> lists what a target can override. Every <a href="{{ "/recipes/" | relURL }}">recipe page</a> has the same fetch inventory and commands for its recipe, and the <a href="{{ $consumers }}#recipes-in-the-workflow">consumer workflow</a> runs the verification and the compile in CI.</p>
+{{ end }}
+{{ .Content }}
+</section>
+{{ end }}
