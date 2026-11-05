@@ -163,16 +163,18 @@ def render(d, conclusion, sha, run_url):
     head = (f"{MARKER}\n**compile diff: {plural(len(diffs), 'target')} changed, {plural(nfiles, 'file')}** "
             f"at `{sha}`. Full diff: artifact `compile-diff` of the {run}.\n")
     budget = LIMIT - len(head) - 100  # room for the line about targets left out
-    parts = [head]
-    for i, (target, text, files_) in enumerate(diffs):
-        share = budget // (len(diffs) - i)
+    blocks = {}
+    # Smallest first: what a small target does not use goes to the larger ones.
+    for k, i in enumerate(sorted(range(len(diffs)), key=lambda i: len(diffs[i][1]))):
+        share = budget // (len(diffs) - k)
         if share < MIN_SHARE:
-            parts.append(f"\n{plural(len(diffs) - i, 'more target')} changed; see the artifact.\n")
             break
-        b = block(target, files_, text, share)
-        budget -= len(b)
-        parts.append(b)
-    body = "".join(parts)
+        target, text, files_ = diffs[i]
+        blocks[i] = block(target, files_, text, share)
+        budget -= len(blocks[i])
+    body = head + "".join(blocks[i] for i in sorted(blocks))
+    if len(blocks) < len(diffs):
+        body += f"\n{plural(len(diffs) - len(blocks), 'more target')} changed; see the artifact.\n"
     if len(body) > LIMIT:  # only a block whose skeleton exceeds its share gets here
         body = head + "\nThe diff does not fit into a comment; see the artifact.\n"
     return body

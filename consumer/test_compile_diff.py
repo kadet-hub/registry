@@ -135,12 +135,14 @@ class Render(unittest.TestCase):  # CD-7, CD-9
         self.assertIn("**compile diff: 400 targets changed, 400 files**", body)
         self.assertRegex(body, r"\d+ more targets changed; see the artifact\.")
 
-    def test_small_target_leaves_room_to_the_next(self):
-        self.diff("a", "diff --git a/a/f b/a/f\n--- a/a/f\n+++ b/a/f\n+small\n")
-        self.diff("b", "diff --git a/b/f b/b/f\n--- a/b/f\n+++ b/b/f\n" + "+z\n" * 40000)
+    def test_small_target_leaves_room_to_a_large_one(self):
+        self.diff("a", "diff --git a/a/f b/a/f\n--- a/a/f\n+++ b/a/f\n" + "+z\n" * 40000)
+        self.diff("b", "diff --git a/b/f b/b/f\n--- a/b/f\n+++ b/b/f\n+small\n")
         body = self.render()
         self.assertLessEqual(len(body), compile_diff.LIMIT)
         self.assertGreater(len(body), compile_diff.LIMIT - 1000)
+        self.assertLess(body.index("<summary>a:"), body.index("<summary>b:"))
+        self.assertIn("+small\n", body)
 
     def test_no_change_and_failed_run(self):
         self.assertIn("**compile diff: no change** in `compiled/` at `3f0c2a1`", self.render())
