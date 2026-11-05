@@ -100,8 +100,8 @@ recipe cannot be fetched the way a generator is (kapicorp/kapitan#1638).
   (DEC-4 and DEC-12 there), and the parent's `source.sha` pins them. The
   gate looks up the tree of each included recipe at that commit among the
   published versions (REC-16), and the parent's record lists the versions
-  it found. The consumer workflow checks that the fetch inventory pins
-  exactly those (CON-4). Decided with #350, formerly OQ-12.
+  it found. The consumer workflow fetches exactly those (CON-7, DEC-31).
+  Decided with #350, formerly OQ-12.
 
   A pin line in the parent's README was considered. It would repeat what
   the commit already fixes, and the two could disagree. A dependency in the
