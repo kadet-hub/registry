@@ -397,6 +397,37 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #245
 
+- CAT-41: `/wanted/` MUST also list every open issue of kadet-hub/recipes
+  with the label `recipe-request`, in a section of its own, with the
+  fields, order and states of CAT-31. kadet-hub/recipes MUST have the
+  issue form `.github/ISSUE_TEMPLATE/recipe-request.yml`, which sets that
+  label and asks for the application, the Helm chart or Docker Compose
+  file a recipe would rebuild, and why the requester needs it.
+
+  A reader who looks for an application that has no recipe had no place
+  to ask for one: the page took generator requests only.
+  The form is in kadet-hub/recipes, where recipes are written and
+  reviewed, as CAT-21 sends feature requests to the source repository. Its
+  title starts with `[request] ` like the generator form's, so the page
+  strips the same prefix.
+
+  The catalog job reads the issues with the call of CAT-31 on
+  `/repos/<owner>/recipes/issues?labels=recipe-request&state=open`. The
+  repository is public, and the job's token already reads
+  `/repos/<owner>/generators` for the stars, so the job needs no new
+  permission. An offline build reads the list from
+  `CATALOG_WANTED_RECIPES`. Each section has its own empty and unread
+  state, so a failed lookup of one list leaves the other as it is.
+
+  GitHub applies a form's label only when the label exists in the
+  repository, so `recipe-request` has to exist in kadet-hub/recipes before
+  the form is used.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_wanted_page`,
+    `Site.test_wanted_page_without_requests`); manual: an issue opened
+    with the form in kadet-hub/recipes carries `recipe-request`
+  - Since: #540
+
 - CAT-33: The site MUST have a page at `/stats/` with a section for the
   pulls of every generator, one for the versions published and yanked per
   month, and one for the entry pull requests the gate rejected, by
@@ -538,7 +569,11 @@ remembered in the browser's `localStorage`.
   per severity (CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN), the grade, the time
   of the scan and a link to the full report (CAT-39b). A page whose
   version has no scan result MUST say that it is not scanned, and a
-  version that names no image MUST say so. Neither shows a grade.
+  version that names no image MUST say so. Neither shows a grade. A recipe
+  page with a grade MUST say next to it that the grade rates the upstream
+  images the recipe pins, not the recipe, and MUST link each of these
+  images to its page on Docker Hub, GitHub or Quay when it is published
+  there.
 
   The report follows Artifact Hub's, as on its kube-prometheus-stack
   page. Artifact Hub counts every vulnerability Trivy lists in every
@@ -572,8 +607,27 @@ remembered in the browser's `localStorage`.
   21d393a22061". The catalog build resolves `main` again, so the page can
   show a later commit than the report.
 
-  - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_recipe_at_main`, `Security.test_not_scanned`, `View.test_security_grade`, `View.test_security_of_the_shown_version`)
-  - Since: #417
+  Readers took "grade F, 820 findings" on the Immich page for a grade of
+  the recipe. The findings are in the two images Immich publishes, and
+  only a new image fixes them. The full report says so, one click away,
+  so the recipe page says it next to the grade. The Markdown variant
+  (CAT-37b) carries the same line.
+
+  An image without a registry host is on Docker Hub, as Docker resolves
+  it. Its page is `https://hub.docker.com/_/<name>` for an official image
+  under `library/` and `https://hub.docker.com/r/<repository>` otherwise.
+  `https://ghcr.io/<repository>` redirects to the package page on GitHub,
+  and `https://quay.io/repository/<repository>` is Quay's. The other
+  registries the recipes use, `container-registry.oracle.com`,
+  `docker.gitea.com` and `registry.k8s.io`, answered 404 at
+  `https://<registry>/<repository>` on 2026-11-05, so their images are
+  named without a link. On that day the full reports of the live recipe
+  pages named 42 unique image references, 39 of them on Docker Hub,
+  ghcr.io or Quay. A repository name with characters outside OCI's
+  lowercase letters, digits and separators gets no link.
+
+  - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_recipe_at_main`, `Security.test_not_scanned`, `View.test_security_grade`, `View.test_security_of_the_shown_version`, `Security.test_upstream_images`, `View.test_image_registry_pages`)
+  - Since: #417; the note on the upstream images: #540
 
 - CAT-39a: The images of a version MUST be the references
   `<repository>:<tag>@sha256:<digest>` in its tree outside `tests/` and
@@ -1963,6 +2017,91 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_catalog_json`, `ListedRecipe.test_not_counted_with_generators`, `ListedRecipe.test_consumer_docs_lookup`)
   - Since: #399
 
+- CAT-40: The site MUST have a page at `/quickstart/` that takes a reader
+  from an empty directory to the web UI of the uptime-kuma recipe on a new
+  kind cluster, in this order: create the cluster, install Kapitan, write
+  the project, verify the recipe, compile, apply, open the app, delete
+  the cluster. Every step MUST say what its commands do. The fetch
+  inventory, the include snippet, the verify command and the compile
+  commands MUST be the ones `/recipes/uptime-kuma/` shows (CAT-37c,
+  CAT-38).
+
+  A reader who arrives from a post on Helm or Kustomize had no path from
+  reading to a running app: the recipe pages assume Kapitan is installed
+  and show the fetch inventory without the project around it. uptime-kuma
+  is a published recipe with a web UI and little else: one image, a
+  StatefulSet and a Service, no prerequisite and no parameter to set.
+  miniflux, the other candidate, needs two password refs, and so a ref
+  backend, and runs PostgreSQL next to it.
+
+  The layout calls the recipe page's partial for `uptime-kuma`, so a new
+  recipe version changes both pages in the same build and the quickstart
+  has no fetch inventory of its own. When the index lists no version of
+  the recipe, or its latest version pins a yanked generator, the page
+  shows no steps and links the recipe page. Failing the build instead
+  would also keep a yank off every other page.
+
+  Kapitan is installed with the command of `docs/consumers.md`, plus
+  `--with oras` for the `oci` fetch, as that document says for compiling
+  a recipe locally. The command pins Python 3.13, the sandbox's version.
+  Kapitan 0.36.3 requires `regex<2025`, and regex 2024.11.6 has wheels up
+  to CPython 3.13, so on Python 3.14 uv builds it from source, which needs
+  a C compiler and Python's headers. On a host whose `python3` is 3.14,
+  the command without `--python` stopped with `fatal error: Python.h: No
+  such file or directory` on 2026-11-05. `docs/consumers.md` pins it the
+  same way.
+
+  The project uses the omegaconf backend, as "Using a recipe" in
+  kadet-hub/recipes does. The files are written with `cat` and a quoted
+  heredoc, so every step is a command to paste. The verify step is the
+  recipe page's `gh attestation verify`, which needs `gh` logged in. It
+  checks neither the index nor the generator the recipe pins, and the
+  page links "Verifying a recipe by hand" in `docs/consumers.md` for both.
+  The first compile command exits with status 1, as the recipe page says.
+  The recipe renders no Namespace, so the apply step creates it.
+
+  The registry's only kind job is `renders` in `gate.yml` (REC-9). It runs
+  on entry pull requests from `main`, holds `contents: read` and starts no
+  pod, so the quickstart does not fit in it. The catalog tests build from
+  fixtures whose digests ghcr.io does not serve, and the page's real
+  commands exist only in the release build. The run on kind is therefore
+  manual.
+
+  - Test: `catalog/test_catalog.py` (`Quickstart.test_commands`,
+    `Quickstart.test_without_a_usable_version`, `Site.test_quickstart_linked`);
+    manual: the ten code blocks of the page, built from index serial 113
+    and kadet-hub/recipes at `a7ddcbb`, run in order in one bash session
+    with an empty home directory on 2026-11-05. Every block succeeded; the
+    first compile command failed with `No such file or directory:
+    .../compiled`, as the page says. The pod was ready 214
+    seconds after `kind create cluster` started, with the kind node image
+    already on the host and Python, Kapitan and the Uptime Kuma image
+    downloaded. `http://localhost:3001` showed "Create your admin account";
+    the port-forward ran in the background for that check.
+  - Since: #540
+
+- CAT-40a: The site navigation MUST link the quickstart as its first
+  entry, and every recipe page MUST link it under "Fetching it".
+
+  "Use" points to `docs/consumers.md` on GitHub, which starts with the
+  consumer workflow. The quickstart comes before it because it ends with
+  a running app, and the workflow is the step after.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_quickstart_linked`)
+  - Since: #540
+
+- CAT-40b: The quickstart MUST have the sections "Coming from Helm?" and
+  "Coming from Kustomize?". The first MUST link the posts
+  `helm-chart-vs-kapitan-inventory` and `same-app` and the Bitnami guide,
+  the second `same-app` and every post whose name starts with
+  `kustomize-`.
+
+  The sections map what such a reader knows to what the quickstart did,
+  and link the posts that compare the tools on real charts.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_quickstart_linked`)
+  - Since: #540
+
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
   page" list linking each section that is present, which marks the section
@@ -2132,6 +2271,33 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py`
   - Since: #196
+
+- CAT-42: Copying a fetch inventory or a verify command, and following
+  the link to a generator's source repository or to a recipe's folder in
+  kadet-hub/recipes, MUST count as a GoatCounter event. The event's name
+  MUST be the action, `copy-fetch-inventory`, `copy-verify` or
+  `source-repo`, a `/`, and the page, `generators/<name>`,
+  `recipes/<name>` or `quickstart`. The privacy page MUST name the
+  events.
+
+  Page views show which pages are read, not whether a reader went on to
+  use a generator or recipe. These three actions are the closest the
+  static site gets to that. The elements carry `data-goatcounter-click`,
+  which the shipped `count.js` binds on load (`bind_events`), so the site
+  needs no script of its own. An event goes to the same endpoint as a page
+  view, with `navigator.sendBeacon` or an image, so the CSP of CAT-25
+  stays as it is.
+
+  GoatCounter takes the event's name as its path, which must not start
+  with `/`, and sends no referrer with an event, so the name carries the
+  page. A copy button sets `data-goatcounter-title` to its label, because
+  GoatCounter otherwise sends the element's HTML, the icon's SVG. A click
+  on a copy button counts also when the browser refuses the copy. Without
+  `params.goatcounter` no counter loads and the attributes do nothing.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_conversion_events`,
+    `Quickstart.test_commands`)
+  - Since: #540
 
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
