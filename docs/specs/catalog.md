@@ -1964,13 +1964,16 @@ Related: CAT-15, CAT-30, CON-2.
   reads it from `$CATALOG_ARTIFACTS/recipes/<name>.tar`. Relative links in
   the README sections point into kadet-hub/recipes at `source.sha`.
 
-  The fetch inventory holds one `oci` dependency for the recipe and one for
-  each recipe its record lists under `includes`. It sets no `vars`, because
-  CON-4 accepts nothing but `dependencies` there. The verification commands
-  run `gh attestation verify` on each of these artifacts, and the page
-  links "Verifying by hand" in `docs/consumers.md` for the index check of
-  CON-5. The policy line names `compiled/<target>/*`, because the record
-  leaves out the output paths (REC-13).
+  The fetch inventory holds one `oci` dependency, for the recipe. It sets
+  no `vars`, because CON-4 accepts nothing but `dependencies` there. The
+  consumer workflow adds the recipes the record lists under `includes`
+  (CON-7). Kapitan's `--fetch` reads no index, so for a version with
+  includes the page names them and gives the commands that pull each of
+  them by digest for a local compile (CON-6). The verification commands
+  run `gh attestation verify` on the recipe and on each included recipe,
+  and the page links "Verifying by hand" in `docs/consumers.md` for the
+  index check of CON-5. The policy line names `compiled/<target>/*`,
+  because the record leaves out the output paths (REC-13).
 
   The version list gives each version's date and digest, and the reason
   when the version or a generator version it pins is yanked. Only the
@@ -1979,7 +1982,7 @@ Related: CAT-15, CAT-30, CON-2.
   version list.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`)
-  - Since: #399
+  - Since: #399; included recipes left to the consumer workflow: #536
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 
@@ -2023,9 +2026,9 @@ Related: CAT-15, CAT-30, CON-2.
   kind cluster, in this order: create the cluster, install Kapitan, write
   the project, verify the recipe, compile, apply, open the app, delete
   the cluster. Every step MUST say what its commands do. The fetch
-  inventory, the include snippet, the verify command and the compile
-  commands MUST be the ones `/recipes/uptime-kuma/` shows (CAT-37c,
-  CAT-38).
+  inventory, the include snippet, the verify command, the compile
+  commands and, for a version that includes recipes, their pull commands
+  MUST be the ones `/recipes/uptime-kuma/` shows (CAT-37c, CAT-38).
 
   A reader who arrives from a post on Helm or Kustomize had no path from
   reading to a running app: the recipe pages assume Kapitan is installed
@@ -2079,7 +2082,7 @@ Related: CAT-15, CAT-30, CON-2.
     already on the host and Python, Kapitan and the Uptime Kuma image
     downloaded. `http://localhost:3001` showed "Create your admin account";
     the port-forward ran in the background for that check.
-  - Since: #540
+  - Since: #540; pull commands of included recipes: #536
 
 - CAT-40a: The site navigation MUST link the quickstart as its first
   entry, and every recipe page MUST link it under "Fetching it".
