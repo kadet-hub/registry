@@ -46,6 +46,8 @@ multiprocessing pool and runs some inputs as subprocesses.
   sources).
 - DEC-47: The Terraform example uses terraform-opentelekomcloud, the
   smallest of the four Terraform generators in the index (Examples).
+- DEC-48: The page highlights the read-only output with Prism 1.30.0 and
+  leaves the editor a plain textarea (Highlighting).
 
 ## Runtime
 
@@ -305,6 +307,62 @@ as the file next to it and reclass as the class itself.
   - Test: `.github/workflows/playground.yml` (`compile.mjs`, in the build step)
   - Since: this change
 
+## Highlighting
+
+The compiled files and the Helm output are highlighted, the editor is not
+(DEC-48). Long YAML is read in the output; the files a visitor edits are a
+target, a few classes and a component. An overlay over the textarea would
+have to match its wrapping, scrolling and font metrics after every
+keystroke. Python and Jinja2 appear only in the editor, and no example
+writes HCL: the Terraform example's output is `*.tf.json`. So the page needs
+grammars for YAML, JSON and Markdown and picks one by the file name's
+extension: `.yml` and `.yaml`, `.json` including `.tf.json`, and `.md`. Other
+files stay plain text.
+
+Prism's `tokenize` returns tokens, so `syntax.js` builds the spans with
+`createElement` and `textContent`, and no markup string from the
+highlighter reaches `innerHTML`. The spans hold the output's characters
+unchanged, so selection and copy return what Kapitan wrote. The package is
+pinned in `catalog/playground/package-lock.json`, whose integrity `npm ci`
+checks, and `build.py` copies Prism's core, the markup grammar that Markdown
+extends, the Markdown, YAML and JSON grammars and Prism's licence to
+`prism/`. The five files and `syntax.js` are 19,061 bytes. Gzipped as
+`build.py` counts the download the start button names, they add 7,948
+bytes, 0.06 % of it (own calculation from the built files).
+
+An output is highlighted when it is first opened, so a closed one costs
+nothing. Measurement in headless Chrome 156 on a shared 24-core x86_64
+host, two rounds of seven runs in each of three viewports: highlighting a
+generated YAML of 2,000 lines (500 mappings with a quoted string, a
+comment, a number and a boolean) took a median of 11 to 20 ms per viewport
+and round, and 44 to 60 ms with Chrome's 4x CPU throttling, which reaches
+the page's thread. The editor stays a textarea, so editing a large file
+costs what it cost before.
+
+The token colours are the site's `--accent`, `--ok`, `--warn` and
+`--text-muted` on `pre`'s `--bg-subtle`. The lowest ratio is 5.58:1, for
+`--text-muted` in the light theme.
+
+- PG-23: The page MUST highlight the compiled files and the Helm output
+  whose names end in `.yml`, `.yaml`, `.json` or `.md`, and MUST NOT change
+  their text.
+
+  - Test: `browser.mjs` (PG-23)
+  - Since: this change
+
+- PG-24: The highlighter MUST come from the npm package
+  `catalog/playground/package-lock.json` pins, be served from the site with
+  its licence, and load only after the visitor starts the playground.
+
+  - Test: `browser.mjs` (PG-8, PG-9, PG-24); `build.py` exits when `node_modules` holds another version than `package.json` pins
+  - Since: this change
+
+- PG-25: Every token colour MUST reach a contrast of 4.5:1 on the output's
+  background in the light and the dark theme.
+
+  - Test: `catalog/test_catalog.py` (`Playground.test_highlight_colours_reach_aa`)
+  - Since: this change
+
 ## Loading, CSP and hosting
 
 The playground's files are part of the Pages artifact, about 20 MB under
@@ -427,6 +485,10 @@ wheels and the standard library are deflate archives already: gzip saves
   Terraform example identical to the gate image under both backends, and
   Chrome shows only `*.tf.json` files for it and the note that terraform
   plan does not run.
+- AC-46 (PG-23 to PG-25): Chrome loads no Prism file before the start,
+  shows the first output with tokens, and gets back the same text from a
+  highlighted 2,000-line YAML, a JSON and a Markdown file; Prism's licence
+  is served; the catalog tests find every token colour at 4.5:1 or more.
 
 ## Alternatives
 
@@ -440,6 +502,8 @@ wheels and the standard library are deflate archives already: gzip saves
 | Record sources inside the backends | Changes Kapitan's code (PG-2) |
 | Merge class by class with the backend and compare after each step | Works for omegaconf only: reclass keeps values in its own types until it interpolates the whole merge. It also costs one merge per class on every compile |
 | Take the class order from `target.classes` | For reclass it is not the merge order (Merge order and parameter sources) |
+| Highlight the editor with an overlay | Wrapping, scrolling and font metrics of the textarea and the layer under it must stay identical in every browser; the edited files are short |
+| highlight.js | Returns highlighted HTML as a string, which the page would have to put into `innerHTML` |
 
 ## Open questions
 
@@ -454,22 +518,23 @@ wheels and the standard library are deflate archives already: gzip saves
 
 | Path | Purpose |
 |---|---|
-| `catalog/playground/build.py` | Fetches and checks Pyodide and the wheels, assembles the examples, renders the Helm side, runs `compile.mjs`, writes `data/playground.json` (PG-1, PG-5, PG-11, PG-12) |
+| `catalog/playground/build.py` | Fetches and checks Pyodide and the wheels, copies Prism, assembles the examples, renders the Helm side, runs `compile.mjs`, writes `data/playground.json` (PG-1, PG-5, PG-11, PG-12, PG-24) |
 | `catalog/playground/compile.mjs` | Compiles every example in Pyodide in Node, checks its provenance, writes the bytecode archives (PG-6, PG-12, PG-20) |
 | `catalog/playground/test_provenance.py` | Unit tests of the replay against fixture inventories, run in the sandbox image (PG-15 to PG-19) |
 | `catalog/playground/check` | Compiles every example in the sandbox image and compares (PG-6) |
 | `catalog/playground/report` | Opens or updates the issue of a failed scheduled run (PG-14) |
-| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11, PG-15, PG-17 to PG-19, PG-21, PG-22) |
+| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11, PG-15, PG-17 to PG-19, PG-21 to PG-24) |
 | `catalog/playground/examples.json`, `examples/` | The examples (PG-21) |
-| `catalog/playground/package.json`, `package-lock.json` | Pyodide and playwright-core pins; Renovate's npm manager moves them |
-| `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19) |
+| `catalog/playground/package.json`, `package-lock.json` | Pyodide, Prism and playwright-core pins; Renovate's npm manager moves them (PG-24) |
+| `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19), `syntax.js` (PG-23) |
 | `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13, PG-15 to PG-18, PG-22) |
 | `catalog/build` | Runs `build.py` online, copies `$CATALOG_PLAYGROUND` offline (PG-13) |
-| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44, AC-45, PG-14 |
+| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44 to AC-46, PG-14 |
 
 | Value | Setting |
 |---|---|
 | Pyodide | 314.0.7, Python 3.14 |
+| Prism | 1.30.0: core, markup, markdown, yaml, json |
 | Packages from Pyodide | pyyaml, jinja2, markupsafe, pydantic, regex, six, pyparsing, cachetools, packaging and their lock file dependencies |
 | Wheels from PyPI | kapitan, kadet, python-box, typeguard, pydantic-settings, python-dotenv, kapicorp-reclass, filetype, toml, omegaconf |
 | Served empty (`STUBBED`) | git, copier, boto3, googleapiclient, azure, gnupg, hvac, yamllint, cryptography, requests, jsonschema |
