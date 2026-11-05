@@ -127,10 +127,11 @@ the build job (RISK-10).
 - DEC-45: the consumer workflow takes the recipes a pinned recipe
   includes from the index, and accepts a pin of an included recipe only
   at the digest the including record lists ([consumers.md](consumers.md)).
-- DEC-48 to DEC-53: coding agents act as the GitHub App `kadet-hub-agent`
-  from sessions that hold no other credential, merge through a ruleset
-  bypass only after `neat-bot` approved the head commit, and leave tags,
-  releases and sign-offs to the maintainer ([agents.md](agents.md)).
+- DEC-48 to DEC-54: coding agents act as the GitHub App `kadet-hub-agent`
+  without workflows permission, from sessions that hold no other
+  credential, merge through a ruleset bypass only after `neat-bot`
+  approved the head commit, and leave workflow changes, tags, releases and
+  sign-offs to the maintainer ([agents.md](agents.md)).
 
 ## Area specs
 
@@ -436,7 +437,7 @@ cover none of the changed files.
 
 - RISK-15 to RISK-17: the agent app's key, agent sessions that can still
   reach the maintainer's credentials, and a passing check forged by a
-  workflow on an agent branch ([agents.md](agents.md)).
+  workflow on an agent branch, closed by DEC-54 ([agents.md](agents.md)).
 
 ## Out of scope
 

@@ -33,8 +33,8 @@ code in "Scorecard Code-Review" below.
 ## Decisions
 
 - DEC-48: Agents act as a dedicated GitHub App, `kadet-hub-agent` (name
-  tbd), installed on selected kadet-hub repositories with contents, pull
-  requests and workflows write.
+  tbd), installed on selected kadet-hub repositories with contents and pull
+  requests write.
 
   An app gives each session a token that expires after an hour and covers
   only the repositories and permissions it was minted for. Actions done with
@@ -70,6 +70,18 @@ code in "Scorecard Code-Review" below.
   approval is the review an agent change gets before it merges. A change
   request by the maintainer still stops the merge.
 
+- DEC-54: The app has no workflows permission. Changes to files under
+  `.github/workflows/` reach GitHub through the maintainer.
+
+  With workflows write, an agent session could push a workflow that forges
+  a passing required check (RISK-17). Without it, GitHub refuses every push
+  or API commit by the app that creates or changes a file under
+  `.github/workflows/`, so an agent finds out at the push. It then either
+  pushes the rest of the change, opens the pull request and describes the
+  workflow change in it, for the maintainer to review and push to the
+  `agent/` branch himself (AGT-9 admits the admin role there), or it hands
+  the whole change over as a patch for a maintainer pull request.
+
 ## App and permissions
 
 GitHub's table of permissions required for GitHub Apps maps each action to
@@ -99,14 +111,13 @@ no ruleset restricts tags.
     `gh pr view <n> --json author` of an agent pull request shows the app
   - Since: not implemented
 
-- AGT-2: The app MUST hold exactly contents write, pull requests write,
-  workflows write and metadata read. Issues write is added only if OQ-53
-  says so.
+- AGT-2: The app MUST hold exactly contents write, pull requests write
+  and metadata read. Issues write is added only if OQ-53 says so.
 
-  No administration, checks, statuses, actions, secrets or packages
-  permission. Without checks and statuses the app cannot post a passing
-  result for a required check itself. RISK-17 describes how a workflow it
-  pushes still can, and OQ-60 asks whether workflows write stays.
+  No workflows, administration, checks, statuses, actions, secrets or
+  packages permission. Without checks and statuses the app cannot post a
+  passing result for a required check itself, and without workflows it
+  cannot push a workflow that would (DEC-54).
 
   - Test: manual: `gh api orgs/kadet-hub/installations` shows these
     permissions for the app
@@ -320,7 +331,8 @@ interacts with a rule in another; OQ-58 has that tested before rollout.
   or `sandbox/` still needs the maintainer. The other repositories get a
   CODEOWNERS file naming at least `.github/`; kadet-hub/.github also names
   `tools/` (AGT-4). Without it, an agent pull request could change the
-  workflow that computes AGT-11 and merge on the result.
+  action that computes AGT-11, or a script a workflow runs, and merge on
+  the result.
 
   - Test: manual: rulesets match; an agent pull request with a failing
     required check cannot be merged by the app with `--admin`; one touching
@@ -360,8 +372,10 @@ interacts with a rule in another; OQ-58 has that tested before rollout.
   it runs on.
 
   Like every `pull_request` workflow, this one comes from the pull
-  request's merge commit, so a pull request can change the check that
-  judges it. AGT-10's code owner rule on `.github/` stops that.
+  request's merge commit. The app cannot change the workflow file
+  (DEC-54), but in the registry it can change the action the workflow
+  loads from the same commit. AGT-10's code owner rule on `.github/` stops
+  that.
 
   - Test: `.github/actions/review-gate/test_review_gate.py` against
     `fixtures.json`: approval of the head passes; a comment review with
@@ -428,18 +442,20 @@ leave them counted as unreviewed.
   Contents write lets the holder push `agent/` branches, open pull requests
   and merge them through the `main review` bypass, but not past `main
   protect` (AGT-10), and create tags and releases in repositories without a
-  tag ruleset. Workflows write lets it push a workflow to an `agent/`
-  branch. That workflow runs on push with a `GITHUB_TOKEN` it can declare
-  write permissions for, and reads repository secrets not bound to an
-  environment: generators has two, renovate-config one, the others none
-  (counting unit: repository-level Actions secret; the org has none). It
+  tag ruleset. It cannot push a workflow (DEC-54), so it cannot read the
+  repository secrets from a branch: generators has two, renovate-config
+  one, the others none (counting unit: repository-level Actions secret;
+  the org has none). Code it gets merged does run next to them. In
+  renovate-config, `scripts/kubernetes_versions.py` runs from `main` in
+  the jobs that then mint a token with `APP_PRIVATE_KEY`. In generators,
+  `upstream.yml` runs `tools/upstream.py` with a token minted from its app
+  key. Such a merge needs neat-bot's approval of the head (AGT-11). It
   cannot pass the registry's release identity, which `consumer/run` and
-  `release.yml` pin to `release.yml@refs/heads/main`. Whether such a token
-  can push to `ghcr.io/kadet-hub` was not checked. Pull requests write lets
-  it approve maintainer pull requests (AGT-12). This is the class RISK-9
-  already describes for Renovate, which holds more permissions on every
-  repository. The difference is where the key lives: on the maintainer's
-  machine instead of at Mend.
+  `release.yml` pin to `release.yml@refs/heads/main`. Pull requests write
+  lets it approve maintainer pull requests (AGT-12). This is the class
+  RISK-9 already describes for Renovate, which holds more permissions,
+  workflows among them, on every repository. The difference is where the
+  key lives: on the maintainer's machine instead of at Mend.
 
   Rotation is generate, then delete: an app can hold up to 25 keys and the
   last one cannot be deleted before a new one exists. The new key goes into
@@ -453,21 +469,26 @@ leave them counted as unreviewed.
   could produce itself, and every authorship statement on GitHub a claim the
   agent's instructions keep, not a control.
 
-- RISK-17: With workflows write, an agent session needs no leaked key to
-  forge a passing `review-gate`. It pushes a workflow to one `agent/`
-  branch that runs on push, declares `checks: write` and creates a check
-  run named `review-gate` with conclusion success on the head commit of
-  another agent pull request. GitHub Actions creates that check run, which
-  is the source a ruleset expects, and the other pull request changes
-  nothing under `.github/`, so AGT-10's code owner rule does not apply to
-  it. The branch carrying the workflow never needs to merge. The same works
-  for `gate` and `renders`, whose GI-5 protection covers forks only.
+- RISK-17 (closed by DEC-54): With workflows write, an agent session
+  would need no leaked key to forge a passing `review-gate`. It would push
+  a workflow to one `agent/` branch that runs on push, declares
+  `checks: write` and creates a check run named `review-gate` with
+  conclusion success on the head commit of another agent pull request.
+  GitHub Actions creates that check run, which is the source a ruleset
+  expects, and the other pull request changes nothing under `.github/`, so
+  AGT-10's code owner rule does not apply to it. The same works for `gate`
+  and `renders`, whose GI-5 protection covers forks only. Whether a ruleset
+  would take the forged run or the failing one of the same name was not
+  tested.
 
-  Whether a ruleset then takes the forged run or the failing one of the
-  same name was not tested. No existing registry workflow declares checks
-  or statuses write, and the repository's default workflow token is read
-  only, so the forgery needs a workflow file the app pushes. OQ-60 asks
-  whether the app keeps workflows write.
+  Without workflows permission the app cannot push that workflow. The
+  forgery would then need an existing workflow that declares checks or
+  statuses write and runs code from the app's branch. None of the 34
+  workflow files in the repositories of AGT-3 declares checks write,
+  statuses write or `write-all`, and every one of these repositories
+  gives the workflow token read access by default (counting unit:
+  workflow file on the default branch, 2026-11-05). A workflow added later
+  with either permission reopens this.
 
 ## Verification
 
@@ -514,11 +535,6 @@ leave them counted as unreviewed.
 - OQ-59: Does an approval by a GitHub App count toward a ruleset's required
   approvals? Not verified. It decides how much AGT-12 matters beyond
   Scorecard.
-- OQ-60: Should the app drop workflows write (AGT-2)? Without it the app
-  cannot push a commit that adds or changes a workflow, which closes
-  RISK-17 in the registry. Agent changes to workflows would then reach
-  GitHub through the maintainer. Proposed: yes, decided before the app is
-  created.
 
 ## Implementation inventory
 
