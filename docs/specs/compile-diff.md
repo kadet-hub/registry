@@ -268,9 +268,10 @@ as the consumer workflow already requires.
   comment. Check: manual: scratch repository run (partial: no pull request
   from a real fork, whose read-only token GitHub sets).
 
-  Run on 2026-11-05 in the AC-15 repository. The forged artifact got a
-  comment of 33107 characters whose rendered HTML holds no image, heading
-  or mention; its only link is the run link. The target name
+  Run on 2026-11-05 in the AC-15 repository, last at fa761d9. The forged
+  artifact got a comment of 65412 characters whose rendered HTML holds no
+  image, heading or mention; its only link is the run link, and the large
+  target was cut after 717 of 3005 lines. The target name
   `x[y](z) @ghost &amp;` rendered as `x?y??z???ghost??amp?`, the run of 7
   backticks sat inside a fence of 8, bidirectional controls and non-ASCII
   letters became `?`, and the extra files `pr.txt` and `notes.md` were
