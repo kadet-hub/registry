@@ -73,6 +73,9 @@
 <h2>{{ .heading }}</h2>
 {{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .body) }}
 {{ end }}
+{{ with (where (where site.RegularPages "Section" "blog") "Params.stack.recipes" "intersect" (slice $r.name)).ByDate.Reverse }}<h2>Used in stacks</h2>{{/* CAT-48 */}}
+<ul>{{ range . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}</ul>
+{{ end }}
 {{ with $r.record }}
 <h2>Versions</h2>
 <ul>
