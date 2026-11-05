@@ -118,6 +118,66 @@ When the index serial is higher than `index_serial`, the workflow passes and
 reports it; raise `index_serial` in a reviewed commit. A lower serial fails,
 so an old index cannot be replayed to you.
 
+## Compile diff in pull requests
+
+Two actions post what a pull request changes in `compiled/` as one comment
+and edit it on every push. The first compiles the base and the merge commit
+GitHub builds for the pull request, each as the workflow above does, and
+uploads the diff. The second posts it from a separate workflow, because a
+pull request from a fork gets a read-only token:
+
+```yaml
+# .github/workflows/compile-diff.yml
+name: compile-diff
+on: [pull_request]
+permissions: {}
+jobs:
+  diff:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    steps:
+      - uses: kadet-hub/registry/.github/actions/compile-diff@<commit sha> # index-<serial>
+        with:
+          working-directory: .  # the directory with .kapitan-sandbox.yaml
+          targets: "*"          # glob over target names
+```
+
+```yaml
+# .github/workflows/compile-diff-comment.yml
+name: compile-diff-comment
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers] runs nothing from the pull request
+    workflows: [compile-diff]
+    types: [completed]
+permissions: {}
+jobs:
+  comment:
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+      actions: read
+    steps:
+      - uses: kadet-hub/registry/.github/actions/compile-diff-comment@<commit sha> # index-<serial>
+```
+
+Pin both at the same commit; `index-<serial>` names the registry release at
+that commit. GitHub runs the second workflow only from your default branch,
+so comments start with the first pull request after it is merged. It checks
+out nothing, finds the pull request through the API by head branch and
+commit, and shows the artifact as escaped text in code blocks: a fork can
+change the first workflow and upload anything under the artifact's name.
+
+Both sides compile without `--reveal`, so the diff shows ref tags such as
+`?{gpg:db/password:3f2a8c1e}`, and a changed secret shows up as a changed
+hash. Each target's diff is cut to fit GitHub's limit of 65536 characters
+per comment; the artifact `compile-diff` of the first workflow's run holds
+all of it. A base without `.kapitan-sandbox.yaml` in the working directory
+counts as empty. A repository gets one comment per pull request, so a
+second project needs its own repository.
+
 ## GitLab CI
 
 ```yaml
