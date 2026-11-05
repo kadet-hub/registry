@@ -222,8 +222,8 @@ output_capabilities:
   "compiled/cert-manager/*": [admission-webhook]
 ```
 
-The Renovate preset reads `**/inventory/**` only and does not update the
-fetch inventory yet.
+The Renovate preset updates the recipe pins as well, see Updates with
+Renovate.
 
 ### Compiling a recipe locally
 
@@ -286,7 +286,11 @@ The preset [kadet-hub/renovate-config](https://github.com/kadet-hub/renovate-con
 finds tagged marketplace sources in `**/inventory/**/*.yml` and
 `**/inventory/**/*.yaml`, so in an `inventory/` directory at the repository
 root or in a nested Kapitan project, and opens a pull request per update
-that changes tag and digest together. It does not merge on its own.
+that changes tag and digest together. It does not merge on its own. From
+kadet-hub/renovate-config#21 on it updates the recipe sources in
+`**/fetch/**/*.yml` and `**/fetch/**/*.yaml` the same way, one pull request
+per recipe. Such an update is complete while the fetch inventory pins no
+included recipe.
 
 ```json
 {

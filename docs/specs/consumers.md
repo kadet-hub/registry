@@ -275,7 +275,10 @@ well, and the workflow failed unless each of those pins matched the
 parent's record. Renovate reads tags, not the index, and moves each pin to
 the newest version of its recipe. It proposed an included recipe past the
 digest its parent lists, and a parent without the recipes its new version
-includes. The workflow refused both.
+includes. The workflow refused both. The Renovate preset
+`github>kadet-hub/renovate-config` updates each recipe pin in `**/fetch/**`
+on its own (kadet-hub/renovate-config#21), which is consistent once the
+fetch inventory pins no included recipe.
 
 - CON-7: For each recipe it verifies, the workflow MUST add every entry of
   the record's `includes` that the fetch inventory does not pin as the
