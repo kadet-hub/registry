@@ -387,13 +387,13 @@ wheels and the standard library are deflate archives already: gzip saves
 - AC-42 (PG-4, PG-9, PG-13): the catalog tests find the start control with
   the download size, the backend order, the list of what is not supported,
   and the note of a build without the playground.
+- AC-43 (PG-14): with a stand-in for `gh`, `report` creates the issue when
+  no open issue has its title, edits the body of the open one that has it,
+  and ignores issues whose title only contains it.
 - AC-44 (PG-15 to PG-20): in the `playground` workflow, `test_provenance.py`
   passes in the sandbox image, `compile.mjs` finds no difference for any
   example, and Chrome lists `common, apps.web, dev` for the basics example
   and the chain of `app.replicas` (1, 2, then 3 from the target).
-- AC-43 (PG-14): with a stand-in for `gh`, `report` creates the issue when
-  no open issue has its title, edits the body of the open one that has it,
-  and ignores issues whose title only contains it.
 
 ## Alternatives
 
