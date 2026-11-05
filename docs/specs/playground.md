@@ -44,6 +44,8 @@ multiprocessing pool and runs some inputs as subprocesses.
   replaying the backend's merge in the runtime module and comparing the
   replay with the inventory Kapitan rendered (Merge order and parameter
   sources).
+- DEC-47: The Terraform example uses terraform-opentelekomcloud, the
+  smallest of the four Terraform generators in the index (Examples).
 
 ## Runtime
 
@@ -121,6 +123,7 @@ offers them. Each names the backends it is written for.
 |---|---|---|
 | Inventory basics | two classes, a target, a kadet component and a Jinja2 template, kept in `catalog/playground/examples/basics` | omegaconf |
 | kubernetes generator | the usage target of the generator's README, with the generator's latest listed version | omegaconf, reclass |
+| Terraform generator for Open Telekom Cloud | two classes and a target for a VPC with subnets, NAT and a state bucket, kept in `catalog/playground/examples/terraform`, with terraform-opentelekomcloud's latest listed version | omegaconf, reclass |
 | Recipe uptime-kuma | the recipe's latest listed version with the generator its index record pins, and the target of its README | omegaconf |
 | Recipe blackbox-exporter next to its Helm chart | as uptime-kuma, plus `helm template` of the chart the recipe rebuilds | omegaconf |
 
@@ -151,6 +154,32 @@ that it was rendered when the site was built and is not affected by edits.
   label it as rendered at build time and not compiled in the browser.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`), `browser.mjs`
+  - Since: this change
+
+The four Terraform generators in the index, terraform-aws, terraform-google,
+terraform-azurerm and terraform-opentelekomcloud, are pure Python, list no
+binaries and import nothing besides Kapitan's kadet module and `ipaddress`,
+`itertools`, `json` and `re`, so each runs in Pyodide. As the build ships
+them, without `schemas/` and `tests/`, terraform-opentelekomcloud 0.1.3 is
+the smallest with 5 files of 31,942 bytes, 9,702 of them Python;
+terraform-google 0.1.4 has 34,303 bytes, terraform-aws 0.1.4 34,372 and
+terraform-azurerm 0.1.4 39,782 (DEC-47). Its example spreads the inventory over two classes and the target,
+so the merge order and parameter sources have something to show. Kapitan
+writes `*.tf.json`; terraform itself does not run, because it is a native
+binary that downloads the provider and needs the cloud's credentials for a
+plan.
+
+- PG-21: The playground MUST offer an example that compiles a Terraform
+  generator from the index to `*.tf.json` files, under omegaconf and reclass.
+
+  PG-6 compares it with the gate image like every other example.
+
+  - Test: `browser.mjs` (PG-21); `.github/workflows/playground.yml` (`check`)
+  - Since: this change
+
+- PG-22: The page MUST say that terraform plan does not run in the browser.
+
+  - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`), `browser.mjs` (PG-22)
   - Since: this change
 
 ## Equivalence with the gate
@@ -394,6 +423,10 @@ wheels and the standard library are deflate archives already: gzip saves
   passes in the sandbox image, `compile.mjs` finds no difference for any
   example, and Chrome lists `common, apps.web, dev` for the basics example
   and the chain of `app.replicas` (1, 2, then 3 from the target).
+- AC-45 (PG-21, PG-22): in the `playground` workflow, `check` finds the
+  Terraform example identical to the gate image under both backends, and
+  Chrome shows only `*.tf.json` files for it and the note that terraform
+  plan does not run.
 
 ## Alternatives
 
