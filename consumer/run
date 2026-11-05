@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Consumer flow (CON-1, CON-1b, CON-2, CON-4, CON-5): recipes from the fetch
+# Consumer flow (CON-1, CON-1b, CON-2, CON-4, CON-5, CON-7): recipes from the fetch
 # inventory, inventory in the sandbox, check and fetch the dependencies
 # outside it, compile in the sandbox, judge the output.
 #
@@ -117,8 +117,9 @@ fetch() {
   done < <(jq -c '.deps[]' "$work/$1")
 }
 
-# CON-4: the recipes of the fetch inventory, checked, verified and unpacked
-# into the project before Kapitan loads its inventory.
+# CON-4: the recipes of the fetch inventory and those they include (CON-7),
+# checked, verified and unpacked into the project before Kapitan loads its
+# inventory.
 if [[ -n $fetch_inventory ]]; then
   "$root/sandbox/run" --stdout "$work/recipes.yml" "$work/project" inventory --inventory-path "$fetch_inventory" "${backend_args[@]}"
   plan recipes.yml recipes.json --fetch

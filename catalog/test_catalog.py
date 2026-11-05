@@ -646,6 +646,13 @@ class Site(unittest.TestCase):
                 self.assertIn(post, links(heading))
                 self.assertTrue(os.path.isfile(os.path.join(self.out, post.strip("/"), "index.html")), post)
 
+    def test_stacks_linked(self):  # CAT-47
+        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.S).group(1)
+        self.assertRegex(nav, r'<a href="\./recipes/">Recipes</a>\s*<a href="\./stacks/">Stacks</a>')
+        with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
+            using = f.read().split("\n## Using generators\n", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("\n- [Stacks](https://kadet-hub.org/stacks/): ", using)
+
     def test_conversion_events(self):  # CAT-42
         recipe = self.page("recipes", "miniflux")  # from main: the git fetch inventory
         self.assertIn('data-copy="fetch" aria-label="Copy fetch inventory" data-goatcounter-click="copy-fetch-inventory/recipes/miniflux" '
@@ -2196,13 +2203,25 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn(f"\n```yaml\n{self.snippet(page, 'fetch')}\n```\n", md)
         self.assertIn(f"\n```sh\n{self.snippet(page, 'verify')}\n```\n", md)
         self.assertIn('\n```yaml\noutput_capabilities:\n  "compiled/<target>/*": [admission-webhook]\n```\n', md)
-        # An included recipe is pinned and verified at the version the record lists (REC-16, CON-4).
+        self.assertIn("pins the recipe by version", page)
+        self.assertNotIn('id="pull"', page)
+        self.assertIn("This verifies the attestation of the recipe:", page)
+        # The workflow adds an included recipe (CON-7); a local compile pulls it, and both verify it (REC-16, CON-6).
         page = self.page("recipes", "external-dns-powerdns")
         self.assertEqual(re.findall(r"source: (\S+)\n", self.snippet(page, "fetch") + "\n"),
-                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns:1.0.0@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns:1.0.0@sha256:{'5' * 64}"])
+                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns:1.0.0@sha256:{'4' * 64}"])
+        self.assertIn("<p>Version 1.0.0 includes powerdns 1.0.0. The consumer workflow adds the included recipes", page)
+        pull = ('tmp=$(mktemp -d)\n'
+                f'oras pull -o "$tmp" ghcr.io/{OWNER}/recipes/powerdns@sha256:{"5" * 64}\n'
+                'mkdir -p inventory/classes/recipes/powerdns\n'
+                'tar -xf "$tmp/powerdns.tar" -C inventory/classes/recipes/powerdns --no-same-owner')
+        self.assertEqual(self.snippet(page, "pull"), pull)
         self.assertEqual(re.findall(r"oci://(\S+)", self.snippet(page, "verify")),
                          [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns@sha256:{'5' * 64}"])
-        self.assertIn("pins the recipe and the recipes it includes by version", page)
+        self.assertIn("This verifies the attestation of the recipe and of the recipes it includes:", page)
+        md = self.page("recipes", "external-dns-powerdns", name="index.md")
+        self.assertIn(f"\n```yaml\n{self.snippet(page, 'fetch')}\n```\n\nexternal-dns-powerdns 1.0.0 includes powerdns 1.0.0. ", md)
+        self.assertIn(f"\n```sh\n{pull}\n```\n", md)
         self.assertIn("<li>No <code>renders</code> result in the release run's record</li>", page)  # a scan record without it
         self.assertIn("<li>Output capabilities: none</li>", page)
         self.assertNotIn('id="policy"', page)
@@ -2382,8 +2401,9 @@ class Quickstart(unittest.TestCase):  # CAT-40
             ("open", "kubectl -n uptime-kuma port-forward service/uptime-kuma 3001:3001"),
             ("cleanup", "kind delete cluster --name quickstart-uptime-kuma")])
         # The recipe page's own snippets (CAT-37c, CAT-38), and the install command of docs/consumers.md with oras.
-        self.assertEqual((recipe["fetch"], recipe["verify"], recipe["commands"]),
-                         (fetch, dict(self.snippets(page))["verify"], dict(self.snippets(page))["compile"]))
+        self.assertEqual((recipe["fetch"], recipe["verify"], recipe["commands"], recipe.get("pull")),
+                         (fetch, dict(self.snippets(page))["verify"], dict(self.snippets(page))["compile"],
+                          dict(self.snippets(page)).get("pull")))  # uptime-kuma includes no recipe (CON-7)
         self.assertTrue(recipe["include"].startswith("classes:\n  - recipes.uptime-kuma\n"))
         with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
             install = re.search(r"```sh\n(uv tool install [^\n]*)\n```", f.read()).group(1)
@@ -2406,6 +2426,120 @@ class Quickstart(unittest.TestCase):  # CAT-40
         self.assertIn(">Coming from Helm?</h2>", page)
 
     def test_seo(self):  # CAT-11d over the new page
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+
+# CAT-45: fixture stack posts; stack-a is the newer. LISTED_INDEX lists the generator kubernetes, not demo.
+STACK_POSTS = {
+    "stack-a": 'title: "Stack A: cert-manager and Valkey on Kubernetes"\ndate: 2000-01-02\n'
+               'description: "The newer fixture stack: two recipes, a listed generator and one the fixture index does not list."\n'
+               "stack:\n  recipes: [cert-manager, valkey]\n  generators: [kubernetes, demo]\n  example: stack-a",
+    "stack-b": 'title: "Stack B: Valkey alone on Kubernetes with Kapitan"\ndate: 2000-01-01\n'
+               'description: "The older fixture stack: one recipe and no generators, with its folder in kadet-hub/examples."\n'
+               "stack:\n  recipes: [valkey]\n  example: stack-b",
+}
+
+
+def stack_posts():
+    """CAT-45: the committed blog posts with a stack field, by name."""
+    blog = os.path.join(HERE, "site", "content", "blog")
+    names = []
+    for f in sorted(os.listdir(blog)):
+        with open(os.path.join(blog, f), encoding="utf-8") as fh:
+            if "\nstack:\n" in fh.read().split("\n---\n", 1)[0]:
+                names.append(f[:-3])
+    return names
+
+
+def stack_build(tmp, posts, *args):
+    """CAT-45: Hugo over the site with LISTED_INDEX and the generator old; posts maps a post's name to its front matter, or None to remove it."""
+    site = os.path.join(tmp, "site")
+    shutil.copytree(os.path.join(HERE, "site"), site)
+    for name, front in posts.items():
+        path = os.path.join(site, "content", "blog", name + ".md")
+        if front is None:
+            os.remove(path)
+        else:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(f"---\n{front}\n---\n\nThe post.\n")
+    os.makedirs(os.path.join(site, "data"))
+    shutil.copy(os.path.join(HERE, "..", "policy", "tags.yaml"), os.path.join(site, "data", "tags.yaml"))
+    recipe_classes(os.path.join(site, "assets", "classes"))
+    index = dict(LISTED_INDEX, generators=dict(LISTED_INDEX["generators"], old=INDEX["generators"]["old"]))
+    with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
+        json.dump(view(index, OWNER, lambda _: None), f)
+    out = os.path.join(tmp, "out")
+    return out, subprocess.run(["hugo", "--logLevel", "error", "--source", site, "--destination", out, *args], capture_output=True, text=True)
+
+
+class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.out, built = stack_build(cls.tmp.name, {**dict.fromkeys(stack_posts()), **STACK_POSTS})  # the fixtures alone
+        if built.returncode:
+            raise AssertionError(built.stderr)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_stacks_page(self):  # CAT-45, CAT-46
+        page = self.page("stacks")
+        self.assertEqual(re.findall(r'<li><a href="\.\./blog/([^/]+)/">', page), ["stack-a", "stack-b"])  # newest first
+        self.assertIn('<li><a href="../blog/stack-a/">Stack A: cert-manager and Valkey on Kubernetes</a>'
+                      "<p>The newer fixture stack: two recipes, a listed generator and one the fixture index does not list.</p>\n"
+                      '<p>Recipes: <a href="../recipes/cert-manager/"><code>cert-manager</code></a>, <a href="../recipes/valkey/"><code>valkey</code></a></p>\n'
+                      '<p>Generators: <a href="../generators/kubernetes/"><code>kubernetes</code></a>, <code>demo</code></p>\n'  # demo: no page
+                      f'<p>Project: <a href="https://github.com/{OWNER}/examples/tree/main/stack-a">kadet-hub/examples/stack-a</a></p></li>', page)
+        self.assertNotIn("Generators:", page.split("blog/stack-b/", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:  # no stack post published
+            out, built = stack_build(tmp, dict.fromkeys(stack_posts()))
+            self.assertEqual(built.returncode, 0, built.stderr)
+            with open(os.path.join(out, "stacks", "index.html"), encoding="utf-8") as f:
+                self.assertIn('<p class="empty">No stack post is published yet.</p>', f.read())
+
+    def test_used_in_stacks(self):  # CAT-48
+        a = '<li><a href="../../blog/stack-a/">Stack A: cert-manager and Valkey on Kubernetes</a></li>'
+        b = '<li><a href="../../blog/stack-b/">Stack B: Valkey alone on Kubernetes with Kapitan</a></li>'
+        self.assertRegex(self.page("recipes", "valkey"), rf"<h2>Used in stacks</h2>\n<ul>{re.escape(a + b)}</ul>\s*<h2>Versions</h2>")
+        self.assertIn(f"<h2>Used in stacks</h2>\n<ul>{a}</ul>", self.page("recipes", "cert-manager"))
+        self.assertNotIn("Used in stacks", self.page("recipes", "mysql"))
+        page = self.page("generators", "kubernetes")
+        self.assertRegex(page, r'<li><a href="#stacks">Used in stacks</a></li>\s*<li><a href="#versions">Versions</a></li>')  # CAT-19
+        self.assertRegex(page, rf'(?s)<div class="generator-body">\s*<section class="stacks" aria-labelledby="stacks">\n'
+                               rf'<h2 id="stacks">Used in stacks</h2>\n<ul>{re.escape(a)}</ul>\n</section>\s*</div>')
+        self.assertNotIn("Used in stacks", self.page("generators", "old"))
+
+    def test_queued_stack_posts(self):  # CAT-49: every committed stack post, also before its date
+        with tempfile.TemporaryDirectory() as tmp:
+            out, built = stack_build(tmp, {}, "--buildFuture")
+            self.assertEqual(built.returncode, 0, built.stderr)
+            with open(os.path.join(out, "stacks", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        self.assertGreaterEqual(len(stack_posts()), 5)
+        self.assertEqual(sorted(re.findall(r'<li><a href="\.\./blog/([^/]+)/">', page)), stack_posts())
+        entries = {f[:-5] for f in os.listdir(os.path.join(HERE, "..", "generators"))}
+        for line in re.findall(r"<p>Generators: (.*?)</p>", page):
+            for name in re.findall(r"<code>([^<]+)</code>", line):
+                self.assertIn(name, entries)
+
+    def test_unknown_recipe_fails_the_build(self):  # CAT-49
+        front = STACK_POSTS["stack-b"]
+        for case, post, error in (("recipe", front.replace("[valkey]", "[valkey, no-such-recipe]"),
+                                   "blog/stack-b.md: stack names the recipe no-such-recipe, which has no page at /recipes/no-such-recipe/"),
+                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example")):
+            with self.subTest(case), tempfile.TemporaryDirectory() as tmp:
+                _, built = stack_build(tmp, {"stack-b": post})
+                self.assertNotEqual(built.returncode, 0)
+                self.assertIn(error, built.stderr)
+
+    def test_seo(self):  # CAT-11d over the new page and sections
         result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
 
