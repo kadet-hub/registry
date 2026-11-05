@@ -1700,6 +1700,24 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
   - Since: this change
 
+- CAT-50: The build MUST fail when a published stack post's `example` is
+  not one folder name of lowercase letters, digits and single hyphens.
+  Every committed stack post MUST link
+  `https://github.com/kadet-hub/examples/tree/main/<example>` in its text.
+
+  The project link on `/stacks/` is built from `example`, and the registry
+  has no list of the folders in kadet-hub/examples. A wrong name would
+  give a link to a 404 with a green build. The format catches another
+  casing, a trailing slash and a path. A misspelling passes the format,
+  so `Stacks.test_queued_stack_posts` compares `example` with the
+  project link the post's text already carries. A name misspelled the
+  same way in both places still passes. Checking the folder itself needs
+  the examples repository, which the offline build and tests do not
+  have.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
   `/recipes/<name>/` (CAT-37c).
