@@ -258,14 +258,14 @@ and the job fails so the run shows it.
   no target changed.
 
   - Test: `consumer/test_compile_diff.py` (`Diff.test_marker_without_changes`)
-  - Since: this change
+  - Since: #560
 
 - CD-11: When the compile run succeeded and the downloaded artifact holds no
   `compile-diff.txt`, `compile-diff-comment` MUST post a comment that names
   the result as missing, without a diff or "no change", and MUST fail.
 
   - Test: `consumer/test_compile_diff.py` (`Render.test_missing_marker`)
-  - Since: this change
+  - Since: #560
 
 ## Verification
 
