@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: ironcore
-  tag: ironcore-v1.0.1
-  sha: 9166cb30e0ae4874bc8f229c6a6823eff7451d04
+  tag: ironcore-v1.0.2
+  sha: d2acfd07c1d3a811f012ed0d4046cb2efa8c051c
 owners: [3042152]
