@@ -95,7 +95,7 @@ fixed flags (CON-1); `targets` filters the diff. The action fails outside
   the comment reports a failed run instead of a diff that looks clean.
 
   - Test: manual: AC-15
-  - Since: this change
+  - Since: #537
 
 - CD-2: Neither compile MAY use `--reveal`.
 
@@ -107,7 +107,7 @@ fixed flags (CON-1); `targets` filters the diff. The action fails outside
   changed, not its value.
 
   - Test: `consumer/test_compile_diff.py` (`NoReveal`)
-  - Since: this change
+  - Since: #537
 
 - CD-3: The diff MUST list, for every target whose name matches `targets`
   and whose files under `compiled/<target>` differ, each added, removed and
@@ -119,7 +119,7 @@ fixed flags (CON-1); `targets` filters the diff. The action fails outside
   a compile that creates one; the diff does not rely on that.
 
   - Test: `consumer/test_compile_diff.py` (`Diff`)
-  - Since: this change
+  - Since: #537
 
 ## Pull requests from forks
 
@@ -156,7 +156,7 @@ one.
   `attestations: read` serves `gh attestation verify` (CON-2).
 
   - Test: none (partial: AC-15 runs the documented workflow)
-  - Since: this change
+  - Since: #537
 
 - CD-5: `compile-diff-comment` MUST fail unless it runs on `workflow_run`
   for a `pull_request` run, MUST NOT check out the repository and MUST NOT
@@ -167,14 +167,14 @@ one.
 
   - Test: none (partial: AC-16 posts a forged artifact as text; the
     permissions are reviewed)
-  - Since: this change
+  - Since: #537
 
 - CD-6: `compile-diff-comment` MUST post only to the one open pull request
   whose head owner, branch and head SHA equal the run's, and MUST post
   nothing when none or more than one matches.
 
-  - Test: manual: AC-15 (second push), AC-16
-  - Since: this change
+  - Test: manual: AC-15 (re-run of a left head), AC-16
+  - Since: #537
 
 - CD-7: The comment MUST render artifact content only inside code fences
   longer than any backtick run in it, with every character outside
@@ -189,7 +189,7 @@ one.
   the bytes.
 
   - Test: `consumer/test_compile_diff.py` (`Render`)
-  - Since: this change
+  - Since: #537
 
 ## Comment
 
@@ -229,20 +229,21 @@ as the consumer workflow already requires.
   edit it on every run that matches the pull request (CD-6).
 
   - Test: manual: AC-15
-  - Since: this change
+  - Since: #537
 
 - CD-9: The comment MUST start with a summary line naming the number of
   changed targets and files, follow with one `<details>` block per changed
   target, and MUST NOT exceed 65536 characters.
 
-  Each target gets an equal share of what the summary leaves of the limit,
-  and a target that needs less passes the rest on to the targets after it.
-  A block that does not fit is cut at a line boundary and ends with a note
-  naming the lines shown and the artifact. When a share would drop below
-  300 characters, the remaining targets are counted in one line instead.
+  The targets split what the summary leaves of the limit, smallest diff
+  first: each gets an equal share of what is left, so what a small target
+  does not use goes to the larger ones. A block that does not fit is cut at
+  a line boundary and ends with a note naming the lines shown and the
+  artifact. When a share would drop below 300 characters, the remaining
+  targets, the largest, are counted in one line instead.
 
   - Test: `consumer/test_compile_diff.py` (`Render`); manual: AC-15
-  - Since: this change
+  - Since: #537
 
 ## Verification
 
@@ -252,11 +253,28 @@ as the consumer workflow already requires.
   line, and a second push edits the same comment with the new diff. Check:
   manual: scratch repository run, with a step of its comment workflow that
   reads the comment back.
+
+  Run on 2026-11-05 in a private scratch repository holding
+  `first-platform` of kadet-hub/examples and both workflows pinned to #537.
+  The pull request raising dev's replicas from 1 to 2 got one comment with
+  `-  replicas: 1` and `+  replicas: 2` in `dev/apps/shop/web-deploy.yml`.
+  A second push raising prod's from 3 to 4 edited the same comment to two
+  targets, and the read-back step passed on both runs. A re-run of the
+  first compile run, whose head the pull request had left, posted nothing.
 - AC-16 (CD-5, CD-6, CD-7): a pull request whose compile workflow uploads a
   forged artifact (a mention, HTML, a backtick run, bidirectional control
   characters, a target name with markup, a diff above the limit) gets a
   comment with all of it inside fences, and no other pull request gets a
-  comment. Check: manual: scratch repository run.
+  comment. Check: manual: scratch repository run (partial: no pull request
+  from a real fork, whose read-only token GitHub sets).
+
+  Run on 2026-11-05 in the AC-15 repository. The forged artifact got a
+  comment of 33107 characters whose rendered HTML holds no image, heading
+  or mention; its only link is the run link. The target name
+  `x[y](z) @ghost &amp;` rendered as `x?y??z???ghost??amp?`, the run of 7
+  backticks sat inside a fence of 8, bidirectional controls and non-ASCII
+  letters became `?`, and the extra files `pr.txt` and `notes.md` were
+  ignored. The comment of the other open pull request stayed unchanged.
 
 ## Alternatives
 

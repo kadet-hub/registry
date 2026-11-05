@@ -149,7 +149,7 @@ jobs:
 # .github/workflows/compile-diff-comment.yml
 name: compile-diff-comment
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] runs nothing from the pull request
     workflows: [compile-diff]
     types: [completed]
 permissions: {}
