@@ -185,7 +185,7 @@ load, the hostname follows the environment, the storage class follows the
 cluster. Everything else differing is a mistake, or a promotion that
 stopped halfway.
 
-`guard` is a Python script of 83 lines that checks this on compiled
+`guard` is a Python script of 85 lines that checks this on compiled
 output. It reads every object of two directories, matches them by kind
 and name, and compares them field by field. Every field that differs
 must appear in `guard-allowed.txt`, which here lists three:
