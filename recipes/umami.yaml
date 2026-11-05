@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: umami
+  tag: umami-v1.0.0
+  sha: a7ddcbb0a4fc74afe4f020436e7a8cf30d116832
+owners: [3042152]
+exceptions: []
