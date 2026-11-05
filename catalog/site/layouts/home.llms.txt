@@ -30,6 +30,7 @@ Every generator and guide page has a Markdown variant at index.md next to it; th
 - [Catalog](https://kadet-hub.org/): all generators; each page has the pinned inventory entry and the verify command
 - [Kinds](https://kadet-hub.org/kinds/): every Kubernetes kind of the listed generators by API group, with the generators that render it or ship its schema
 - [Compatibility](https://kadet-hub.org/compatibility/): per generator, the Kapitan range it declares and the Kapitan version, inventory backends, compile cache and krab result its latest version was checked with
+- [Stacks](https://kadet-hub.org/stacks/): use cases that combine several recipes and generators, each with its blog post and its tested project in kadet-hub/examples
 
 ## Generators
 

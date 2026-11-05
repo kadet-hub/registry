@@ -3,6 +3,10 @@ title: "Kubernetes cluster add-ons from one Kapitan inventory, on kind"
 date: 2026-11-08
 topics: [kapitan, generators, verification]
 description: "cert-manager, Kyverno, Prometheus, Grafana, External Secrets, Velero and Argo CD from one Kapitan inventory with shared values, tested through one app on kind."
+stack:
+  recipes: [cert-manager]
+  generators: [kubernetes, certmanager, kyverno, prometheus-operator, grafana, external-secrets, velero, argocd]
+  example: platform-baseline
 ---
 
 Before a cluster runs its first app, a small team usually adds the same
