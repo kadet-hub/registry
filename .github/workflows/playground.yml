@@ -1,0 +1,52 @@
+name: playground
+
+# PG-6, AC-40, AC-41: compile every playground example in Pyodide and in the
+# gate's sandbox image, and run the page in Chrome, on pull requests that
+# change the playground or the versions it takes from sandbox/.
+on:
+  pull_request:
+    paths:
+      - catalog/playground/**
+      - catalog/site/static/playground/**
+      - catalog/site/layouts/playground.html
+      - catalog/build
+      - sandbox/Dockerfile
+      - sandbox/requirements.txt
+      - .github/workflows/playground.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playground:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-hugo # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - name: Build the sandbox image
+        run: docker build -t kadet-hub/sandbox sandbox
+
+      - name: Build the playground from the published index (PG-1, PG-5, PG-12)
+        run: |
+          oras pull -o "$RUNNER_TEMP/index" ghcr.io/kadet-hub/index:latest
+          (cd catalog/playground && npm ci --ignore-scripts --no-audit --no-fund)
+          python3 -I catalog/playground/build.py --index "$RUNNER_TEMP/index/index.json" \
+            --out "$RUNNER_TEMP/playground/static" --data "$RUNNER_TEMP/playground/playground.json" \
+            --projects "$RUNNER_TEMP/projects" --outputs "$RUNNER_TEMP/outputs"
+
+      - name: Compare with the gate image (PG-6)
+        run: catalog/playground/check "$RUNNER_TEMP/projects" "$RUNNER_TEMP/outputs"
+
+      - name: Run the page in Chrome (PG-3, PG-7 to PG-11)
+        working-directory: catalog
+        env:
+          PLAYGROUND_BUILD: ${{ runner.temp }}/playground
+        run: python3 -m unittest -v test_catalog.Playground

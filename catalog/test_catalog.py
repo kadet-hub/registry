@@ -442,7 +442,7 @@ def recipe_layers(root, layers=LAYERS):
 
 
 def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False, root=HERE,
-          security=None):
+          security=None, playground=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -457,6 +457,9 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
         recipes = os.path.join(tmp, "recipes")
         recipe_classes(os.path.join(recipes, "inventory", "classes"))
     env["CATALOG_RECIPES"] = recipes
+    env.pop("CATALOG_PLAYGROUND", None)
+    if playground:
+        env["CATALOG_PLAYGROUND"] = playground
     subprocess.run([os.path.join(root, "build"), path, out], env=env, check=True, capture_output=capture, text=capture)
     return out
 
@@ -800,6 +803,13 @@ class Site(unittest.TestCase):
         for html in self.pages() + [page]:
             self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*compatibility/">Compatibility</a>.*</nav>')
             self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*recipes/">Recipes</a>.*</nav>')  # CAT-37
+            self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*playground/">Playground</a>.*</nav>')  # PG-4
+
+    def test_playground_without_its_files(self):  # PG-13
+        page = self.page("playground")
+        self.assertIn("The playground is not part of this build of the site.", page)
+        self.assertNotIn("playground.js", page)
+        self.assertNotIn('id="pg-start"', page)
 
     def test_compatibility_facts_are_the_same_on_page_details_and_markdown(self):  # CAT-30, CAT-28
         def text(h):
@@ -1803,6 +1813,79 @@ def svg_findings(text):
             if attr == "style" or attr.startswith("on") or (attr == "href" and not value.startswith("#")):
                 found.append(f"{tag} {attr}={value}")
     return found
+
+
+class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
+    """With PLAYGROUND_BUILD, a directory build.py wrote (static/ and playground.json), the
+    page also runs in Chrome (browser.mjs, PG-3, PG-7 to PG-11); without it, a stand-in."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.real = os.environ.get("PLAYGROUND_BUILD")
+        pg = cls.real or os.path.join(cls.tmp.name, "playground")
+        if not cls.real:
+            os.makedirs(os.path.join(pg, "static", "pyodide"))
+            with open(os.path.join(pg, "playground.json"), "w", encoding="utf-8") as f:
+                json.dump({"pyodide": "314.0.7", "kapitan": "0.36.3", "download": 9_876_543, "size": 20_000_000,
+                           "examples": [{"name": "basics", "title": "Inventory basics"}]}, f)
+        cls.out = build(SITE_INDEX, cls.tmp.name, playground=pg)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_start_button_names_the_download(self):  # PG-9
+        page = self.page("playground")
+        self.assertRegex(page, r'<button type="button" id="pg-start" class="button primary" data-size="\d+\.\d MB">Start the playground</button>')
+        if not self.real:
+            self.assertIn("Starting downloads about 9.9 MB from this site: Pyodide 314.0.7 and Kapitan 0.36.3", page)
+
+    def test_only_its_own_script_before_start(self):  # PG-9: the worker and Pyodide load after the click
+        page = self.page("playground")
+        scripts = re.findall(r'<script[^>]*src="([^"]+)"', page)
+        self.assertIn("../playground/playground.js", scripts)
+        self.assertEqual([s for s in scripts if "playground" in s or "pyodide" in s], ["../playground/playground.js"])
+        self.assertIn('<script type="module" src="../playground/playground.js"></script>', page)
+
+    def test_csp_is_the_home_page_csp(self):  # PG-7
+        csp = re.compile(r'Content-Security-Policy" content="([^"]*)"')
+        self.assertEqual(csp.search(self.page("playground")).group(1), csp.search(self.page()).group(1))
+
+    def test_no_inline_script_or_style(self):  # PG-7, CAT-3
+        page = self.page("playground")
+        self.assertNotRegex(page, r"<script(?![^>]*\bsrc=)(?![^>]*application/ld\+json)[^>]*>")
+        self.assertNotIn(' style="', page)
+
+    def test_backends_and_limits(self):  # PG-4, PG-11
+        page = self.page("playground")
+        self.assertIn('<select id="pg-backend"><option value="omegaconf">omegaconf</option><option value="reclass">reclass</option></select>', page)
+        self.assertIn("Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs", page)
+        self.assertIn("helm template output, rendered when this site was built", page)
+        self.assertIn("Not compiled in your browser and not affected by your edits", page)
+
+    def test_build_takes_the_latest_listed_version_and_the_gate_hashes(self):  # PG-1, PG-5
+        sys.path.insert(0, os.path.join(HERE, "playground"))
+        try:
+            import build as pgbuild
+        finally:
+            sys.path.pop(0)
+        versions = {"1.2.0": {"digest": "a"}, "1.10.0": {"digest": "b", "yanked": "broken"}, "1.9.0": {"digest": "c"}}
+        self.assertEqual(pgbuild.latest(versions), ("1.9.0", {"digest": "c"}))
+        self.assertEqual(pgbuild.latest({"1.0.0": {"yanked": "x"}}), (None, None))
+        version, hashes = pgbuild.gate_pins()["kapitan"]
+        with open(os.path.join(HERE, "..", "sandbox", "requirements.in"), encoding="utf-8") as f:
+            self.assertIn(f"=={version}", f.read())
+        self.assertTrue(hashes and all(re.fullmatch(r"[0-9a-f]{64}", h) for h in hashes))
+
+    def test_runs_in_chrome(self):  # PG-3, PG-7 to PG-11
+        if not self.real:
+            self.skipTest("PLAYGROUND_BUILD not set")
+        subprocess.run(["node", os.path.join(HERE, "playground", "browser.mjs"), self.out], check=True)
 
 
 class Diagrams(unittest.TestCase):

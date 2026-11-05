@@ -1,0 +1,9 @@
+# The Include snippet of the recipe's README. The recipe's classes are in
+# inventory/classes/recipes/uptime-kuma, its generator in lib/kubernetes.
+classes:
+  - recipes.uptime-kuma
+parameters:
+  namespace: uptime-kuma
+  kapitan:
+    vars:
+      target: uptime-kuma

@@ -1,0 +1,11 @@
+# Defaults every application class starts from. ${...} refers to another
+# parameter and is resolved after all classes and the target are merged.
+parameters:
+  namespace: ${target_name}
+  app:
+    image: nginx:1.27
+    replicas: 1
+    port: 8080
+  labels:
+    app.kubernetes.io/managed-by: kapitan
+    app.kubernetes.io/name: ${app.name}
