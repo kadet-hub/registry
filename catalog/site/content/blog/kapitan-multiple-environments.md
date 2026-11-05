@@ -185,7 +185,7 @@ load, the hostname follows the environment, the storage class follows the
 cluster. Everything else differing is a mistake, or a promotion that
 stopped halfway.
 
-`guard` is a Python script of 75 lines that checks this on compiled
+`guard` is a Python script of 83 lines that checks this on compiled
 output. It reads every object of two directories, matches them by kind
 and name, and compares them field by field. Every field that differs
 must appear in `guard-allowed.txt`, which here lists three:
@@ -196,8 +196,8 @@ Deployment/miniflux spec.template.spec.containers[miniflux].env[BASE_URL].value
 StatefulSet/miniflux-db spec.volumeClaimTemplates[miniflux-db].spec.storageClassName
 ```
 
-A list item with a name is addressed by it, so reordered environment
-variables do not count as a change. Ref tokens count as equal, since every target has refs of
+A list item is addressed by its name when the names in its list are
+unique, so reordered environment variables do not count as a change. Ref tokens count as equal, since every target has refs of
 its own. On the compiled output of stage and prod:
 
 ```console
