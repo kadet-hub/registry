@@ -178,6 +178,7 @@ remembered in the browser's `localStorage`.
   | pulumi vs helm | same guide |
   | helm vs helmfile (also "helmfile vs helm"), helm chart vs helmfile, helm umbrella chart vs helmfile (checked 2026-10-22) | same guide, section #helmfile |
   | helmfile environments (also "helmfile environments example", "helmfile multiple environments"), helmfile secrets example, helmfile release needs (also "helmfile needs"), helmfile alternatives (checked 2026-11-05) | blog post "Helmfile vs Kapitan: environments, secrets and release order", sections #environments, #secrets and #needs for the first three |
+  | kubernetes multiple environments, helm multiple environments, helm values per environment, kustomize multiple environments (Google's suggestions, checked 2026-11-05) | blog post "Kubernetes multiple environments: dev, stage and prod in Kapitan", section #helm-kustomize for the last three |
   | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
   | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
