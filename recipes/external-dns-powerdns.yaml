@@ -1,7 +1,7 @@
 source:
   repo: https://github.com/kadet-hub/recipes.git
   path: external-dns-powerdns
-  tag: external-dns-powerdns-v1.0.0
-  sha: 594332596eb3017760e4336039e55b09df508f43
+  tag: external-dns-powerdns-v1.0.1
+  sha: a723bd281c0923d754f6596fd2b763fb148f675a
 owners: [3042152]
 exceptions: []
