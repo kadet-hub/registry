@@ -524,7 +524,7 @@ coverage is named at each:
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3, CON-6, PUB-12, PUB-13b, CAT-34d, CAT-34e |
-| `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py` | CD-1 to CD-9; paths in [compile-diff.md](compile-diff.md) |
+| `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py` | CD-1 to CD-11; paths in [compile-diff.md](compile-diff.md) |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |
