@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: wordpress
+  tag: wordpress-v1.0.0
+  sha: 657d1437d393d6276db4c2ee242f9744d93650c4
+owners: [3042152]
+exceptions: []
