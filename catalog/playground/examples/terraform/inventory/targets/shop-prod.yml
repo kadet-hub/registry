@@ -1,0 +1,23 @@
+# The production network: the class's VPC with a larger NAT gateway, its own
+# tag and a KMS-encrypted bucket for the Terraform state. The generator's files
+# are in lib/terraform-opentelekomcloud, as kapitan.dependencies would fetch them.
+classes:
+  - network.platform
+parameters:
+  kapitan:
+    vars:
+      target: shop-prod
+  generators:
+    terraform-opentelekomcloud:
+      network:
+        platform:
+          tags:
+            env: prod
+          nat:
+            spec: "1"
+            bandwidth_mbit: 200
+      bucket:
+        tf-state:
+          bucket: shop-prod-tf-state
+          tags:
+            env: prod

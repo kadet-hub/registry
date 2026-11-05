@@ -1,7 +1,8 @@
 // Compile every example under each of its backends in Pyodide, from the files
-// the page serves, and write the bytecode archives (PG-6, PG-12, DEC-44).
+// the page serves, check its provenance, and write the bytecode archives
+// (PG-6, PG-12, PG-20, DEC-44).
 // Usage: node compile.mjs <static dir> <projects dir> [outputs dir]
-// Fails on a compile error or an empty output. outputs dir receives
+// Fails on a compile error, an empty output or a provenance difference. outputs dir receives
 // <example>/<backend>/<compiled path> for check.
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -26,12 +27,17 @@ for (const ex of examples) {
   const files = Object.fromEntries(walk(root).map((p) => [relative(root, p), readFileSync(p, "utf8")]));
   for (const backend of ex.backends) {
     const pyFiles = py.toPy(files);
-    const [code, log, out] = kw.compile_project(pyFiles, backend).toJs({ dict_converter: Object.fromEntries });
+    const [code, log, out, prov] = kw.compile_project(pyFiles, backend).toJs({ dict_converter: Object.fromEntries });
     pyFiles.destroy();
     const names = Object.keys(out);
-    console.log(`${ex.name} (${backend}): exit ${code}, ${names.length} files`);
-    if (code !== 0 || names.length === 0) {
-      console.log(log);
+    // PG-20: the provenance replay must find no difference from the inventory Kapitan rendered.
+    const traced = JSON.parse(prov) ?? { error: "no provenance" };
+    const differs = traced.error ? [traced.error]
+      : Object.entries(traced).flatMap(([t, p]) => p.mismatches.map((m) => `${t}: ${m.join(".")}`));
+    const params = traced.error ? 0 : Object.values(traced).reduce((n, p) => n + p.params.length, 0);
+    console.log(`${ex.name} (${backend}): exit ${code}, ${names.length} files, ${params} parameters traced`);
+    if (code !== 0 || names.length === 0 || differs.length) {
+      console.log(differs.length ? `provenance differs from Kapitan's inventory: ${differs.join(", ")}` : log);
       failed = true;
       continue;
     }

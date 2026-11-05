@@ -1,0 +1,15 @@
+# What every Open Telekom Cloud target shares: the project, the region and the
+# compile step. output_type json makes Kapitan write *.tf.json, which Terraform
+# reads; YAML it would ignore.
+parameters:
+  kapitan:
+    compile:
+      - output_path: terraform/
+        input_type: kadet
+        output_type: json
+        input_paths:
+          - lib/terraform-opentelekomcloud
+  generators:
+    terraform-opentelekomcloud:
+      tenant_name: eu-de_shop
+      region: eu-de

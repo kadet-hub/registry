@@ -15,6 +15,14 @@
     "backends": ["omegaconf", "reclass"]
   },
   {
+    "name": "terraform",
+    "title": "Terraform generator for Open Telekom Cloud",
+    "description": "Terraform JSON for a VPC with two subnets, NAT egress and a KMS-encrypted state bucket, from two classes and a target. Kapitan writes the *.tf.json files here; terraform plan does not run in your browser.",
+    "dir": "terraform",
+    "generator": "terraform-opentelekomcloud",
+    "backends": ["omegaconf", "reclass"]
+  },
+  {
     "name": "uptime-kuma",
     "title": "Recipe uptime-kuma",
     "description": "The uptime-kuma recipe, which rebuilds Uptime Kuma's Docker Compose file as a StatefulSet and a Service.",

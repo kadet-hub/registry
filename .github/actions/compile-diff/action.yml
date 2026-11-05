@@ -72,4 +72,4 @@ runs:
       with:
         name: compile-diff
         path: ${{ steps.diff.outputs.path }}
-        if-no-files-found: ignore
+        if-no-files-found: error # CD-10: compile-diff.txt is always there

@@ -1,4 +1,4 @@
-"""Compile diff of a pull request (CD-3, CD-7, CD-9).
+"""Compile diff of a pull request (CD-3, CD-7, CD-9 to CD-11).
 
 Usage:
   compile_diff.py diff BASE HEAD OUT GLOB
@@ -6,9 +6,10 @@ Usage:
 
 diff compares the compiled/ directories BASE and HEAD and writes
 OUT/<target>.diff for every target whose name matches GLOB and whose files
-differ. render prints the pull request comment for the diffs in DIR, which
-come from an artifact of a run the pull request controls and are treated as
-untrusted text.
+differ, and the marker OUT/compile-diff.txt in every case. render prints the
+pull request comment for the diffs in DIR, which come from an artifact of a
+run the pull request controls and are treated as untrusted text; it exits 1
+when a successful run left no marker in DIR.
 """
 
 import difflib
@@ -21,6 +22,7 @@ MARKER = "<!-- kadet-hub-compile-diff -->"
 LIMIT = 65536  # characters per GitHub comment
 MAX_READ = 1024 * 1024
 MIN_SHARE = 300
+DONE = "compile-diff.txt"  # CD-10: written also when nothing changed
 
 
 def files(root):
@@ -87,6 +89,8 @@ def diff(base, head, out, glob):
             with open(os.path.join(out, target + ".diff"), "w", encoding="utf-8") as f:
                 f.writelines(lines)
             written += 1
+    with open(os.path.join(out, DONE), "w", encoding="utf-8") as f:
+        f.write(f"{plural(written, 'target')} changed\n")
     return written
 
 
@@ -156,6 +160,9 @@ def render(d, conclusion, sha, run_url):
     run = f"[run]({run_url})" if re.fullmatch(r"https://[A-Za-z0-9._/-]+", run_url) else "run"
     if conclusion != "success":
         return f"{MARKER}\n**compile diff: no result** at `{sha}`: the compile {run} ended with {safe(conclusion)}.\n"
+    if not os.path.isfile(os.path.join(d, DONE)):  # CD-11
+        return (f"{MARKER}\n**compile diff: no result** at `{sha}`: the artifact `compile-diff` of the {run} "
+                "is missing or could not be downloaded.\n")
     diffs = [(t, text, file_list(text)) for t, text in read_diffs(d)]
     if not diffs:
         return f"{MARKER}\n**compile diff: no change** in `compiled/` at `{sha}` ({run}).\n"
@@ -185,6 +192,7 @@ def main(argv):
         print(f"compile diff: {plural(diff(*argv[2:]), 'target')} changed")
     elif len(argv) == 6 and argv[1] == "render":
         sys.stdout.write(render(*argv[2:]))
+        sys.exit(1 if argv[3] == "success" and not os.path.isfile(os.path.join(argv[2], DONE)) else 0)
     else:
         sys.exit(__doc__)
 

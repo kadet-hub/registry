@@ -374,7 +374,7 @@ NEW_RECIPES = tuple(
     (name, {k.replace(base, name): v.replace(base, name) for k, v in files.items()})
     for base, files, names in (
         ("cert-manager", CHART_RECIPE_FILES, ("authentik", "blackbox-exporter", "gitea", "immich", "jellyfin", "n8n", "netbox",
-                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress")),
+                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress", "forgejo", "memcached")),
         ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden", "umami")))
     for name in names)
 
@@ -794,7 +794,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 34)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 36)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -1931,10 +1931,11 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         self.assertNotRegex(page, r"<script(?![^>]*\bsrc=)(?![^>]*application/ld\+json)[^>]*>")
         self.assertNotIn(' style="', page)
 
-    def test_backends_and_limits(self):  # PG-4, PG-11
+    def test_backends_and_limits(self):  # PG-4, PG-11, PG-22
         page = self.page("playground")
         self.assertIn('<select id="pg-backend"><option value="omegaconf">omegaconf</option><option value="reclass">reclass</option></select>', page)
         self.assertIn("Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs", page)
+        self.assertIn("The Terraform example writes Terraform JSON; terraform init, plan and apply do not run here.", page)  # PG-22
         self.assertIn("helm template output, rendered when this site was built", page)
         self.assertIn("Not compiled in your browser and not affected by your edits", page)
 
