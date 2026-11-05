@@ -1951,6 +1951,51 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         subprocess.run(["node", os.path.join(HERE, "playground", "browser.mjs"), self.out], check=True)
 
 
+class PlaygroundReport(unittest.TestCase):  # PG-14, AC-43
+    TITLE = "Playground differs from the gate image"
+    DIFF = "basics (omegaconf): differs from the Pyodide output\nkubernetes (reclass): identical, 4 files\n"
+
+    def report(self, issues, summary):
+        """Runs report with a stand-in gh that answers `issue list` with issues; returns its calls and the body."""
+        with tempfile.TemporaryDirectory() as tmp:
+            log, body = os.path.join(tmp, "calls"), os.path.join(tmp, "body")
+            with open(os.path.join(tmp, "gh"), "w", encoding="utf-8") as f:
+                f.write("#!/usr/bin/env bash\n"
+                        f'printf "%s\\n" "$*" >>{shlex.quote(log)}\n'
+                        f"[[ $2 == list ]] && printf %s {shlex.quote(json.dumps(issues))}\n"
+                        f'while (($#)); do [[ $1 == --body-file ]] && cp -- "$2" {shlex.quote(body)}; shift; done\n'
+                        "exit 0\n")
+            os.chmod(os.path.join(tmp, "gh"), 0o755)
+            summary_file = os.path.join(tmp, "summary.txt")
+            with open(summary_file, "w", encoding="utf-8") as f:
+                f.write(summary)
+            env = dict(os.environ, PATH=f"{tmp}{os.pathsep}{os.environ['PATH']}", REPO=f"{OWNER}/registry", GH_TOKEN="x")
+            subprocess.run([os.path.join(HERE, "playground", "report"), summary_file, "https://github.com/run/1"],
+                           env=env, check=True, capture_output=True)
+            with open(log, encoding="utf-8") as f:
+                calls = f.read().splitlines()
+            with open(body, encoding="utf-8") as f:
+                return calls, f.read()
+
+    def test_creates_the_issue_when_none_with_its_title_is_open(self):
+        calls, body = self.report([{"number": 3, "title": f"{self.TITLE} (old)"}], self.DIFF)
+        self.assertEqual(calls[-1], f"issue create -R {OWNER}/registry --title {self.TITLE} --body-file " + calls[-1].split()[-1])
+        self.assertIn("https://github.com/run/1", body)
+        self.assertIn("differs from the gate image's", body)
+        self.assertIn("basics (omegaconf): differs from the Pyodide output", body)
+
+    def test_updates_the_open_issue_with_its_title(self):
+        calls, body = self.report([{"number": 3, "title": f"{self.TITLE} (old)"}, {"number": 7, "title": self.TITLE}], self.DIFF)
+        self.assertTrue(calls[-1].startswith(f"issue edit 7 -R {OWNER}/registry --body-file "), calls)
+        self.assertFalse(any(c.startswith("issue create") for c in calls))
+
+    def test_says_when_the_comparison_did_not_run_or_found_nothing(self):
+        _, body = self.report([], "")
+        self.assertIn("The comparison did not run", body)
+        _, body = self.report([], "basics (omegaconf): identical, 3 files\n")
+        self.assertIn("The comparison found no difference; a later step of the run failed", body)
+
+
 class Diagrams(unittest.TestCase):
     def test_diagram_svgs(self):  # CAT-35a
         names = sorted(f.removesuffix(".dot") for f in os.listdir(DIAGRAMS) if f.endswith(".dot"))

@@ -2,7 +2,9 @@ name: playground
 
 # PG-6, AC-40, AC-41: compile every playground example in Pyodide and in the
 # gate's sandbox image, and run the page in Chrome, on pull requests that
-# change the playground or the versions it takes from sandbox/.
+# change the playground or the versions it takes from sandbox/. PG-14: daily
+# against the index published that day; a failed scheduled run opens or
+# updates one issue.
 on:
   pull_request:
     paths:
@@ -13,6 +15,8 @@ on:
       - sandbox/Dockerfile
       - sandbox/requirements.txt
       - .github/workflows/playground.yml
+  schedule:
+    - cron: "37 5 * * *"
   workflow_dispatch:
 
 permissions:
@@ -22,6 +26,8 @@ jobs:
   playground:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      summary: ${{ steps.check.outputs.summary }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,10 +49,40 @@ jobs:
             --projects "$RUNNER_TEMP/projects" --outputs "$RUNNER_TEMP/outputs"
 
       - name: Compare with the gate image (PG-6)
-        run: catalog/playground/check "$RUNNER_TEMP/projects" "$RUNNER_TEMP/outputs"
+        id: check
+        run: |
+          status=0
+          catalog/playground/check "$RUNNER_TEMP/projects" "$RUNNER_TEMP/outputs" >"$RUNNER_TEMP/check.txt" 2>&1 || status=$?
+          cat -- "$RUNNER_TEMP/check.txt"
+          delimiter=$(openssl rand -hex 16)
+          { echo "summary<<$delimiter"; head -c 60000 -- "$RUNNER_TEMP/check.txt"; echo; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
+          exit "$status"
 
       - name: Run the page in Chrome (PG-3, PG-7 to PG-11)
         working-directory: catalog
         env:
           PLAYGROUND_BUILD: ${{ runner.temp }}/playground
         run: python3 -m unittest -v test_catalog.Playground
+
+  report:
+    needs: playground
+    if: always() && github.event_name == 'schedule' && needs.playground.result == 'failure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # PG-14: the one issue of a failed scheduled run
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Open or update the issue (PG-14)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SUMMARY: ${{ needs.playground.outputs.summary }}
+        run: |
+          printf '%s' "$SUMMARY" >"$RUNNER_TEMP/summary.txt"
+          catalog/playground/report "$RUNNER_TEMP/summary.txt" "$RUN_URL"
