@@ -423,7 +423,7 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`Site.test_wanted_page`,
     `Site.test_wanted_page_without_requests`); manual: an issue opened
     with the form in kadet-hub/recipes carries `recipe-request`
-  - Since: this change
+  - Since: #540
 
 - CAT-33: The site MUST have a page at `/stats/` with a section for the
   pulls of every generator, one for the versions published and yanked per
@@ -624,7 +624,7 @@ remembered in the browser's `localStorage`.
   lowercase letters, digits and separators gets no link.
 
   - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_recipe_at_main`, `Security.test_not_scanned`, `View.test_security_grade`, `View.test_security_of_the_shown_version`, `Security.test_upstream_images`, `View.test_image_registry_pages`)
-  - Since: #417; the note on the upstream images: this change
+  - Since: #417; the note on the upstream images: #540
 
 - CAT-39a: The images of a version MUST be the references
   `<repository>:<tag>@sha256:<digest>` in its tree outside `tests/` and
@@ -2075,7 +2075,7 @@ Related: CAT-15, CAT-30, CON-2.
     already on the host and Python, Kapitan and the Uptime Kuma image
     downloaded. `http://localhost:3001` showed "Create your admin account";
     the port-forward ran in the background for that check.
-  - Since: this change
+  - Since: #540
 
 - CAT-40a: The site navigation MUST link the quickstart as its first
   entry, and every recipe page MUST link it under "Fetching it".
@@ -2085,7 +2085,7 @@ Related: CAT-15, CAT-30, CON-2.
   a running app, and the workflow is the step after.
 
   - Test: `catalog/test_catalog.py` (`Site.test_quickstart_linked`)
-  - Since: this change
+  - Since: #540
 
 - CAT-40b: The quickstart MUST have the sections "Coming from Helm?" and
   "Coming from Kustomize?". The first MUST link the posts
@@ -2097,7 +2097,7 @@ Related: CAT-15, CAT-30, CON-2.
   and link the posts that compare the tools on real charts.
 
   - Test: `catalog/test_catalog.py` (`Site.test_quickstart_linked`)
-  - Since: this change
+  - Since: #540
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
@@ -2294,7 +2294,7 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py` (`Site.test_conversion_events`,
     `Quickstart.test_commands`)
-  - Since: this change
+  - Since: #540
 
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,
