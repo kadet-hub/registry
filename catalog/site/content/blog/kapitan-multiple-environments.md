@@ -86,6 +86,12 @@ parameters:
           memory: 256Mi
       env:
         BASE_URL: https://${hostname}/
+      # Not in the recipe. Ready once the HTTP server runs, after the migrations.
+      healthcheck:
+        readiness:
+          type: http
+          port: http
+          path: /healthcheck
     miniflux-db:
       volume_claims:
         miniflux-db:
@@ -98,7 +104,8 @@ name, so each environment gets its own random password on the first
 compile. `BASE_URL` and the storage class are built by
 [interpolation](/glossary/#interpolation) from facts that the env and
 cluster classes set. Those classes do not need to know where miniflux
-reads them. `inventory/classes/env/stage.yml`:
+reads them. The readiness probe is not in the recipe, and the
+[deploy](#deploy) shows why it is needed. `inventory/classes/env/stage.yml`:
 
 ```yaml
 parameters:
@@ -252,18 +259,19 @@ API endpoint from the page `/integrations`, which miniflux builds from
 `BASE_URL`.
 
 At the end `check` lists how often each miniflux pod restarted. In the
-CI run quoted here, one pod of stage restarted twice:
+CI run quoted here, one pod of stage restarted once:
 
 ```console
-  multienv-a miniflux-dev/miniflux-5445c564dc-g7k26: restart count 0
-  multienv-a miniflux/miniflux-8cb668c5-2zmdl: restart count 0
-  multienv-a miniflux/miniflux-8cb668c5-8257z: restart count 2
-  multienv-b miniflux/miniflux-7d44975b79-4jbfr: restart count 0
-  multienv-b miniflux/miniflux-7d44975b79-57j9v: restart count 0
-  multienv-b miniflux/miniflux-7d44975b79-hvpp5: restart count 0
+  multienv-a miniflux-dev/miniflux-556ccb568f-nt2w2: restart count 0
+  multienv-a miniflux/miniflux-55f7b95f65-8nhzr: restart count 0
+  multienv-a miniflux/miniflux-55f7b95f65-jwqx4: restart count 1
+  multienv-b miniflux/miniflux-bc86d6b65-2dgr4: restart count 0
+  multienv-b miniflux/miniflux-bc86d6b65-xdcn2: restart count 0
+  multienv-b miniflux/miniflux-bc86d6b65-z5jms: restart count 0
 ```
 
-In three local runs, one pod of stage and one of prod restarted once.
+In three local runs and three CI runs, at most one pod of stage and one
+of prod restarted, at most twice.
 
 miniflux 2.3.4 runs its database migrations without a lock. When two or
 three replicas start on an empty database, one of them can fail with an
@@ -272,6 +280,13 @@ already exists`. It exits, and the kubelet starts it again on the
 migrated schema, sometimes after a second collision. dev runs one
 replica, so it cannot race. Stage with two replicas runs into the race
 that prod's three can, which a stage with one replica would not show.
+
+Without a readiness probe, a pod counts as ready as soon as its container
+runs. In one CI run before `common` had the probe, `kubectl rollout
+status` returned while a pod was still migrating, that pod then lost the
+race, and `check` found 2 of prod's 3 replicas ready. miniflux answers
+`/healthcheck` once its HTTP server runs, which is after the migrations.
+With the probe on it, `rollout status` waits through the restarts.
 
 ## Helm values files and Kustomize overlays {#helm-kustomize}
 
