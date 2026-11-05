@@ -1931,10 +1931,11 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         self.assertNotRegex(page, r"<script(?![^>]*\bsrc=)(?![^>]*application/ld\+json)[^>]*>")
         self.assertNotIn(' style="', page)
 
-    def test_backends_and_limits(self):  # PG-4, PG-11
+    def test_backends_and_limits(self):  # PG-4, PG-11, PG-22
         page = self.page("playground")
         self.assertIn('<select id="pg-backend"><option value="omegaconf">omegaconf</option><option value="reclass">reclass</option></select>', page)
         self.assertIn("Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs", page)
+        self.assertIn("The Terraform example writes Terraform JSON; terraform init, plan and apply do not run here.", page)  # PG-22
         self.assertIn("helm template output, rendered when this site was built", page)
         self.assertIn("Not compiled in your browser and not affected by your edits", page)
 
