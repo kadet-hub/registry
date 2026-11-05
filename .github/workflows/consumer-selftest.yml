@@ -12,6 +12,7 @@ on:
       - tests/consumer-selftest
       - tests/consumers/**
       - .github/actions/setup-gvisor/**
+      - .github/actions/compile-diff/action.yml
       - .github/workflows/consumer-selftest.yml
   workflow_dispatch:
 
