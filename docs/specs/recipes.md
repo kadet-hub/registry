@@ -271,10 +271,11 @@ the rules it is judged by.
   calls `lint.lint_files` of the pinned release in the sandbox image, the
   function behind the file rules. The `kapitan inventory` proofs of
   `recipe.yaml` (RCP-262, RCP-263) are not file rules and do not run in
-  the gate. The include and `Requires` rules read the other recipes. They are the directories REC-4's fetch writes from
-  `source.sha`, the trees REC-16 looks up among the published versions.
+  the gate. The include and `Requires` rules read the other recipes. They
+  are the directories REC-4's fetch writes from `source.sha`, the trees
+  REC-16 looks up among the published versions.
 
-  - Test: workflow job `gate-selftest` (`fail-recipe-oc-env`, `fail-recipe-include`); `gate/test_check_recipe.py` (`Recipe.test_includes`)
+  - Test: workflow job `gate-selftest` (`fail-recipe-oc-env`, `fail-recipe-include`, `fail-recipe-no-recipe-yaml`); `gate/test_check_recipe.py` (`Recipe.test_includes`)
   - Since: #382; the included recipe resolved (REC-16): #390; RCP-260 and RCP-261: #567
 
 - REC-6: Every `oci` dependency of a recipe and of each recipe it
