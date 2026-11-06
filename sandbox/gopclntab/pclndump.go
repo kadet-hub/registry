@@ -94,16 +94,23 @@ func read(path string) (dump, error) {
 	}
 
 	// pcHeader since Go 1.20 (magic 0xfffffff1): ptrSize at byte 7, then
-	// nfunc, nfiles, textStart, funcnameOffset and cuOffset as ptrSize words.
+	// nfunc, nfiles, textStart, funcnameOffset and cuOffset as ptrSize
+	// words, so on 64-bit the name table runs from the word at 32 to the one at 40.
+	if len(data) < 48 {
+		return dump{}, fmt.Errorf("pclntab is %d bytes, shorter than its header", len(data))
+	}
 	if magic := binary.LittleEndian.Uint32(data); magic != 0xfffffff1 {
 		return dump{}, fmt.Errorf("pclntab magic %#x is not the Go 1.20+ layout", magic)
 	}
 	if data[7] != 8 {
 		return dump{}, fmt.Errorf("pointer size %d, only 64-bit binaries are read", data[7])
 	}
-	word := func(i int) int { return int(binary.LittleEndian.Uint64(data[8+i*8:])) }
+	start, end := binary.LittleEndian.Uint64(data[32:]), binary.LittleEndian.Uint64(data[40:])
+	if start > end || end > uint64(len(data)) {
+		return dump{}, fmt.Errorf("function name table %#x..%#x lies outside the %d byte pclntab", start, end, len(data))
+	}
 	seen := map[string]bool{}
-	for _, b := range bytes.Split(data[word(3):word(4)], []byte{0}) {
+	for _, b := range bytes.Split(data[start:end], []byte{0}) {
 		if len(b) > 0 && !seen[string(b)] {
 			seen[string(b)] = true
 			d.Funcnames = append(d.Funcnames, string(b))
