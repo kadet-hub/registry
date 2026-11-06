@@ -302,6 +302,7 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .guide-list li { padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .guide-list a { font-weight: 700; font-size: 1.1rem; }
 .guide-list p { margin: .35rem 0 0; color: var(--text-muted); }
+.guide-list p a { font-weight: inherit; font-size: inherit; }
 .prose table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: .9rem; }
 .prose th, .prose td { border: 1px solid var(--border); padding: .5rem .6rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 /* CAT-30: the compatibility table takes the page width; below 60rem each row is a block, every value after its column name. */
@@ -349,3 +350,35 @@ details.version:target { border-color: var(--accent); }
   .filters[data-tags="closed"] .tag-filter { display: none; }
   .actions .button { flex: 1 1 auto; justify-content: center; }
 }
+
+/* Playground (PG-4) */
+.playground .lead p { margin: 0; }
+.pg-bar { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem 1rem; margin: 1rem 0 .5rem; }
+.pg-bar label, .pg-editor-label { display: grid; gap: .2rem; font-size: .875rem; color: var(--text-muted); }
+.pg-bar select { min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; }
+.pg-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; }
+@media (max-width: 60rem) { .pg-grid { grid-template-columns: minmax(0, 1fr); } }
+.pg-files { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .5rem; }
+.pg-file { padding: .25rem .6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: .8125rem var(--mono); cursor: pointer; }
+.pg-file[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.pg-editor { width: 100%; min-height: 28rem; margin-top: .25rem; padding: .9rem 1rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: .875rem/1.5 var(--mono); tab-size: 2; resize: vertical; }
+.pg-note { font-size: .875rem; color: var(--text-muted); }
+.pg-h { font-size: 1rem; margin: 0 0 .5rem; }
+.pg-outputs details { margin-bottom: .5rem; }
+.pg-outputs summary { cursor: pointer; font: .875rem var(--mono); }
+.pg-outputs pre, .pg-log, #pg-helm-output { max-height: 32rem; overflow-y: auto; }
+.pg-log { color: var(--text-muted); }
+.pg-prov { margin-top: 1.5rem; }
+.pg-prov h3.pg-h { font-size: .9375rem; margin-top: 1rem; }
+.pg-bar input[type="search"] { min-height: 44px; width: min(24rem, 100%); padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: .875rem var(--mono); }
+.pg-bar label:has(input) { flex: 1 1 16rem; }
+.pg-classes, .pg-chain { margin: .25rem 0; padding-left: 1.75rem; }
+.pg-classes li, .pg-chain li { margin: .2rem 0; overflow-wrap: anywhere; }
+.pg-params details { border-top: 1px solid var(--border); padding: .4rem 0; overflow-wrap: anywhere; }
+.pg-params summary { cursor: pointer; }
+.pg-path { font-weight: 600; }
+.pg-src { color: var(--accent); font-weight: 600; }
+.pg-chain li { color: var(--text-muted); }
+.pg-chain li.pg-win { color: var(--text); }
+.pg-tag { display: inline-block; padding: 0 .4rem; border-radius: 6px; border: 1px solid var(--border-strong); font-size: .75rem; }
+.pg-win .pg-tag { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-strong); }

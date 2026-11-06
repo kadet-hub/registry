@@ -1,6 +1,8 @@
 import hashlib
 import json
+import glob
 import os
+import posixpath
 import re
 import shlex
 import shutil
@@ -17,7 +19,7 @@ from html import unescape as _unescape
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEO_CHECK = os.path.join(HERE, "seo_check.py")
 sys.path.insert(0, HERE)
-from view import README_MAX, grade, readme, releases, schema_kinds, schema_sources, security, view
+from view import README_MAX, grade, readme, registry_page, releases, schema_kinds, schema_sources, security, view
 
 OWNER = "kadet-hub"
 
@@ -64,6 +66,9 @@ WANTED = [{"number": 7, "title": "[request] <script>alert(5)</script>\x1b[31m\u2
           {"number": 9, "title": "[request] loki", "up": 5, "created": "2026-10-05T09:00:00Z", "updated": "2026-10-06T10:00:00Z"},
           {"number": 4, "title": "[request] keycloak", "up": 2, "created": "2026-10-01T09:00:00Z", "updated": "2026-10-01T09:00:00Z"},
           {"number": "8", "title": "not a number", "up": 1, "created": "2026-10-01T09:00:00Z", "updated": "2026-10-01T09:00:00Z"}]
+# CAT-41: open recipe requests of kadet-hub/recipes, in the same form.
+WANTED_RECIPES = [{"number": 3, "title": "[request] Immich <b>x</b>", "up": 1, "created": "2026-11-01T09:00:00Z", "updated": "2026-11-02T10:00:00Z"},
+                  {"number": 5, "title": "[request] Paperless-ngx", "up": 4, "created": "2026-11-03T09:00:00Z", "updated": "2026-11-03T09:00:00Z"}]
 
 
 
@@ -369,7 +374,7 @@ NEW_RECIPES = tuple(
     (name, {k.replace(base, name): v.replace(base, name) for k, v in files.items()})
     for base, files, names in (
         ("cert-manager", CHART_RECIPE_FILES, ("authentik", "blackbox-exporter", "gitea", "immich", "jellyfin", "n8n", "netbox",
-                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress")),
+                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress", "forgejo", "memcached")),
         ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden", "umami")))
     for name in names)
 
@@ -443,7 +448,7 @@ def recipe_layers(root, layers=LAYERS):
 
 
 def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, pages=None, diffs=None, wanted=None, gate=None, recipes=None, capture=False, root=HERE,
-          security=None):
+          security=None, wanted_recipes=None, playground=None):
     path = os.path.join(tmp, "index.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(index, f)
@@ -453,11 +458,14 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
                CATALOG_DISCUSSIONS=discussions or os.path.join(tmp, "none.json"),
                CATALOG_PAGES=pages or os.path.join(tmp, "none"), CATALOG_DIFFS=diffs or os.path.join(tmp, "none"),
                CATALOG_WANTED=wanted or os.path.join(tmp, "none.json"), CATALOG_GATE=gate or os.path.join(tmp, "none.json"),
-               CATALOG_SECURITY=security or os.path.join(tmp, "none.json"))
+               CATALOG_SECURITY=security or os.path.join(tmp, "none.json"), CATALOG_WANTED_RECIPES=wanted_recipes or os.path.join(tmp, "none.json"))
     if recipes is None:
         recipes = os.path.join(tmp, "recipes")
         recipe_classes(os.path.join(recipes, "inventory", "classes"))
     env["CATALOG_RECIPES"] = recipes
+    env.pop("CATALOG_PLAYGROUND", None)
+    if playground:
+        env["CATALOG_PLAYGROUND"] = playground
     subprocess.run([os.path.join(root, "build"), path, out], env=env, check=True, capture_output=capture, text=capture)
     return out
 
@@ -495,7 +503,11 @@ class Site(unittest.TestCase):
         gate = os.path.join(cls.tmp.name, "gate.json")
         with open(gate, "w", encoding="utf-8") as f:
             json.dump(GATE, f)
-        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages, os.path.dirname(diffs), wanted, gate)
+        wanted_recipes = os.path.join(cls.tmp.name, "wanted-recipes.json")
+        with open(wanted_recipes, "w", encoding="utf-8") as f:
+            json.dump(WANTED_RECIPES, f)
+        cls.out = build(SITE_INDEX, cls.tmp.name, arts, os.path.dirname(sboms), rekor, discussions, pages, os.path.dirname(diffs), wanted, gate,
+                        wanted_recipes=wanted_recipes)
 
     @classmethod
     def tearDownClass(cls):
@@ -610,6 +622,54 @@ class Site(unittest.TestCase):
         self.assertIn(f"https://github.com/{OWNER}/registry/issues/new?template=generator-request.yml", self.page())
         for form in ("generator-report", "generator-request"):
             self.assertTrue(os.path.isfile(os.path.join(HERE, "..", ".github", "ISSUE_TEMPLATE", f"{form}.yml")))
+
+    def test_quickstart_linked(self):  # CAT-40, CAT-40a, CAT-40b
+        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.S).group(1)
+        self.assertRegex(nav, r'^\s*<a href="\./quickstart/">Quickstart</a>\s*<a href="[^"]*/docs/consumers\.md">Use</a>')
+        recipes = glob.glob(os.path.join(self.out, "recipes", "*", "index.html"))
+        self.assertGreater(len(recipes), 30)
+        for path in recipes:
+            with open(path, encoding="utf-8") as f:
+                self.assertIn('<h2>Fetching it</h2>\n<p>The <a href="../../quickstart/">quickstart</a>', f.read(), path)
+        page = self.page("quickstart")
+        # Not listed in this index: no steps, the recipe page instead.
+        self.assertIn('<p class="warning">The uptime-kuma recipe has no version this page can pin right now.', page)
+        self.assertNotIn("<pre", page)
+
+        def links(heading):
+            section = page.split(f">{heading}</h2>", 1)[1].split("<h2", 1)[0]
+            return [posixpath.normpath(posixpath.join("/quickstart/", h)) for h in re.findall(r'href="([^"#]+)"', section)]
+        kustomize = sorted(f"/blog/{os.path.basename(p)[:-3]}" for p in glob.glob(os.path.join(HERE, "site", "content", "blog", "kustomize-*.md")))
+        self.assertEqual(len(kustomize), 3)
+        for heading, posts in (("Coming from Helm?", ["/blog/helm-chart-vs-kapitan-inventory", "/blog/same-app", "/guides/bitnami-chart-alternatives"]),
+                               ("Coming from Kustomize?", ["/blog/same-app", *kustomize])):
+            for post in posts:
+                self.assertIn(post, links(heading))
+                self.assertTrue(os.path.isfile(os.path.join(self.out, post.strip("/"), "index.html")), post)
+
+    def test_stacks_linked(self):  # CAT-47
+        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.S).group(1)
+        self.assertRegex(nav, r'<a href="\./recipes/">Recipes</a>\s*<a href="\./stacks/">Stacks</a>')
+        with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
+            using = f.read().split("\n## Using generators\n", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("\n- [Stacks](https://kadet-hub.org/stacks/): ", using)
+
+    def test_conversion_events(self):  # CAT-42
+        recipe = self.page("recipes", "miniflux")  # from main: the git fetch inventory
+        self.assertIn('data-copy="fetch" aria-label="Copy fetch inventory" data-goatcounter-click="copy-fetch-inventory/recipes/miniflux" '
+                      'data-goatcounter-title="Copy fetch inventory" hidden>', recipe)
+        self.assertRegex(recipe, r'<a href="https://github\.com/kadet-hub/recipes/tree/[0-9a-f]{40}/miniflux" '
+                                 r'data-goatcounter-click="source-repo/recipes/miniflux">kadet-hub/recipes</a>')
+        generator = self.page("generators", "demo")
+        verify = re.findall(r'data-copy="(verify-\d+)" aria-label="Copy verify command for [^"]+" data-goatcounter-click="copy-verify/generators/demo" '
+                            r'data-goatcounter-title="Copy verify command for [^"]+"', generator)
+        self.assertEqual(verify, re.findall(r'<pre id="(verify-\d+)">', generator))
+        self.assertIn('<a href="https://github.com/example/demo" data-goatcounter-click="source-repo/generators/demo">', generator)
+        self.assertNotIn("data-goatcounter-click", re.sub(r'data-copy="(fetch|verify-\d+)"[^>]*>|<a href="[^"]*" data-goatcounter-click="source-repo/[^"]*">', "",
+                                                            recipe + generator))  # nothing else
+        self.assertIn("is counted as an event", self.page("privacy"))
+        with open(os.path.join(HERE, "site", "static", "count.js"), encoding="utf-8") as f:
+            self.assertIn('document.querySelectorAll("*[data-goatcounter-click]")', f.read())  # bound on load
 
     def test_tags_page_and_glossary(self):
         with open(os.path.join(HERE, "..", "policy", "tags.yaml"), encoding="utf-8") as f:
@@ -735,7 +795,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 34)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 36)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -801,6 +861,13 @@ class Site(unittest.TestCase):
         for html in self.pages() + [page]:
             self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*compatibility/">Compatibility</a>.*</nav>')
             self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*recipes/">Recipes</a>.*</nav>')  # CAT-37
+            self.assertRegex(html, r'(?s)<nav id="site-nav">.*<a href="[./]*playground/">Playground</a>.*</nav>')  # PG-4
+
+    def test_playground_without_its_files(self):  # PG-13
+        page = self.page("playground")
+        self.assertIn("The playground is not part of this build of the site.", page)
+        self.assertNotIn("playground.js", page)
+        self.assertNotIn('id="pg-start"', page)
 
     def test_compatibility_facts_are_the_same_on_page_details_and_markdown(self):  # CAT-30, CAT-28
         def text(h):
@@ -958,7 +1025,7 @@ class Site(unittest.TestCase):
         self.assertIn("<td><code>cert-manager:leaderelection</code></td>", page)
         self.assertNotIn("alert(8)</script>", page)  # raw HTML is dropped
         self.assertNotIn("Not tested.", page)
-        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{CHART_RECIPE_SHA}/cert-manager">kadet-hub/recipes</a>', page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{CHART_RECIPE_SHA}/cert-manager" data-goatcounter-click="source-repo/recipes/cert-manager">kadet-hub/recipes</a>', page)
         self.assertNotIn("Bitnami", page.split("<main")[1])
         md = self.markdown("recipes", "cert-manager")
         self.assertTrue(md.startswith("# cert-manager on Kubernetes without Helm, with Kapitan\n\n> The controller and the webhook, rendered by the kadet-hub `kubernetes` generator."))
@@ -1402,24 +1469,37 @@ class Site(unittest.TestCase):
                       '<time datetime="2026-10-05T09:00:00Z">2026-10-05</time>', page)
         for gone in ("body text", "not a number", "<script>alert(5)", "\u202e", "\x1b"):
             self.assertNotIn(gone, page)
+        # CAT-41: the recipe requests of kadet-hub/recipes in their own section, after the generators.
+        self.assertLess(page.index('<h2 id="registry">Generators</h2>'), page.index('<h2 id="recipes">Recipes</h2>'))
+        recipes = re.findall(rf'<li><a href="https://github.com/{OWNER}/recipes/issues/(\d+)">([^<]*)</a>', page)
+        self.assertEqual(recipes, [("5", "Paperless-ngx"), ("3", "Immich &lt;b&gt;x&lt;/b&gt;")])
+        self.assertLess(page.index('<h2 id="recipes">'), page.index(f"{OWNER}/recipes/issues/5"))
+        self.assertRegex(page, rf'<a href="https://github.com/{OWNER}/recipes/issues/new\?template=recipe-request.yml"[^>]*>recipe request form</a>')
         self.assertIn('<a class="button" href="https://github.com/kadet-hub/registry/issues/new?template=generator-request.yml">Request a generator</a>'
                       '<a class="button" href="./wanted/">Wanted generators</a>', self.page())
 
     def test_wanted_page_without_requests(self):  # CAT-31
         texts = []
-        for wanted in ([], None):
+        for wanted, wanted_recipes in (([], []), (None, None), ([], None)):
             with tempfile.TemporaryDirectory() as tmp:
-                path = None
-                if wanted is not None:
-                    path = os.path.join(tmp, "wanted.json")
-                    with open(path, "w", encoding="utf-8") as f:
-                        json.dump(wanted, f)
-                with open(os.path.join(build(INDEX, tmp, wanted=path), "wanted", "index.html"), encoding="utf-8") as f:
+                paths = []
+                for name, data in (("wanted.json", wanted), ("wanted-recipes.json", wanted_recipes)):
+                    paths.append(None if data is None else os.path.join(tmp, name))
+                    if data is not None:
+                        with open(paths[-1], "w", encoding="utf-8") as f:
+                            json.dump(data, f)
+                with open(os.path.join(build(INDEX, tmp, wanted=paths[0], wanted_recipes=paths[1]), "wanted", "index.html"), encoding="utf-8") as f:
                     texts.append(f.read())
-        empty, unread = texts
+        empty, unread, mixed = texts
         self.assertIn("No generator request is open.", empty)
         self.assertIn(f'href="https://github.com/{OWNER}/registry/issues/new?template=generator-request.yml"', empty)
-        self.assertIn("The open requests could not be read when this page was built.", unread)
+        self.assertIn("No recipe request is open.", empty)  # CAT-41
+        self.assertIn(f'href="https://github.com/{OWNER}/recipes/issues/new?template=recipe-request.yml">Request a recipe</a>', empty)
+        self.assertIn("The open generator requests could not be read when this page was built.", unread)
+        self.assertIn("The open recipe requests could not be read when this page was built.", unread)
+        self.assertIn(f'href="https://github.com/{OWNER}/recipes/issues?q=is%3Aissue+is%3Aopen+label%3Arecipe-request"', unread)
+        self.assertIn("No generator request is open.", mixed)  # one list unread leaves the other
+        self.assertIn("The open recipe requests could not be read", mixed)
         for page in texts:
             self.assertNotIn("<ol", page)
 
@@ -1806,6 +1886,125 @@ def svg_findings(text):
     return found
 
 
+class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
+    """With PLAYGROUND_BUILD, a directory build.py wrote (static/ and playground.json), the
+    page also runs in Chrome (browser.mjs, PG-3, PG-7 to PG-11); without it, a stand-in."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.real = os.environ.get("PLAYGROUND_BUILD")
+        pg = cls.real or os.path.join(cls.tmp.name, "playground")
+        if not cls.real:
+            os.makedirs(os.path.join(pg, "static", "pyodide"))
+            with open(os.path.join(pg, "playground.json"), "w", encoding="utf-8") as f:
+                json.dump({"pyodide": "314.0.7", "kapitan": "0.36.3", "download": 9_876_543, "size": 20_000_000,
+                           "examples": [{"name": "basics", "title": "Inventory basics"}]}, f)
+        cls.out = build(SITE_INDEX, cls.tmp.name, playground=pg)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_start_button_names_the_download(self):  # PG-9
+        page = self.page("playground")
+        self.assertRegex(page, r'<button type="button" id="pg-start" class="button primary" data-size="\d+\.\d MB">Start the playground</button>')
+        if not self.real:
+            self.assertIn("Starting downloads about 9.9 MB from this site: Pyodide 314.0.7 and Kapitan 0.36.3", page)
+
+    def test_only_its_own_script_before_start(self):  # PG-9: the worker and Pyodide load after the click
+        page = self.page("playground")
+        scripts = re.findall(r'<script[^>]*src="([^"]+)"', page)
+        self.assertIn("../playground/playground.js", scripts)
+        self.assertEqual([s for s in scripts if "playground" in s or "pyodide" in s], ["../playground/playground.js"])
+        self.assertIn('<script type="module" src="../playground/playground.js"></script>', page)
+
+    def test_csp_is_the_home_page_csp(self):  # PG-7
+        csp = re.compile(r'Content-Security-Policy" content="([^"]*)"')
+        self.assertEqual(csp.search(self.page("playground")).group(1), csp.search(self.page()).group(1))
+
+    def test_no_inline_script_or_style(self):  # PG-7, CAT-3
+        page = self.page("playground")
+        self.assertNotRegex(page, r"<script(?![^>]*\bsrc=)(?![^>]*application/ld\+json)[^>]*>")
+        self.assertNotIn(' style="', page)
+
+    def test_backends_and_limits(self):  # PG-4, PG-11, PG-22
+        page = self.page("playground")
+        self.assertIn('<select id="pg-backend"><option value="omegaconf">omegaconf</option><option value="reclass">reclass</option></select>', page)
+        self.assertIn("Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs", page)
+        self.assertIn("The Terraform example writes Terraform JSON; terraform init, plan and apply do not run here.", page)  # PG-22
+        self.assertIn("helm template output, rendered when this site was built", page)
+        self.assertIn("Not compiled in your browser and not affected by your edits", page)
+
+    def test_build_takes_the_latest_listed_version_and_the_gate_hashes(self):  # PG-1, PG-5
+        sys.path.insert(0, os.path.join(HERE, "playground"))
+        try:
+            import build as pgbuild
+        finally:
+            sys.path.pop(0)
+        versions = {"1.2.0": {"digest": "a"}, "1.10.0": {"digest": "b", "yanked": "broken"}, "1.9.0": {"digest": "c"}}
+        self.assertEqual(pgbuild.latest(versions), ("1.9.0", {"digest": "c"}))
+        self.assertEqual(pgbuild.latest({"1.0.0": {"yanked": "x"}}), (None, None))
+        version, hashes = pgbuild.gate_pins()["kapitan"]
+        with open(os.path.join(HERE, "..", "sandbox", "requirements.in"), encoding="utf-8") as f:
+            self.assertIn(f"=={version}", f.read())
+        self.assertTrue(hashes and all(re.fullmatch(r"[0-9a-f]{64}", h) for h in hashes))
+
+    def test_runs_in_chrome(self):  # PG-3, PG-7 to PG-11
+        if not self.real:
+            self.skipTest("PLAYGROUND_BUILD not set")
+        subprocess.run(["node", os.path.join(HERE, "playground", "browser.mjs"), self.out], check=True)
+
+
+class PlaygroundReport(unittest.TestCase):  # PG-14, AC-43
+    TITLE = "Playground differs from the gate image"
+    DIFF = "basics (omegaconf): differs from the Pyodide output\nkubernetes (reclass): identical, 4 files\n"
+
+    def report(self, issues, summary):
+        """Runs report with a stand-in gh that answers `issue list` with issues; returns its calls and the body."""
+        with tempfile.TemporaryDirectory() as tmp:
+            log, body = os.path.join(tmp, "calls"), os.path.join(tmp, "body")
+            with open(os.path.join(tmp, "gh"), "w", encoding="utf-8") as f:
+                f.write("#!/usr/bin/env bash\n"
+                        f'printf "%s\\n" "$*" >>{shlex.quote(log)}\n'
+                        f"[[ $2 == list ]] && printf %s {shlex.quote(json.dumps(issues))}\n"
+                        f'while (($#)); do [[ $1 == --body-file ]] && cp -- "$2" {shlex.quote(body)}; shift; done\n'
+                        "exit 0\n")
+            os.chmod(os.path.join(tmp, "gh"), 0o755)
+            summary_file = os.path.join(tmp, "summary.txt")
+            with open(summary_file, "w", encoding="utf-8") as f:
+                f.write(summary)
+            env = dict(os.environ, PATH=f"{tmp}{os.pathsep}{os.environ['PATH']}", REPO=f"{OWNER}/registry", GH_TOKEN="x")
+            subprocess.run([os.path.join(HERE, "playground", "report"), summary_file, "https://github.com/run/1"],
+                           env=env, check=True, capture_output=True)
+            with open(log, encoding="utf-8") as f:
+                calls = f.read().splitlines()
+            with open(body, encoding="utf-8") as f:
+                return calls, f.read()
+
+    def test_creates_the_issue_when_none_with_its_title_is_open(self):
+        calls, body = self.report([{"number": 3, "title": f"{self.TITLE} (old)"}], self.DIFF)
+        self.assertEqual(calls[-1], f"issue create -R {OWNER}/registry --title {self.TITLE} --body-file " + calls[-1].split()[-1])
+        self.assertIn("https://github.com/run/1", body)
+        self.assertIn("differs from the gate image's", body)
+        self.assertIn("basics (omegaconf): differs from the Pyodide output", body)
+
+    def test_updates_the_open_issue_with_its_title(self):
+        calls, body = self.report([{"number": 3, "title": f"{self.TITLE} (old)"}, {"number": 7, "title": self.TITLE}], self.DIFF)
+        self.assertTrue(calls[-1].startswith(f"issue edit 7 -R {OWNER}/registry --body-file "), calls)
+        self.assertFalse(any(c.startswith("issue create") for c in calls))
+
+    def test_says_when_the_comparison_did_not_run_or_found_nothing(self):
+        _, body = self.report([], "")
+        self.assertIn("The comparison did not run", body)
+        _, body = self.report([], "basics (omegaconf): identical, 3 files\n")
+        self.assertIn("The comparison found no difference; a later step of the run failed", body)
+
+
 class Diagrams(unittest.TestCase):
     def test_diagram_svgs(self):  # CAT-35a
         names = sorted(f.removesuffix(".dot") for f in os.listdir(DIAGRAMS) if f.endswith(".dot"))
@@ -1981,7 +2180,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn("Derived from the chart {{&lt; nonexistent &gt;}}.", page)
         self.assertIn("{{% nonexistent %}}", page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/blob/{RECIPE_SHA}/cert-manager/tests/values.yaml">the values</a>', page)
-        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{RECIPE_SHA}/cert-manager">kadet-hub/recipes</a>', page)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{RECIPE_SHA}/cert-manager" data-goatcounter-click="source-repo/recipes/cert-manager">kadet-hub/recipes</a>', page)
         self.assertNotIn(CHART_RECIPE_SHA, page)
         self.assertNotIn("vendor", os.listdir(os.path.join(self.out, "recipes", "cert-manager")))
         md = self.page("recipes", "cert-manager", name="index.md")
@@ -2012,13 +2211,25 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn(f"\n```yaml\n{self.snippet(page, 'fetch')}\n```\n", md)
         self.assertIn(f"\n```sh\n{self.snippet(page, 'verify')}\n```\n", md)
         self.assertIn('\n```yaml\noutput_capabilities:\n  "compiled/<target>/*": [admission-webhook]\n```\n', md)
-        # An included recipe is pinned and verified at the version the record lists (REC-16, CON-4).
+        self.assertIn("pins the recipe by version", page)
+        self.assertNotIn('id="pull"', page)
+        self.assertIn("This verifies the attestation of the recipe:", page)
+        # The workflow adds an included recipe (CON-7); a local compile pulls it, and both verify it (REC-16, CON-6).
         page = self.page("recipes", "external-dns-powerdns")
         self.assertEqual(re.findall(r"source: (\S+)\n", self.snippet(page, "fetch") + "\n"),
-                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns:1.0.0@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns:1.0.0@sha256:{'5' * 64}"])
+                         [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns:1.0.0@sha256:{'4' * 64}"])
+        self.assertIn("<p>Version 1.0.0 includes powerdns 1.0.0. The consumer workflow adds the included recipes", page)
+        pull = ('tmp=$(mktemp -d)\n'
+                f'oras pull -o "$tmp" ghcr.io/{OWNER}/recipes/powerdns@sha256:{"5" * 64}\n'
+                'mkdir -p inventory/classes/recipes/powerdns\n'
+                'tar -xf "$tmp/powerdns.tar" -C inventory/classes/recipes/powerdns --no-same-owner')
+        self.assertEqual(self.snippet(page, "pull"), pull)
         self.assertEqual(re.findall(r"oci://(\S+)", self.snippet(page, "verify")),
                          [f"ghcr.io/{OWNER}/recipes/external-dns-powerdns@sha256:{'4' * 64}", f"ghcr.io/{OWNER}/recipes/powerdns@sha256:{'5' * 64}"])
-        self.assertIn("pins the recipe and the recipes it includes by version", page)
+        self.assertIn("This verifies the attestation of the recipe and of the recipes it includes:", page)
+        md = self.page("recipes", "external-dns-powerdns", name="index.md")
+        self.assertIn(f"\n```yaml\n{self.snippet(page, 'fetch')}\n```\n\nexternal-dns-powerdns 1.0.0 includes powerdns 1.0.0. ", md)
+        self.assertIn(f"\n```sh\n{pull}\n```\n", md)
         self.assertIn("<li>No <code>renders</code> result in the release run's record</li>", page)  # a scan record without it
         self.assertIn("<li>Output capabilities: none</li>", page)
         self.assertNotIn('id="policy"', page)
@@ -2154,6 +2365,193 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn("A recipe digest needs the same check against\nthe index's `recipes` (CON-5).", doc)
 
 
+# CAT-40: uptime-kuma listed, as in the release build.
+QUICKSTART_INDEX = {"serial": 5, "generators": {"kubernetes": {"1.7.0": record("d")}},
+                    "recipes": {"uptime-kuma": {"1.0.0": recipe_record("uptime-kuma", "8")}}}
+UPTIME_KUMA_FILES = dict(NEW_RECIPES)["uptime-kuma"]
+
+
+class Quickstart(unittest.TestCase):  # CAT-40
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.out = build(QUICKSTART_INDEX, cls.tmp.name, recipe_layers(os.path.join(cls.tmp.name, "artifacts"), {"uptime-kuma": UPTIME_KUMA_FILES}))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    @staticmethod
+    def snippets(page):
+        return [(i, _unescape(t)) for i, t in re.findall(r'<pre id="([^"]+)"><code>(.*?)</code></pre>', page, re.S)]
+
+    def test_commands(self):  # every command in order; the manual run on kind is redone when this list changes
+        page = self.page("quickstart")
+        recipe = dict(self.snippets(self.page("recipes", "uptime-kuma")))
+        digest = "sha256:" + "8" * 64
+        fetch = ("parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n"
+                 f"        source: ghcr.io/{OWNER}/recipes/uptime-kuma:1.0.0@{digest}\n        output_path: inventory/classes/recipes/uptime-kuma")
+        self.assertEqual(self.snippets(page), [
+            ("cluster", "kind create cluster --name quickstart-uptime-kuma"),
+            ("install", "uv tool install --python 3.13 --with omegaconf==2.4.0.dev4 --with oras 'kapitan[omegaconf,reclass-rs]==0.36.3'"),
+            ("project", "mkdir -p uptime-kuma/fetch/targets uptime-kuma/inventory/targets\ncd uptime-kuma\n"
+                        "cat > .kapitan <<'EOF'\nglobal:\n  inventory-backend: omegaconf\nEOF"),
+            ("fetch", f"cat > fetch/targets/recipes.yml <<'EOF'\n{fetch}\nEOF"),
+            ("target", f"cat > inventory/targets/uptime-kuma.yml <<'EOF'\n{recipe['include']}\nEOF"),
+            ("verify", f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/recipes/uptime-kuma@{digest} \\\n  --owner {OWNER} \\\n  --cert-identity {IDENTITY}"),
+            ("compile", "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"),
+            ("apply", "kubectl create namespace uptime-kuma\nkubectl apply -R -f compiled/uptime-kuma\n"
+                      "kubectl -n uptime-kuma rollout status statefulset/uptime-kuma --timeout=5m"),
+            ("open", "kubectl -n uptime-kuma port-forward service/uptime-kuma 3001:3001"),
+            ("cleanup", "kind delete cluster --name quickstart-uptime-kuma")])
+        # The recipe page's own snippets (CAT-37c, CAT-38), and the install command of docs/consumers.md with oras.
+        self.assertEqual((recipe["fetch"], recipe["verify"], recipe["commands"], recipe.get("pull")),
+                         (fetch, dict(self.snippets(page))["verify"], dict(self.snippets(page))["compile"],
+                          dict(self.snippets(page)).get("pull")))  # uptime-kuma includes no recipe (CON-7)
+        self.assertTrue(recipe["include"].startswith("classes:\n  - recipes.uptime-kuma\n"))
+        with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
+            install = re.search(r"```sh\n(uv tool install [^\n]*)\n```", f.read()).group(1)
+        self.assertEqual(install.replace(" 'kapitan", " --with oras 'kapitan"), dict(self.snippets(page))["install"])
+        self.assertIn(f'<a href="https://github.com/{OWNER}/registry/blob/main/docs/consumers.md#verifying-a-recipe-by-hand">', page)
+        # CAT-42 on the quickstart and on a listed recipe's verify command.
+        self.assertIn('data-copy="fetch" aria-label="Copy fetch inventory" data-goatcounter-click="copy-fetch-inventory/quickstart"', page)
+        self.assertIn('data-copy="verify" aria-label="Copy verify command" data-goatcounter-click="copy-verify/quickstart"', page)
+        self.assertIn('data-goatcounter-click="copy-verify/recipes/uptime-kuma"', self.page("recipes", "uptime-kuma"))
+
+    def test_without_a_usable_version(self):  # CAT-40: the latest version pins a yanked generator
+        index = dict(QUICKSTART_INDEX, generators={"kubernetes": {"1.7.0": record("d", yanked="renders a broken Service")}})
+        with tempfile.TemporaryDirectory() as tmp:
+            out = build(index, tmp, recipe_layers(os.path.join(tmp, "artifacts"), {"uptime-kuma": UPTIME_KUMA_FILES}))
+            with open(os.path.join(out, "quickstart", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        self.assertIn('<p class="warning">The uptime-kuma recipe has no version this page can pin right now. '
+                      'Its <a href="../recipes/uptime-kuma/">recipe page</a> says why.</p>', page)
+        self.assertNotIn("<pre", page)
+        self.assertIn(">Coming from Helm?</h2>", page)
+
+    def test_seo(self):  # CAT-11d over the new page
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+
+# CAT-45: fixture stack posts; stack-a is the newer. LISTED_INDEX lists the generator kubernetes, not demo.
+STACK_POSTS = {
+    "stack-a": 'title: "Stack A: cert-manager and Valkey on Kubernetes"\ndate: 2000-01-02\n'
+               'description: "The newer fixture stack: two recipes, a listed generator and one the fixture index does not list."\n'
+               "stack:\n  recipes: [cert-manager, valkey]\n  generators: [kubernetes, demo]\n  example: stack-a",
+    "stack-b": 'title: "Stack B: Valkey alone on Kubernetes with Kapitan"\ndate: 2000-01-01\n'
+               'description: "The older fixture stack: one recipe and no generators, with its folder in kadet-hub/examples."\n'
+               "stack:\n  recipes: [valkey]\n  example: stack-b",
+}
+
+
+def stack_posts():
+    """CAT-45: the committed blog posts with a stack field, by name."""
+    blog = os.path.join(HERE, "site", "content", "blog")
+    names = []
+    for f in sorted(os.listdir(blog)):
+        with open(os.path.join(blog, f), encoding="utf-8") as fh:
+            if "\nstack:\n" in fh.read().split("\n---\n", 1)[0]:
+                names.append(f[:-3])
+    return names
+
+
+def stack_build(tmp, posts, *args):
+    """CAT-45: Hugo over the site with LISTED_INDEX and the generator old; posts maps a post's name to its front matter, or None to remove it."""
+    site = os.path.join(tmp, "site")
+    shutil.copytree(os.path.join(HERE, "site"), site)
+    for name, front in posts.items():
+        path = os.path.join(site, "content", "blog", name + ".md")
+        if front is None:
+            os.remove(path)
+        else:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(f"---\n{front}\n---\n\nThe post.\n")
+    os.makedirs(os.path.join(site, "data"))
+    shutil.copy(os.path.join(HERE, "..", "policy", "tags.yaml"), os.path.join(site, "data", "tags.yaml"))
+    recipe_classes(os.path.join(site, "assets", "classes"))
+    index = dict(LISTED_INDEX, generators=dict(LISTED_INDEX["generators"], old=INDEX["generators"]["old"]))
+    with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
+        json.dump(view(index, OWNER, lambda _: None), f)
+    out = os.path.join(tmp, "out")
+    return out, subprocess.run(["hugo", "--logLevel", "error", "--source", site, "--destination", out, *args], capture_output=True, text=True)
+
+
+class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.out, built = stack_build(cls.tmp.name, {**dict.fromkeys(stack_posts()), **STACK_POSTS})  # the fixtures alone
+        if built.returncode:
+            raise AssertionError(built.stderr)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def page(self, *parts):
+        with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_stacks_page(self):  # CAT-45, CAT-46
+        page = self.page("stacks")
+        self.assertEqual(re.findall(r'<li><a href="\.\./blog/([^/]+)/">', page), ["stack-a", "stack-b"])  # newest first
+        self.assertIn('<li><a href="../blog/stack-a/">Stack A: cert-manager and Valkey on Kubernetes</a>'
+                      "<p>The newer fixture stack: two recipes, a listed generator and one the fixture index does not list.</p>\n"
+                      '<p>Recipes: <a href="../recipes/cert-manager/"><code>cert-manager</code></a>, <a href="../recipes/valkey/"><code>valkey</code></a></p>\n'
+                      '<p>Generators: <a href="../generators/kubernetes/"><code>kubernetes</code></a>, <code>demo</code></p>\n'  # demo: no page
+                      f'<p>Project: <a href="https://github.com/{OWNER}/examples/tree/main/stack-a">kadet-hub/examples/stack-a</a></p></li>', page)
+        self.assertNotIn("Generators:", page.split("blog/stack-b/", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:  # no stack post published
+            out, built = stack_build(tmp, dict.fromkeys(stack_posts()))
+            self.assertEqual(built.returncode, 0, built.stderr)
+            with open(os.path.join(out, "stacks", "index.html"), encoding="utf-8") as f:
+                self.assertIn('<p class="empty">No stack post is published yet.</p>', f.read())
+
+    def test_used_in_stacks(self):  # CAT-48
+        a = '<li><a href="../../blog/stack-a/">Stack A: cert-manager and Valkey on Kubernetes</a></li>'
+        b = '<li><a href="../../blog/stack-b/">Stack B: Valkey alone on Kubernetes with Kapitan</a></li>'
+        self.assertRegex(self.page("recipes", "valkey"), rf"<h2>Used in stacks</h2>\n<ul>{re.escape(a + b)}</ul>\s*<h2>Versions</h2>")
+        self.assertIn(f"<h2>Used in stacks</h2>\n<ul>{a}</ul>", self.page("recipes", "cert-manager"))
+        self.assertNotIn("Used in stacks", self.page("recipes", "mysql"))
+        page = self.page("generators", "kubernetes")
+        self.assertRegex(page, r'<li><a href="#stacks">Used in stacks</a></li>\s*<li><a href="#versions">Versions</a></li>')  # CAT-19
+        self.assertRegex(page, rf'(?s)<div class="generator-body">\s*<section class="stacks" aria-labelledby="stacks">\n'
+                               rf'<h2 id="stacks">Used in stacks</h2>\n<ul>{re.escape(a)}</ul>\n</section>\s*</div>')
+        self.assertNotIn("Used in stacks", self.page("generators", "old"))
+
+    def test_queued_stack_posts(self):  # CAT-49: every committed stack post, also before its date
+        with tempfile.TemporaryDirectory() as tmp:
+            out, built = stack_build(tmp, {}, "--buildFuture")
+            self.assertEqual(built.returncode, 0, built.stderr)
+            with open(os.path.join(out, "stacks", "index.html"), encoding="utf-8") as f:
+                page = f.read()
+        self.assertGreaterEqual(len(stack_posts()), 5)
+        self.assertEqual(sorted(re.findall(r'<li><a href="\.\./blog/([^/]+)/">', page)), stack_posts())
+        entries = {f[:-5] for f in os.listdir(os.path.join(HERE, "..", "generators"))}
+        for line in re.findall(r"<p>Generators: (.*?)</p>", page):
+            for name in re.findall(r"<code>([^<]+)</code>", line):
+                self.assertIn(name, entries)
+
+    def test_unknown_recipe_fails_the_build(self):  # CAT-49
+        front = STACK_POSTS["stack-b"]
+        for case, post, error in (("recipe", front.replace("[valkey]", "[valkey, no-such-recipe]"),
+                                   "blog/stack-b.md: stack names the recipe no-such-recipe, which has no page at /recipes/no-such-recipe/"),
+                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example")):
+            with self.subTest(case), tempfile.TemporaryDirectory() as tmp:
+                _, built = stack_build(tmp, {"stack-b": post})
+                self.assertNotEqual(built.returncode, 0)
+                self.assertIn(error, built.stderr)
+
+    def test_seo(self):  # CAT-11d over the new page and sections
+        result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+
 # CAT-39: the rescan's image report (SEC-19): graded, ungraded, unscanned, outdated and by-tag pages, and recipes at main.
 IMAGE = "registry.example/{}:1.0@sha256:" + "f" * 64
 MAIN_SHA = "2" * 40
@@ -2166,6 +2564,8 @@ SECURITY = {"scanned": "2026-10-29T04:31:07Z", "trivy": "0.76.1", "db": "2026-10
                       "generators/tagged": {"1.0.0": ["registry.example/kubelet:v1.37.1", "quay.io/strimzi/kafka:1.3.0-kafka"]},
                       "recipes/cert-manager": {"1.1.0": [IMAGE.format("unknown")], f"main@{MAIN_SHA}": [IMAGE.format("a")]},
                       "recipes/valkey": {f"main@{MAIN_SHA}": [IMAGE.format("b")]},
+                      "recipes/miniflux": {f"main@{MAIN_SHA}": ["postgres:18.6@sha256:" + "f" * 64, "ghcr.io/miniflux/miniflux:2.3.4@sha256:" + "f" * 64,
+                                                                IMAGE.format("clean")]},
                       "recipes/no-page": {f"main@{MAIN_SHA}": [IMAGE.format("b")]}},
             "images": {IMAGE.format("a"): {"digest": "sha256:" + "f" * 64, "vulnerabilities": [
                            {"id": "CVE-2026-3", "severity": "UNKNOWN", "package": "zlib", "installed": "1.3", "fixed": ""},
@@ -2175,6 +2575,8 @@ SECURITY = {"scanned": "2026-10-29T04:31:07Z", "trivy": "0.76.1", "db": "2026-10
                            {"id": "CVE-2026-1", "severity": "HIGH", "package": "openssl", "installed": "3.0.1", "fixed": "3.0.2"},
                            {"id": "GHSA-aaaa-bbbb-cccc", "severity": "MEDIUM", "package": "golang.org/x/net", "installed": "0.1.0", "fixed": "0.2.0"}]},
                        IMAGE.format("clean"): {"digest": "sha256:" + "f" * 64, "vulnerabilities": []},
+                       "postgres:18.6@sha256:" + "f" * 64: {"digest": "sha256:" + "f" * 64, "vulnerabilities": []},
+                       "ghcr.io/miniflux/miniflux:2.3.4@sha256:" + "f" * 64: {"digest": "sha256:" + "f" * 64, "vulnerabilities": []},
                        IMAGE.format("unknown"): {"digest": "sha256:" + "f" * 64,
                                                  "vulnerabilities": [{"id": "CVE-2026-4", "severity": "UNKNOWN", "package": "x", "installed": "1", "fixed": ""}]},
                        IMAGE.format("missing"): {"error": "MANIFEST_UNKNOWN: manifest\x1b[31m unknown", "missing": True},  # by digest: still a failure
@@ -2221,6 +2623,16 @@ class Security(unittest.TestCase):  # CAT-39 to CAT-39c
                       "MEDIUM 0, LOW 0, UNKNOWN 1. Scanned 2026-10-29 04:31 UTC. Full report: https://kadet-hub.org/security/recipes/cert-manager/\n",
                       self.page("recipes", "cert-manager", name="index.md"))  # CAT-37b
 
+    def test_upstream_images(self):  # CAT-39: the grade rates the images, each linked to its registry page where it has one
+        self.assertTrue(self.fact("recipes", "miniflux").endswith(
+            '<br>The grade rates the upstream images the recipe pins, not the recipe: <a href="https://hub.docker.com/_/postgres"><code>postgres</code></a>, '
+            '<a href="https://ghcr.io/miniflux/miniflux"><code>ghcr.io/miniflux/miniflux</code></a>, <code>registry.example/clean</code>.'))
+        self.assertIn("\n- The grade rates the upstream images the recipe pins, not the recipe: postgres (https://hub.docker.com/_/postgres), "
+                      "ghcr.io/miniflux/miniflux (https://ghcr.io/miniflux/miniflux), registry.example/clean\n",
+                      self.page("recipes", "miniflux", name="index.md"))  # CAT-37b
+        self.assertNotIn("upstream images", self.fact("recipes", "mysql"))  # not scanned: no grade, no note
+        self.assertNotIn("upstream images", self.page("generators", "demo"))
+
     def test_by_tag(self):  # CAT-39a: a reference by tag is scanned at its digest then; a tag no registry serves names no image
         self.assertRegex(self.fact("generators", "tagged"), r'^Grade <span class="grade grade-b">B</span> 1 finding, one per advisory and package, '
                          r"in the 1 image of version 1\.0\.0, 1 by tag, digest at scan time: CRITICAL 0, HIGH 0, MEDIUM 0, LOW 1, UNKNOWN 0\. ")
@@ -2231,7 +2643,8 @@ class Security(unittest.TestCase):  # CAT-39 to CAT-39c
     def test_recipe_at_main(self):  # CAT-39: a recipe page without a listed version reports main of kadet-hub/recipes
         self.assertRegex(self.fact("recipes", "valkey"), r'^grade <span class="grade grade-d">D</span> 2 findings, one per advisory and package, '
                          rf"in the 1 image of main at {MAIN_SHA[:12]}: CRITICAL 0, HIGH 1, MEDIUM 1, LOW 0, UNKNOWN 0\. Scanned 2026-10-29 04:31 UTC\. "
-                         r'<a href="[./]*security/recipes/valkey/">Full report</a>$')
+                         r'<a href="[./]*security/recipes/valkey/">Full report</a>'
+                         r"<br>The grade rates the upstream images the recipe pins, not the recipe: <code>registry\.example/b</code>\.$")
         self.assertIn(f"commit <code>{MAIN_SHA}</code>", self.page("security", "recipes", "valkey"))
         self.assertEqual(self.fact("recipes", "mysql"), "Not scanned: the image scan of 2026-10-29 did not cover main of kadet-hub/recipes.")
         self.assertFalse(os.path.exists(os.path.join(self.out, "security", "recipes", "no-page")))  # no recipe page to link it
@@ -2321,6 +2734,20 @@ class View(unittest.TestCase):
                                                      "images": [{"ref": "r", "tag": True, "digest": "", "error": "no result", "missing": False,
                                                                  "counts": None, "findings": []}]}})
         self.assertEqual((found["recipes"], found["main"]), ({}, {}))  # d is listed, e names no commit
+
+    def test_image_registry_pages(self):  # CAT-39: Docker Hub, ghcr.io and Quay; other registries and odd names get no link
+        digest = "@sha256:" + "a" * 64
+        for ref, expected in (
+                ("docker.io/louislam/uptime-kuma:2.5.9" + digest, ("docker.io/louislam/uptime-kuma", "https://hub.docker.com/r/louislam/uptime-kuma")),
+                ("miniflux/miniflux:2.3.4" + digest, ("miniflux/miniflux", "https://hub.docker.com/r/miniflux/miniflux")),
+                ("postgres:18.6" + digest, ("postgres", "https://hub.docker.com/_/postgres")),
+                ("docker.io/library/rabbitmq:4.3.6-management", ("docker.io/library/rabbitmq", "https://hub.docker.com/_/rabbitmq")),
+                ("ghcr.io/immich-app/immich-server:v3.3.5" + digest, ("ghcr.io/immich-app/immich-server", "https://ghcr.io/immich-app/immich-server")),
+                ("quay.io/strimzi/kafka:1.3.0-kafka", ("quay.io/strimzi/kafka", "https://quay.io/repository/strimzi/kafka")),
+                ("registry.k8s.io/kube-apiserver:v1.37.1", ("registry.k8s.io/kube-apiserver", None)),
+                ("localhost:5000/app:1", ("localhost:5000/app", None)),
+                ('ghcr.io/x/"><script>:1', ('ghcr.io/x/"><script>', None))):
+            self.assertEqual(registry_page(ref), expected, ref)
 
     def test_readme_limits(self):
         with tempfile.TemporaryDirectory() as tmp:

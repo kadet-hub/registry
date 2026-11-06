@@ -3,6 +3,7 @@
 {{ $page := . }}
 {{ range where site.Data.catalog.generators "name" .Params.generator }}
 {{ $name := .name }}{{ $shared := .stars_shared }}{{ $gen := . }}
+{{ $stacks := (where (where site.RegularPages "Section" "blog") "Params.stack.generators" "intersect" (slice .name)).ByDate.Reverse }}
 <article class="generator">
 <header class="generator-head">
   <span class="monogram large hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
@@ -14,7 +15,7 @@
       <div><dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</dd></div>
       <div><dt>License</dt><dd>{{ .license }}</dd></div>
       <div><dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
-      <div><dt>Source</dt><dd><a href="{{ .source_url }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} {{ with $shared }}repo stars, shared by {{ . }} generators{{ else }}stars{{ end }}{{ end }}</dd></div>
+      <div><dt>Source</dt><dd><a href="{{ .source_url }}" data-goatcounter-click="source-repo/generators/{{ .name }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} {{ with $shared }}repo stars, shared by {{ . }} generators{{ else }}stars{{ end }}{{ end }}</dd></div>
       {{ with .discussion }}<div><dt>Thumbs up</dt><dd><a href="{{ .url }}">👍 {{ .up }}</a> on GitHub Discussions</dd></div>{{ end }}
       <div><dt>Popularity</dt><dd><a href="{{ printf "/popularity/#%s" .name | relURL }}">{{ .score }}</a> · {{ with .pulls }}{{ . }} pulls{{ else }}pulls not read{{ end }}</dd></div>
       {{ $v := "" }}{{ with .latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "generators" "name" .name "version" $v) }}
@@ -45,6 +46,7 @@
   <summary><h2 id="toc">On this page</h2></summary>
   <ol>
     {{ with .readme }}<li><a href="#readme">README</a></li>{{ end }}
+    {{ with $stacks }}<li><a href="#stacks">Used in stacks</a></li>{{ end }}
     <li><a href="#versions">Versions</a></li>
   </ol>
 </details>
@@ -54,6 +56,12 @@
 {{ with .readme }}
 <section class="readme" id="readme" aria-label="README">
   {{ $page.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .) }}
+</section>
+{{ end }}
+{{ with $stacks }}{{/* CAT-48 */}}
+<section class="stacks" aria-labelledby="stacks">
+<h2 id="stacks">Used in stacks</h2>
+<ul>{{ range . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}</ul>
 </section>
 {{ end }}
 </div>

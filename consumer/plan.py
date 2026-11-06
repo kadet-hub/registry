@@ -1,4 +1,4 @@
-"""Check a consumer's dependencies against its policy and the index (CON-1, CON-2, CON-4, CON-5).
+"""Check a consumer's dependencies against its policy and the index (CON-1, CON-2, CON-4, CON-5, CON-7 to CON-9).
 
 Usage: plan.py --inventory FILE --policy FILE --owner OWNER [--fetch] [--index FILE] --out FILE
 
@@ -146,15 +146,17 @@ def dependencies(inventory, policy, owner, fetch=False):
 
 
 def check_index(index, policy, deps):
-    """CON-2 against an attested index, CON-5 and the included recipes of CON-4 for recipes.
-    Returns binaries, findings, notices."""
+    """CON-2 against an attested index, CON-5 for recipes, and CON-7 to CON-9: appends the recipes they include
+    to deps. Returns binaries, findings, notices."""
     findings, notices, binaries, charts, includes = [], [], set(), {}, {}
     serial = index.get("serial", 0)
     if serial < policy["index_serial"]:
         findings.append(f"CON-2: index serial {serial} is lower than index_serial {policy['index_serial']}")
     elif serial > policy["index_serial"]:
         notices.append(f"index serial {serial} is newer than index_serial {policy['index_serial']}")
-    for dep in deps:
+    pinned = {d["recipe"]: d["digest"] for d in deps if d.get("recipe")}
+    added = set(pinned)
+    for dep in deps:  # deps grows by the included recipes, which this loop then checks like pins (CON-7)
         name = dep.get("marketplace") or dep.get("recipe")
         if not name:
             continue
@@ -175,19 +177,30 @@ def check_index(index, policy, deps):
         if dep.get("recipe"):  # a recipe adds no binaries (CON-5)
             for i in record.get("includes") or []:
                 includes.setdefault(i["name"], set()).add((f"recipe {name} {version}", i["version"], i["digest"]))
+                if i["name"] in added:
+                    continue
+                added.add(i["name"])
+                source = f"{dep['host']}/{dep['repo'].rsplit('/', 1)[0]}/{i['name']}:{i['version']}@{i['digest']}"
+                m = OCI.match(source)
+                if not m or not NAME.match(i["name"]):
+                    findings.append(f"CON-7: recipe {name} {version} includes {source}, which is not a recipe source")
+                    continue
+                deps.append({"type": "oci", "source": source, "output_path": f"inventory/classes/recipes/{i['name']}",
+                             "host": m.group("host"), "repo": m.group("repo"), "tag": m.group("tag"),
+                             "digest": m.group("digest"), "marketplace": None, "recipe": i["name"]})
             continue
         binaries.update(record.get("binaries", []))
         for c in record.get("charts", []):
             charts[(c["repo"].rstrip("/"), c["name"], c["version"])] = c["sha256"]
-    # CON-4: the fetch inventory pins each included recipe at the digest every parent's record lists.
-    pinned = {d["recipe"]: d["digest"] for d in deps if d.get("recipe")}
+    # All recipes share inventory/classes/recipes/, so each included recipe has one digest (CON-8, CON-9).
     for name, wanted in sorted(includes.items()):
         parents = " and ".join(f"{p} includes {name} {v} at {d}" for p, v, d in sorted(wanted))
         if len({d for _, _, d in wanted}) > 1:
-            findings.append(f"CON-4: {parents}, the fetch inventory can pin only one")
-        elif pinned.get(name) != next(iter(wanted))[2]:
-            have = f"pins {name} at {pinned[name]}" if name in pinned else f"does not pin {name}"
-            findings.append(f"CON-4: {parents}, the fetch inventory {have}")
+            findings.append(f"CON-8: {parents}, but inventory/classes/recipes/{name} holds one version: "
+                            f"pin versions that include the same {name}")
+        elif name in pinned and pinned[name] != next(iter(wanted))[2]:
+            findings.append(f"CON-9: {parents}, the fetch inventory pins {name} at {pinned[name]}: "
+                            "delete that pin, the workflow adds the included recipe from the index")
     for dep in deps:
         if dep["type"] == "helm":
             dep["sha256"] = charts.get((dep["source"].rstrip("/"), dep["chart_name"], dep["version"]))

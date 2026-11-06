@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# PG-14: open one issue for a failed scheduled playground run, or update the
+# body of the open issue with the same title.
+#
+# Usage: report <summary file> <run URL>. The summary file holds check's
+# output and is empty when the run failed before the comparison. Needs gh,
+# jq, REPO and GH_TOKEN with issues: write.
+set -euo pipefail
+title="Playground differs from the gate image"
+summary=$1
+run=$2
+body=$(mktemp)
+trap 'rm -f -- "$body"' EXIT
+{
+  echo "The daily run of the playground workflow failed: $run"
+  echo
+  if [[ ! -s $summary ]]; then
+    echo "The comparison did not run: the build, an example's compile in Pyodide or an earlier step failed. The run's log names the step."
+  else
+    if grep -qE ': (differs from the Pyodide output|the gate image failed)$' -- "$summary"; then
+      echo "Pyodide's output of the examples differs from the gate image's (PG-6, \`catalog/playground/check\`):"
+    else
+      echo "The comparison found no difference; a later step of the run failed. The comparison said:"
+    fi
+    echo
+    echo '```'
+    head -c 60000 -- "$summary"
+    echo
+    echo '```'
+  fi
+} >"$body"
+number=$(gh issue list -R "$REPO" --state open --search "in:title \"$title\"" --json number,title \
+  | jq -r --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
+if [[ -n $number ]]; then
+  gh issue edit "$number" -R "$REPO" --body-file "$body" >/dev/null
+  echo "updated #$number: $title"
+else
+  gh issue create -R "$REPO" --title "$title" --body-file "$body"
+fi

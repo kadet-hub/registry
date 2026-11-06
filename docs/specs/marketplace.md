@@ -124,6 +124,9 @@ the build job (RISK-10).
   request's base and merge commit through the consumer flow and post the
   diff of `compiled/` as one comment, from a `workflow_run` job that runs
   nothing from the pull request ([compile-diff.md](compile-diff.md)).
+- DEC-45: the consumer workflow takes the recipes a pinned recipe
+  includes from the index, and accepts a pin of an included recipe only
+  at the digest the including record lists ([consumers.md](consumers.md)).
 
 ## Area specs
 
@@ -140,6 +143,7 @@ Requirements live in the spec of their area; IDs are unchanged by the split.
 | [recipes.md](recipes.md) | Recipes: registration, gate, artifact and index | REC |
 | [kapitan-next.md](kapitan-next.md) | The kadet-hub/kapitan `next` build and its image | NXT |
 | [compile-diff.md](compile-diff.md) | Compile diff of consumer pull requests | CD |
+| [playground.md](playground.md) | The Kapitan playground in the browser | PG |
 
 ## Verification
 
@@ -313,16 +317,17 @@ cover none of the changed files.
   fetch from ghcr.io are not written), `consumer/test_consumer.py`
   (`RecipeIndex` for the digest the index does not list).
 
-- AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4): a sample parent
+- AC-14 (REC-5, REC-8, REC-13, REC-16, REC-17, CON-4, CON-7, CON-8, CON-9): a sample parent
   fails the gate when its included recipe's tree at `source.sha` matches no
   listed version, and when that version is yanked. A sample parent whose
   included recipe matches a listed version passes, compiles with it, and
   its record lists it under `includes`. A sample that requires a recipe
   rendering a CRD passes the `renders` proof with that CRD applied, and so
   does one that reaches the recipe only through another required recipe. A
-  consumer sample fails when the fetch inventory pins the included recipe
-  at another digest or not at all, and when two parents include it at
-  different digests. Check: `gate-selftest` (written for the gate, against
+  consumer sample whose fetch inventory pins only the parent gets the
+  included recipe at the listed digest. It fails when the fetch inventory
+  pins the included recipe at another digest, and when two parents include
+  it at different digests. Check: `gate-selftest` (written for the gate, against
   an index and attestations that `tests/selftest` stubs until a recipe is
   published), `release/test_release.py` (`BuildAll.test_recipe_record` for
   the record), `consumer/test_consumer.py` (`Includes` for the consumer
@@ -508,7 +513,7 @@ coverage is named at each:
 | `sandbox/gitlab-ci.yml` | CON-1a |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3, CON-6, PUB-12, PUB-13b, CAT-34d, CAT-34e |
-| `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py` | CD-1 to CD-9; paths in [compile-diff.md](compile-diff.md) |
+| `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py` | CD-1 to CD-11; paths in [compile-diff.md](compile-diff.md) |
 | `.github/ISSUE_TEMPLATE/` | CAT-12 |
 | `policy/tags.yaml` | CAT-4, CAT-13 |
 | `TERMS.md`, `SECURITY.md`, `catalog/site/content/{privacy,imprint}.md` | LEG-1 to LEG-5 |

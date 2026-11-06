@@ -31,6 +31,8 @@
 - Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}{{ $g.name }} {{ $g.version }} ({{ $g.digest }}){{ end }}
 {{ $v := "" }}{{ with $r.latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "recipes" "name" $r.name "version" $v) -}}
 - Image security: {{ with $sec.grade }}grade {{ . }}, {{ end }}{{ $sec.text }}{{ with $sec.full }} Full report: {{ . | absURL }}{{ end }}
+{{ with $sec.grade }}- The grade rates the upstream images the recipe pins, not the recipe: {{ range $i, $img := $sec.images }}{{ if $i }}, {{ end }}{{ .repository }}{{ with .page }} ({{ . }}){{ end }}{{ end }}
+{{ end -}}
 {{ range $r.classes }}- {{ if .option }}Option{{ else }}Class{{ end }} {{ .class }} ({{ .file }}){{ with .components }}: {{ delimit . ", " }}{{ end }}
 {{ end }}- Source: {{ $r.folder }}
 - Page: {{ .Permalink }}
@@ -62,12 +64,18 @@ fetch/targets/recipes.yml for {{ $r.name }} {{ .version }}:
 ```yaml
 {{ $r.fetch }}
 ```
+{{ with $r.included }}
+{{ $r.name }} {{ $r.latest.version }} includes {{ . }}. The consumer workflow adds the included recipes at the digests the index lists. Kapitan's --fetch reads no index, so for a local compile pull them by digest first:
 
+```sh
+{{ $r.pull }}
+```
+{{ end }}
 ```sh
 {{ $r.commands }}
 ```
 
-The first command exits with status 1 because the fetch target compiles nothing. Verifying the attestation of each recipe the fetch inventory pins:
+The first command exits with status 1 because the fetch target compiles nothing. Verifying the attestation of the recipe{{ with $r.included }} and of the recipes it includes{{ end }}:
 
 ```sh
 {{ $r.verify }}

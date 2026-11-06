@@ -177,6 +177,7 @@ remembered in the browser's `localStorage`.
   | kustomize alternatives | home page, same guide |
   | pulumi vs helm | same guide |
   | helm vs helmfile (also "helmfile vs helm"), helm chart vs helmfile, helm umbrella chart vs helmfile (checked 2026-10-22) | same guide, section #helmfile |
+  | helmfile environments (also "helmfile environments example", "helmfile multiple environments"), helmfile secrets example, helmfile release needs (also "helmfile needs"), helmfile alternatives (checked 2026-11-05) | blog post "Helmfile vs Kapitan: environments, secrets and release order", sections #environments, #secrets and #needs for the first three |
   | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
   | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
@@ -199,13 +200,16 @@ remembered in the browser's `localStorage`.
   | kustomize patch tolerations, kustomize patch nodeselector, kustomize patch add label, ipfamilypolicy requiredualstack, kubernetes service ipfamilypolicy, cilium ingress ipv6 (checked 2026-10-22) | same post, sections #consul-hook-job-tolerations, #apisix-ingress-controller-pod-labels and #cilium-ingress-ipfamilypolicy |
   | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
   | docker tag and digest (also "docker tag digest"), docker image tag and digest (checked 2026-11-02) | blog post "Docker tag and digest: which one Kubernetes runs" |
+  | docker compose and kubernetes, docker compose vs kubernetes (also "kubernetes docker compose"), miniflux docker compose, miniflux kubernetes (checked 2026-11-05) | blog post "Docker Compose and Kubernetes from one Kapitan inventory", section #gaps for the second; `/recipes/miniflux/` also answers the last |
   | renovate automerge (also "renovate bot automerge", "renovate auto merge"), renovate automerge github (checked 2026-11-02) | blog post "Renovate automerge with required reviews on GitHub" |
+  | argocd config management plugin, argocd cmp plugin, argocd cmp sidecar, argocd sidecar plugin (checked 2026-11-05) | blog post "Argo CD config management plugin for Kapitan" |
   | open webui searxng (also "openwebui searxng", "openwebui searxng 403"), open webui web search searxng, open webui kubernetes, ollama + open webui kubernetes, searxng kubernetes (checked 2026-11-04) | blog post "Open WebUI with SearXNG on Kubernetes, from Kapitan recipes"; `/recipes/open-webui/` and `/recipes/searxng/` also answer the kubernetes queries |
   | self hosted google photos alternative (also "google photos alternative self hosted", "self hosted google photos replacement"), immich kubernetes (also "immich k8s"), immich kubernetes deployment, immich pgvector, immich reverse geocoding, immich smart search, immich backup database (also "immich database backup location"), immich backup and restore (checked 2026-11-05) | blog post "Self-hosted Google Photos alternative: Immich on Kubernetes"; `/recipes/immich/` also answers the kubernetes queries |
   | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
   | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI" |
   | kindest node (also "kindest node image", "kindest node images"), kindest node version, kind node image, kind node image version, kind custom node image, kind build node image, kind ensuring node image stuck (checked 2026-11-03) | blog post "kindest/node images: picking the version for your kind release", sections #kind-build-node-image for the custom and build queries and #ensuring-node-image-stuck for the last |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
+  | talos homelab, talos network policy (also "talos linux network policy"), talos linux docker (checked 2026-11-05) | blog post "Talos homelab: node configs and apps from one Kapitan inventory", sections #talos-network-policy and #talos-in-docker for the last two |
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
   | kubernetes cluster add-ons (also "kubernetes cluster addons"), external secrets kubernetes provider (also "external secrets operator kubernetes provider"), velero s3 compatible storage (checked 2026-11-05) | blog post "Kubernetes cluster add-ons from one Kapitan inventory, on kind", sections #external-secrets-with-the-kubernetes-provider and #velero-with-s3-compatible-storage for the last two |
@@ -240,7 +244,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331, #444, #539
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331, #444, #539, #538, #556
 
 - CAT-11g: Every guide and recipe MUST carry `lastmod` in its front
   matter, the day its text last changed, and schema.org `TechArticle`
@@ -396,6 +400,37 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #245
 
+- CAT-41: `/wanted/` MUST also list every open issue of kadet-hub/recipes
+  with the label `recipe-request`, in a section of its own, with the
+  fields, order and states of CAT-31. kadet-hub/recipes MUST have the
+  issue form `.github/ISSUE_TEMPLATE/recipe-request.yml`, which sets that
+  label and asks for the application, the Helm chart or Docker Compose
+  file a recipe would rebuild, and why the requester needs it.
+
+  A reader who looks for an application that has no recipe had no place
+  to ask for one: the page took generator requests only.
+  The form is in kadet-hub/recipes, where recipes are written and
+  reviewed, as CAT-21 sends feature requests to the source repository. Its
+  title starts with `[request] ` like the generator form's, so the page
+  strips the same prefix.
+
+  The catalog job reads the issues with the call of CAT-31 on
+  `/repos/<owner>/recipes/issues?labels=recipe-request&state=open`. The
+  repository is public, and the job's token already reads
+  `/repos/<owner>/generators` for the stars, so the job needs no new
+  permission. An offline build reads the list from
+  `CATALOG_WANTED_RECIPES`. Each section has its own empty and unread
+  state, so a failed lookup of one list leaves the other as it is.
+
+  GitHub applies a form's label only when the label exists in the
+  repository, so `recipe-request` has to exist in kadet-hub/recipes before
+  the form is used.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_wanted_page`,
+    `Site.test_wanted_page_without_requests`); manual: an issue opened
+    with the form in kadet-hub/recipes carries `recipe-request`
+  - Since: #540
+
 - CAT-33: The site MUST have a page at `/stats/` with a section for the
   pulls of every generator, one for the versions published and yanked per
   month, and one for the entry pull requests the gate rejected, by
@@ -537,7 +572,11 @@ remembered in the browser's `localStorage`.
   per severity (CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN), the grade, the time
   of the scan and a link to the full report (CAT-39b). A page whose
   version has no scan result MUST say that it is not scanned, and a
-  version that names no image MUST say so. Neither shows a grade.
+  version that names no image MUST say so. Neither shows a grade. A recipe
+  page with a grade MUST say next to it that the grade rates the upstream
+  images the recipe pins, not the recipe, and MUST link each of these
+  images to its page on Docker Hub, GitHub or Quay when it is published
+  there.
 
   The report follows Artifact Hub's, as on its kube-prometheus-stack
   page. Artifact Hub counts every vulnerability Trivy lists in every
@@ -571,8 +610,27 @@ remembered in the browser's `localStorage`.
   21d393a22061". The catalog build resolves `main` again, so the page can
   show a later commit than the report.
 
-  - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_recipe_at_main`, `Security.test_not_scanned`, `View.test_security_grade`, `View.test_security_of_the_shown_version`)
-  - Since: #417
+  Readers took "grade F, 820 findings" on the Immich page for a grade of
+  the recipe. The findings are in the two images Immich publishes, and
+  only a new image fixes them. The full report says so, one click away,
+  so the recipe page says it next to the grade. The Markdown variant
+  (CAT-37b) carries the same line.
+
+  An image without a registry host is on Docker Hub, as Docker resolves
+  it. Its page is `https://hub.docker.com/_/<name>` for an official image
+  under `library/` and `https://hub.docker.com/r/<repository>` otherwise.
+  `https://ghcr.io/<repository>` redirects to the package page on GitHub,
+  and `https://quay.io/repository/<repository>` is Quay's. The other
+  registries the recipes use, `container-registry.oracle.com`,
+  `docker.gitea.com` and `registry.k8s.io`, answered 404 at
+  `https://<registry>/<repository>` on 2026-11-05, so their images are
+  named without a link. On that day the full reports of the live recipe
+  pages named 42 unique image references, 39 of them on Docker Hub,
+  ghcr.io or Quay. A repository name with characters outside OCI's
+  lowercase letters, digits and separators gets no link.
+
+  - Test: `catalog/test_catalog.py` (`Security.test_report_on_the_pages`, `Security.test_recipe_at_main`, `Security.test_not_scanned`, `View.test_security_grade`, `View.test_security_of_the_shown_version`, `Security.test_upstream_images`, `View.test_image_registry_pages`)
+  - Since: #417; the note on the upstream images: #540
 
 - CAT-39a: The images of a version MUST be the references
   `<repository>:<tag>@sha256:<digest>` in its tree outside `tests/` and
@@ -1568,6 +1626,82 @@ Related: CAT-15, CAT-30, CON-2.
     `navigator.share` present and absent
   - Since: #307
 
+- CAT-45: A blog post that puts several recipes or generators together
+  into one use case, backed by a project in kadet-hub/examples, MUST name
+  them in a front matter field `stack`. The listings of CAT-46 and CAT-48
+  MUST be built from that field alone.
+
+  Such a stack post walks through one project, such as Open WebUI with
+  SearXNG, whose `check` script deploys it on kind. The field holds what
+  the project pins, including a generator that comes only with a recipe:
+
+  ```yaml
+  stack:
+    recipes: [open-webui, ollama, searxng, valkey]
+    generators: [kubernetes]
+    example: open-webui-searxng
+  ```
+
+  `recipes` are names of recipe pages (CAT-37c), `generators` names of
+  generators in the index, and `example` the project's folder in
+  kadet-hub/examples. Either list may be left out. The post is the only
+  place that names its parts, so a new stack is one block in the pull
+  request that adds the post. A data file next to the posts was
+  considered; it would name every post a second time. A stack shows from
+  its post's date, because Hugo leaves a future-dated post out of the
+  build (CAT-36a).
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
+- CAT-46: The site MUST have a page at `/stacks/` that lists every
+  published stack post, newest first, with its title linked to the post,
+  its description, its recipes and generators each linked to its page,
+  and a link to its folder in kadet-hub/examples.
+
+  A generator the index does not list has no page, so its name shows
+  without a link, as a prerequisite without a page does on a recipe page
+  (CAT-37c). The release build's index lists every generator the posts
+  name. Without a published stack post the page says so.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`)
+  - Since: this change
+
+- CAT-47: The site navigation MUST link `/stacks/` after "Recipes", and
+  `/llms.txt` (CAT-16) MUST link it under "Using generators".
+
+  - Test: `catalog/test_catalog.py` (`Site.test_stacks_linked`)
+  - Since: this change
+
+- CAT-48: Every recipe page and every generator page MUST have a section
+  "Used in stacks" that links each published stack post naming it, newest
+  first, and MUST NOT have the section when none does.
+
+  On a recipe page the section comes before "Versions". On a generator
+  page it follows the README in the same column, and the "On this page"
+  list of CAT-19 links it between README and Versions. The Markdown
+  variants (CAT-28, CAT-37b) do not carry it.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_used_in_stacks`)
+  - Since: this change
+
+- CAT-49: The build MUST fail when a published stack post names a recipe
+  without a page at `/recipes/<name>/` or names no `example`.
+
+  Recipe pages are content pages, so the check runs the same offline and
+  in the release. A failed build stops the release's catalog job before
+  the Pages upload and the previous site stays live, as with CAT-37a.
+  Posts are usually merged days before their date, and the release build
+  would meet a wrong name only on the morning the post goes live. The
+  test therefore builds the site with Hugo's `--buildFuture`, which checks
+  queued posts in the pull request that adds them, and checks every
+  generator a stack post names against the entries in `generators/`. The
+  build does not check generators, because their pages come from the
+  index, and the fixture indexes of the tests leave most of them out.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
   `/recipes/<name>/` (CAT-37c).
@@ -1754,7 +1888,7 @@ Related: CAT-15, CAT-30, CON-2.
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
     recipes' prerequisites: #368; nextcloud: #402;
     authentik, blackbox-exporter, gitea, immich, jellyfin, n8n, netbox,
-    ollama, open-webui and semaphore: #507
+    ollama, open-webui and semaphore: #507; forgejo: #542
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1820,7 +1954,9 @@ Related: CAT-15, CAT-30, CON-2.
   mariadb Helm chart alternative:", because that chart is what readers
   search a replacement for. wordpress, designed on the Docker Official
   Image with mariadb included, follows it as "WordPress on Kubernetes with
-  Kapitan" and "Bitnami wordpress Helm chart alternative:".
+  Kapitan" and "Bitnami wordpress Helm chart alternative:". memcached,
+  designed on the Docker Official Image, follows it as "Memcached on
+  Kubernetes with Kapitan" and "Bitnami memcached Helm chart alternative:".
 
   powerdns is the PowerDNS part of the kadet-hub/examples recipe
   `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
@@ -1856,7 +1992,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
     keycloak: #368; mariadb: #509;
-    wordpress: #511
+    wordpress: #511; memcached: #542
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
@@ -1909,13 +2045,16 @@ Related: CAT-15, CAT-30, CON-2.
   reads it from `$CATALOG_ARTIFACTS/recipes/<name>.tar`. Relative links in
   the README sections point into kadet-hub/recipes at `source.sha`.
 
-  The fetch inventory holds one `oci` dependency for the recipe and one for
-  each recipe its record lists under `includes`. It sets no `vars`, because
-  CON-4 accepts nothing but `dependencies` there. The verification commands
-  run `gh attestation verify` on each of these artifacts, and the page
-  links "Verifying by hand" in `docs/consumers.md` for the index check of
-  CON-5. The policy line names `compiled/<target>/*`, because the record
-  leaves out the output paths (REC-13).
+  The fetch inventory holds one `oci` dependency, for the recipe. It sets
+  no `vars`, because CON-4 accepts nothing but `dependencies` there. The
+  consumer workflow adds the recipes the record lists under `includes`
+  (CON-7). Kapitan's `--fetch` reads no index, so for a version with
+  includes the page names them and gives the commands that pull each of
+  them by digest for a local compile (CON-6). The verification commands
+  run `gh attestation verify` on the recipe and on each included recipe,
+  and the page links "Verifying by hand" in `docs/consumers.md` for the
+  index check of CON-5. The policy line names `compiled/<target>/*`,
+  because the record leaves out the output paths (REC-13).
 
   The version list gives each version's date and digest, and the reason
   when the version or a generator version it pins is yanked. Only the
@@ -1924,7 +2063,8 @@ Related: CAT-15, CAT-30, CON-2.
   version list.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`, `ListedRecipe.test_backends`)
-  - Since: #399; inventory backends: this change
+  - Since: #399; included recipes left to the consumer workflow: #536;
+    inventory backends: this change
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 
@@ -1962,6 +2102,91 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_catalog_json`, `ListedRecipe.test_not_counted_with_generators`, `ListedRecipe.test_consumer_docs_lookup`)
   - Since: #399
+
+- CAT-40: The site MUST have a page at `/quickstart/` that takes a reader
+  from an empty directory to the web UI of the uptime-kuma recipe on a new
+  kind cluster, in this order: create the cluster, install Kapitan, write
+  the project, verify the recipe, compile, apply, open the app, delete
+  the cluster. Every step MUST say what its commands do. The fetch
+  inventory, the include snippet, the verify command, the compile
+  commands and, for a version that includes recipes, their pull commands
+  MUST be the ones `/recipes/uptime-kuma/` shows (CAT-37c, CAT-38).
+
+  A reader who arrives from a post on Helm or Kustomize had no path from
+  reading to a running app: the recipe pages assume Kapitan is installed
+  and show the fetch inventory without the project around it. uptime-kuma
+  is a published recipe with a web UI and little else: one image, a
+  StatefulSet and a Service, no prerequisite and no parameter to set.
+  miniflux, the other candidate, needs two password refs, and so a ref
+  backend, and runs PostgreSQL next to it.
+
+  The layout calls the recipe page's partial for `uptime-kuma`, so a new
+  recipe version changes both pages in the same build and the quickstart
+  has no fetch inventory of its own. When the index lists no version of
+  the recipe, or its latest version pins a yanked generator, the page
+  shows no steps and links the recipe page. Failing the build instead
+  would also keep a yank off every other page.
+
+  Kapitan is installed with the command of `docs/consumers.md`, plus
+  `--with oras` for the `oci` fetch, as that document says for compiling
+  a recipe locally. The command pins Python 3.13, the sandbox's version.
+  Kapitan 0.36.3 requires `regex<2025`, and regex 2024.11.6 has wheels up
+  to CPython 3.13, so on Python 3.14 uv builds it from source, which needs
+  a C compiler and Python's headers. On a host whose `python3` is 3.14,
+  the command without `--python` stopped with `fatal error: Python.h: No
+  such file or directory` on 2026-11-05. `docs/consumers.md` pins it the
+  same way.
+
+  The project uses the omegaconf backend, as "Using a recipe" in
+  kadet-hub/recipes does. The files are written with `cat` and a quoted
+  heredoc, so every step is a command to paste. The verify step is the
+  recipe page's `gh attestation verify`, which needs `gh` logged in. It
+  checks neither the index nor the generator the recipe pins, and the
+  page links "Verifying a recipe by hand" in `docs/consumers.md` for both.
+  The first compile command exits with status 1, as the recipe page says.
+  The recipe renders no Namespace, so the apply step creates it.
+
+  The registry's only kind job is `renders` in `gate.yml` (REC-9). It runs
+  on entry pull requests from `main`, holds `contents: read` and starts no
+  pod, so the quickstart does not fit in it. The catalog tests build from
+  fixtures whose digests ghcr.io does not serve, and the page's real
+  commands exist only in the release build. The run on kind is therefore
+  manual.
+
+  - Test: `catalog/test_catalog.py` (`Quickstart.test_commands`,
+    `Quickstart.test_without_a_usable_version`, `Site.test_quickstart_linked`);
+    manual: the ten code blocks of the page, built from index serial 113
+    and kadet-hub/recipes at `a7ddcbb`, run in order in one bash session
+    with an empty home directory on 2026-11-05. Every block succeeded; the
+    first compile command failed with `No such file or directory:
+    .../compiled`, as the page says. The pod was ready 214
+    seconds after `kind create cluster` started, with the kind node image
+    already on the host and Python, Kapitan and the Uptime Kuma image
+    downloaded. `http://localhost:3001` showed "Create your admin account";
+    the port-forward ran in the background for that check.
+  - Since: #540; pull commands of included recipes: #536
+
+- CAT-40a: The site navigation MUST link the quickstart as its first
+  entry, and every recipe page MUST link it under "Fetching it".
+
+  "Use" points to `docs/consumers.md` on GitHub, which starts with the
+  consumer workflow. The quickstart comes before it because it ends with
+  a running app, and the workflow is the step after.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_quickstart_linked`)
+  - Since: #540
+
+- CAT-40b: The quickstart MUST have the sections "Coming from Helm?" and
+  "Coming from Kustomize?". The first MUST link the posts
+  `helm-chart-vs-kapitan-inventory` and `same-app` and the Bitnami guide,
+  the second `same-app` and every post whose name starts with
+  `kustomize-`.
+
+  The sections map what such a reader knows to what the quickstart did,
+  and link the posts that compare the tools on real charts.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_quickstart_linked`)
+  - Since: #540
 
 - CAT-19: A generator page MUST show its sections in one centered column
   of equal width, in the order README, Versions, and MUST have an "On this
@@ -2132,6 +2357,33 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py`
   - Since: #196
+
+- CAT-42: Copying a fetch inventory or a verify command, and following
+  the link to a generator's source repository or to a recipe's folder in
+  kadet-hub/recipes, MUST count as a GoatCounter event. The event's name
+  MUST be the action, `copy-fetch-inventory`, `copy-verify` or
+  `source-repo`, a `/`, and the page, `generators/<name>`,
+  `recipes/<name>` or `quickstart`. The privacy page MUST name the
+  events.
+
+  Page views show which pages are read, not whether a reader went on to
+  use a generator or recipe. These three actions are the closest the
+  static site gets to that. The elements carry `data-goatcounter-click`,
+  which the shipped `count.js` binds on load (`bind_events`), so the site
+  needs no script of its own. An event goes to the same endpoint as a page
+  view, with `navigator.sendBeacon` or an image, so the CSP of CAT-25
+  stays as it is.
+
+  GoatCounter takes the event's name as its path, which must not start
+  with `/`, and sends no referrer with an event, so the name carries the
+  page. A copy button sets `data-goatcounter-title` to its label, because
+  GoatCounter otherwise sends the element's HTML, the icon's SVG. A click
+  on a copy button counts also when the browser refuses the copy. Without
+  `params.goatcounter` no counter loads and the attributes do nothing.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_conversion_events`,
+    `Quickstart.test_commands`)
+  - Since: #540
 
 - CAT-4: `tags` in the manifest MUST come from the enum in
   `policy/manifest.schema.json`: `kubernetes`, `helm`, `operators`,

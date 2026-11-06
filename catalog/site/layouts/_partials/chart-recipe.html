@@ -70,13 +70,20 @@
   {{- $classes = $classes | append (merge . (dict "components" $components)) -}}
 {{- end -}}
 {{- $fetch := "parameters:\n  kapitan:\n    vars:\n      target: recipes\n    dependencies:" -}}
-{{- $verify := slice }}{{ $blocked := slice }}{{ $renders := false }}{{ $policy := "" -}}
+{{- $verify := slice }}{{ $blocked := slice }}{{ $renders := false }}{{ $policy := "" }}{{ $included := slice }}{{ $pull := "tmp=$(mktemp -d)" -}}
 {{- with $latest -}}
-  {{- /* CON-4: the recipe and the recipes it includes by version and digest, and nothing but dependencies. */ -}}
-  {{- $fetch = "parameters:\n  kapitan:\n    dependencies:" -}}
+  {{- /* CON-4, CON-7: the recipe by version and digest, and nothing but dependencies; the consumer workflow adds the recipes it includes. */ -}}
+  {{- $fetch = printf "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n        source: ghcr.io/%s/recipes/%s:%s@%s\n        output_path: inventory/classes/recipes/%s" $owner $name .version .digest $name -}}
   {{- range slice (dict "name" $name "version" .version "digest" .digest) | append .includes -}}
-    {{- $fetch = printf "%s\n      - type: oci\n        source: ghcr.io/%s/recipes/%s:%s@%s\n        output_path: inventory/classes/recipes/%s" $fetch $owner .name .version .digest .name -}}
     {{- $verify = $verify | append (partial "commands.html" (dict "name" (printf "recipes/%s" .name) "version" .version "digest" .digest)).verify -}}
+  {{- end -}}
+  {{- /* CON-6: Kapitan's fetch reads no index, so a local compile pulls the included recipes by digest. */ -}}
+  {{- range .includes -}}
+    {{- $included = $included | append (printf "%s %s" .name .version) -}}
+    {{- $pull = printf `%s
+oras pull -o "$tmp" ghcr.io/%s/recipes/%s@%s
+mkdir -p inventory/classes/recipes/%s
+tar -xf "$tmp/%s.tar" -C inventory/classes/recipes/%s --no-same-owner` $pull $owner .name .digest .name .name .name -}}
   {{- end -}}
   {{- range .generators }}{{ if .yanked }}{{ $blocked = $blocked | append . }}{{ end }}{{ end -}}
   {{- with .scan }}{{ $scan := . }}{{ range where .checks "id" "renders" }}{{ $renders = dict "tool" .tool "run" $scan.run "at" $scan.at }}{{ end }}{{ end -}}
@@ -94,6 +101,7 @@
 {{- return dict "name" $name "sha" $sha "lead" $lead "source" $source "compose" $compose "manifest" $manifest "image" $image "level" $level "include" $include
   "replaces" $replaces "requires" $requires "required" $required "classes" $classes "generators" $generators "fetch" $fetch
   "record" $rec "latest" $latest "verify" (delimit $verify "\n\n") "blocked" $blocked "renders" $renders "policy" $policy
+  "included" (delimit $included ", " " and ") "pull" $pull
   "commands" "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch"
   "sections" (where $sections "heading" "in" (slice "Settings" "Mapping" "Left out" "Renamed RBAC objects" "Proof"))
   "folder" (printf "https://github.com/%s/recipes/tree/%s/%s" $owner $sha $name)

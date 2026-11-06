@@ -1,0 +1,23 @@
+{{ define "main" }}{{/* CAT-45, CAT-46, CAT-49 */}}
+<section class="prose-page">
+<h1>{{ .Title }}</h1>
+<p class="lead">{{ .Description }}</p>
+{{ with (where (where site.RegularPages "Section" "blog") "Params.stack" "!=" nil).ByDate.Reverse }}
+<ul class="guide-list">
+{{ range . }}{{ $post := . }}{{ $s := .Params.stack }}
+{{- if not $s.example }}{{ errorf "%s: stack names no example" .File.Path }}{{ end }}
+<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p>
+{{- with $s.recipes }}
+<p>Recipes: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/recipes/%s" $n) }}<a href="{{ printf "/recipes/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}{{ errorf "%s: stack names the recipe %s, which has no page at /recipes/%s/" $post.File.Path $n $n }}{{ end }}{{ end }}</p>
+{{- end }}
+{{- with $s.generators }}
+<p>Generators: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/generators/%s" $n) }}<a href="{{ printf "/generators/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}<code>{{ $n }}</code>{{ end }}{{ end }}</p>
+{{- end }}
+<p>Project: <a href="https://github.com/{{ site.Data.catalog.owner }}/examples/tree/main/{{ $s.example }}">kadet-hub/examples/{{ $s.example }}</a></p></li>
+{{ end }}
+</ul>
+{{ else }}
+<p class="empty">No stack post is published yet.</p>
+{{ end }}
+</section>
+{{ end }}

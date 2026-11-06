@@ -1,0 +1,11 @@
+# A target is what Kapitan compiles. Values set here win over the classes,
+# so this Deployment gets 3 replicas, not the class's 2.
+classes:
+  - apps.web
+parameters:
+  target_name: dev
+  kapitan:
+    vars:
+      target: dev
+  app:
+    replicas: 3

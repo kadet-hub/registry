@@ -1,0 +1,94 @@
+name: playground
+
+# PG-6, AC-40, AC-41, AC-44: compile every playground example in Pyodide and
+# in the gate's sandbox image, test the provenance replay, and run the page in
+# Chrome, on pull requests that change the playground or the versions it takes
+# from sandbox/. PG-14: daily against the index published that day; a failed
+# scheduled run opens or updates one issue.
+on:
+  pull_request:
+    paths:
+      - catalog/playground/**
+      - catalog/site/static/playground/**
+      - catalog/site/layouts/playground.html
+      - catalog/build
+      - sandbox/Dockerfile
+      - sandbox/requirements.txt
+      - .github/workflows/playground.yml
+  schedule:
+    - cron: "37 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playground:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      summary: ${{ steps.check.outputs.summary }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-hugo # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
+
+      - name: Build the sandbox image
+        run: docker build -t kadet-hub/sandbox sandbox
+
+      - name: Unit tests of the provenance replay (PG-15 to PG-19)
+        run: |
+          docker run --rm --network none --read-only --tmpfs /tmp \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/catalog,dst=/catalog,readonly" \
+            kadet-hub/sandbox python3 -I /catalog/playground/test_provenance.py
+
+      - name: Build the playground from the published index (PG-1, PG-5, PG-12)
+        run: |
+          oras pull -o "$RUNNER_TEMP/index" ghcr.io/kadet-hub/index:latest
+          (cd catalog/playground && npm ci --ignore-scripts --no-audit --no-fund)
+          python3 -I catalog/playground/build.py --index "$RUNNER_TEMP/index/index.json" \
+            --out "$RUNNER_TEMP/playground/static" --data "$RUNNER_TEMP/playground/playground.json" \
+            --projects "$RUNNER_TEMP/projects" --outputs "$RUNNER_TEMP/outputs"
+
+      - name: Compare with the gate image (PG-6)
+        id: check
+        run: |
+          status=0
+          catalog/playground/check "$RUNNER_TEMP/projects" "$RUNNER_TEMP/outputs" >"$RUNNER_TEMP/check.txt" 2>&1 || status=$?
+          cat -- "$RUNNER_TEMP/check.txt"
+          delimiter=$(openssl rand -hex 16)
+          { echo "summary<<$delimiter"; head -c 60000 -- "$RUNNER_TEMP/check.txt"; echo; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Run the page in Chrome (PG-3, PG-7 to PG-11)
+        working-directory: catalog
+        env:
+          PLAYGROUND_BUILD: ${{ runner.temp }}/playground
+        run: python3 -m unittest -v test_catalog.Playground
+
+  report:
+    needs: playground
+    if: always() && github.event_name == 'schedule' && needs.playground.result == 'failure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # PG-14: the one issue of a failed scheduled run
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Open or update the issue (PG-14)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SUMMARY: ${{ needs.playground.outputs.summary }}
+        run: |
+          printf '%s' "$SUMMARY" >"$RUNNER_TEMP/summary.txt"
+          catalog/playground/report "$RUNNER_TEMP/summary.txt" "$RUN_URL"

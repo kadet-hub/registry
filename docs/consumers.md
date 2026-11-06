@@ -16,8 +16,13 @@ yourself.
 For a local compile, install Kapitan the way the sandbox does:
 
 ```sh
-uv tool install --with omegaconf==2.4.0.dev4 'kapitan[omegaconf,reclass-rs]==0.36.3'
+uv tool install --python 3.13 --with omegaconf==2.4.0.dev4 'kapitan[omegaconf,reclass-rs]==0.36.3'
 ```
+
+Python 3.13 is the sandbox's version. Kapitan 0.36.3 requires
+`regex<2025`, and regex 2024.11.6 has no wheel for Python 3.14, so uv
+would build it from source there, which fails without a C compiler and
+Python's headers (`fatal error: Python.h: No such file or directory`).
 
 omegaconf 2.4.0 removed `ListMergeMode`, so without the pin the OmegaConf
 backend fails with `ImportError: cannot import name 'ListMergeMode'`
@@ -241,10 +246,18 @@ parameters:
       target: cert-manager
 ```
 
-A recipe whose index record lists `includes` needs each included recipe in
-the fetch inventory at exactly the digest listed there. All recipes share
+Pin only the recipes your targets include. A recipe whose index record
+lists `includes` brings those recipes along: the workflow adds each of
+them at the version and digest the record lists. All recipes share
 `inventory/classes/recipes/`, so two recipes that include the same recipe
 at different digests cannot be used in one project.
+
+The workflow accepts a pin of an included recipe at the digest the record
+lists and fails on one at another digest. Fetch inventories written before
+the workflow added included recipes have such pins. Delete them. Renovate
+updates each pin on its own, so with the pin in place an update of the
+parent to a version that includes another digest fails, and so does an
+update of the included recipe alone.
 
 ### Recipes in the workflow
 
@@ -260,8 +273,9 @@ Before its first step, the workflow then runs
 entry of the fetch inventory that is not a recipe pin. It verifies each
 recipe as it verifies a generator, against the index's `recipes` section:
 attestation, listed under its name with the version its tag names, not
-yanked. Included recipes must be pinned at the digests the record lists.
-It then unpacks each recipe into `inventory/classes/recipes/<name>`,
+yanked. It adds the recipes each record lists under `includes`, and those
+their records list in turn, and verifies them the same way. It then
+unpacks each recipe into `inventory/classes/recipes/<name>`,
 replacing what your checkout holds there, and continues with step 1. The
 generators the recipes pin are dependencies of your inventory from then on
 and go through steps 2 and 3 like your own. A recipe source in the main
@@ -276,8 +290,8 @@ output_capabilities:
   "compiled/cert-manager/*": [admission-webhook]
 ```
 
-The Renovate preset reads `**/inventory/**` only and does not update the
-fetch inventory yet.
+The Renovate preset updates the recipe pins as well, see Updates with
+Renovate.
 
 ### Compiling a recipe locally
 
@@ -293,6 +307,10 @@ fetch needs the `oras` package, so add `--with oras` to the install
 command above for it. `--force-fetch` writes a new version over the old one
 and keeps the files the new version removed. Delete
 `inventory/classes/recipes/<name>` before you change a pin.
+
+Kapitan's fetch reads no index, so the first command fetches only the
+recipes the fetch inventory pins. Pull the recipes they include by digest,
+as Verifying a recipe by hand shows, before the second command.
 
 The second command compiles your inventory without fetching. Pull the
 generators the recipes pin by digest into `lib/<generator>` first, as shown
@@ -314,9 +332,10 @@ jq --arg d sha256:<digest> '.recipes["<name>"] | to_entries[] | select(.value.di
 ```
 
 The output must name the version of your tag and `yanked: null`. No output
-means the index does not list the digest under that name. Pin each entry
-of `includes` in the fetch inventory at its digest and verify it the same
-way. `generators` lists what the recipe and its included recipes pin.
+means the index does not list the digest under that name. Verify each
+entry of `includes` the same way at its digest, and pull it as below for a
+local compile. `generators` lists what the recipe and its included recipes
+pin.
 Verify each generator as Verifying by hand describes.
 
 To use only what you verified, pull the recipe by digest in place of the
@@ -335,7 +354,11 @@ The preset [kadet-hub/renovate-config](https://github.com/kadet-hub/renovate-con
 finds tagged marketplace sources in `**/inventory/**/*.yml` and
 `**/inventory/**/*.yaml`, so in an `inventory/` directory at the repository
 root or in a nested Kapitan project, and opens a pull request per update
-that changes tag and digest together. It does not merge on its own.
+that changes tag and digest together. It does not merge on its own. From
+kadet-hub/renovate-config#21 on it updates the recipe sources in
+`**/fetch/**/*.yml` and `**/fetch/**/*.yaml` the same way, one pull request
+per recipe. Such an update is complete while the fetch inventory pins no
+included recipe.
 
 ```json
 {

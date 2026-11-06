@@ -1,0 +1,19 @@
+# A VPC with two subnets. The generator derives the kubernetes subnet's CIDR
+# from the VPC; the database subnet has its own and no internet egress.
+classes:
+  - terraform.otc
+parameters:
+  generators:
+    terraform-opentelekomcloud:
+      network:
+        platform:
+          cidr: 10.20.0.0/16
+          tags:
+            env: dev
+          subnets:
+            kubernetes: {}
+            database:
+              cidr: 10.20.200.0/24
+              egress: false
+          nat:
+            subnet: kubernetes
