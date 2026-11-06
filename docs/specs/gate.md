@@ -515,6 +515,21 @@ review go into the review comment and do not fail the gate.
   even in their newest releases (RISK-14). An entry is removed once its
   advisory no longer shows in the step summary.
 
+  govulncheck cannot tell whether one of these binaries links a vulnerable
+  package. They are stripped, so it falls back to module precision and
+  reports every symbol of the advisory as found. Whether the code is in a
+  binary shows in its `.gopclntab`, the function and source file table
+  that stripping keeps, which Go's `debug/gosym` reads.
+
+  An advisory whose packages the binary does not link gets an entry with
+  an `expired_at` date three months after the check, and its statement
+  says what `.gopclntab` holds. The entry rests on the pinned build: a
+  later release can link the package, and the entry would still hide it.
+  After the date the job fails on the advisory again until someone checks
+  the binary and renews or removes the entry. Until then Renovate merges
+  no pull request that changes `sandbox/`, because it waits for every
+  check (REV-5).
+
   The job is not a required check and runs only when its inputs change
   (CI-1). A required check has to report on every pull request. As a
   `pull_request` workflow it would wait for an approval that fork pull
@@ -525,8 +540,11 @@ review go into the review comment and do not fail the gate.
   - Test: workflow job `sandbox-advisories` on #416, failing before
     `sandbox/.trivyignore.yaml` had entries and passing after;
     manual: the job's Trivy command fails on the image of `main` before
-    #415 (pip's advisories) and passes on the image of #415
-  - Since: #416
+    #415 (pip's advisories) and passes on the image of #415;
+    manual: with the GO-2026-5932 entries' `expired_at` set to a past date
+    the job's Trivy command fails on that advisory, with the file's date it
+    passes
+  - Since: #416; `expired_at`: this change
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
