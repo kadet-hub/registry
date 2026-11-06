@@ -1,7 +1,7 @@
 source:
   repo: https://github.com/kadet-hub/recipes.git
   path: mongodb
-  tag: mongodb-v1.0.0
-  sha: 594332596eb3017760e4336039e55b09df508f43
+  tag: mongodb-v1.1.0
+  sha: c6c7a3995d527369ccb0ea3ae99746fc8a0a5398
 owners: [3042152]
 exceptions: []
