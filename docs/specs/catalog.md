@@ -1915,7 +1915,7 @@ Related: CAT-15, CAT-30, CON-2.
     authentik, blackbox-exporter, gitea, immich, jellyfin, n8n, netbox,
     ollama, open-webui and semaphore: #507; forgejo: #542; litellm,
     mattermost, qdrant, rocketchat, stirling-pdf and zulip, classes read
-    as YAML: #577
+    as YAML: #577; langfuse, librechat and mlflow: #592
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1953,7 +1953,8 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
   - Since: #343; paperless-ngx, pihole, searxng, uptime-kuma and
-    vaultwarden: #507; umami: #519; actual, ejabberd and memos: #577
+    vaultwarden: #507; umami: #519; actual, ejabberd and memos: #577;
+    navidrome: #592
 
 - CAT-37f: A CAT-37c page whose README `Source:` line is an image
   reference MUST show the source as the container image the recipe is
@@ -2020,7 +2021,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
     keycloak: #368; mariadb: #509;
     wordpress: #511; memcached: #542; ghost, home-assistant, homepage and
-    matrix-synapse: #577
+    matrix-synapse: #577; stalwart: #592
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
