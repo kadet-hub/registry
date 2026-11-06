@@ -72,7 +72,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   the index job would list that package as a generator.
 
   - Test: `gate/test_check_entry.py::Entry.test_registry_packages_are_reserved`
-  - Since: this change
+  - Since: #410
 
 - REG-3: The gate MUST fail a new entry whose name equals an existing or
   reserved name after removing `-` and `_`, and MUST flag it for the reviewer

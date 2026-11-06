@@ -85,7 +85,7 @@ nothing; the runtime lets that one debug record through.
   checked against the sha256 of that Pyodide's `pyodide-lock.json`.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_build_takes_the_latest_listed_version_and_the_gate_hashes`); `build.py` exits on a mismatch, in the `playground` workflow and the release's catalog job
-  - Since: this change
+  - Since: #543
 
 - PG-2: The playground MUST NOT change Kapitan's code. The runtime MAY
   replace `multiprocessing.Pool` and `Manager` and serve the modules in
@@ -95,12 +95,12 @@ nothing; the runtime lets that one debug record through.
   reaches one.
 
   - Test: `.github/workflows/playground.yml` (`check`)
-  - Since: this change
+  - Since: #543
 
 - PG-3: When a compile fails, the page MUST show Kapitan's error message.
 
   - Test: `catalog/playground/browser.mjs`, YAML error, via `Playground.test_runs_in_chrome`
-  - Since: this change
+  - Since: #543
 
 ## Inventory backends and limits
 
@@ -114,7 +114,7 @@ none of them is available.
   and MUST name the backends, inputs and features it does not support.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`)
-  - Since: this change
+  - Since: #543
 
 ## Examples
 
@@ -149,14 +149,14 @@ that it was rendered when the site was built and is not affected by edits.
   the gate vetted.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_build_takes_the_latest_listed_version_and_the_gate_hashes`); `build.py` checks each manifest's `artifactType`
-  - Since: this change
+  - Since: #543
 
 - PG-11: The Helm side MUST be `helm template`'s output of the chart the
   recipe's index record names, rendered by the build, and the page MUST
   label it as rendered at build time and not compiled in the browser.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`), `browser.mjs`
-  - Since: this change
+  - Since: #543
 
 The four Terraform generators in the index, terraform-aws, terraform-google,
 terraform-azurerm and terraform-opentelekomcloud, are pure Python, list no
@@ -177,12 +177,12 @@ plan.
   PG-6 compares it with the gate image like every other example.
 
   - Test: `browser.mjs` (PG-21); `.github/workflows/playground.yml` (`check`)
-  - Since: this change
+  - Since: #563
 
 - PG-22: The page MUST say that terraform plan does not run in the browser.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`), `browser.mjs` (PG-22)
-  - Since: this change
+  - Since: #563
 
 ## Equivalence with the gate
 
@@ -199,7 +199,7 @@ daily on `main` against the index published at that time.
   to the same files with the same bytes as in the gate's sandbox image.
 
   - Test: `.github/workflows/playground.yml` (`catalog/playground/check`)
-  - Since: this change
+  - Since: #543
 
 - PG-14: The `playground` workflow MUST run daily against the published
   index. When a scheduled run fails, it MUST open one issue titled
@@ -213,7 +213,7 @@ daily on `main` against the index published at that time.
   comparison did not run. Decided with #543, formerly OQ-43.
 
   - Test: `catalog/test_catalog.py` (`PlaygroundReport`); `.github/workflows/playground.yml` (job `report`)
-  - Since: this change
+  - Since: #543
 
 ## Merge order and parameter sources
 
@@ -271,13 +271,13 @@ as the file next to it and reclass as the class itself.
   by the target, each with the file whose `classes:` named it.
 
   - Test: `catalog/playground/test_provenance.py` (`Provenance.test_class_order`), `browser.mjs` (PG-15)
-  - Since: this change
+  - Since: #562
 
 - PG-16: The page MUST say whether the other backend merges the same class
   files in the same order, and when it cannot read the inventory, why.
 
   - Test: `test_provenance.py` (`Provenance.test_class_order`, `Provenance.test_other_backend_cannot_read`)
-  - Since: this change
+  - Since: #562
 
 - PG-17: For every leaf of the target's merged parameters, the page MUST
   name the file that set its final value and list the files that set it
@@ -287,25 +287,25 @@ as the file next to it and reclass as the class itself.
   interpolation shows the raw and the resolved value.
 
   - Test: `test_provenance.py` (`test_override_chain`, `test_list_merge`, `test_none_replaces_a_mapping`, `test_reclass_override_prefix`, `test_interpolation`), `browser.mjs` (PG-17)
-  - Since: this change
+  - Since: #562
 
 - PG-18: The page MUST filter the parameters by a path the visitor types.
 
   - Test: `browser.mjs` (PG-17, PG-18)
-  - Since: this change
+  - Since: #562
 
 - PG-19: The runtime MUST compare the replay with the inventory Kapitan
   rendered on every compile, and the page MUST name every path where they
   differ.
 
   - Test: `test_provenance.py` (`Provenance.test_difference_is_reported`), `browser.mjs` (PG-19)
-  - Since: this change
+  - Since: #562
 
 - PG-20: Every example MUST compile under each backend it names with no
   difference between the replay and Kapitan's inventory.
 
   - Test: `.github/workflows/playground.yml` (`compile.mjs`, in the build step)
-  - Since: this change
+  - Since: #562
 
 ## Highlighting
 
@@ -348,20 +348,20 @@ The token colours are the site's `--accent`, `--ok`, `--warn` and
   their text.
 
   - Test: `browser.mjs` (PG-23)
-  - Since: this change
+  - Since: #565
 
 - PG-24: The highlighter MUST come from the npm package
   `catalog/playground/package-lock.json` pins, be served from the site with
   its licence, and load only after the visitor starts the playground.
 
   - Test: `browser.mjs` (PG-8, PG-9, PG-24); `build.py` exits when `node_modules` holds another version than `package.json` pins
-  - Since: this change
+  - Since: #565
 
 - PG-25: Every token colour MUST reach a contrast of 4.5:1 on the output's
   background in the light and the dark theme.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_highlight_colours_reach_aa`)
-  - Since: this change
+  - Since: #565
 
 ## Loading, CSP and hosting
 
@@ -387,32 +387,32 @@ page needs no change.
   CSP MUST be the one `baseof.html` renders for every page.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_csp_is_the_home_page_csp`, `Playground.test_no_inline_script_or_style`), `browser.mjs`
-  - Since: this change
+  - Since: #543
 
 - PG-8: Every file the playground loads MUST come from the site's origin.
 
   - Test: `browser.mjs` (PG-8)
-  - Since: this change
+  - Since: #543
 
 - PG-9: The page MUST NOT load the worker or Pyodide before the visitor
   starts the playground, and the start control MUST state the download size
   the build measured.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_start_button_names_the_download`, `Playground.test_only_its_own_script_before_start`), `browser.mjs` (PG-9)
-  - Since: this change
+  - Since: #543
 
 - PG-10: The playground MUST NOT send what the visitor edits, and MUST NOT
   load a project from the URL or another origin.
 
   - Test: `browser.mjs` (every request is a GET to the site's origin)
-  - Since: this change
+  - Since: #543
 
 - PG-13: Without the playground's files, offline without
   `CATALOG_PLAYGROUND` or when the online build fails, the catalog MUST still
   build and the page MUST say that the playground is not part of the build.
 
   - Test: `catalog/test_catalog.py` (`Site.test_playground_without_its_files`)
-  - Since: this change
+  - Since: #543
 
 ## Start-up
 
@@ -429,7 +429,7 @@ to other sources.
   it serves, from the files it serves, in the same build.
 
   - Test: `.github/workflows/playground.yml` (`compile.mjs` writes it, `browser.mjs` runs on it)
-  - Since: this change
+  - Since: #543
 
 Measurement for DEC-44, on a prototype of this page: three cold runs per
 variant in headless Chrome 156 on a shared 24-core x86_64 host, files from

@@ -91,7 +91,7 @@ own.
   when it moves the unpacked chart.
 
   - Test: `consumer/test_unpack.py`
-  - Since: this change
+  - Since: #411
 
 - CON-1a: The marketplace MUST publish a GitLab CI template that runs the
   same steps with the published sandbox image.
@@ -382,4 +382,4 @@ they carry the consumer changes as well.
   exist before.
 
   - Test: `release/test_release.py` (`Index.test_release_notes_with_changelog`, `PublishIndex.test_changelog_sections_since_the_previous_release`); whether a change needs a section is reviewed
-  - Since: this change
+  - Since: #554

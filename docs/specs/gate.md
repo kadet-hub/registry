@@ -1592,4 +1592,4 @@ code diff and the output diff, not only the verdict.
   without `neat-bot` (REV-5).
 
   - Test: none (documentation)
-  - Since: this change
+  - Since: #555
