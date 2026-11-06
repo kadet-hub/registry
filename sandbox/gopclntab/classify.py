@@ -11,6 +11,7 @@ exits 1 when a statement no longer matches the binary.
 import json
 import re
 import sys
+import urllib.error
 import urllib.request
 
 VULNDB = "https://vuln.go.dev"
@@ -175,6 +176,16 @@ def fetch(path):
         return json.load(r)
 
 
+def entry(go_id):
+    """The advisory's vuln.go.dev entry; None when it has none, so its row reports that."""
+    try:
+        return fetch(f"/ID/{go_id}.json")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise
+
+
 def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
@@ -191,7 +202,7 @@ def main():
     rows, failed = [("binary", "advisory", "go id", "statement", "binary holds", "result")], False
     for e in entries:
         gos = [e["id"]] if e["id"].startswith("GO-") else ids.get(e["id"], [])
-        reports = [fetch(f"/ID/{g}.json") for g in gos] or [r for r in [NO_REPORT.get(e["id"])] if r]
+        reports = [r for r in map(entry, gos) if r] or [r for r in [NO_REPORT.get(e["id"])] if r]
         for path in e["paths"]:
             b = path.rsplit("/", 1)[-1]
             level, problems, why = check(e["statement"], dumps[b], reports)
