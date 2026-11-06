@@ -1,7 +1,7 @@
 source:
   repo: https://github.com/kadet-hub/recipes.git
   path: mariadb
-  tag: mariadb-v1.0.0
-  sha: 8a5ecffaa79fe7d6e9e61e6d474b40554c0f469a
+  tag: mariadb-v1.0.1
+  sha: dd2c0a7bdb6263cf4e6703a4ef5487a7f844c35b
 owners: [3042152]
 exceptions: []
