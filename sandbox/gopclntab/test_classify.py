@@ -7,12 +7,13 @@ from classify import affected, check, named, osv, stated
 
 DUMP = {
     "go": "go1.27.1",
-    "modules": {"golang.org/x/net": "v0.58.0", "go.opentelemetry.io/otel/sdk": "v1.44.0"},
+    "modules": {"golang.org/x/net": "v0.58.0", "go.opentelemetry.io/otel/sdk": "v1.44.0", "example.com/vendored": "v1.0.0"},
     "funcs": {"net/http.(*persistConn).readLoop", "golang.org/x/net/html.init", "os.(*Root).Chmod"},
     "funcnames": ["net/http.(*persistConn).readLoop", "net/http.(*conn).serve", "golang.org/x/net/html.init",
-                  "os.(*Root).Chmod", "golang.org/x/net/http2.(*Framer).readMetaFrame"],
+                  "os.(*Root).Chmod", "golang.org/x/net/http2.(*Framer).readMetaFrame", "example.com/vendored/api.Serve"],
     "files": ["/usr/local/go/src/net/http/transport.go", "/usr/local/go/src/os/root_unix.go",
-              "golang.org/x/net@v0.58.0/html/const.go", "go.opentelemetry.io/otel/sdk@v1.44.0/trace/span.go"],
+              "golang.org/x/net@v0.58.0/html/const.go", "go.opentelemetry.io/otel/sdk@v1.44.0/trace/span.go",
+              "k8s.io/kubernetes/vendor/example.com/vendored/api/serve.go"],
 }
 STD_FIXED = [{"introduced": "0"}, {"fixed": "1.26.9"}, {"introduced": "1.27.0-0"}, {"fixed": "1.27.2"}]
 
@@ -68,6 +69,8 @@ class Check(unittest.TestCase):
             # os.(*Root).Chmod is linked, but GO-2026-6604 is Windows code and no _windows.go file is.
             ("none", report("stdlib", STD_FIXED, {"path": "os", "goos": ["windows"], "symbols": ["Root.Chmod"]})),
             ("functions", report("go.opentelemetry.io/otel/sdk", [{"introduced": "0"}, {"fixed": "1.45.0"}])),
+            # A vendored or GOPATH build records file paths without @version; the function names still count.
+            ("functions", report("example.com/vendored", [{"introduced": "0"}, {"fixed": "1.1.0"}])),
         ]
         for want, rep in cases:
             level, problems, why = check(f"Its .gopclntab holds {'no function' if want == 'none' else 'x'}"

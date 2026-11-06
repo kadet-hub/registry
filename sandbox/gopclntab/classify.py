@@ -113,7 +113,10 @@ def holds(dump, module, version, imp):
     if imp is None:
         prefix = f"{module}@{version}/"
         dirs = {f.split(prefix, 1)[1].rpartition("/")[0] for f in dump["files"] if prefix in f}
-        return ("functions" if dirs else "none"), f"{module}: {len(dirs)} package dirs, the advisory lists no packages"
+        # Vendored and GOPATH builds record file paths without @version, so function names count too.
+        names = [n for n in dump["funcnames"] if n.startswith((module + ".", module + "/"))]
+        return (("functions" if dirs or names else "none"),
+                f"{module}: {len(dirs)} package dirs, {len(names)} functions, the advisory lists no packages")
     pkg, goos, syms = imp["path"], imp.get("goos"), imp.get("symbols") or []
     names = [n for n in dump["funcnames"] if n.startswith(pkg + ".")]
     files = [f for f in dump["files"] if file_pattern(module, pkg).search(f)]
