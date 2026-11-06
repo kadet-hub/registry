@@ -570,7 +570,7 @@ review go into the review comment and do not fail the gate.
     manual: the check above, run for every entry, gives what its statement
     says
   - Since: #416; `expired_at`: #574; `.gopclntab` statements and expiry on
-    every entry: this change
+    every entry: #576
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
