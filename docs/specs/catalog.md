@@ -1851,6 +1851,11 @@ Related: CAT-15, CAT-30, CON-2.
   `layout` and `lastmod`, and CAT-37b and CAT-11g apply as to every recipe
   page.
 
+  The template reads each class and `init.yml` as YAML by its extension.
+  Given only the text, `transform.Unmarshal` guesses the format, and it
+  read homepage's `kubernetes.yml`, whose first comment has a comma before
+  any colon, as CSV and stopped the build.
+
   "Required parameters" names the values the target must set, such as
   miniflux's two password refs, or says that there are none (RCP-40
   there). A recipe leaves such a value unset, so the compile stops until
@@ -1908,7 +1913,9 @@ Related: CAT-15, CAT-30, CON-2.
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
     recipes' prerequisites: #368; nextcloud: #402;
     authentik, blackbox-exporter, gitea, immich, jellyfin, n8n, netbox,
-    ollama, open-webui and semaphore: #507; forgejo: #542
+    ollama, open-webui and semaphore: #507; forgejo: #542; litellm,
+    mattermost, qdrant, rocketchat, stirling-pdf and zulip, classes read
+    as YAML: #577
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1946,7 +1953,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
   - Since: #343; paperless-ngx, pihole, searxng, uptime-kuma and
-    vaultwarden: #507; umami: #519
+    vaultwarden: #507; umami: #519; actual, ejabberd and memos: #577
 
 - CAT-37f: A CAT-37c page whose README `Source:` line is an image
   reference MUST show the source as the container image the recipe is
@@ -2012,7 +2019,8 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
     keycloak: #368; mariadb: #509;
-    wordpress: #511; memcached: #542
+    wordpress: #511; memcached: #542; ghost, home-assistant, homepage and
+    matrix-synapse: #577
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
