@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# SEC-18: repeat the .gopclntab check for every entry of sandbox/.trivyignore.yaml
+# and compare the outcome with the entry's statement.
+#
+# Usage: check [image]
+# Without an image it builds sandbox/. Copies the binaries the entries name
+# out of the image, reads their build info and .gopclntab with pclndump.go in
+# the pinned Go image, and runs classify.py. Needs: docker, yq, python3, tar,
+# network for the images and vuln.go.dev. Prints one line per entry and
+# binary; exits 1 when a statement no longer matches the binary.
+set -euo pipefail
+here=$(cd -- "$(dirname -- "$0")" && pwd)
+ignore=$here/../.trivyignore.yaml
+# renovate: datasource=docker depName=golang
+GO_IMAGE=golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18
+work=$(mktemp -d) id=''
+trap '[[ -z $id ]] || docker rm "$id" >/dev/null; rm -rf -- "$work"' EXIT
+
+image=${1:-$(docker build -q "$here/..")}
+mapfile -t paths < <(yq '.vulnerabilities[].paths[]' "$ignore" | sort -u)
+mkdir "$work/bin"
+id=$(docker create -- "$image" /nonexistent)
+for p in "${paths[@]}"; do docker cp -q "$id:/$p" "$work/bin/"; done
+
+# The binaries and pclndump.go go in through stdin, so no bind mount depends
+# on SELinux labels or a local daemon. pclndump.go needs no module download.
+tar -c -C "$here" pclndump.go -C "$work" bin \
+  | docker run --rm -i -q --network none "$GO_IMAGE" \
+    sh -c 'mkdir /tmp/w && tar -x -C /tmp/w && cd /tmp/w && go run pclndump.go bin/*' >"$work/pcln.json"
+yq -o=json . "$ignore" >"$work/ignore.json"
+python3 -I "$here/classify.py" "$work/ignore.json" "$work/pcln.json"
