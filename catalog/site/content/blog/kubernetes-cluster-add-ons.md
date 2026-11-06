@@ -43,7 +43,7 @@ each project, pinned by version and sha256.
 | cert-manager 1.21.2 | recipe [cert-manager](/recipes/cert-manager/) 1.0.3 | a self-signed root CA and a CA ClusterIssuer, with [certmanager](/generators/certmanager/) 1.0.4 |
 | Kyverno 1.19.2 | `install.yaml` | one ValidatingPolicy, with [kyverno](/generators/kyverno/) 1.1.4 |
 | Prometheus Operator 0.94.2 | `bundle.yaml` | a Prometheus and its RBAC, with [prometheus-operator](/generators/prometheus-operator/) 1.1.6 |
-| Grafana Operator 5.25.0 | `kustomize-cluster_scoped.yaml` | a Grafana and its Prometheus data source, with [grafana](/generators/grafana/) 1.0.2 |
+| Grafana Operator 5.25.0 | `kustomize-cluster_scoped.yaml` | a Grafana and its Prometheus data source, with [grafana](/generators/grafana/) 1.0.3 |
 | External Secrets 2.14.0 | `external-secrets.yaml` | a ClusterSecretStore, with [external-secrets](/generators/external-secrets/) 1.0.6, and the namespace and RBAC it reads |
 | Velero 1.18.4 | `velero install` | a BackupStorageLocation and a Schedule, with [velero](/generators/velero/) 1.0.2 |
 | Argo CD 3.5.6 | `install.yaml` | an AppProject and one Application per app, with [argocd](/generators/argocd/) 1.0.4 |
@@ -144,7 +144,7 @@ parameters:
         source: ghcr.io/kadet-hub/argocd:1.0.4@sha256:8b41817b189cdc043bb1a726f0e42a827672a1eda80e8d8406b512262182feea
         output_path: lib/argocd
       - type: oci
-        source: ghcr.io/kadet-hub/grafana:1.0.2@sha256:9cecd831498907000db0c6feaf85115388370b9438df590c76bf6d6a7ff859f0
+        source: ghcr.io/kadet-hub/grafana:1.0.3@sha256:a31a55e6eb06eeb6c28ed61e12b8971b0c23ab446eb3f8d7e43bd1b290cbf836
         output_path: lib/grafana
 ```
 
@@ -776,6 +776,13 @@ working set, read from the kubelet's summary API, was 2924 MiB in total:
 `kube-system` holds the API server, etcd, the controller manager, the
 scheduler, CoreDNS, kube-proxy and kindnet. `check` took 335 seconds in all,
 and the job took 5 minutes and 56 seconds.
+
+That run used grafana 1.0.2. The pin above is 1.0.3, which adds the
+LICENSE to the artifact and renders the same output.
+[kadet-hub/examples#139](https://github.com/kadet-hub/examples/pull/139)
+moved the project to it, and
+[run 41956633556](https://github.com/kadet-hub/examples/actions/runs/41956633556)
+passed with it.
 
 ## What it leaves out
 
