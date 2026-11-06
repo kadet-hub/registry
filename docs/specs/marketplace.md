@@ -422,11 +422,23 @@ cover none of the changed files.
   images are redistributed with references to their upstream sources only.
 - RISK-14 (accepted, SEC-18): helm, conftest, etcd and kube-apiserver
   link Go modules or a Go release with published fixes, even in their
-  newest releases, and `govulncheck -mode=binary` finds the vulnerable
-  symbols for most of them. The binaries run in the sandbox image on
-  fixture output, without credentials, and without network except
-  `helm pull` in `gate/fetch-charts`. `sandbox/.trivyignore.yaml` lists
-  each advisory until a release carries its fix.
+  newest releases. `sandbox/.trivyignore.yaml` lists each advisory per
+  binary until a release carries its fix, with what the binary's
+  `.gopclntab` holds of it.
+
+  Where a binary holds the vulnerable functions, the sandbox gives them no
+  attacker-controlled input, except for helm's certificate verification.
+  conftest, etcd and kube-apiserver run after the compile, without
+  credentials, in containers without network. conftest reads the compiled
+  output as files. kube-apiserver receives it over HTTP/1.1 from
+  `sandbox/apiserver_check.py`, and its HTTP/2 and gRPC peers are etcd and
+  kube-apiserver itself on loopback.
+
+  helm has network only for `helm pull` (SEC-8, REC-7). The author names
+  the chart repository, so its certificate chain reaches crypto/x509 as
+  attacker-controlled input. The gate compares the pulled chart with a
+  pinned sha256 or pulls it by digest, so a forged chain cannot change the
+  chart that is compiled.
 
 ## Out of scope
 

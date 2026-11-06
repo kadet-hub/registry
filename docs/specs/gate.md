@@ -508,27 +508,50 @@ review go into the review comment and do not fail the gate.
   first, and the digest bump Renovate then proposes brings it in. The
   weekly run catches advisories published after the image last changed.
 
-  An ignore entry names one advisory and one binary. Its statement says
-  why the pinned binary cannot take the fix yet and what
-  `govulncheck -mode=binary` reports for that binary. The entries cover Go
-  modules and Go releases that helm, conftest, etcd and kube-apiserver link
-  even in their newest releases (RISK-14). An entry is removed once its
-  advisory no longer shows in the step summary.
+  An ignore entry names one advisory and one binary whose newest release
+  still links the affected Go module or Go release (RISK-14). Its statement
+  names the pinned release and says what the binary's `.gopclntab` holds of
+  the advisory's packages: none of their code, the package without the
+  vulnerable functions, or the vulnerable functions. For the vulnerable
+  functions it also says why the sandbox gives them no attacker-controlled
+  input. An entry is removed once its advisory no longer shows in the step
+  summary.
 
-  govulncheck cannot tell whether one of these binaries links a vulnerable
-  package. They are stripped, so it falls back to module precision and
-  reports every symbol of the advisory as found. Whether the code is in a
-  binary shows in its `.gopclntab`, the function and source file table
-  that stripping keeps, which Go's `debug/gosym` reads.
+  `.gopclntab` is the function and source file table that stripping keeps,
+  which Go's `debug/gosym` reads. govulncheck cannot answer the question
+  for these binaries. They are stripped, so it falls back to module
+  precision and reports every symbol of the advisory as found.
 
-  An advisory whose packages the binary does not link gets an entry with
-  an `expired_at` date three months after the check, and its statement
-  says what `.gopclntab` holds. The entry rests on the pinned build: a
-  later release can link the package, and the entry would still hide it.
-  After the date the job fails on the advisory again until someone checks
-  the binary and renews or removes the entry. Until then Renovate merges
-  no pull request that changes `sandbox/`, because it waits for every
-  check (REV-5).
+  Every entry has an `expired_at` date three months after the check. The
+  statement rests on the pinned build, and a later release can link the
+  vulnerable functions while the entry still hides them. After the date
+  the job fails on the advisory again until someone repeats the check and
+  renews or removes the entry. Until then Renovate merges no pull request
+  that changes `sandbox/`, because it waits for every check (REV-5).
+
+  The check runs on the four Go binaries copied out of the image built
+  from `sandbox/` (`docker create`, then `docker cp` of
+  `/usr/local/bin/<binary>`):
+
+  1. `go version -m <binary>` gives the Go release and the module
+     versions. The advisory's golang/vulndb report
+     (`data/reports/GO-<id>.yaml`, found for a CVE ID through the aliases
+     in `https://vuln.go.dev/index/vulns.json`) gives the affected
+     versions, packages and functions (`symbols` and `derived_symbols`).
+     An advisory without a report takes the functions its fix commit
+     changes.
+  2. `debug/elf` and `debug/gosym` read three lists from `.gopclntab`: the
+     functions (`Table.Funcs`), the source files (`Table.Files`), and every
+     name in the function name table, which adds the functions that exist
+     only inlined into a caller.
+  3. A package with no function and no source file in these lists is none
+     of the code. A package with functions, none of them the report's, is
+     the package without the vulnerable functions. Otherwise the binary
+     holds the vulnerable functions. An advisory limited to another `goos`
+     is none of the code when the binary holds no source file for it.
+  4. When the pin is not the binary's newest release, step 1 runs on the
+     newest release too. An advisory that release fixes is fixed by the
+     bump, not ignored.
 
   The job is not a required check and runs only when its inputs change
   (CI-1). A required check has to report on every pull request. As a
@@ -541,10 +564,13 @@ review go into the review comment and do not fail the gate.
     `sandbox/.trivyignore.yaml` had entries and passing after;
     manual: the job's Trivy command fails on the image of `main` before
     #415 (pip's advisories) and passes on the image of #415;
-    manual: with the GO-2026-5932 entries' `expired_at` set to a past date
-    the job's Trivy command fails on that advisory, with the file's date it
-    passes
-  - Since: #416; `expired_at`: #574
+    manual: with every entry's `expired_at` set to a past date the job's
+    Trivy command fails on each entry's advisory, with the file's dates it
+    passes;
+    manual: the check above, run for every entry, gives what its statement
+    says
+  - Since: #416; `expired_at`: #574; `.gopclntab` statements and expiry on
+    every entry: this change
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
