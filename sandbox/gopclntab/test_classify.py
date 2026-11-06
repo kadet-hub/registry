@@ -32,6 +32,10 @@ class Versions(unittest.TestCase):
         self.assertTrue(affected("v0.58.0", [{"introduced": "0"}, {"fixed": "0.58.1-0.20261009181718-2f1f834330b2"}]))
         self.assertTrue(affected("v0.0.0-20200101000000-abcdef123456", [{"introduced": "0"}, {"fixed": "0.1.0"}]))
         self.assertFalse(affected("v1.4.9", [{"introduced": "1.5.0"}, {"fixed": "1.45.0"}]))
+        self.assertTrue(affected("1.4.0", [{"introduced": "0"}, {"last_affected": "1.4.0"}]))
+        self.assertFalse(affected("1.4.1", [{"introduced": "0"}, {"last_affected": "1.4.0"}]))
+        with self.assertRaises(ValueError):
+            affected("1.4.1", [{"introduced": "0"}, {"limit": "1.5.0"}])
 
 
 class Statements(unittest.TestCase):

@@ -52,15 +52,21 @@ def semver(v):
 
 
 def affected(version, events):
-    """Whether version lies in an OSV range given as introduced and fixed events."""
+    """Whether version lies in an OSV range given as introduced, fixed and last_affected events."""
     v, lo = semver(version), None
     for e in events:
         if "introduced" in e:
             lo = semver("0.0.0-0" if e["introduced"] == "0" else e["introduced"])
-        elif "fixed" in e and lo is not None:
-            if lo <= v < semver(e["fixed"]):
+        elif "fixed" in e:
+            if lo is not None and lo <= v < semver(e["fixed"]):
                 return True
             lo = None
+        elif "last_affected" in e:
+            if lo is not None and lo <= v <= semver(e["last_affected"]):
+                return True
+            lo = None
+        else:
+            raise ValueError(f"OSV range event {e} is not introduced, fixed or last_affected")
     return lo is not None and lo <= v
 
 
