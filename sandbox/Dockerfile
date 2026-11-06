@@ -25,7 +25,7 @@ ADD --checksum=sha256:${ETCD_SHA256} https://github.com/etcd-io/etcd/releases/do
 # PUB-14a: etcd's archive and the kube-apiserver image ship no licence text,
 # so it comes from the release tag. Both are the Apache-2.0 text every release carries.
 ADD --checksum=sha256:43ca1b4bbf462789ba15b28373e0c536e510f49e4d05d85a7690cfee94de6f49 https://raw.githubusercontent.com/etcd-io/etcd/${ETCD_VERSION}/LICENSE /tmp/etcd.LICENSE
-ADD --checksum=sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30 https://raw.githubusercontent.com/kubernetes/kubernetes/v1.37.1/LICENSE /tmp/kube-apiserver.LICENSE
+ADD --checksum=sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30 https://raw.githubusercontent.com/kubernetes/kubernetes/v1.37.2/LICENSE /tmp/kube-apiserver.LICENSE
 COPY requirements.txt /tmp/requirements.txt
 COPY krab/requirements.txt /tmp/krab-requirements.txt
 # Kapitan's venv is /usr/local, so the interpreter, kapitan and the tools keep
@@ -58,7 +58,7 @@ COPY --from=build /opt/krab-python /opt/krab-python
 COPY --from=build /etc/passwd /etc/group /etc/
 COPY --from=build /home/gate /home/gate
 COPY --from=build /licenses /usr/share/doc
-COPY --from=registry.k8s.io/kube-apiserver:v1.37.1@sha256:e190f914a6cc21cab9268485d1ae7282fdeab1315ac64b668aa42d732fd1061d /usr/local/bin/kube-apiserver /usr/local/bin/kube-apiserver
+COPY --from=registry.k8s.io/kube-apiserver:v1.37.2@sha256:3e563afb5cb5b72a10bac7012698dd09f5a42bde7d22de8d7d3c12e654df86b4 /usr/local/bin/kube-apiserver /usr/local/bin/kube-apiserver
 # PATH holds only directories that exist, so a program lookup tries no other path (SEC-10).
 ENV PATH=/usr/local/bin:/usr/bin \
     KRAB_PYTHON=/opt/krab-python/bin/python KRAB_NO_DAEMON=1 \
