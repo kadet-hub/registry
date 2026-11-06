@@ -1337,7 +1337,7 @@ Related: CAT-15, CAT-30, CON-2.
   names Chainsaw only under Built for, did not.
 
   - Test: `catalog/test_catalog.py::test_search_matches_built_for`
-  - Since: this change
+  - Since: #421
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
@@ -1654,7 +1654,7 @@ Related: CAT-15, CAT-30, CON-2.
   build (CAT-36a).
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #546
 
 - CAT-46: The site MUST have a page at `/stacks/` that lists every
   published stack post, newest first, with its title linked to the post,
@@ -1667,13 +1667,13 @@ Related: CAT-15, CAT-30, CON-2.
   name. Without a published stack post the page says so.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`)
-  - Since: this change
+  - Since: #546
 
 - CAT-47: The site navigation MUST link `/stacks/` after "Recipes", and
   `/llms.txt` (CAT-16) MUST link it under "Using generators".
 
   - Test: `catalog/test_catalog.py` (`Site.test_stacks_linked`)
-  - Since: this change
+  - Since: #546
 
 - CAT-48: Every recipe page and every generator page MUST have a section
   "Used in stacks" that links each published stack post naming it, newest
@@ -1685,7 +1685,7 @@ Related: CAT-15, CAT-30, CON-2.
   variants (CAT-28, CAT-37b) do not carry it.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_used_in_stacks`)
-  - Since: this change
+  - Since: #546
 
 - CAT-49: The build MUST fail when a published stack post names a recipe
   without a page at `/recipes/<name>/` or names no `example`.
@@ -1702,7 +1702,7 @@ Related: CAT-15, CAT-30, CON-2.
   index, and the fixture indexes of the tests leave most of them out.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #546
 
 - CAT-50: The build MUST fail when a published stack post's `example` is
   not one folder name of lowercase letters, digits and single hyphens.
@@ -1720,7 +1720,7 @@ Related: CAT-15, CAT-30, CON-2.
   have.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #561
 
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
@@ -1851,6 +1851,11 @@ Related: CAT-15, CAT-30, CON-2.
   `layout` and `lastmod`, and CAT-37b and CAT-11g apply as to every recipe
   page.
 
+  The template reads each class and `init.yml` as YAML by its extension.
+  Given only the text, `transform.Unmarshal` guesses the format, and it
+  read homepage's `kubernetes.yml`, whose first comment has a comma before
+  any colon, as CSV and stopped the build.
+
   "Required parameters" names the values the target must set, such as
   miniflux's two password refs, or says that there are none (RCP-40
   there). A recipe leaves such a value unset, so the compile stops until
@@ -1908,7 +1913,9 @@ Related: CAT-15, CAT-30, CON-2.
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
     recipes' prerequisites: #368; nextcloud: #402;
     authentik, blackbox-exporter, gitea, immich, jellyfin, n8n, netbox,
-    ollama, open-webui and semaphore: #507; forgejo: #542
+    ollama, open-webui and semaphore: #507; forgejo: #542; litellm,
+    mattermost, qdrant, rocketchat, stirling-pdf and zulip, classes read
+    as YAML: #577
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1946,7 +1953,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
   - Since: #343; paperless-ngx, pihole, searxng, uptime-kuma and
-    vaultwarden: #507; umami: #519
+    vaultwarden: #507; umami: #519; actual, ejabberd and memos: #577
 
 - CAT-37f: A CAT-37c page whose README `Source:` line is an image
   reference MUST show the source as the container image the recipe is
@@ -2012,7 +2019,8 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
     keycloak: #368; mariadb: #509;
-    wordpress: #511; memcached: #542
+    wordpress: #511; memcached: #542; ghost, home-assistant, homepage and
+    matrix-synapse: #577
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its
@@ -2047,7 +2055,8 @@ Related: CAT-15, CAT-30, CON-2.
   verification commands. The page MUST add the `renders` result of that
   version's scan record next to the README's level, the output
   capabilities with the `output_capabilities` line a consumer policy needs,
-  and every version. A version that is yanked, or that pins a yanked
+  the inventory backends of its record (REC-18) when it lists them, and
+  every version. A version that is yanked, or that pins a yanked
   generator version, MUST show the reason and no fetch inventory entry.
 
   The page then shows what consumers fetch, not what `main` holds since.
@@ -2081,8 +2090,9 @@ Related: CAT-15, CAT-30, CON-2.
   read the files from, so its page stays built from `main` and adds the
   version list.
 
-  - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`)
-  - Since: #399; included recipes left to the consumer workflow: #536
+  - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`, `ListedRecipe.test_backends`)
+  - Since: #399; included recipes left to the consumer workflow: #536;
+    inventory backends: #544
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 

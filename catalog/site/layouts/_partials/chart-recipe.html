@@ -46,7 +46,7 @@
 {{- if not $init }}{{ errorf "CAT-37c: recipe %s: classes/recipes/%s/init.yml missing" $name $name }}{{ end -}}
 {{- /* The recipes it includes as recipes.<other>, which a consumer fetches too. */ -}}
 {{- $deps := slice $name -}}
-{{- range (transform.Unmarshal $init.Content).classes -}}
+{{- range (transform.Unmarshal $init).classes -}}
   {{- if strings.HasPrefix . "." }}{{ $files = $files | append (dict "class" (printf "recipes.%s%s" $name .) "file" (printf "%s.yml" (strings.TrimPrefix "." .))) }}{{ end -}}
   {{- with findRESubmatch `^recipes\.([a-z0-9-]+)$` . 1 }}{{ $deps = $deps | append (index (index . 0) 1) }}{{ end -}}
 {{- end -}}
@@ -59,7 +59,7 @@
   {{- $f := resources.Get $path -}}
   {{- if not $f }}{{ errorf "CAT-37c: recipe %s: %s missing" $name $path }}{{ end -}}
   {{- $components := slice -}}
-  {{- with (transform.Unmarshal $f.Content).parameters -}}
+  {{- with (transform.Unmarshal $f).parameters -}}
     {{- range $k, $_ := .components }}{{ $components = $components | append $k }}{{ end -}}
     {{- with .kapitan }}{{ range .dependencies -}}
       {{- with findRESubmatch (printf `^ghcr\.io/%s/([a-z0-9-]+):([^@]+)@(sha256:[0-9a-f]{64})$` $owner) .source 1 -}}
