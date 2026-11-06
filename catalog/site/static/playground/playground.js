@@ -2,7 +2,7 @@
 // the visitor starts it; then a module worker compiles with Kapitan in Pyodide.
 const $ = (id) => document.getElementById(id);
 const app = $("pg-app");
-let worker, examples, current, files = {}, path = "", runs = 0, prov = null;
+let worker, examples, current, files = {}, path = "", runs = 0, prov = null, syntax;
 
 const status = (text) => { $("pg-status").textContent = text; };
 // lib/ holds fetched generators: compiled, not edited.
@@ -39,6 +39,7 @@ function load(name) {
   if (helm) {
     $("pg-helm-source").textContent = `${helm.chart}, rendered with helm ${helm.helm}`;
     $("pg-helm-output").textContent = helm.output;
+    shade($("pg-helm-output"), helm.output, "helm.yaml");
   }
   show(Object.keys(files).filter(editable).find((p) => p.startsWith("inventory/targets/")));
 }
@@ -66,6 +67,10 @@ function result(data) {
     const pre = document.createElement("pre");
     s.textContent = name;
     pre.textContent = data.out[name];
+    // An output is highlighted when it is first opened.
+    d.addEventListener("toggle", () => {
+      if (d.open && !pre.dataset.shaded) shade(pre, data.out[name], name);
+    });
     d.open = i === 0;
     d.append(s, pre);
     return d;
@@ -73,6 +78,12 @@ function result(data) {
   showProv(data);
   document.body.dataset.pgRuns = String(data.id);
   document.body.dataset.pgExit = String(data.code);
+}
+
+// PG-23: plain text stays if the highlighter fails to load.
+function shade(pre, text, name) {
+  pre.dataset.shaded = "true";
+  syntax.then((m) => m.highlight(pre, text, name), () => {});
 }
 
 const el = (tag, cls, text) => {
@@ -163,6 +174,7 @@ function showParams() {
 
 async function start() {
   $("pg-start").disabled = true;
+  syntax = import("./syntax.js");
   status(`Loading Python and Kapitan (${$("pg-start").dataset.size})...`);
   examples = await (await fetch(new URL("./examples.json", import.meta.url))).json();
   $("pg-example").replaceChildren(...examples.examples.map((e) => new Option(e.title, e.name)));
