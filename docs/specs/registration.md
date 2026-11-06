@@ -189,7 +189,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     one release back; `checksum-pins` workflow.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
     #306; recipe entries: #378; branch and title per entry: #381; kind,
-    kubectl and uv: #389; golang: this change
+    kubectl and uv: #389; golang: #581
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
