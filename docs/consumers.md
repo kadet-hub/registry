@@ -74,7 +74,9 @@ jobs:
 ```
 
 Pin the workflow by commit SHA; the scripts and the sandbox image it uses
-belong to that commit. The workflow compiles the Kapitan project at the
+belong to that commit. [CHANGELOG.md](../CHANGELOG.md) says what changes
+when you move the pin and what you have to do, and each index release
+repeats the sections added since the previous one. The workflow compiles the Kapitan project at the
 repository root; a project in a subdirectory needs its own repository. The compiled output is uploaded as the artifact
 `compiled`. Review it before you apply it.
 

@@ -1,12 +1,14 @@
 """Build the marketplace index (PUB-4, PUB-5, REC-13). Standard library only.
 
 Usage: index.py --versions JSONL --entries JSON [--recipe-versions JSONL --recipe-entries JSON]
-                [--previous JSON] --out JSON --notes MD
+                [--previous JSON [--changelog MD --changelog-previous MD]] --out JSON --notes MD
 
 --versions: one {"digest": ..., "meta": <config blob>} per attested tag.
 --entries:  {name: <entry on main>} for every entry file on main.
 --recipe-versions, --recipe-entries: the same for the recipes (REC-13).
 --previous: the verified `latest` index, if one exists.
+--changelog, --changelog-previous: CHANGELOG.md now and at the previous
+            serial's release; the notes add the sections since (CON-10).
 --notes:    where to write the GitHub release notes (PUB-12).
 Exits 0 after writing --out, 3 when the content equals --previous.
 """
@@ -53,7 +55,15 @@ def build(versions, entries, previous, now, recipe_versions=(), recipe_entries=N
     return {"serial": (previous["serial"] + 1) if previous else 1, "generators": generators, "recipes": recipes}
 
 
-def notes(previous, index):
+def changelog(previous, current):
+    """The `## ` sections of CHANGELOG.md text current whose heading previous lacks (CON-10)."""
+    def sections(text):
+        return [("## " + part).rstrip() for part in ("\n" + text).split("\n## ")[1:]]
+    seen = {s.split("\n", 1)[0] for s in sections(previous)}
+    return [s for s in sections(current) if s.split("\n", 1)[0] not in seen]
+
+
+def notes(previous, index, consumer=()):
     added, yanked = [], []
     for key, label in (("generators", ""), ("recipes", "recipe ")):
         before = (previous or {}).get(key, {})
@@ -71,6 +81,8 @@ def notes(previous, index):
         parts.append("Yanked:\n\n" + "\n".join(yanked))
     if not (added or yanked):
         parts.append("No version added or yanked.")
+    if consumer:
+        parts.append("Consumer workflow changes (CHANGELOG.md):\n\n" + "\n\n".join(consumer))
     return "\n\n".join(parts) + "\n"
 
 
@@ -81,6 +93,8 @@ def main():
     p.add_argument("--recipe-versions")
     p.add_argument("--recipe-entries")
     p.add_argument("--previous")
+    p.add_argument("--changelog")
+    p.add_argument("--changelog-previous")
     p.add_argument("--out", required=True)
     p.add_argument("--notes", required=True)
     a = p.parse_args()
@@ -105,8 +119,12 @@ def main():
         return 3
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(index, f, sort_keys=True, indent=1)
+    consumer = []
+    if a.changelog:
+        with open(a.changelog, encoding="utf-8") as f, open(a.changelog_previous, encoding="utf-8") as g:
+            consumer = changelog(g.read(), f.read())
     with open(a.notes, "w", encoding="utf-8") as f:
-        f.write(notes(previous, index))
+        f.write(notes(previous, index, consumer))
     print(f"index serial {index['serial']}")
     return 0
 

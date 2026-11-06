@@ -511,6 +511,7 @@ coverage is named at each:
 | `scan/images.py`, `scan/image_report.py`, `.github/actions/setup-trivy/` | SEC-19, CAT-39a: the images a version names and their Trivy scan |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2, CON-4, CON-5 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
+| `CHANGELOG.md` | CON-10; copied into the index release notes by `release/publish-index` and `release/index.py` (PUB-12) |
 | `policy/consumer.schema.json` | consumer policy `.kapitan-sandbox.yaml` |
 | `docs/consumers.md` | CON-2, CON-3, CON-6, PUB-12, PUB-13b, CAT-34d, CAT-34e |
 | `.github/actions/compile-diff/`, `.github/actions/compile-diff-comment/`, `consumer/compile_diff.py` | CD-1 to CD-11; paths in [compile-diff.md](compile-diff.md) |
