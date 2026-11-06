@@ -416,7 +416,8 @@ LISTED_INDEX = {"serial": 64, "generators": {
     "kubernetes": {"1.7.0": record("d"), "1.7.1": record("e"), "1.9.0": record("9", yanked="renders a broken Service")}},
     "recipes": {
         "cert-manager": {"1.0.0": recipe_record("cert-manager", "a", yanked="wrong CRDs"),
-                         "1.1.0": recipe_record("cert-manager", "b", "1.1.0", generators=(("kubernetes", "1.7.1", "e"),), capabilities=("admission-webhook",))},
+                         "1.1.0": dict(recipe_record("cert-manager", "b", "1.1.0", generators=(("kubernetes", "1.7.1", "e"),),
+                                                     capabilities=("admission-webhook",)), backends=["omegaconf"])},
         "valkey": {"1.0.0": recipe_record("valkey", "3", generators=(("kubernetes", "1.9.0", "9"),))},  # pins a yanked generator
         "external-dns-powerdns": {"1.0.0": recipe_record("external-dns-powerdns", "4", includes=(("powerdns", "1.0.0", "5"),), scan=SCAN)},
         "powerdns": {"1.0.0": {k: v for k, v in recipe_record("powerdns", "5").items() if k != "chart"}},  # designed: no chart
@@ -2204,8 +2205,14 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn(f"\n- Latest version: 1.1.0, published 2026-10-26\n- Source chart: {ARTIFACT_CHART}\n"
                       "- Proof level: deploys, compared with the chart by the kadet-hub/recipes CI\n"
                       "- renders passed in the release run of 2026-10-10 with check 0.11.0, kind v0.33.0: https://github.com/kadet-hub/registry/actions/runs/42\n"
-                      "- Output capabilities: admission-webhook\n- Generators: kubernetes 1.7.1", md)
+                      "- Output capabilities: admission-webhook\n- Inventory backends: omegaconf\n- Generators: kubernetes 1.7.1", md)
         self.assertNotIn("without Bitnami", self.page("recipes", "valkey"))
+
+    def test_backends(self):  # CAT-38, REC-18: the record's inventory backends, none for a record without them
+        self.assertIn("<li>Output capabilities: <code>admission-webhook</code></li>\n<li>Inventory backends: <code>omegaconf</code></li>",
+                      self.page("recipes", "cert-manager"))
+        self.assertNotIn("Inventory backends", self.page("recipes", "valkey"))
+        self.assertNotIn("Inventory backends", self.page("recipes", "valkey", name="index.md"))
 
     def test_fetch_inventory_and_verification(self):  # CAT-38, CON-4, CON-5
         page = self.page("recipes", "cert-manager")

@@ -2047,7 +2047,8 @@ Related: CAT-15, CAT-30, CON-2.
   verification commands. The page MUST add the `renders` result of that
   version's scan record next to the README's level, the output
   capabilities with the `output_capabilities` line a consumer policy needs,
-  and every version. A version that is yanked, or that pins a yanked
+  the inventory backends of its record (REC-18) when it lists them, and
+  every version. A version that is yanked, or that pins a yanked
   generator version, MUST show the reason and no fetch inventory entry.
 
   The page then shows what consumers fetch, not what `main` holds since.
@@ -2081,8 +2082,9 @@ Related: CAT-15, CAT-30, CON-2.
   read the files from, so its page stays built from `main` and adds the
   version list.
 
-  - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`)
-  - Since: #399; included recipes left to the consumer workflow: #536
+  - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`, `ListedRecipe.test_backends`)
+  - Since: #399; included recipes left to the consumer workflow: #536;
+    inventory backends: #544
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 

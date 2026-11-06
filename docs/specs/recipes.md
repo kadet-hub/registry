@@ -128,7 +128,8 @@ The entry has the generator entry's shape, so `policy/entry.schema.json`,
 GI-9 and the Renovate regex manager of REG-7 apply unchanged. Renovate
 compares tags within their prefix, so `cert-manager-v1.0.0` moves only to a
 newer `cert-manager-v*`. The source repository carries no manifest: the
-recipe's README and class files hold what the index lists (REC-13).
+recipe's README, class files and `recipe.yaml` hold what the index lists
+(REC-13, REC-18).
 
 - REC-1: A recipe entry MUST set `source.repo` to
   `https://github.com/kadet-hub/recipes.git`, `source.path` to its name,
@@ -715,8 +716,8 @@ parameters:
   its `Source` line, `generators` (`name`, `version`,
   `digest`) for each pin, `includes` (`name`, `version`, `digest`) for each
   included recipe (REC-16), `output_capabilities` (the SEC-12 matches,
-  DEC-23), `kinds` (PUB-10), `scan`, `output_diff`, `published`, `yanked`
-  and `advisories`.
+  DEC-23), `kinds` (PUB-10), `required` and `backends` from `recipe.yaml`
+  (REC-18), `scan`, `output_diff`, `published`, `yanked` and `advisories`.
 
   For a chart from an HTTP repository `repo` is the line's
   `https://<repository>/<chart>` with its scheme, so a reader tells it from
@@ -763,6 +764,40 @@ parameters:
   - Test: `release/test_release.py` (`Index.test_recipes`, `Index.test_release_notes`, `BuildAll.test_recipe_record`); `gate/test_check_recipe.py` (`Recipe.test_passes`, `Recipe.test_description`, `Recipe.test_license`)
   - Since: #391
 
+- REC-18: When the shipped tree holds `recipe.yaml` (RCP-260 in
+  kadet-hub/recipes), the gate MUST fail unless the file is a mapping with
+  the keys `backends` and `required` and no other. `backends` MUST list
+  `omegaconf` and MAY list `reclass` and `reclass-rs`, each once. Each entry
+  of `required` MUST be a mapping with `path`, a dotted parameter path that
+  no other entry has, `description`, one line of at most 300 characters
+  without the characters QA-5a bans, `secret`, a boolean, and optionally
+  `option`, the name of a class file `<option>.yml` at the tree's root. The
+  release MUST copy `backends` and `required` into the record (REC-13).
+
+  ```json
+  "backends": ["omegaconf"],
+  "required": [{"path": "applications.valkey.password", "description": "Password of Valkey's user default, with which Immich connects to its job queue.", "secret": true}]
+  ```
+
+  A program that writes a target for a recipe, such as a Backstage
+  template, reads there which parameters the target must set, which of
+  them are refs and on which inventory backends the recipe resolves.
+  kadet-hub/recipes proves the file against the README and with
+  `kapitan inventory` (RCP-261 to RCP-263 there). The gate records it as
+  that repository's claim, as it records the level (DEC-20), and checks
+  only its shape, because programs read the signed record without
+  checking it again.
+
+  `gate/check_recipe.py` reads the file in the gate job as in the build
+  job and writes it to `recipe.json` as `declared`, from which
+  `release/build-all` copies both keys. A version published before
+  `check lint` required the file (REC-4) has neither key in its record, as
+  versions from before REC-12 have no `images`. The index carries no
+  schema version to bump. The findings start with `REC-18: recipe.yaml`.
+
+  - Test: `gate/test_check_recipe.py` (`Recipe.test_declared`); `release/test_release.py` (`BuildAll.test_recipe_record`)
+  - Since: #544
+
 Consumer workflow commits from before CON-4 reject a
 `ghcr.io/kadet-hub/recipes/<name>` source with `is not a marketplace
 generator`, because `consumer/plan.py` only accepts a name that matches
@@ -776,7 +811,7 @@ REG-2. They fail closed.
 | `policy/reserved-names.txt` | `recipes` (REC-2) |
 | `gate/check_entry.py`, `gate/run` | REC-1 to REC-3, REC-10, the hand-over to REC-9 |
 | `gate/recipe-checks` | REC-4 to REC-8 and REC-15 to REC-17 on one version, for the gate job, the build job and the output diff (REC-10, REC-12) |
-| `gate/fetch_tree.py`, `gate/recipe-static`, `gate/check_recipe.py`, `release/tree.py` | REC-4 to REC-6, REC-15 to REC-17, the included and required recipes' targets and generators (REC-8, REC-17), the description and license (REC-13) |
+| `gate/fetch_tree.py`, `gate/recipe-static`, `gate/check_recipe.py`, `release/tree.py` | REC-4 to REC-6, REC-15 to REC-17, the included and required recipes' targets and generators (REC-8, REC-17), the description and license (REC-13), `recipe.yaml` (REC-18) |
 | `gate/recipe-compile`, `sandbox/run` | REC-7, REC-8, REC-17 |
 | `gate/recipe-renders` | REC-9, the required recipes' output next to the recipe's (REC-17) |
 | `gate/output_diff.py` | REC-10 |
