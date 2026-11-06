@@ -544,7 +544,7 @@ review go into the review comment and do not fail the gate.
     manual: with the GO-2026-5932 entries' `expired_at` set to a past date
     the job's Trivy command fails on that advisory, with the file's date it
     passes
-  - Since: #416; `expired_at`: this change
+  - Since: #416; `expired_at`: #574
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
