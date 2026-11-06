@@ -24,14 +24,14 @@ import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [HERE, os.path.join(HERE, "..", "consumer"), os.path.join(HERE, "..", "release")]  # python -I does not add the script dir
-from check_entry import LICENSE_HEAD, lines, load_json, read_text  # noqa: E402
-from plan import check_index  # noqa: E402
-from tree import read_dir, tree_id  # noqa: E402
+from check_entry import LICENSE_HEAD, lines, load_json, read_text
+from plan import check_index
+from tree import read_dir, tree_id
 
 GENERATOR = re.compile(r"^ghcr\.io/kadet-hub/(?P<name>[a-z][a-z0-9-]{1,38}):(?P<tag>[A-Za-z0-9_][A-Za-z0-9._-]{0,127})"
                        r"@(?P<digest>sha256:[0-9a-f]{64})$")
 INCLUDED = re.compile(r"^recipes\.(?P<other>[a-z][a-z0-9-]{1,38})(\.[A-Za-z0-9_-]+)?$")
-README_LINE = {"source": re.compile(r"^Source: .*$", re.M), "level": re.compile(r"^Level: .*$", re.M)}
+README_LINE = {"source": re.compile(r"^Source: .*$", re.MULTILINE), "level": re.compile(r"^Level: .*$", re.MULTILINE)}
 # QA-5a: the characters manifest.schema.json bans from a description; tab, line feed and carriage return are whitespace here.
 CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")
 # REC-18: recipe.yaml of kadet-hub/recipes (RCP-260 there).

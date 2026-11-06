@@ -6,7 +6,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "release"))
-from tree import read_dir, tree_id  # noqa: E402
+from tree import read_dir, tree_id
 
 
 def run(*args, cwd):

@@ -15,7 +15,7 @@ except ImportError:
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from tree import tree_id  # noqa: E402
+from tree import tree_id
 
 SHA = "a" * 40
 RECIPE = {"init.yml": "classes: [.demo]\n", "README.md": "# demo\n", "vendor/crds.yaml": "kind: CRD\n",
@@ -54,7 +54,7 @@ class Build(unittest.TestCase):
             os.makedirs(out)  # as build-all does
             # Without -I, so build.py imports what this test imported.
             p = subprocess.run([sys.executable, os.path.join(HERE, "build.py"), "--base", base, "--sources", src, "--out", out],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, check=False)
             built = {}
             for name in ["demo"] + [f"recipes/{r}" for r in recipes]:
                 d = os.path.join(out, name)
@@ -84,7 +84,7 @@ class Build(unittest.TestCase):
                                            "tag": "demo-v2.0.0", "sha": SHA}})
 
     def test_recipe_names(self):  # REG-2, REG-3 among recipes and the reserved names (REC-2)
-        p, names, built = self.build(["recipes", "foo-bar", "foobar"])
+        p, _names, _built = self.build(["recipes", "foo-bar", "foobar"])
         self.assertEqual(p.returncode, 1)
         self.assertIn("REG-2: recipe recipes is reserved", p.stdout)
         self.assertIn("REG-3: recipe foobar equals foo-bar without separators", p.stdout)
@@ -110,7 +110,7 @@ class Build(unittest.TestCase):
         self.assertIsNone(built["demo"][2])
 
     def test_root_license(self):  # PUB-15
-        p, names, built = self.build(["demo"])
+        p, _names, built = self.build(["demo"])
         self.assertEqual(p.returncode, 0, p.stdout)
         # The tar gets the repository root's LICENSE; tree stays the ID of the tree without it.
         meta, members, _ = built["demo"]

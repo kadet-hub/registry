@@ -145,7 +145,7 @@ def compile_project(files, backend):
         if getattr(cached.inv, "targets", None):
             try:
                 prov = {name: provenance(backend, cached.inv.inventory_path, t) for name, t in cached.inv.targets.items()}
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 provenance is best effort, the panel shows the error
                 prov = {"error": f"{type(exc).__name__}: {exc}"}
         compiled = os.path.join(root, "compiled")
         for dirpath, _, names in os.walk(compiled):
@@ -175,7 +175,10 @@ def _sources(backend, inventory_path, target):
     from kapitan.inventory.backends.omegaconf import keys_to_strings
 
     if backend == "omegaconf":
-        from kapitan.inventory.backends.omegaconf import OmegaConfInventory, OmegaConfTarget
+        from kapitan.inventory.backends.omegaconf import (
+            OmegaConfInventory,
+            OmegaConfTarget,
+        )
 
         inv = OmegaConfInventory(inventory_path=inventory_path, initialise=False)
         top = os.path.join(inv.targets_path, target.path)
@@ -325,7 +328,7 @@ def provenance(backend, inventory_path, target):
     other = "reclass" if backend == "omegaconf" else "omegaconf"
     try:
         order = {"classes": [{"name": n, "file": f} for kind, n, _, f, _ in _sources(other, inventory_path, target) if kind == "class"]}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 the other backend's order is best effort, the panel shows the error
         order = {"error": f"{type(exc).__name__}: {exc}"}
     return {"sources": [{"kind": k, "name": n, "via": v, "file": f} for k, n, v, f, _ in sources], "other": dict(order, backend=other),
             "params": params, "mismatches": mismatches}

@@ -67,7 +67,7 @@ def gate_pins():
     with open(os.path.join(ROOT, "sandbox", "requirements.txt"), encoding="utf-8") as f:
         text = f.read()
     pins = {}
-    for m in re.finditer(r"^([A-Za-z0-9_.-]+)==(\S+)((?:\s*\\\n\s+--hash=sha256:[0-9a-f]{64})+)", text, re.M):
+    for m in re.finditer(r"^([A-Za-z0-9_.-]+)==(\S+)((?:\s*\\\n\s+--hash=sha256:[0-9a-f]{64})+)", text, re.MULTILINE):
         pins[norm(m.group(1))] = (m.group(2), set(re.findall(r"sha256:([0-9a-f]{64})", m.group(3))))
     return pins
 
@@ -108,8 +108,8 @@ def helm_binary(work):
     """helm as sandbox/Dockerfile pins it, so the gate and the page render with the same version."""
     with open(os.path.join(ROOT, "sandbox", "Dockerfile"), encoding="utf-8") as f:
         text = f.read()
-    version = re.search(r"^ARG HELM_VERSION=(\S+)", text, re.M).group(1)
-    sha = re.search(r"^ARG HELM_SHA256=([0-9a-f]{64})", text, re.M).group(1)
+    version = re.search(r"^ARG HELM_VERSION=(\S+)", text, re.MULTILINE).group(1)
+    sha = re.search(r"^ARG HELM_SHA256=([0-9a-f]{64})", text, re.MULTILINE).group(1)
     tgz = os.path.join(work, "helm.tgz")
     fetch(f"https://get.helm.sh/helm-{version}-linux-amd64.tar.gz", {sha}, tgz)
     with tarfile.open(tgz) as t:
@@ -127,7 +127,7 @@ def helm_template(chart, spec, values, work):
     subprocess.run([helm, "pull", f"oci://{chart['repo']}@{chart['digest']}", "-d", out], env=env, check=True, capture_output=True)
     (tgz,) = [os.path.join(out, f) for f in os.listdir(out)]
     shown = subprocess.run([helm, "show", "chart", tgz], env=env, check=True, capture_output=True, text=True).stdout
-    if not re.search(rf"^version: {re.escape(chart['version'])}$", shown, re.M):
+    if not re.search(rf"^version: {re.escape(chart['version'])}$", shown, re.MULTILINE):
         sys.exit(f"build.py: oci://{chart['repo']}@{chart['digest']} is not version {chart['version']}")
     rendered = subprocess.run([helm, "template", spec["release"], tgz, "-n", spec["namespace"], "-f", values, "--include-crds"],
                               env=env, check=True, capture_output=True, text=True).stdout

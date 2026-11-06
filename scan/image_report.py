@@ -20,7 +20,7 @@ import sys
 
 
 def trivy(*args):
-    return subprocess.run(["trivy", *args], capture_output=True, text=True)
+    return subprocess.run(["trivy", *args], capture_output=True, text=True, check=False)
 
 
 def scan(ref):
@@ -48,7 +48,7 @@ def main():
         for line in f:
             page, version, refs = line.rstrip("\n").split("\t")
             pages.setdefault(page, {})[version] = refs.split()
-    scanned = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    scanned = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     db = trivy("image", "--quiet", "--download-db-only")
     if db.returncode:
         sys.exit(f"trivy: vulnerability database not downloaded: {db.stderr.strip()}")

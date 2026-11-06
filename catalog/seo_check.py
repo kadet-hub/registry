@@ -102,7 +102,7 @@ def check(site):
     if "index.html" not in pages:
         return ["CAT-11a: index.html: no home page"]
     for path, page in sorted(pages.items()):
-        def found(message, req="CAT-11"):
+        def found(message, req="CAT-11", path=path):
             out.append(f"{req}: {path}: {message}")
         length(found, "title", page.title, 30, 65)
         length(found, "meta description", page.description, 50, 160)

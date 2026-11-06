@@ -203,7 +203,7 @@ def check(schemas, out, sources):
         declared = pins(docs)
         noted = set()
 
-        def schema_for(local, rel):
+        def schema_for(local, rel, declared=declared, noted=noted):
             if local not in declared:
                 return None
             source, version = declared[local]
@@ -229,7 +229,7 @@ def check(schemas, out, sources):
                     if schema:
                         errs = []
                         block(part, schema.get("provider", {}).get("block", {}), f"provider.{local}", errs, skip={"alias", "version"})
-                        findings += [f"QA-8: {rel}: {e}" for e in errs]
+                        findings.extend(f"QA-8: {rel}: {e}" for e in errs)
             for kind, key in (("resource", "resource_schemas"), ("data", "data_source_schemas")):
                 for rtype, named in items(doc.get(kind, {})):
                     for name, body in items(named):
@@ -243,7 +243,7 @@ def check(schemas, out, sources):
                             continue
                         errs = []
                         block(body, schema[key][rtype].get("block", {}), prefix, errs, skip=META)
-                        findings += [f"QA-8: {rel}: {e}" for e in errs]
+                        findings.extend(f"QA-8: {rel}: {e}" for e in errs)
     return findings, lines, used
 
 
@@ -251,7 +251,7 @@ def extract(full, out, only=None):
     with open(full, encoding="utf-8") as f:
         data = json.load(f)
     want = {"resource_schemas": set(), "data_source_schemas": set()}
-    for _, docs in modules(out).items():
+    for docs in modules(out).values():
         for _, doc in docs:
             for kind, key in (("resource", "resource_schemas"), ("data", "data_source_schemas")):
                 for rtype, _ in items(doc.get(kind, {})):
@@ -271,7 +271,7 @@ def describe(path):
     """(source, version) of the provider in an extract, from its content and file name."""
     m = re.fullmatch(r".+_(\d+\.\d+\.\d+)\.json", os.path.basename(path))
     with open(path, encoding="utf-8") as f:
-        addresses = list((json.load(f).get("provider_schemas") or {}))
+        addresses = list(json.load(f).get("provider_schemas") or {})
     if not m or len(addresses) != 1:
         raise ValueError(f"{path}: expected one provider and a <namespace>_<type>_<version>.json name")
     return source_of(addresses[0]), m.group(1)
