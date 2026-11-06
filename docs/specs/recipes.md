@@ -398,7 +398,9 @@ the rules it is judged by.
   release manifest `check` compares both sides, each on its own cluster
   (RCP-8). A compose source or a designed recipe has nothing to compare
   with, so `check` lints its output and dry-runs it on one cluster
-  (RCP-38, RCP-44).
+  (RCP-38, RCP-44). From `check-v0.17.0` on, a designed recipe may render
+  RBAC that only reads, bound only to its own roles (RCP-308). Any other
+  RBAC object in a compose or designed recipe still fails.
 
   kind needs Docker on the runner, so the job runs outside the sandbox and
   receives data only (DEC-21). Once every check before REC-9 has passed,
@@ -441,8 +443,8 @@ the rules it is judged by.
   reports `REC-9: not run, a check before it failed`, and the `renders`
   job is skipped.
 
-  - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`)
-  - Since: #389; required recipes and `gateway-api` (REC-17): #390
+  - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`; RCP-308 by `check/tests/test_lint.py` in kadet-hub/recipes, no sample)
+  - Since: #389; required recipes and `gateway-api` (REC-17): #390; read-only RBAC of designed recipes (RCP-308): this change
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
@@ -793,5 +795,5 @@ REG-2. They fail closed.
 | Config media type | `application/vnd.kadet-hub.recipe.config.v1+json` |
 | Consumer path | `inventory/classes/recipes/<name>/` |
 | Inventory backend | omegaconf |
-| `check` | kadet-hub/recipes `check-v0.16.0`, commit `22ffe6af282b237bd0e0ce6428a4c20cf39b503e`, in `gate/.check/` |
+| `check` | kadet-hub/recipes `check-v0.17.0`, commit `c9db13e08d5be895749204f3caa91b5488ace29a`, in `gate/.check/` |
 | cloud-provider-kind | v0.12.0 in `.github/actions/setup-kind/` (REC-17) |
