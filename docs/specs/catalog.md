@@ -1337,7 +1337,7 @@ Related: CAT-15, CAT-30, CON-2.
   names Chainsaw only under Built for, did not.
 
   - Test: `catalog/test_catalog.py::test_search_matches_built_for`
-  - Since: this change
+  - Since: #421
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
@@ -1654,7 +1654,7 @@ Related: CAT-15, CAT-30, CON-2.
   build (CAT-36a).
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #546
 
 - CAT-46: The site MUST have a page at `/stacks/` that lists every
   published stack post, newest first, with its title linked to the post,
@@ -1667,13 +1667,13 @@ Related: CAT-15, CAT-30, CON-2.
   name. Without a published stack post the page says so.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`)
-  - Since: this change
+  - Since: #546
 
 - CAT-47: The site navigation MUST link `/stacks/` after "Recipes", and
   `/llms.txt` (CAT-16) MUST link it under "Using generators".
 
   - Test: `catalog/test_catalog.py` (`Site.test_stacks_linked`)
-  - Since: this change
+  - Since: #546
 
 - CAT-48: Every recipe page and every generator page MUST have a section
   "Used in stacks" that links each published stack post naming it, newest
@@ -1685,7 +1685,7 @@ Related: CAT-15, CAT-30, CON-2.
   variants (CAT-28, CAT-37b) do not carry it.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_used_in_stacks`)
-  - Since: this change
+  - Since: #546
 
 - CAT-49: The build MUST fail when a published stack post names a recipe
   without a page at `/recipes/<name>/` or names no `example`.
@@ -1702,7 +1702,7 @@ Related: CAT-15, CAT-30, CON-2.
   index, and the fixture indexes of the tests leave most of them out.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #546
 
 - CAT-50: The build MUST fail when a published stack post's `example` is
   not one folder name of lowercase letters, digits and single hyphens.
@@ -1720,7 +1720,7 @@ Related: CAT-15, CAT-30, CON-2.
   have.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #561
 
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
