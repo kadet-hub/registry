@@ -1,9 +1,12 @@
 import os
 import sys
 import unittest
+import urllib.error
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from classify import affected, check, named, osv, stated
+import classify
+from classify import affected, check, named, osv, rows, stated
 
 DUMP = {
     "go": "go1.27.1",
@@ -15,6 +18,7 @@ DUMP = {
               "golang.org/x/net@v0.58.0/html/const.go", "go.opentelemetry.io/otel/sdk@v1.44.0/trace/span.go",
               "k8s.io/kubernetes/vendor/example.com/vendored/api/serve.go"],
 }
+ENTRY = {"id": "GO-2026-99999", "paths": ["usr/local/bin/x"], "statement": "Its .gopclntab holds no function of x."}
 STD_FIXED = [{"introduced": "0"}, {"fixed": "1.26.9"}, {"introduced": "1.27.0-0"}, {"fixed": "1.27.2"}]
 
 
@@ -36,6 +40,8 @@ class Versions(unittest.TestCase):
         self.assertFalse(affected("1.4.1", [{"introduced": "0"}, {"last_affected": "1.4.0"}]))
         with self.assertRaises(ValueError):
             affected("1.4.1", [{"introduced": "0"}, {"limit": "1.5.0"}])
+        with self.assertRaises(ValueError):  # an empty range must not read as "not affected"
+            affected("1.4.1", [])
 
 
 class Statements(unittest.TestCase):
@@ -96,6 +102,22 @@ class Check(unittest.TestCase):
         fixed = report("stdlib", [{"introduced": "0"}, {"fixed": "1.27.0"}], {"path": "net/http"})
         self.assertEqual(check("Its .gopclntab holds x.", DUMP, [fixed])[:2], ("-", ["the binary links no affected version"]))
         self.assertEqual(check("Its .gopclntab holds x.", DUMP, [])[1], ["no vuln.go.dev entry"])
+
+
+
+class Rows(unittest.TestCase):
+    def test_fetch_errors(self):
+        def answer(code):
+            def fetch(path):
+                raise urllib.error.HTTPError(classify.VULNDB + path, code, "", {}, None)
+            return fetch
+        with mock.patch.object(classify, "fetch", answer(404)):
+            self.assertEqual(rows(ENTRY, {}, {"x": DUMP})[0][5], "FAIL: no vuln.go.dev entry")
+        with mock.patch.object(classify, "fetch", answer(503)), self.assertRaises(urllib.error.HTTPError):
+            rows(ENTRY, {}, {"x": DUMP})
+
+    def test_entry_without_binary(self):
+        self.assertEqual(rows({**ENTRY, "paths": []}, {}, {})[0][5], "FAIL: the entry names no binary")
 
 
 if __name__ == "__main__":

@@ -116,6 +116,10 @@ func read(path string) (dump, error) {
 			d.Funcnames = append(d.Funcnames, string(b))
 		}
 	}
+	// Empty lists would make every advisory read as none of the code.
+	if len(d.Funcs) == 0 || len(d.Files) == 0 || len(d.Funcnames) == 0 {
+		return dump{}, fmt.Errorf("read %d functions, %d files and %d function names from .gopclntab", len(d.Funcs), len(d.Files), len(d.Funcnames))
+	}
 	sort.Strings(d.Funcs)
 	sort.Strings(d.Files)
 	sort.Strings(d.Funcnames)

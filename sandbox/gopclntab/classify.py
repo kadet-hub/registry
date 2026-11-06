@@ -53,6 +53,8 @@ def semver(v):
 
 def affected(version, events):
     """Whether version lies in an OSV range given as introduced, fixed and last_affected events."""
+    if not events:
+        raise ValueError("an OSV range without events")
     v, lo = semver(version), None
     for e in events:
         if "introduced" in e:
@@ -72,7 +74,9 @@ def affected(version, events):
 
 def go_release(version):
     """1.27.1 from the build info's go1.27.1."""
-    return re.match(r"go(\d+(?:\.\d+)*)", version).group(1)
+    if not (m := re.match(r"go(\d+(?:\.\d+)*)", version)):
+        raise ValueError(f"build info Go version {version!r}")
+    return m.group(1)
 
 
 def linked(dump, module):
@@ -152,6 +156,8 @@ def found(dump, reports):
         for a in report["affected"]:
             module = a["package"]["name"]
             have = linked(dump, module)
+            if not a["ranges"]:
+                raise ValueError(f"{module}: an OSV entry without ranges")
             if have is None or not any(affected(have, r["events"]) for r in a["ranges"]):
                 continue
             for imp in a.get("ecosystem_specific", {}).get("imports") or [None]:
@@ -192,6 +198,29 @@ def entry(go_id):
         raise
 
 
+def rows(e, ids, dumps):
+    """One row per binary the ignore entry names."""
+    if not e.get("paths"):
+        return [("-", e["id"], "-", "-", "-", "FAIL: the entry names no binary")]
+    gos = [e["id"]] if e["id"].startswith("GO-") else ids.get(e["id"], [])
+    reports = [r for r in map(entry, gos) if r] or [r for r in [NO_REPORT.get(e["id"])] if r]
+    out = []
+    for path in e["paths"]:
+        b = path.rsplit("/", 1)[-1]
+        if b not in dumps:
+            raise KeyError(f"no pclndump output for {b}")
+        level, problems, why = check(e["statement"], dumps[b], reports)
+        out.append((b, e["id"], ",".join(gos) or "-", stated(e["statement"]) or "-", level,
+                    "; ".join(["FAIL: " + p for p in problems]) or f"ok: {why}"))
+    return out
+
+
+def print_table(rows):
+    widths = [max(len(r[i]) for r in rows) for i in range(5)]
+    for r in rows:
+        print("  ".join(c.ljust(w) for c, w in zip(r, widths)), r[5])
+
+
 def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
@@ -205,19 +234,16 @@ def main():
     for v in fetch("/index/vulns.json"):
         for alias in v.get("aliases") or []:
             ids.setdefault(alias, []).append(v["id"])
-    rows, failed = [("binary", "advisory", "go id", "statement", "binary holds", "result")], False
+    table, failed = [("binary", "advisory", "go id", "statement", "binary holds", "result")], False
     for e in entries:
-        gos = [e["id"]] if e["id"].startswith("GO-") else ids.get(e["id"], [])
-        reports = [r for r in map(entry, gos) if r] or [r for r in [NO_REPORT.get(e["id"])] if r]
-        for path in e["paths"]:
-            b = path.rsplit("/", 1)[-1]
-            level, problems, why = check(e["statement"], dumps[b], reports)
-            failed = failed or bool(problems)
-            rows.append((b, e["id"], ",".join(gos) or "-", stated(e["statement"]) or "-", level,
-                         "; ".join(["FAIL: " + p for p in problems]) or f"ok: {why}"))
-    widths = [max(len(r[i]) for r in rows) for i in range(5)]
-    for r in rows:
-        print("  ".join(c.ljust(w) for c, w in zip(r, widths)), r[5])
+        try:
+            new = rows(e, ids, dumps)
+        except (KeyError, TypeError, ValueError) as err:
+            # A malformed entry, database entry or dump fails its own row instead of ending the run.
+            new = [("-", str(e.get("id")), "-", "-", "-", f"FAIL: cannot check the entry: {err!r}")]
+        table += new
+        failed = failed or any(r[5].startswith("FAIL") for r in new)
+    print_table(table)
     return 1 if failed else 0
 
 

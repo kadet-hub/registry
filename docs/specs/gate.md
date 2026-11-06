@@ -559,7 +559,9 @@ review go into the review comment and do not fail the gate.
   the image built from `sandbox/`, or on the given one, and prints one
   line per entry. It fails when the binary links no affected version,
   when step 3 gives another outcome than the statement, or when a version
-  the statement names differs from the build info. `pclndump.go` reads the
+  the statement names differs from the build info. An entry it cannot
+  check fails as well: one without a binary, without a database entry,
+  or with input it cannot read. `pclndump.go` reads the
   binaries in the pinned `golang` image without network. `classify.py`
   carries the fix commits' functions of the three go-jose advisories,
   which had no database entry on 2026-11-06.
