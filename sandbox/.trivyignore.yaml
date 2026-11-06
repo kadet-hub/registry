@@ -1,6 +1,7 @@
 # SEC-18, RISK-14: advisories with a fix that the pinned binaries cannot take
 # yet. Each entry names one binary. The statement says what it links and what
-# govulncheck -mode=binary v1.9.0 reported for that binary on 2026-10-29.
+# govulncheck -mode=binary v1.9.0 reported for that binary on 2026-10-29,
+# for GO-2026-5932 on 2026-11-06.
 vulnerabilities:
   - id: CVE-2026-56857
     paths: [usr/local/bin/conftest]
@@ -59,12 +60,20 @@ vulnerabilities:
   - id: CVE-2026-116587
     paths: [usr/local/bin/conftest]
     statement: conftest v0.71.1, the newest release, links github.com/go-jose/go-jose/v4 v4.1.4. govulncheck reports nothing.
+  - id: GO-2026-5932
+    paths: [usr/local/bin/conftest]
+    expired_at: 2027-02-06
+    statement: conftest v0.71.1, the newest release, links golang.org/x/crypto v0.56.0. No x/crypto tag has the fix yet. govulncheck reports every openpgp package because the binary is stripped. Its .gopclntab holds no function or source file of golang.org/x/crypto/openpgp.
   - id: CVE-2026-78661
     paths: [usr/local/bin/etcd]
     statement: etcd v3.7.3, the newest release, links golang.org/x/net v0.61.0. govulncheck (GO-2026-6860) finds the vulnerable symbols.
   - id: CVE-2026-97045
     paths: [usr/local/bin/etcd]
     statement: etcd v3.7.3, the newest release, links golang.org/x/net v0.61.0. govulncheck (GO-2026-6866) finds the vulnerable symbols.
+  - id: GO-2026-5932
+    paths: [usr/local/bin/etcd]
+    expired_at: 2027-02-06
+    statement: etcd v3.7.3, the newest release, links golang.org/x/crypto v0.58.0. No x/crypto tag has the fix yet. govulncheck reports every openpgp package because the binary is stripped. Its .gopclntab holds no function or source file of golang.org/x/crypto/openpgp.
   - id: CVE-2026-78661
     paths: [usr/local/bin/helm]
     statement: helm v4.3.1, the newest release, links golang.org/x/net v0.60.0. govulncheck (GO-2026-6860) finds the vulnerable symbols.
@@ -74,6 +83,10 @@ vulnerabilities:
   - id: CVE-2026-111943
     paths: [usr/local/bin/helm]
     statement: helm v4.3.1, the newest release, is built with Go 1.27.2. govulncheck (GO-2026-6809) finds the vulnerable symbols.
+  - id: GO-2026-5932
+    paths: [usr/local/bin/helm]
+    expired_at: 2027-02-06
+    statement: helm v4.3.1, the newest release, links golang.org/x/crypto v0.58.0. No x/crypto tag has the fix yet. govulncheck reports every openpgp package because the binary is stripped. Its .gopclntab holds no function or source file of golang.org/x/crypto/openpgp. helm verifies provenance with github.com/ProtonMail/go-crypto/openpgp.
   - id: CVE-2026-56851
     paths: [usr/local/bin/kube-apiserver]
     statement: kube-apiserver v1.37.1 links golang.org/x/text v0.40.0; v1.37.2, the newest release, still does. govulncheck (GO-2026-6629) finds the vulnerable symbols.
@@ -146,3 +159,7 @@ vulnerabilities:
   - id: CVE-2026-111943
     paths: [usr/local/bin/kube-apiserver]
     statement: kube-apiserver v1.37.1 is built with Go 1.26.8; v1.37.2 (2026-10-27) fixes it but is inside Renovate's 3-day release age. govulncheck (GO-2026-6809) finds the vulnerable symbols.
+  - id: GO-2026-5932
+    paths: [usr/local/bin/kube-apiserver]
+    expired_at: 2027-02-06
+    statement: kube-apiserver v1.37.1 links golang.org/x/crypto v0.54.0; v1.37.2, the newest release, still does. No x/crypto tag has the fix yet. govulncheck reports every openpgp package because the binary is stripped. Its .gopclntab holds no function or source file of golang.org/x/crypto/openpgp.
