@@ -1640,7 +1640,7 @@ code diff and the output diff, not only the verdict.
     lists `neat-bot`;
     `gh api repos/kadet-hub/registry/collaborators/neat-bot/permission`
     reports `read`
-  - Since: #353; approval before the merge: this change
+  - Since: #353; approval before the merge: #555
 
 - REV-5: Renovate MUST merge its own pull request once every check on it
   passed, unless the update is a major update, an entry bump (REG-7), or a
