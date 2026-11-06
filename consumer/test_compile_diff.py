@@ -161,9 +161,8 @@ class Render(unittest.TestCase):  # CD-7, CD-9, CD-11
         self.assertNotIn("+x", failed)
 
     def exit_code(self, conclusion="success"):
-        with open(os.devnull, "w") as null, unittest.mock.patch("sys.stdout", null):
-            with self.assertRaises(SystemExit) as e:
-                compile_diff.main(["compile_diff.py", "render", self.dir, conclusion, "0" * 40, "https://github.com/o/r/actions/runs/1"])
+        with open(os.devnull, "w") as null, unittest.mock.patch("sys.stdout", null), self.assertRaises(SystemExit) as e:
+            compile_diff.main(["compile_diff.py", "render", self.dir, conclusion, "0" * 40, "https://github.com/o/r/actions/runs/1"])
         return e.exception.code
 
     def test_missing_marker(self):

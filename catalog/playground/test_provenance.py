@@ -14,7 +14,7 @@ import unittest
 # build.py copies every file of that directory to the site, so no __pycache__ there.
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "site", "static", "playground"))
-import kapitan_wasm  # noqa: E402
+import kapitan_wasm
 
 TARGET = ("parameters:\n  kapitan:\n    vars:\n      target: t\n"
           "    compile:\n      - {output_path: ., input_type: jinja2, input_paths: [t.j2]}\n")

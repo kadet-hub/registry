@@ -1958,7 +1958,7 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
             css = f.read()
         colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
         used = set(re.findall(r"\.token\.[^{]*\{[^}]*color: var\(--([\w-]+)\)", css))
-        self.assertEqual(re.search(r"^pre \{[^}]*background: var\(--([\w-]+)\)", css, re.M).group(1), "bg-subtle")
+        self.assertEqual(re.search(r"^pre \{[^}]*background: var\(--([\w-]+)\)", css, re.MULTILINE).group(1), "bg-subtle")
 
         def luminance(hex_colour):
             rgb = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
@@ -2561,7 +2561,7 @@ class Stacks(unittest.TestCase):  # CAT-45 to CAT-50
         for line in re.findall(r"<p>Generators: (.*?)</p>", page):
             for name in re.findall(r"<code>([^<]+)</code>", line):
                 self.assertIn(name, entries)
-        projects = re.findall(rf'<li><a href="\.\./blog/([^/]+)/">.*?<p>Project: <a href="https://github\.com/{OWNER}/examples/tree/main/([^"]+)">', page, re.S)
+        projects = re.findall(rf'<li><a href="\.\./blog/([^/]+)/">.*?<p>Project: <a href="https://github\.com/{OWNER}/examples/tree/main/([^"]+)">', page, re.DOTALL)
         self.assertEqual(len(projects), len(stack_posts()))
         for name, example in projects:  # CAT-50: the post's own project link
             with open(os.path.join(HERE, "site", "content", "blog", name + ".md"), encoding="utf-8") as f:
