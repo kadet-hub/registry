@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: memcached
+  tag: memcached-v1.0.0
+  sha: a723bd281c0923d754f6596fd2b763fb148f675a
+owners: [3042152]
+exceptions: []

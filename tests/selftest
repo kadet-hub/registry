@@ -126,6 +126,8 @@ sed -i 's#checksum/secret:#api_key:#' "$work/recipes/fail-recipe-hex-key/demo/de
 derive_recipe fail-recipe-oc-env "REC-5: init.yml: uses the resolver oc.env (RCP-17)"
 # shellcheck disable=SC2016 # ${oc.env:HOME} is the OmegaConf resolver the check must reject
 sed -i 's/version: 1.0.0/version: ${oc.env:HOME}/' "$work/recipes/fail-recipe-oc-env/demo/init.yml"
+derive_recipe fail-recipe-no-recipe-yaml "REC-5: recipe.yaml is missing (RCP-260)"
+rm -- "$work/recipes/fail-recipe-no-recipe-yaml/demo/recipe.yaml"
 derive_recipe fail-recipe-include "REC-5: init.yml: class recipes.other.vendor.x is neither"
 yq -i '.classes += ["recipes.other.vendor.x"]' "$work/recipes/fail-recipe-include/demo/init.yml"
 zeros=sha256:$(printf '0%.0s' {1..64})

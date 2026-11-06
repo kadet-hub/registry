@@ -1,8 +1,8 @@
-// The playground page (PG-4, PG-9, PG-11). Nothing loads until the visitor
-// starts it; then a module worker compiles with Kapitan in Pyodide.
+// The playground page (PG-4, PG-9, PG-11, PG-15 to PG-19). Nothing loads until
+// the visitor starts it; then a module worker compiles with Kapitan in Pyodide.
 const $ = (id) => document.getElementById(id);
 const app = $("pg-app");
-let worker, examples, current, files = {}, path = "", runs = 0;
+let worker, examples, current, files = {}, path = "", runs = 0, prov = null, syntax;
 
 const status = (text) => { $("pg-status").textContent = text; };
 // lib/ holds fetched generators: compiled, not edited.
@@ -39,6 +39,7 @@ function load(name) {
   if (helm) {
     $("pg-helm-source").textContent = `${helm.chart}, rendered with helm ${helm.helm}`;
     $("pg-helm-output").textContent = helm.output;
+    shade($("pg-helm-output"), helm.output, "helm.yaml");
   }
   show(Object.keys(files).filter(editable).find((p) => p.startsWith("inventory/targets/")));
 }
@@ -66,16 +67,114 @@ function result(data) {
     const pre = document.createElement("pre");
     s.textContent = name;
     pre.textContent = data.out[name];
+    // An output is highlighted when it is first opened.
+    d.addEventListener("toggle", () => {
+      if (d.open && !pre.dataset.shaded) shade(pre, data.out[name], name);
+    });
     d.open = i === 0;
     d.append(s, pre);
     return d;
   }));
+  showProv(data);
   document.body.dataset.pgRuns = String(data.id);
   document.body.dataset.pgExit = String(data.code);
 }
 
+// PG-23: plain text stays if the highlighter fails to load.
+function shade(pre, text, name) {
+  pre.dataset.shaded = "true";
+  syntax.then((m) => m.highlight(pre, text, name), () => {});
+}
+
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+const json = (v) => JSON.stringify(v) ?? "null";
+const clip = (s) => (s.length > 120 ? `${s.slice(0, 120)}...` : s);
+
+// Provenance from kapitan_wasm.py: null when the inventory did not render.
+function showProv(data) {
+  prov = data.prov;
+  $("pg-prov").hidden = !prov;
+  if (!prov) return;
+  const targets = prov.error ? [] : Object.keys(prov);
+  const keep = $("pg-target").value;
+  $("pg-target").replaceChildren(...targets.map((t) => new Option(t, t)));
+  if (targets.includes(keep)) $("pg-target").value = keep;
+  $("pg-prov-backend").textContent = data.backend;
+  showTarget();
+}
+
+function showTarget() {
+  const t = prov[$("pg-target").value];
+  const warning = $("pg-prov-warning");
+  const differs = prov.error ? [] : t.mismatches.map((p) => p.join("."));
+  warning.hidden = !prov.error && !differs.length;
+  warning.textContent = prov.error ? `The playground could not trace where the values come from: ${prov.error}`
+    : `The trace differs from Kapitan's merged inventory at ${differs.join(", ")}, so the sources shown there can be wrong.`;
+  if (prov.error) {
+    $("pg-classes").replaceChildren();
+    $("pg-order-other").textContent = "";
+    $("pg-count").textContent = "";
+    $("pg-params").replaceChildren();
+    return;
+  }
+  const target = t.sources.find((s) => s.kind === "target").name;
+  $("pg-classes").replaceChildren(...t.sources.filter((s) => s.kind === "class" || s.kind === "target").map((s) => {
+    const li = el("li");
+    const from = s.kind === "target" ? "the target" : `listed by ${s.via === target ? "the target" : s.via}`;
+    li.append(el("code", "", s.name), " ", el("span", "pg-note", `${from}, ${s.file}`));
+    return li;
+  }));
+  const o = t.other;
+  const mine = t.sources.filter((s) => s.kind === "class").map((s) => s.file).join();
+  $("pg-order-other").textContent = o.error ? `${o.backend} cannot read this inventory: ${o.error}`
+    : o.classes.map((c) => c.file).join() === mine ? `${o.backend} merges the same classes in the same order.`
+    : `${o.backend} merges ${o.classes.length ? o.classes.map((c) => c.name).join(", ") : "no classes"}, in this order.`;
+  showParams();
+}
+
+function showParams() {
+  if (!prov || prov.error) return;
+  const t = prov[$("pg-target").value];
+  const name = (e) => {
+    const s = t.sources[e.source];
+    return s.kind === "target" ? `${s.name} (target)` : s.name;
+  };
+  const q = $("pg-search").value.trim().toLowerCase();
+  const rows = t.params.filter((p) => p.path.join(".").toLowerCase().includes(q));
+  $("pg-count").textContent = `${rows.length} of ${t.params.length} parameters`;
+  $("pg-params").replaceChildren(...rows.map((p) => {
+    // The value is the last "set" and every list merged into it after.
+    const last = p.chain.findLastIndex((e) => e.op === "set");
+    const final = p.chain.slice(last);
+    const d = el("details");
+    d.open = rows.length === 1;
+    const s = el("summary");
+    s.append(el("code", "pg-path", p.path.join(".")), " ", el("code", "", clip(json(p.value))), " ",
+      el("span", "pg-src", final.map(name).join(" + ")));
+    const raw = json(p.chain.at(-1).value);
+    if (final.length === 1 && raw !== json(p.value)) s.append(" ", el("span", "pg-note", "resolved from"), " ", el("code", "", clip(raw)));
+    if (last > 0) s.append(" ", el("span", "pg-note", `overrides ${last}`));
+    const ol = el("ol", "pg-chain");
+    p.chain.forEach((e, i) => {
+      const li = el("li", i >= last ? "pg-win" : "");
+      li.append(el("span", "pg-tag", i < last ? "overridden" : final.length > 1 ? "merged" : "final"), " ", el("span", "pg-src", name(e)));
+      if (e.path.length !== p.path.length) li.append(" ", el("code", "", e.path.join(".")));
+      li.append(" ", el("code", "", json(e.value)));
+      ol.append(li);
+    });
+    d.append(s, ol);
+    return d;
+  }));
+}
+
 async function start() {
   $("pg-start").disabled = true;
+  syntax = import("./syntax.js");
   status(`Loading Python and Kapitan (${$("pg-start").dataset.size})...`);
   examples = await (await fetch(new URL("./examples.json", import.meta.url))).json();
   $("pg-example").replaceChildren(...examples.examples.map((e) => new Option(e.title, e.name)));
@@ -97,6 +196,8 @@ $("pg-start").addEventListener("click", start);
 $("pg-example").addEventListener("change", (e) => { load(e.target.value); compile(); });
 $("pg-backend").addEventListener("change", compile);
 $("pg-compile").addEventListener("click", compile);
+$("pg-target").addEventListener("change", showTarget);
+$("pg-search").addEventListener("input", showParams);
 $("pg-editor").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) compile();
 });

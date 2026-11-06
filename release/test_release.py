@@ -11,7 +11,7 @@ from typing import ClassVar
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from images import images
-from index import build, notes
+from index import build, changelog, notes
 from sbom import sbom
 from tree import read_dir, read_tar, tree_id, write_tar
 
@@ -120,6 +120,18 @@ class Index(unittest.TestCase):
                        [version("gen", "2.0.0"), version("gen", "2.1.0")], {"gen": {"yanked": {"2.0.0": "broken"}}})
         self.assertEqual(notes(third, fourth), "Index serial 4, changes since serial 3.\n\nAdded:\n\n- recipe gen 2.0.0"
                                                "\n- recipe gen 2.1.0\n\nYanked:\n\n- recipe gen 2.0.0: broken\n")
+
+    def test_release_notes_with_changelog(self):  # CON-10
+        old = "# Changelog\n\nIntro.\n\n## 2026-11-05: a (#1)\n\nA.\n"
+        new = ("# Changelog\n\nIntro.\n\n## 2026-11-07: c (#3)\n\nC.\n\n### Detail\n\nD.\n\n"
+               "## 2026-11-06: b (#2)\n\nB.\n\n## 2026-11-05: a (#1)\n\nA, reworded.\n")
+        self.assertEqual(changelog(old, new), ["## 2026-11-07: c (#3)\n\nC.\n\n### Detail\n\nD.", "## 2026-11-06: b (#2)\n\nB."])
+        self.assertEqual(changelog(new, new), [])
+        self.assertEqual(changelog("", "# Changelog\n\nIntro only.\n"), [])
+        first = build([version("gen", "1.0.0")], {"gen": {}}, None, NOW)
+        self.assertEqual(notes(None, first, changelog(old, new)),
+                         "Index serial 1.\n\nAdded:\n\n- gen 1.0.0\n\nConsumer workflow changes (CHANGELOG.md):\n\n"
+                         "## 2026-11-07: c (#3)\n\nC.\n\n### Detail\n\nD.\n\n## 2026-11-06: b (#2)\n\nB.\n")
 
     def test_recipes(self):  # REC-13
         gens, entries = [version("gen", "1.0.0"), version("old", "0.1.0")], {"gen": {"yanked": {"1.0.0": "broken"}}}
@@ -522,14 +534,18 @@ class PublishIndex(unittest.TestCase):
     TAGS: ClassVar[dict] = {"a": ["1.0.0", "latest", "1.1.0", "2.0.0"], "b": ["1.0.0", "1.0.1"], "recipes/r": ["0.1.0"]}
     FAKE_TOOLS: ClassVar[dict] = {
         "oras": '[[ $2 == push ]] && exit 0\nf=$FAKE/$1/$(tr / _ <<<"${!#}")\n'
-                '[[ -f $f ]] || { echo "${!#}: not found" >&2; exit 1; }\ncat -- "$f"',
-        "gh": 'case $1 in api) echo public ;; attestation) echo + >>"$FAKE/log"; sleep 0.2; echo - >>"$FAKE/log"\n'
+                '[[ -f $f ]] || { echo "${!#}: not found" >&2; exit 1; }\n'
+                'if [[ $3 == --output && $4 != - ]]; then cp -- "$f" "$4"; else cat -- "$f"; fi',
+        "gh": 'last=${!#}\ncase $1 in api) case $last in *"/contents/CHANGELOG.md?ref=index-"*) cat -- "$FAKE/changelog-${last##*-}" ;;\n'
+              '  *) echo public ;; esac ;; attestation) echo + >>"$FAKE/log"; sleep 0.2; echo - >>"$FAKE/log"\n'
               '  ! grep -qxF -- "$3" "$FAKE/unattested" ;; esac',
         "yq": 'cat -- "${!#}"',
     }
 
-    def publish(self, unattested="", no_config=""):
-        """Runs the job; returns its exit code, log, $GITHUB_OUTPUT, index, notes and the most gh calls at once."""
+    def publish(self, unattested="", no_config="", previous=None, changelogs=None):
+        """Runs the job; returns its exit code, log, $GITHUB_OUTPUT, index, notes and the most gh calls at once.
+
+        previous is the index at `latest`; changelogs maps "root" and release serials to CHANGELOG.md texts."""
         def oras(command, ref):
             return f"fake/{command}/{ref.replace('/', '_')}"
 
@@ -537,6 +553,13 @@ class PublishIndex(unittest.TestCase):
             fake, root = os.path.join(tmp, "fake"), os.path.join(tmp, "root")
             shutil.copytree(os.path.join(ROOT, "release"), os.path.join(root, "release"))
             files = {"root/policy/reserved-names.txt": "index\n", "fake/unattested": ""}
+            if previous:
+                d, layer = digest("index"), digest("index layer")
+                files[oras("resolve", f"{self.REG}/index:latest")] = d + "\n"
+                files[oras("manifest", f"{self.REG}/index@{d}")] = json.dumps({"layers": [{"digest": layer}]})
+                files[oras("blob", f"{self.REG}/index@{layer}")] = json.dumps(previous)
+            for key, text in (changelogs or {}).items():
+                files["root/CHANGELOG.md" if key == "root" else f"fake/changelog-{key}"] = text
             files.update({f"bin/{name}": f"#!/usr/bin/env bash\n{body}\n" for name, body in self.FAKE_TOOLS.items()})
             for path, tags in self.TAGS.items():
                 kind, name, pkg = ("recipe" if "/" in path else "generator"), path.split("/")[-1], f"{self.REG}/{path}"
@@ -593,6 +616,20 @@ class PublishIndex(unittest.TestCase):
                          json.loads(index)["generators"]["a"]["1.0.0"]["published"], versions["recipe"], {"r": yanked})
         self.assertEqual(index, json.dumps(expected, sort_keys=True, indent=1))
         self.assertEqual(notes_text, notes(None, expected))
+
+    def test_changelog_sections_since_the_previous_release(self):  # CON-10
+        previous = build([version("a", "1.0.0")], {"a": {}}, None, NOW)
+        released = "# Changelog\n\n## 2026-11-05: a (#1)\n\nA.\n"
+        current = "# Changelog\n\n## 2026-11-06: b (#2)\n\nB.\n\n## 2026-11-05: a (#1)\n\nA.\n"
+        rc, log, out, index, notes_text, _ = self.publish(previous=previous, changelogs={"root": current, 1: released})
+        self.assertEqual((rc, out["serial"]), (0, "2"), log)
+        self.assertEqual(notes_text, notes(previous, json.loads(index))
+                         + "\nConsumer workflow changes (CHANGELOG.md):\n\n## 2026-11-06: b (#2)\n\nB.\n")
+        # No CHANGELOG.md at the previous release's tag: the notes leave the sections out and the run warns.
+        rc, log, out, index, notes_text, _ = self.publish(previous=previous, changelogs={"root": current})
+        self.assertEqual(rc, 0, log)
+        self.assertEqual(notes_text, notes(previous, json.loads(index)))
+        self.assertIn("::warning::CHANGELOG.md of the previous index release not read", log)
 
     def test_any_failed_check_fails_the_job(self):
         cfg = digest(f"config {self.REG}/a:1.1.0")

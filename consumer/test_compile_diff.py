@@ -3,6 +3,7 @@ import re
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_diff
@@ -28,9 +29,16 @@ class Diff(unittest.TestCase):  # CD-3
         n = compile_diff.diff(self.base, self.head, self.out, glob)
         diffs = {}
         for f in sorted(os.listdir(self.out)):
-            with open(os.path.join(self.out, f)) as fh:
-                diffs[f[:-5]] = fh.read()
+            if f.endswith(".diff"):
+                with open(os.path.join(self.out, f)) as fh:
+                    diffs[f[:-5]] = fh.read()
         return n, diffs
+
+    def test_marker_without_changes(self):  # CD-10
+        write(f"{self.base}/dev/a.yml", b"same\n")
+        write(f"{self.head}/dev/a.yml", b"same\n")
+        self.assertEqual(compile_diff.diff(self.base, self.head, self.out, "*"), 0)
+        self.assertEqual(os.listdir(self.out), ["compile-diff.txt"])
 
     def test_changed_added_removed_and_unchanged(self):
         write(f"{self.base}/dev/apps/web.yml", b"kind: Deployment\nspec:\n  replicas: 1\n")
@@ -80,10 +88,11 @@ class Diff(unittest.TestCase):  # CD-3
         self.assertIn(f"+symlink to {secret}\n", diffs["dev"])
 
 
-class Render(unittest.TestCase):  # CD-7, CD-9
+class Render(unittest.TestCase):  # CD-7, CD-9, CD-11
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = self.tmp.name
+        write(os.path.join(self.dir, "compile-diff.txt"), b"0 targets changed\n")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -150,6 +159,24 @@ class Render(unittest.TestCase):  # CD-7, CD-9
         failed = self.render("failure")
         self.assertIn("**compile diff: no result** at `3f0c2a1`: the compile [run](https://github.com/o/r/actions/runs/1) ended with failure.", failed)
         self.assertNotIn("+x", failed)
+
+    def exit_code(self, conclusion="success"):
+        with open(os.devnull, "w") as null, unittest.mock.patch("sys.stdout", null):
+            with self.assertRaises(SystemExit) as e:
+                compile_diff.main(["compile_diff.py", "render", self.dir, conclusion, "0" * 40, "https://github.com/o/r/actions/runs/1"])
+        return e.exception.code
+
+    def test_missing_marker(self):
+        self.assertEqual(self.exit_code(), 0)
+        os.remove(os.path.join(self.dir, "compile-diff.txt"))
+        self.diff("dev", "+x\n")
+        body = self.render()
+        self.assertIn("**compile diff: no result** at `3f0c2a1`: the artifact `compile-diff` of the [run]", body)
+        self.assertIn("is missing or could not be downloaded", body)
+        self.assertNotIn("no change", body)
+        self.assertNotIn("+x", body)
+        self.assertEqual(self.exit_code(), 1)
+        self.assertEqual(self.exit_code("failure"), 0)
 
 
 class NoReveal(unittest.TestCase):  # CD-2

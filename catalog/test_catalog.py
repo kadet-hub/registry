@@ -386,7 +386,7 @@ NEW_RECIPES = tuple(
     (name, {k.replace(base, name): v.replace(base, name) for k, v in files.items()})
     for base, files, names in (
         ("cert-manager", CHART_RECIPE_FILES, ("authentik", "blackbox-exporter", "gitea", "immich", "jellyfin", "n8n", "netbox",
-                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress")),
+                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress", "forgejo", "memcached")),
         ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden", "umami")))
     for name in names)
 
@@ -806,7 +806,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 34)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 36)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -1945,12 +1945,31 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         self.assertNotRegex(page, r"<script(?![^>]*\bsrc=)(?![^>]*application/ld\+json)[^>]*>")
         self.assertNotIn(' style="', page)
 
-    def test_backends_and_limits(self):  # PG-4, PG-11
+    def test_backends_and_limits(self):  # PG-4, PG-11, PG-22
         page = self.page("playground")
         self.assertIn('<select id="pg-backend"><option value="omegaconf">omegaconf</option><option value="reclass">reclass</option></select>', page)
         self.assertIn("Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs", page)
+        self.assertIn("The Terraform example writes Terraform JSON; terraform init, plan and apply do not run here.", page)  # PG-22
         self.assertIn("helm template output, rendered when this site was built", page)
         self.assertIn("Not compiled in your browser and not affected by your edits", page)
+
+    def test_highlight_colours_reach_aa(self):  # PG-25: every token colour on pre's background, light and dark
+        with open(os.path.join(HERE, "site", "static", "style.css"), encoding="utf-8") as f:
+            css = f.read()
+        colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
+        used = set(re.findall(r"\.token\.[^{]*\{[^}]*color: var\(--([\w-]+)\)", css))
+        self.assertEqual(re.search(r"^pre \{[^}]*background: var\(--([\w-]+)\)", css, re.M).group(1), "bg-subtle")
+
+        def luminance(hex_colour):
+            rgb = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+            r, g, b = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        self.assertEqual(used, {"text-muted", "accent", "ok", "warn"})
+        for name in used:
+            for theme in (0, 1):
+                fg, bg = luminance(colours[name][theme]), luminance(colours["bg-subtle"][theme])
+                self.assertGreaterEqual((max(fg, bg) + 0.05) / (min(fg, bg) + 0.05), 4.5, (name, ("light", "dark")[theme]))
 
     def test_build_takes_the_latest_listed_version_and_the_gate_hashes(self):  # PG-1, PG-5
         sys.path.insert(0, os.path.join(HERE, "playground"))
@@ -2487,7 +2506,7 @@ def stack_build(tmp, posts, *args):
     return out, subprocess.run(["hugo", "--logLevel", "error", "--source", site, "--destination", out, *args], capture_output=True, text=True, check=False)
 
 
-class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
+class Stacks(unittest.TestCase):  # CAT-45 to CAT-50
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
@@ -2542,12 +2561,21 @@ class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
         for line in re.findall(r"<p>Generators: (.*?)</p>", page):
             for name in re.findall(r"<code>([^<]+)</code>", line):
                 self.assertIn(name, entries)
+        projects = re.findall(rf'<li><a href="\.\./blog/([^/]+)/">.*?<p>Project: <a href="https://github\.com/{OWNER}/examples/tree/main/([^"]+)">', page, re.S)
+        self.assertEqual(len(projects), len(stack_posts()))
+        for name, example in projects:  # CAT-50: the post's own project link
+            with open(os.path.join(HERE, "site", "content", "blog", name + ".md"), encoding="utf-8") as f:
+                link = f"(https://github.com/kadet-hub/examples/tree/main/{example})"
+                self.assertTrue(link in f.read().split("\n---\n", 1)[1], f"{name}.md does not link {link}")
 
     def test_unknown_recipe_fails_the_build(self):  # CAT-49
         front = STACK_POSTS["stack-b"]
         for case, post, error in (("recipe", front.replace("[valkey]", "[valkey, no-such-recipe]"),
                                    "blog/stack-b.md: stack names the recipe no-such-recipe, which has no page at /recipes/no-such-recipe/"),
-                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example")):
+                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example"),
+                                  *((f"example {bad}", front.replace("example: stack-b", f"example: {bad}"),  # CAT-50
+                                     f"blog/stack-b.md: stack names the example {bad}, which is not a folder name of lowercase letters, digits and hyphens")
+                                    for bad in ("Stack-B", "stack-b/", "stack-b/sub", "stack--b"))):
             with self.subTest(case), tempfile.TemporaryDirectory() as tmp:
                 _, built = stack_build(tmp, {"stack-b": post})
                 self.assertNotEqual(built.returncode, 0)

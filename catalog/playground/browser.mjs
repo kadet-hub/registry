@@ -1,4 +1,4 @@
-// PG-3, PG-7 to PG-10 in a browser: node browser.mjs <built site dir>
+// PG-3, PG-7 to PG-10, PG-15, PG-17 to PG-19, PG-21 to PG-24 in a browser: node browser.mjs <built site dir>
 // Serves the site, opens /playground/ in Chrome ($CHROME, default
 // /usr/bin/google-chrome) and exits 1 on any finding.
 import { createServer } from "node:http";
@@ -47,7 +47,8 @@ try {
   if (await csp(`${origin}/playground/`) !== await csp(`${origin}/`)) fail("PG-7: the page's CSP differs from the home page's");
   await page.goto(`${origin}/playground/`);
   await page.waitForTimeout(1000);
-  if (requests.some((u) => u.includes("/playground/pyodide/") || u.endsWith("/worker.js"))) fail("PG-9: Pyodide loaded before the start");
+  if (requests.some((u) => /\/playground\/(pyodide|prism)\/|\/(worker|syntax)\.js$/.test(u))) fail("PG-9, PG-24: Pyodide or Prism loaded before the start");
+  if ((await fetch(`${origin}/playground/prism/LICENSE`)).status !== 200) fail("PG-24: Prism's licence is not served");
   const t0 = Date.now();
   await page.click("#pg-start");
   const options = await page.$$eval("#pg-example option", (os) => os.map((o) => o.value));
@@ -55,10 +56,40 @@ try {
   let r = await step(runs, options[0]);
   console.log(`first output ${((Date.now() - t0) / 1000).toFixed(1)} s after the start`);
   if (r.exit !== "0" || r.files === 0) fail(`${options[0]}: no output`);
+  // The first example is basics: dev lists apps.web, which lists common, and each sets app.replicas.
+  const classes = await page.$$eval("#pg-classes li > code", (cs) => cs.map((c) => c.textContent));
+  if (classes.join() !== "common,apps.web,dev") fail(`PG-15: classes ${classes.join(", ")}`);
+  await page.fill("#pg-search", "app.replicas");
+  const chain = await page.$$eval("#pg-params details[open] .pg-chain li", (ls) => ls.map((l) => l.textContent));
+  if (chain.join("|") !== "overridden common 1|overridden apps.web 2|final dev (target) 3") fail(`PG-17, PG-18: app.replicas ${chain.join("|")}`);
+  await page.fill("#pg-search", "");
+  // PG-23: the open output is highlighted; highlighting keeps the text, also of a 2,000-line YAML.
+  await page.waitForSelector("#pg-outputs details[open] pre .token", { timeout: 10000 }).catch(() => fail("PG-23: the first output is not highlighted"));
+  const shaded = await page.evaluate(async () => {
+    const { highlight } = await import("./syntax.js");
+    const pre = document.createElement("pre");
+    const yaml = Array.from({ length: 500 }, (_, i) => `item-${i}:\n  name: "web-${i}" # comment\n  replicas: ${i}\n  enabled: true`).join("\n");
+    const t0 = performance.now();
+    highlight(pre, yaml, "big.yaml");
+    const ms = performance.now() - t0;
+    const kept = [[yaml, "a.yml"], ['{"a": [1, "<b>"], "c": null}', "a.tf.json"], ["# T\n\n**b** `c` <i>", "README.md"]].every(([text, name]) => {
+      highlight(pre, text, name);
+      return pre.textContent === text && pre.querySelector(".token");
+    });
+    return { ms, lines: yaml.split("\n").length, kept };
+  });
+  console.log(`highlighted ${shaded.lines} lines of YAML in ${shaded.ms.toFixed(1)} ms`);
+  if (!shaded.kept) fail("PG-23: highlighting changed an output's text or left it plain");
   for (const name of options.slice(1)) {
     await page.selectOption("#pg-example", name);
     r = await step(++runs, name);
     if (r.exit !== "0" || r.files === 0) fail(`${name}: no output`);
+    if (!(await page.isVisible("#pg-params details")) || await page.isVisible("#pg-prov-warning")) fail(`PG-17, PG-19: ${name}: no trace, or it differs`);
+    if (name === "terraform") {
+      const outs = await page.$$eval("#pg-outputs summary", (ss) => ss.map((s) => s.textContent));
+      if (!outs.length || !outs.every((o) => o.endsWith(".tf.json"))) fail(`PG-21: terraform output ${outs.join(", ")}`);
+      if (!(await page.textContent("#pg-description")).includes("terraform plan does not run in your browser")) fail("PG-22: no note on terraform plan");
+    }
     if (await page.isVisible("#pg-helm") && !(await page.textContent("#pg-helm-output")).includes("kind:")) fail(`${name}: empty helm output`);
   }
   if (!(await page.isVisible("#pg-helm"))) fail("PG-11: no example shows the helm output");
@@ -67,6 +98,7 @@ try {
   r = await step(++runs, "YAML error");
   const log = await page.textContent("#pg-log");
   if (r.exit === "0" || !/while parsing|expected|found/.test(log)) fail(`PG-3: the YAML error is not shown: ${log.slice(-200)}`);
+  if (await page.isVisible("#pg-prov")) fail("PG-15: provenance shown for an inventory that did not render");
   const foreign = requests.filter((u) => !u.startsWith(origin) && !u.startsWith("data:"));
   if (foreign.length) fail(`PG-8: requests to another origin: ${foreign.join(", ")}`);
 } catch (e) {

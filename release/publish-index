@@ -9,7 +9,8 @@
 # checkout as working directory. Writes ref, digest, serial and
 # publish=true|false to $GITHUB_OUTPUT, the published or unchanged index
 # to $INDEX_OUT for the catalog (CAT-1), and for a published index the
-# release notes to $NOTES_OUT (PUB-12).
+# release notes to $NOTES_OUT (PUB-12) with the CHANGELOG.md sections
+# added since the previous serial's release (CON-10).
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 work=$(mktemp -d)
@@ -85,6 +86,13 @@ if ((rc == 0)); then
   layer=$(oras manifest fetch -- "$ref@$latest" | jq -er '.layers[0].digest')
   oras blob fetch --output "$work/previous.json" -- "$ref@$layer"
   previous=(--previous "$work/previous.json")
+  # CON-10: CHANGELOG.md at the previous serial's release tag.
+  if [[ -f $root/CHANGELOG.md ]] && gh api -H "Accept: application/vnd.github.raw+json" \
+      "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=index-$(jq .serial "$work/previous.json")" >"$work/changelog.md"; then
+    previous+=(--changelog "$root/CHANGELOG.md" --changelog-previous "$work/changelog.md")
+  else
+    echo "::warning::CHANGELOG.md of the previous index release not read; the release notes leave out the consumer changes (CON-10)"
+  fi
 fi
 
 rc=0

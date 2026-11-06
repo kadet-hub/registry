@@ -178,6 +178,7 @@ remembered in the browser's `localStorage`.
   | pulumi vs helm | same guide |
   | helm vs helmfile (also "helmfile vs helm"), helm chart vs helmfile, helm umbrella chart vs helmfile (checked 2026-10-22) | same guide, section #helmfile |
   | helmfile environments (also "helmfile environments example", "helmfile multiple environments"), helmfile secrets example, helmfile release needs (also "helmfile needs"), helmfile alternatives (checked 2026-11-05) | blog post "Helmfile vs Kapitan: environments, secrets and release order", sections #environments, #secrets and #needs for the first three |
+  | kubernetes multiple environments, helm multiple environments, helm values per environment, kustomize multiple environments (Google's suggestions, checked 2026-11-05) | blog post "Kubernetes multiple environments: dev, stage and prod in Kapitan", section #helm-kustomize for the last three |
   | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
   | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
@@ -191,6 +192,7 @@ remembered in the browser's `localStorage`.
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | timoni kubernetes, timoni bundle (checked 2026-11-05) | blog post "Timoni vs Kapitan for Kubernetes: CUE modules, OCI bundles" |
   | kcl kubernetes, kcl kubernetes example (checked 2026-11-05) | blog post "KCL vs Kapitan for Kubernetes: typed schemas and OCI modules" |
+  | external secrets operator vault (also "external secrets operator vault example", "external secrets operator vault approle"), external secrets operator rotation (checked 2026-11-05) | blog post "External Secrets Operator with Vault AppRole and Kapitan refs" |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
   | kubectl wait for condition (checked 2026-11-02) | blog post "kubectl wait for condition fails on null conditions" |
@@ -200,6 +202,7 @@ remembered in the browser's `localStorage`.
   | kustomize patch tolerations, kustomize patch nodeselector, kustomize patch add label, ipfamilypolicy requiredualstack, kubernetes service ipfamilypolicy, cilium ingress ipv6 (checked 2026-10-22) | same post, sections #consul-hook-job-tolerations, #apisix-ingress-controller-pod-labels and #cilium-ingress-ipfamilypolicy |
   | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
   | docker tag and digest (also "docker tag digest"), docker image tag and digest (checked 2026-11-02) | blog post "Docker tag and digest: which one Kubernetes runs" |
+  | docker compose and kubernetes, docker compose vs kubernetes (also "kubernetes docker compose"), miniflux docker compose, miniflux kubernetes (checked 2026-11-05) | blog post "Docker Compose and Kubernetes from one Kapitan inventory", section #gaps for the second; `/recipes/miniflux/` also answers the last |
   | renovate automerge (also "renovate bot automerge", "renovate auto merge"), renovate automerge github (checked 2026-11-02) | blog post "Renovate automerge with required reviews on GitHub" |
   | argocd config management plugin, argocd cmp plugin, argocd cmp sidecar, argocd sidecar plugin (checked 2026-11-05) | blog post "Argo CD config management plugin for Kapitan" |
   | open webui searxng (also "openwebui searxng", "openwebui searxng 403"), open webui web search searxng, open webui kubernetes, ollama + open webui kubernetes, searxng kubernetes (checked 2026-11-04) | blog post "Open WebUI with SearXNG on Kubernetes, from Kapitan recipes"; `/recipes/open-webui/` and `/recipes/searxng/` also answer the kubernetes queries |
@@ -208,6 +211,7 @@ remembered in the browser's `localStorage`.
   | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI" |
   | kindest node (also "kindest node image", "kindest node images"), kindest node version, kind node image, kind node image version, kind custom node image, kind build node image, kind ensuring node image stuck (checked 2026-11-03) | blog post "kindest/node images: picking the version for your kind release", sections #kind-build-node-image for the custom and build queries and #ensuring-node-image-stuck for the last |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
+  | talos homelab, talos network policy (also "talos linux network policy"), talos linux docker (checked 2026-11-05) | blog post "Talos homelab: node configs and apps from one Kapitan inventory", sections #talos-network-policy and #talos-in-docker for the last two |
   | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
   | kubernetes cluster add-ons (also "kubernetes cluster addons"), external secrets kubernetes provider (also "external secrets operator kubernetes provider"), velero s3 compatible storage (checked 2026-11-05) | blog post "Kubernetes cluster add-ons from one Kapitan inventory, on kind", sections #external-secrets-with-the-kubernetes-provider and #velero-with-s3-compatible-storage for the last two |
@@ -242,7 +246,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331, #444, #539, #538
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331, #444, #539, #538, #556
 
 - CAT-11g: Every guide and recipe MUST carry `lastmod` in its front
   matter, the day its text last changed, and schema.org `TechArticle`
@@ -1700,6 +1704,24 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
   - Since: this change
 
+- CAT-50: The build MUST fail when a published stack post's `example` is
+  not one folder name of lowercase letters, digits and single hyphens.
+  Every committed stack post MUST link
+  `https://github.com/kadet-hub/examples/tree/main/<example>` in its text.
+
+  The project link on `/stacks/` is built from `example`, and the registry
+  has no list of the folders in kadet-hub/examples. A wrong name would
+  give a link to a 404 with a green build. The format catches another
+  casing, a trailing slash and a path. A misspelling passes the format,
+  so `Stacks.test_queued_stack_posts` compares `example` with the
+  project link the post's text already carries. A name misspelled the
+  same way in both places still passes. Checking the folder itself needs
+  the examples repository, which the offline build and tests do not
+  have.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
+  - Since: this change
+
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
   `/recipes/<name>/` (CAT-37c).
@@ -1886,7 +1908,7 @@ Related: CAT-15, CAT-30, CON-2.
     transitive prerequisites: #367; cnpg: #366; keycloak and its included
     recipes' prerequisites: #368; nextcloud: #402;
     authentik, blackbox-exporter, gitea, immich, jellyfin, n8n, netbox,
-    ollama, open-webui and semaphore: #507
+    ollama, open-webui and semaphore: #507; forgejo: #542
 
 - CAT-37d: `/recipes/` MUST list the recipes of CAT-37c, each with its
   proof level.
@@ -1952,7 +1974,9 @@ Related: CAT-15, CAT-30, CON-2.
   mariadb Helm chart alternative:", because that chart is what readers
   search a replacement for. wordpress, designed on the Docker Official
   Image with mariadb included, follows it as "WordPress on Kubernetes with
-  Kapitan" and "Bitnami wordpress Helm chart alternative:".
+  Kapitan" and "Bitnami wordpress Helm chart alternative:". memcached,
+  designed on the Docker Official Image, follows it as "Memcached on
+  Kubernetes with Kapitan" and "Bitnami memcached Helm chart alternative:".
 
   powerdns is the PowerDNS part of the kadet-hub/examples recipe
   `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
@@ -1988,7 +2012,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_designed_recipe`, `test_recipes`)
   - Since: #349, #352, #354; powerdns: #357; kafka: #364; rabbitmq: #367;
     keycloak: #368; mariadb: #509;
-    wordpress: #511
+    wordpress: #511; memcached: #542
 
 - CAT-37g: A CAT-37c page whose README `Source:` line is a release manifest
   MUST show the source as the project's release manifest with its

@@ -42,11 +42,11 @@ generator 1.14.0.
   from the `ollama` chart 1.79.0 that Open WebUI's chart includes. Its API
   listens on port 11434. The models live in an `emptyDir`, so a new pod
   starts without them.
-- [searxng](/recipes/searxng/) 1.0.0 runs the SearXNG image
+- [searxng](/recipes/searxng/) 1.0.1 runs the SearXNG image
   `2026.11.2-cccbc9e15`, rebuilt from the Docker Compose file in the
   SearXNG repository. SearXNG has no releases. The tag names the build
   date and the commit. The settings live in a ConfigMap, and the Service
-  listens on port 8080.
+  listens on port 8080. The pod is ready once `/healthz` answers.
 - [valkey](/recipes/valkey/) 1.0.2 runs Valkey 9.1.2 as one instance with
   a password and an 8Gi claim. open-webui and searxng both include it.
   Open WebUI keeps its websocket state in it. SearXNG connects it for its
@@ -56,8 +56,8 @@ generator 1.14.0.
 
 Kapitan 0.36.3 reads the [inventory](/glossary/#inventory) before it
 fetches dependencies, so a recipe cannot be fetched by the inventory that
-uses it. The four recipes are pinned in a separate fetch inventory,
-`fetch/targets/recipes.yml`:
+uses it. The recipes the targets include are pinned in a separate fetch
+inventory, `fetch/targets/recipes.yml`:
 
 ```yaml
 parameters:
@@ -67,14 +67,8 @@ parameters:
         source: ghcr.io/kadet-hub/recipes/open-webui:1.0.0@sha256:f44fd8d69166996694c83eeb6951e95699dc8601368d0f42259068c20a0c913c
         output_path: inventory/classes/recipes/open-webui
       - type: oci
-        source: ghcr.io/kadet-hub/recipes/ollama:1.0.0@sha256:5c461aa9fbfcf64a53a494d79f517ec64f2a280e36360c658bf4767d63b59bb3
-        output_path: inventory/classes/recipes/ollama
-      - type: oci
-        source: ghcr.io/kadet-hub/recipes/searxng:1.0.0@sha256:98a5e2f69b913c52ddd1a459b4f4a1409cf6d14d602e79d95c3195129b57f064
+        source: ghcr.io/kadet-hub/recipes/searxng:1.0.1@sha256:9a86a09e1d5acbea6c89d73014d42c434513dc121bce8f10319b97d636f016c9
         output_path: inventory/classes/recipes/searxng
-      - type: oci
-        source: ghcr.io/kadet-hub/recipes/valkey:1.0.2@sha256:263dfc2e41097c7c6bd016baadcc8384e79afd10910506a892e9994ee7ece918
-        output_path: inventory/classes/recipes/valkey
 ```
 
 Version and [digest](/glossary/#digest) come from the signed
@@ -84,7 +78,7 @@ lists the recipes it includes:
 
 ```sh
 jq -c '.recipes["open-webui"]["1.0.0"].includes[] | [.name, .version]' index.json
-jq -c '.recipes["searxng"]["1.0.0"].includes[] | [.name, .version]' index.json
+jq -c '.recipes["searxng"]["1.0.1"].includes[] | [.name, .version]' index.json
 ```
 
 ```text
@@ -93,17 +87,19 @@ jq -c '.recipes["searxng"]["1.0.0"].includes[] | [.name, .version]' index.json
 ["valkey","1.0.2"]
 ```
 
-The fetch inventory pins each included recipe at the digest its record
-lists. Every recipe unpacks into `inventory/classes/recipes/<name>`, so
-two recipes can share a project only when they include the same digest
-of a recipe. Both records list valkey 1.0.2 at the digest pinned above.
+The fetch inventory does not pin ollama and valkey. The registry's
+consumer workflow adds the recipes a pinned recipe includes, at the
+version and digest its record lists, and `check` does the same. Every
+recipe unpacks into `inventory/classes/recipes/<name>`, so two recipes
+can share a project only when they include the same digest of a recipe.
+Both records list valkey 1.0.2 at the same digest.
 
 ## Verify, then pull by digest
 
 The registry's
 [consumer docs](https://github.com/kadet-hub/registry/blob/main/docs/consumers.md#verifying-a-recipe-by-hand)
-give the steps, and `check` runs them for all four recipes. For
-open-webui:
+give the steps, and `check` runs them for the two pinned recipes and the
+two they include. For open-webui:
 
 ```sh
 id=https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
@@ -248,10 +244,10 @@ done
 ```
 
 SearXNG, Open WebUI and Ollama run as root in their images, which the
-Pod Security level `restricted` refuses. `baseline` admits them. Neither
-SearXNG nor Open WebUI has a readiness probe, so `kubectl rollout status`
-returns before they listen. `check` waits for SearXNG's `/healthz` and
-Open WebUI's `/health` instead.
+Pod Security level `restricted` refuses. `baseline` admits them.
+open-webui 1.0.0 has no readiness probe, so `kubectl rollout status`
+returns before Open WebUI listens. `check` waits for its `/health`
+instead.
 
 ## Using it
 
@@ -274,22 +270,22 @@ the chat endpoint one after the other.
 
 ## What the CI run showed
 
-[Run 41920093981](https://github.com/kadet-hub/examples/actions/runs/41920093981)
-of the examples workflow tested commit `11aa9b9` of
-[kadet-hub/examples#132](https://github.com/kadet-hub/examples/pull/132)
-on 4 November 2026, on GitHub's `ubuntu-24.04` runner. The durations
+[Run 42036520562](https://github.com/kadet-hub/examples/actions/runs/42036520562)
+of the examples workflow tested commit `d59b8d2` of
+[kadet-hub/examples#154](https://github.com/kadet-hub/examples/pull/154)
+on 5 November 2026, on GitHub's `ubuntu-24.04` runner. The durations
 below are what `check` printed, in whole seconds, or come from the log's
 timestamps.
 
-Verifying the index, the four recipes and the generator and pulling them
-took 27 seconds. Installing Kapitan with uv and the two compiles took 10
-more, for 11 files in `compiled/searxng` and 15 in `compiled/open-webui`.
-kind had the cluster ready about 40 seconds later. From the first
-`kubectl apply` until the last rollout finished took 94 seconds, image
-pulls included. SearXNG and Open WebUI answered their health checks 26
+Verifying the index, the two pinned recipes, the two they include and
+the generator, and pulling them, took 27 seconds. Installing Kapitan with
+uv and the two compiles took 9 more, for 11 files in `compiled/searxng`
+and 15 in `compiled/open-webui`. kind had the cluster ready 43 seconds
+later. From the first `kubectl apply` until the last rollout finished
+took 122 seconds, image pulls included. Open WebUI answered `/health` 16
 seconds after that.
 
-The web search for `kubernetes` took 7 seconds. It returned three
+The web search for `kubernetes` took 5 seconds. It returned three
 results, Open WebUI's default count: `https://kubernetes.io/`,
 `https://en.wikipedia.org/wiki/Kubernetes` and a Red Hat page. Open WebUI
 loaded all three pages. Asked directly right after, SearXNG returned 39
@@ -297,12 +293,14 @@ results. Brave had found 26 of them and Google CSE 20, some of them both.
 DuckDuckGo had answered with a CAPTCHA.
 
 Pulling `smollm:135m` through Open WebUI took 4 seconds, and the chat
-completion 1 second. The check sets `max_tokens: 32`, and the answer
+completion less than one. The check sets `max_tokens: 32`, and the answer
 stopped mid-sentence:
 
 ```text
-Kubernetes is a container orchestration system that automates the deployment, scaling, and management of containerized applications. It provides a lightweight, modular, and
+Kubernetes is a container orchestration system that provides a flexible and scalable way to manage containerized applications. It is a part of the Linux kernel and is
 ```
+
+The second sentence is wrong.
 
 With SearXNG scaled to zero, the same search returned HTTP 400, and Open
 WebUI's log showed `Cannot connect to host searxng.searxng.svc:8080`.

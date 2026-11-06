@@ -140,9 +140,9 @@ def check(tree, index, policy, license_path, required=()):
             findings.append(f"REC-4: {f}: the shipped tree holds no Python file")
         elif f.startswith("vendor/") and f.endswith((".yml", ".yaml")) and f not in copies:
             findings.append(f"REC-4: {f}: YAML below vendor/ that no copy entry names would be a class file")
-        elif not (f == "README.md" or f.startswith("vendor/") or top and f.endswith(".yml")
+        elif not (f in ("README.md", "recipe.yaml") or f.startswith("vendor/") or top and f.endswith(".yml")
                   or top and f.endswith((".yml.LICENSE", ".yml.NOTICE")) and f.rsplit(".", 1)[0] in shipped):
-            findings.append(f"REC-4: {f}: the shipped tree holds only README.md, class files *.yml at the root"
+            findings.append(f"REC-4: {f}: the shipped tree holds only README.md, recipe.yaml, class files *.yml at the root"
                             " with their .LICENSE and .NOTICE, and files below vendor/")
     # REC-15: the license next to each vendored file.
     for c in sorted(copies):

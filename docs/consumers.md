@@ -74,7 +74,9 @@ jobs:
 ```
 
 Pin the workflow by commit SHA; the scripts and the sandbox image it uses
-belong to that commit. The workflow compiles the Kapitan project at the
+belong to that commit. [CHANGELOG.md](../CHANGELOG.md) says what changes
+when you move the pin and what you have to do, and each index release
+repeats the sections added since the previous one. The workflow compiles the Kapitan project at the
 repository root; a project in a subdirectory needs its own repository. The compiled output is uploaded as the artifact
 `compiled`. Review it before you apply it.
 
@@ -242,6 +244,14 @@ parameters:
     vars:
       target: cert-manager
 ```
+
+The README's section "Required parameters" names what a target has to set
+and the characters a value may use where the recipe restricts them. The
+Valkey password that open-webui writes into a Redis URL, for example,
+allows letters and digits only. Kapitan's `random:str` also yields `-` and
+`_`. `random:special:<length>:<characters>` draws from letters, digits and
+exactly the characters given, so `?{<backend>:<path>||random:special:40:}`
+yields 40 letters and digits.
 
 Pin only the recipes your targets include. A recipe whose index record
 lists `includes` brings those recipes along: the workflow adds each of

@@ -1516,7 +1516,7 @@ code diff and the output diff, not only the verdict.
   and every other actor off all branches: another app, a future
   collaborator, a deploy key, a workflow token with `contents: write`.
   That protects the maintainer's own pull request branches, which merge
-  through the admin bypass without a second review, from commits pushed
+  through the admin bypass without a second person's review, from commits pushed
   by someone else.
 
   They do not stop Renovate or the maintainer from pushing a workflow to
@@ -1528,23 +1528,44 @@ code diff and the output diff, not only the verdict.
   - Test: manual: `gh api repos/kadet-hub/registry/rulesets` matches `.github/ruleset-branches.json` and `.github/ruleset-renovate.json`
   - Since: #259
 
-- REV-4: Every pull request MUST request a review from `neat-bot`. That
-  review MUST NOT be a condition for merging.
+- REV-4: A pull request MUST NOT merge before `neat-bot` approved its
+  head commit, also when it merges through the admin bypass. When
+  `neat-bot` reports findings, each MUST be resolved before the merge: the
+  author fixes it or answers in its thread, and `neat-bot` then approves
+  the head commit. Renovate's own merges (REV-5) are the exception.
+
+  `neat-bot` is an automated reviewer, not a person. Its review is either
+  an approval or a comment review with one thread per finding, each
+  starting with a category and a severity. It does not answer in threads,
+  so an answer counts as agreed once `neat-bot` approves after it. A push,
+  including an update from `main` (DEC-14), makes a new head commit that
+  needs a new approval.
 
   The `request review` workflow requests `neat-bot` with the repository's
-  own token when a pull request is opened, reopened or marked ready. It skips
-  drafts, pull requests opened by bots, and pull requests from forks, whose
-  token is read-only; on a fork the bot is requested by hand after a look at
-  the pull request. `neat-bot` has read access only (terraform-homezone
-  GHO-6a), so CODEOWNERS, which requests a code owner only with write access,
-  cannot do it, and an approval by `neat-bot` counts toward no approval a
-  ruleset requires.
+  own token when a pull request is opened, reopened or marked ready. It
+  skips drafts, pull requests opened by bots, and pull requests from forks,
+  whose token is read-only. For those, and after every push, the author or
+  the maintainer requests the review by hand; on a fork after a look at the
+  pull request. `neat-bot` works through a queue and comments its position
+  while a request waits. The queue can lag by hours, and the merge waits
+  for it.
 
-  - Test: manual: on a new pull request the `request review` run succeeds and
-    `gh pr view <n> --json reviewRequests` lists `neat-bot`;
-    `gh api repos/kadet-hub/registry/collaborators/neat-bot/permission` reports
-    `read`
-  - Since: #353
+  `neat-bot` has read access only (terraform-homezone GHO-6a), so
+  CODEOWNERS, which requests a code owner only with write access, cannot
+  request it, and its approval counts toward no approval a ruleset
+  requires. No ruleset enforces REV-4. The maintainer, and agents working
+  under the maintainer's account, keep the admin bypass of REV-1 and use
+  it only after the approval.
+
+  - Test: manual: for a merged pull request `<n>`,
+    `gh api repos/kadet-hub/registry/pulls/<n>/reviews --jq '[.[] | select(.user.login == "neat-bot" and .state == "APPROVED") | {commit_id, submitted_at}]'`
+    lists the `head.sha` of `gh api repos/kadet-hub/registry/pulls/<n>`
+    with a `submitted_at` before its `merged_at`; on a new pull request the
+    `request review` run succeeds and `gh pr view <n> --json reviewRequests`
+    lists `neat-bot`;
+    `gh api repos/kadet-hub/registry/collaborators/neat-bot/permission`
+    reports `read`
+  - Since: #353; approval before the merge: this change
 
 - REV-5: Renovate MUST merge its own pull request once every check on it
   passed, unless the update is a major update, an entry bump (REG-7), or a
@@ -1562,3 +1583,13 @@ code diff and the output diff, not only the verdict.
 
   - Test: manual: `renovate.json` `automerge` rules; `gh api repos/kadet-hub/registry/rulesets` lists Integration 2740 with `bypass_mode: pull_request` on `main`
   - Since: #441
+
+- REV-6: README.md MUST say how changes are reviewed: that `neat-bot` is
+  an automated reviewer whose approval and findings are handled before the
+  merge (REV-4), that no second person reviews the maintainer's and
+  agents' pull requests, that other pull requests also need the
+  maintainer's approval (REV-1), and that Renovate merges its own updates
+  without `neat-bot` (REV-5).
+
+  - Test: none (documentation)
+  - Since: this change
