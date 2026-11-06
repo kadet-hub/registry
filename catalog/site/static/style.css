@@ -382,3 +382,10 @@ details.version:target { border-color: var(--accent); }
 .pg-chain li.pg-win { color: var(--text); }
 .pg-tag { display: inline-block; padding: 0 .4rem; border-radius: 6px; border: 1px solid var(--border-strong); font-size: .75rem; }
 .pg-win .pg-tag { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-strong); }
+/* PG-25: Prism's token classes in the site's colour tokens, each 4.5:1 or more on pre's background. */
+.token.comment, .token.prolog, .token.blockquote, .token.hr { color: var(--text-muted); }
+.token.key, .token.atrule, .token.property, .token.tag { color: var(--accent); }
+.token.string, .token.url, .token.code { color: var(--ok); }
+.token.number, .token.boolean, .token.null, .token.important, .token.datetime { color: var(--warn); }
+.token.bold { font-weight: 700; }
+.token.italic { font-style: italic; }

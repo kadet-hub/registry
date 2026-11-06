@@ -1940,6 +1940,24 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         self.assertIn("helm template output, rendered when this site was built", page)
         self.assertIn("Not compiled in your browser and not affected by your edits", page)
 
+    def test_highlight_colours_reach_aa(self):  # PG-25: every token colour on pre's background, light and dark
+        with open(os.path.join(HERE, "site", "static", "style.css"), encoding="utf-8") as f:
+            css = f.read()
+        colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
+        used = set(re.findall(r"\.token\.[^{]*\{[^}]*color: var\(--([\w-]+)\)", css))
+        self.assertEqual(re.search(r"^pre \{[^}]*background: var\(--([\w-]+)\)", css, re.M).group(1), "bg-subtle")
+
+        def luminance(hex_colour):
+            rgb = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+            r, g, b = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        self.assertEqual(used, {"text-muted", "accent", "ok", "warn"})
+        for name in used:
+            for theme in (0, 1):
+                fg, bg = luminance(colours[name][theme]), luminance(colours["bg-subtle"][theme])
+                self.assertGreaterEqual((max(fg, bg) + 0.05) / (min(fg, bg) + 0.05), 4.5, (name, ("light", "dark")[theme]))
+
     def test_build_takes_the_latest_listed_version_and_the_gate_hashes(self):  # PG-1, PG-5
         sys.path.insert(0, os.path.join(HERE, "playground"))
         try:
@@ -2481,7 +2499,7 @@ def stack_build(tmp, posts, *args):
     return out, subprocess.run(["hugo", "--logLevel", "error", "--source", site, "--destination", out, *args], capture_output=True, text=True)
 
 
-class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
+class Stacks(unittest.TestCase):  # CAT-45 to CAT-50
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
@@ -2536,12 +2554,21 @@ class Stacks(unittest.TestCase):  # CAT-45 to CAT-49
         for line in re.findall(r"<p>Generators: (.*?)</p>", page):
             for name in re.findall(r"<code>([^<]+)</code>", line):
                 self.assertIn(name, entries)
+        projects = re.findall(rf'<li><a href="\.\./blog/([^/]+)/">.*?<p>Project: <a href="https://github\.com/{OWNER}/examples/tree/main/([^"]+)">', page, re.S)
+        self.assertEqual(len(projects), len(stack_posts()))
+        for name, example in projects:  # CAT-50: the post's own project link
+            with open(os.path.join(HERE, "site", "content", "blog", name + ".md"), encoding="utf-8") as f:
+                link = f"(https://github.com/kadet-hub/examples/tree/main/{example})"
+                self.assertTrue(link in f.read().split("\n---\n", 1)[1], f"{name}.md does not link {link}")
 
     def test_unknown_recipe_fails_the_build(self):  # CAT-49
         front = STACK_POSTS["stack-b"]
         for case, post, error in (("recipe", front.replace("[valkey]", "[valkey, no-such-recipe]"),
                                    "blog/stack-b.md: stack names the recipe no-such-recipe, which has no page at /recipes/no-such-recipe/"),
-                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example")):
+                                  ("example", front.replace("\n  example: stack-b", ""), "blog/stack-b.md: stack names no example"),
+                                  *((f"example {bad}", front.replace("example: stack-b", f"example: {bad}"),  # CAT-50
+                                     f"blog/stack-b.md: stack names the example {bad}, which is not a folder name of lowercase letters, digits and hyphens")
+                                    for bad in ("Stack-B", "stack-b/", "stack-b/sub", "stack--b"))):
             with self.subTest(case), tempfile.TemporaryDirectory() as tmp:
                 _, built = stack_build(tmp, {"stack-b": post})
                 self.assertNotEqual(built.returncode, 0)

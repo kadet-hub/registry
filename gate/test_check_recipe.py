@@ -133,8 +133,11 @@ class Recipe(unittest.TestCase):
     def test_layout(self):  # REC-4
         for changes in ({"notes.txt": ""}, {"x.yaml": ""}, {"sub/x.yml": "parameters: {}\n"}, {"orphan.yml.LICENSE": ""},
                         {"README.md.LICENSE": ""}, {"x.py": ""}, {"vendor/x.py": ""}, {"vendor/x.yml": "parameters: {}\n"},
-                        {"vendor/x.yaml": ""}, {"tests/target.yml": None, "tests/smoke": None, "tests": ""}):
+                        {"vendor/x.yaml": ""}, {"tests/target.yml": None, "tests/smoke": None, "tests": ""},
+                        {"sub/recipe.yaml": ""}):
             self.assert_finding("REC-4", changes)
+        # Only at the root; check lint checks its content (RCP-260, REC-5).
+        self.assertEqual(check({"recipe.yaml": "backends:\n  - omegaconf\nrequired: []\n"})[0], [])
 
     def test_license(self):  # REC-4, REC-13
         self.assert_finding("REC-4: the source repository's root LICENSE", license_text="All rights reserved.\n")

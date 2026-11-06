@@ -201,20 +201,23 @@ copy of `check` at `source.sha` is not used, so a recipe tag cannot weaken
 the rules it is judged by.
 
 - REC-4: The shipped tree, `source.path` without `tests/`, MUST hold only
-  `README.md`, `recipe.yaml` (REC-18), class files `*.yml` at its root with
-  their `.LICENSE` and `.NOTICE` files, and below `vendor/` files that are
-  not `*.py`, of which
-  `*.yml` and `*.yaml` only as inputs of a `copy` entry. Every vendored
-  file MUST have its license next to it (REC-15). The gate MUST run SEC-1,
-  SEC-5 and SEC-6 over the shipped tree and `tests/target.yml` and
-  `tests/values.yaml`. It MUST NOT read any other file below `tests/`
-  except `tests/target.yml` of each recipe the recipe includes or
-  requires. Above level `renders`, the recipe directory the gate checks
-  MUST hold `tests/smoke`.
+  `README.md`, `recipe.yaml`, class files `*.yml` at its root with their
+  `.LICENSE` and `.NOTICE` files, and below `vendor/` files that are not
+  `*.py`, of which `*.yml` and `*.yaml` only as inputs of a `copy` entry.
+  Every vendored file MUST have its license next to it (REC-15). The gate
+  MUST run SEC-1, SEC-5 and SEC-6 over the shipped tree and
+  `tests/target.yml` and `tests/values.yaml`. It MUST NOT read any other
+  file below `tests/` except `tests/target.yml` of each recipe the recipe
+  includes or requires. Above level `renders`, the recipe directory the
+  gate checks MUST hold `tests/smoke`.
 
   `check lint` lints every YAML file of a recipe as a class, except
-  `tests/` and the inputs of `copy` entries, and fails a class that
-  includes a `copy` input (RCP-33, RCP-36 in kadet-hub/recipes). A
+  `tests/`, `recipe.yaml` and the inputs of `copy` entries, and fails a
+  class that includes a `copy` input (RCP-33, RCP-36 in kadet-hub/recipes).
+  `recipe.yaml` lists the parameters a target must set and the inventory
+  backends the recipe resolves on. From `check-v0.16.0` on, `check lint`
+  requires it and checks it against the README (RCP-260, RCP-261 there),
+  which the gate runs as REC-5. A
   `vendor/x.yml` that no `copy` entry names is loadable as `.vendor.x` and
   passes the lint as a class outside the root. A class file that carries
   text a chart renders has the upstream license next to it as
@@ -248,8 +251,8 @@ the rules it is judged by.
   which `check` needs to tell an included recipe's objects from the
   parent's (RCP-49).
 
-  - Test: workflow job `gate-selftest`, samples under `tests/samples/recipes/` (`fail-recipe-python`, `fail-recipe-vendor-class`, `fail-recipe-token`); `gate/test_check_recipe.py` (`Recipe.test_passes`, `Recipe.test_layout`, `Recipe.test_license`); `gate/test_fetch_tree.py` (`FetchTree.test_recipe_reads_only_its_tests_files`)
-  - Since: #382; `tests/target.yml` of included recipes: #385; SEC-5 for cnpg: #389; `tests/target.yml` of required recipes: #390; `recipe.yaml`: this change
+  - Test: workflow job `gate-selftest`, samples under `tests/samples/recipes/` (`pass-recipe` with its `recipe.yaml`, `fail-recipe-python`, `fail-recipe-vendor-class`, `fail-recipe-token`); `gate/test_check_recipe.py` (`Recipe.test_passes`, `Recipe.test_layout`, `Recipe.test_license`); `gate/test_fetch_tree.py` (`FetchTree.test_recipe_reads_only_its_tests_files`)
+  - Since: #382; `tests/target.yml` of included recipes: #385; SEC-5 for cnpg: #389; `tests/target.yml` of required recipes: #390; `recipe.yaml`: #567
 
 - REC-5: `check lint`'s file rules MUST pass on the recipe, run in the
   sandbox image without network. Every class a recipe file includes MUST
@@ -257,8 +260,9 @@ the rules it is judged by.
   `recipes.<other>` or `recipes.<other>.<option>` that REC-16 resolves.
 
   The file rules are RCP-1, RCP-2, RCP-4, RCP-7 and RCP-17 to RCP-19, the
-  `Source` and `Level` lines of RCP-23, and the include and pin rules
-  RCP-47, RCP-48 and RCP-54. They read the files only. The include rule is
+  `Source` and `Level` lines of RCP-23, the include and pin rules
+  RCP-47, RCP-48 and RCP-54, and `recipe.yaml` with its match with the
+  README (RCP-260, RCP-261). They read the files only. The include rule is
   stricter than `check lint`, which accepts every `recipes.` class of its
   own repository, because the included recipe must also be a published
   version (REC-16).
@@ -266,12 +270,14 @@ the rules it is judged by.
   The command `check lint` does more: it compiles the recipe with Kapitan
   on the host and pulls the generators and the chart. The gate therefore
   calls `lint.lint_files` of the pinned release in the sandbox image, the
-  function behind the file rules. The include and `Requires` rules read
-  the other recipes. They are the directories REC-4's fetch writes from
-  `source.sha`, the trees REC-16 looks up among the published versions.
+  function behind the file rules. The `kapitan inventory` proofs of
+  `recipe.yaml` (RCP-262, RCP-263) are not file rules and do not run in
+  the gate. The include and `Requires` rules read the other recipes. They
+  are the directories REC-4's fetch writes from `source.sha`, the trees
+  REC-16 looks up among the published versions.
 
-  - Test: workflow job `gate-selftest` (`fail-recipe-oc-env`, `fail-recipe-include`); `gate/test_check_recipe.py` (`Recipe.test_includes`)
-  - Since: #382; the included recipe resolved (REC-16): #390
+  - Test: workflow job `gate-selftest` (`fail-recipe-oc-env`, `fail-recipe-include`, `fail-recipe-no-recipe-yaml`); `gate/test_check_recipe.py` (`Recipe.test_includes`)
+  - Since: #382; the included recipe resolved (REC-16): #390; RCP-260 and RCP-261: #567
 
 - REC-6: Every `oci` dependency of a recipe and of each recipe it
   includes or requires (REC-17) MUST name a generator as
@@ -393,7 +399,9 @@ the rules it is judged by.
   release manifest `check` compares both sides, each on its own cluster
   (RCP-8). A compose source or a designed recipe has nothing to compare
   with, so `check` lints its output and dry-runs it on one cluster
-  (RCP-38, RCP-44).
+  (RCP-38, RCP-44). From `check-v0.17.0` on, a designed recipe may render
+  RBAC that only reads, bound only to its own roles (RCP-308). Any other
+  RBAC object in a compose or designed recipe still fails.
 
   kind needs Docker on the runner, so the job runs outside the sandbox and
   receives data only (DEC-21). Once every check before REC-9 has passed,
@@ -436,8 +444,8 @@ the rules it is judged by.
   reports `REC-9: not run, a check before it failed`, and the `renders`
   job is skipped.
 
-  - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`)
-  - Since: #389; required recipes and `gateway-api` (REC-17): #390
+  - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`; RCP-308 by `check/tests/test_lint.py` in kadet-hub/recipes, no sample)
+  - Since: #389; required recipes and `gateway-api` (REC-17): #390; read-only RBAC of designed recipes (RCP-308): #572
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
@@ -778,19 +786,13 @@ parameters:
 
   `gate/check_recipe.py` reads the file in the gate job as in the build
   job and writes it to `recipe.json` as `declared`, from which
-  `release/build-all` copies both keys. A version without the file has
-  neither key in its record, as versions from before REC-12 have no
-  `images`. The index carries no schema version to bump. The findings
-  start with `REC-18: recipe.yaml`.
-
-  `check-v0.14.1`, the release `gate/.check/` pins, lints `recipe.yaml` as
-  a class file and fails it with `recipe.yaml: top-level key backends
-  (RCP-17)` (REC-5). A recipe version with the file therefore passes the
-  gate only once the pin moves to the first `check` release that knows
-  the file.
+  `release/build-all` copies both keys. A version published before
+  `check lint` required the file (REC-4) has neither key in its record, as
+  versions from before REC-12 have no `images`. The index carries no
+  schema version to bump. The findings start with `REC-18: recipe.yaml`.
 
   - Test: `gate/test_check_recipe.py` (`Recipe.test_declared`); `release/test_release.py` (`BuildAll.test_recipe_record`)
-  - Since: this change
+  - Since: #544
 
 Consumer workflow commits from before CON-4 reject a
 `ghcr.io/kadet-hub/recipes/<name>` source with `is not a marketplace
@@ -828,5 +830,5 @@ REG-2. They fail closed.
 | Config media type | `application/vnd.kadet-hub.recipe.config.v1+json` |
 | Consumer path | `inventory/classes/recipes/<name>/` |
 | Inventory backend | omegaconf |
-| `check` | kadet-hub/recipes `check-v0.14.1`, commit `72b4a7a44773a6da37af152b86a9ad674b3c8ae5`, in `gate/.check/` |
+| `check` | kadet-hub/recipes `check-v0.17.0`, commit `c9db13e08d5be895749204f3caa91b5488ace29a`, in `gate/.check/` |
 | cloud-provider-kind | v0.12.0 in `.github/actions/setup-kind/` (REC-17) |

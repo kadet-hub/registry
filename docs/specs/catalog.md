@@ -178,6 +178,7 @@ remembered in the browser's `localStorage`.
   | pulumi vs helm | same guide |
   | helm vs helmfile (also "helmfile vs helm"), helm chart vs helmfile, helm umbrella chart vs helmfile (checked 2026-10-22) | same guide, section #helmfile |
   | helmfile environments (also "helmfile environments example", "helmfile multiple environments"), helmfile secrets example, helmfile release needs (also "helmfile needs"), helmfile alternatives (checked 2026-11-05) | blog post "Helmfile vs Kapitan: environments, secrets and release order", sections #environments, #secrets and #needs for the first three |
+  | kubernetes multiple environments, helm multiple environments, helm values per environment, kustomize multiple environments (Google's suggestions, checked 2026-11-05) | blog post "Kubernetes multiple environments: dev, stage and prod in Kapitan", section #helm-kustomize for the last three |
   | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
   | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
@@ -191,6 +192,7 @@ remembered in the browser's `localStorage`.
   | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
   | timoni kubernetes, timoni bundle (checked 2026-11-05) | blog post "Timoni vs Kapitan for Kubernetes: CUE modules, OCI bundles" |
   | kcl kubernetes, kcl kubernetes example (checked 2026-11-05) | blog post "KCL vs Kapitan for Kubernetes: typed schemas and OCI modules" |
+  | external secrets operator vault (also "external secrets operator vault example", "external secrets operator vault approle"), external secrets operator rotation (checked 2026-11-05) | blog post "External Secrets Operator with Vault AppRole and Kapitan refs" |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
   | kubectl wait for condition (checked 2026-11-02) | blog post "kubectl wait for condition fails on null conditions" |
@@ -1335,7 +1337,7 @@ Related: CAT-15, CAT-30, CON-2.
   names Chainsaw only under Built for, did not.
 
   - Test: `catalog/test_catalog.py::test_search_matches_built_for`
-  - Since: this change
+  - Since: #421
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
@@ -1652,7 +1654,7 @@ Related: CAT-15, CAT-30, CON-2.
   build (CAT-36a).
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #546
 
 - CAT-46: The site MUST have a page at `/stacks/` that lists every
   published stack post, newest first, with its title linked to the post,
@@ -1665,13 +1667,13 @@ Related: CAT-15, CAT-30, CON-2.
   name. Without a published stack post the page says so.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_stacks_page`)
-  - Since: this change
+  - Since: #546
 
 - CAT-47: The site navigation MUST link `/stacks/` after "Recipes", and
   `/llms.txt` (CAT-16) MUST link it under "Using generators".
 
   - Test: `catalog/test_catalog.py` (`Site.test_stacks_linked`)
-  - Since: this change
+  - Since: #546
 
 - CAT-48: Every recipe page and every generator page MUST have a section
   "Used in stacks" that links each published stack post naming it, newest
@@ -1683,7 +1685,7 @@ Related: CAT-15, CAT-30, CON-2.
   variants (CAT-28, CAT-37b) do not carry it.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_used_in_stacks`)
-  - Since: this change
+  - Since: #546
 
 - CAT-49: The build MUST fail when a published stack post names a recipe
   without a page at `/recipes/<name>/` or names no `example`.
@@ -1700,7 +1702,25 @@ Related: CAT-15, CAT-30, CON-2.
   index, and the fixture indexes of the tests leave most of them out.
 
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
-  - Since: this change
+  - Since: #546
+
+- CAT-50: The build MUST fail when a published stack post's `example` is
+  not one folder name of lowercase letters, digits and single hyphens.
+  Every committed stack post MUST link
+  `https://github.com/kadet-hub/examples/tree/main/<example>` in its text.
+
+  The project link on `/stacks/` is built from `example`, and the registry
+  has no list of the folders in kadet-hub/examples. A wrong name would
+  give a link to a 404 with a green build. The format catches another
+  casing, a trailing slash and a path. A misspelling passes the format,
+  so `Stacks.test_queued_stack_posts` compares `example` with the
+  project link the post's text already carries. A name misspelled the
+  same way in both places still passes. Checking the folder itself needs
+  the examples repository, which the offline build and tests do not
+  have.
+
+  - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
+  - Since: #561
 
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
@@ -2064,7 +2084,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`ListedRecipe.test_page_from_the_artifact`, `ListedRecipe.test_fetch_inventory_and_verification`, `ListedRecipe.test_yanked_versions_and_generators`, `ListedRecipe.test_all_versions_yanked`, `ListedRecipe.test_layer_missing_fails_the_build`, `ListedRecipe.test_build_fetches_the_layer_by_digest`, `ListedRecipe.test_backends`)
   - Since: #399; included recipes left to the consumer workflow: #536;
-    inventory backends: this change
+    inventory backends: #544
 
 - CAT-38a: A recipe listed under CAT-37d MUST show its latest version.
 
