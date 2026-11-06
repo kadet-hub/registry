@@ -181,11 +181,12 @@ CHART_RECIPE_FILES = {
                  "## Left out\n\nThe hook <script>alert(8)</script> `Job/cert-manager-startupapicheck`.\n\n"
                  "## Renamed RBAC objects\n\n| Chart | Recipe |\n|---|---|\n| `cert-manager:leaderelection` | `cert-manager-leaderelection` |\n\n"
                  "## Proof\n\n`check cert-manager --level deploys` on kind.\n\n## Replacing a Helm release\n\nNot tested.\n",
-    "init.yml": "classes:\n  - .controller\n  - .webhook\nparameters:\n  kapitan:\n    dependencies:\n      - type: oci\n"
+    # A leading comment with a comma before any colon, as homepage's kubernetes.yml has: Hugo reads such a string as CSV.
+    "init.yml": "# The controller, the webhook\nclasses:\n  - .controller\n  - .webhook\nparameters:\n  kapitan:\n    dependencies:\n      - type: oci\n"
                 f"        source: ghcr.io/{OWNER}/kubernetes:1.7.0@sha256:{'d' * 64}\n        output_path: lib/kubernetes\n",
     "controller.yml": "parameters:\n  components:\n    cert-manager:\n      application: cert-manager\n",
     "webhook.yml": "parameters:\n  components:\n    cert-manager-webhook:\n      application: cert-manager\n",
-    "crds.yml": "parameters:\n  kapitan:\n    compile: []\n",
+    "crds.yml": "# The chart's CRDs, behind crds.enabled\nparameters:\n  kapitan:\n    compile: []\n",
 }
 # CAT-37e: a kadet-hub/recipes recipe migrated from a Docker Compose file.
 COMPOSE_SOURCE = f"https://github.com/miniflux/v2/blob/{'2' * 40}/contrib/docker-compose/basic.yml"
@@ -374,8 +375,11 @@ NEW_RECIPES = tuple(
     (name, {k.replace(base, name): v.replace(base, name) for k, v in files.items()})
     for base, files, names in (
         ("cert-manager", CHART_RECIPE_FILES, ("authentik", "blackbox-exporter", "gitea", "immich", "jellyfin", "n8n", "netbox",
-                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress", "forgejo", "memcached")),
-        ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden", "umami")))
+                                              "ollama", "open-webui", "semaphore", "mariadb", "wordpress", "forgejo", "memcached",
+                                              "ghost", "home-assistant", "homepage", "litellm", "matrix-synapse", "mattermost",
+                                              "qdrant", "rocketchat", "stirling-pdf", "zulip")),
+        ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden", "umami",
+                                            "actual", "ejabberd", "memos")))
     for name in names)
 
 
@@ -794,7 +798,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 36)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 49)
         self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
