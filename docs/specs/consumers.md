@@ -251,14 +251,25 @@ CON-1 checks, fetches and verifies them like any generator.
   field, the two commands of a local compile
   (`kapitan compile --inventory-path fetch --force-fetch --output-path .`
   and `kapitan compile`), the pull of the included recipes by digest before
-  the second command, and the verification of a recipe by hand.
+  the second command, and the verification of a recipe by hand. It MUST
+  say where a recipe states the characters a required parameter allows,
+  and which Kapitan ref function keeps a generated value within them.
 
   Kapitan's fetch reads no index, so the first command fetches only what
   the fetch inventory pins, and the recipes a pinned recipe includes
   (CON-7) are pulled by hand.
 
-  - Test: none
-  - Since: #397; included recipes: #536
+  A target usually sets a password as a ref that Kapitan generates on the
+  first compile. open-webui puts the Valkey password into a Redis URL and
+  allows letters and digits only, while `random:str`, the generator most
+  examples use, also yields `-` and `_` (`random` in
+  `kapitan/refs/functions.py` of 0.36.3). The open-webui-searxng example
+  in kadet-hub/examples ran into it.
+
+  - Test: none; `manual:` with Kapitan 0.36.3, `random:special:40:` gave
+    40 letters and digits and `random:special:40:._~` added only `.` and
+    `~` (2026-11-05)
+  - Since: #397; included recipes: #536; parameter characters: #564
 
 ### Included recipes
 

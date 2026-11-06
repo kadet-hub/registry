@@ -243,6 +243,14 @@ parameters:
       target: cert-manager
 ```
 
+The README's section "Required parameters" names what a target has to set
+and the characters a value may use where the recipe restricts them. The
+Valkey password that open-webui writes into a Redis URL, for example,
+allows letters and digits only. Kapitan's `random:str` also yields `-` and
+`_`. `random:special:<length>:<characters>` draws from letters, digits and
+exactly the characters given, so `?{<backend>:<path>||random:special:40:}`
+yields 40 letters and digits.
+
 Pin only the recipes your targets include. A recipe whose index record
 lists `includes` brings those recipes along: the workflow adds each of
 them at the version and digest the record lists. All recipes share
