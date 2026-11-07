@@ -1,8 +1,9 @@
 ---
 title: cdk8s vs Tanka vs Kapitan for Kubernetes config
-date: 2026-10-21
-topics: [kapitan, helm, comparison, jsonnet]
+layout: prose
 description: "Kubernetes configuration management tools: one app built with Tanka, cdk8s and Kapitan to identical manifests, with size, speed, type safety and GitOps."
+lastmod: 2026-11-07
+aliases: [/blog/config-tools/]
 ---
 
 Pick cdk8s if your team writes TypeScript and wants the compiler to reject a
@@ -11,7 +12,7 @@ Kubernetes-only toolchain and accept Jsonnet as the language. Pick [Kapitan](/gl
 one [inventory](/glossary/#inventory) has to drive Kubernetes and Terraform and you would rather keep
 values in YAML than maintain template code. All three rendered the same app to
 identical manifests and passed the derived-value test that Helm and Kustomize
-failed in the [companion post](/blog/same-app/).
+failed in the [companion guide](/guides/same-app/).
 
 The [example](https://github.com/kadet-hub/examples/tree/main/config-tools)
 builds the app with each tool, and `./check` exits 0 only when the normalized
@@ -224,4 +225,4 @@ $ ./check
 
 The first run installs dependencies from the lock files and verifies the
 generator's attestation before pulling it by digest; the
-[companion post](/blog/same-app/) covers what that fetch does not check.
+[companion guide](/guides/same-app/) covers what that fetch does not check.

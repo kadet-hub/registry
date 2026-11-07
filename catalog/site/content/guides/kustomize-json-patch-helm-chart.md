@@ -1,15 +1,15 @@
 ---
 title: "Kustomize JSON patch add: fields a Helm chart does not template"
-date: 2026-10-21
-lastmod: 2026-10-22
-topics: [helm, kustomize, kapitan]
+layout: prose
 description: "Kustomize JSON patch add and Kapitan's mutate for fields charts lack: appProtocol, trafficDistribution, topologySpreadConstraints, annotations, hostNetwork."
+lastmod: 2026-11-07
+aliases: [/blog/kustomize-json-patch-helm-chart/]
 ---
 
 A chart can only set the fields its templates write. When a Kubernetes
 field you need is missing from them, the value you add to `values.yaml`
 is silently ignored, unless the chart has a values schema that rejects it.
-This post sets nine such fields from open issues on the rendered manifests,
+This guide sets nine such fields from open issues on the rendered manifests,
 first with a Kustomize patch over `helm template`, then with
 [Kapitan](/glossary/#kapitan)'s [mutate](/generators/mutate/)
 [generator](/glossary/#generator). Most of them are RFC 6902 JSON Patch

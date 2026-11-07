@@ -65,7 +65,7 @@ from the merged parameters of the target. `kapitan compile` writes each
 target into `compiled/<target>/`. A generator is a Python library that
 reads one section of the parameters, such as `generators.certmanager`, and
 writes manifests. The
-[first platform post](/blog/first-platform/) shows the setup from an empty
+[first platform guide](/guides/first-platform/) shows the setup from an empty
 directory.
 
 This project has one target per component, `cert-manager`, `kyverno`,

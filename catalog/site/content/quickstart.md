@@ -13,10 +13,10 @@ value the recipe's classes set, not only the ones a template exposes.
 `kapitan compile` takes the place of `helm template`: it writes manifests,
 and nothing keeps a release in the cluster.
 
-[Writing a Helm chart vs Kapitan](/blog/helm-chart-vs-kapitan-inventory/)
+The guide on [writing your own Helm chart](/guides/helm-chart-vs-kapitan-inventory/)
 rebuilds metrics-server, cert-manager and kube-prometheus-stack as one
 inventory and compares the objects on kind.
-[Helm vs Kustomize vs Kapitan on one Kubernetes app](/blog/same-app/)
+[Helm vs Kustomize and Kapitan, diffed on one app](/guides/same-app/)
 renders the same app with all three tools for two environments. For a
 Bitnami chart, [Bitnami chart alternatives](/guides/bitnami-chart-alternatives/)
 names the replacement and the recipe where there is one.
@@ -26,13 +26,13 @@ names the replacement and the recipe where there is one.
 The recipe's classes play the part of a base, and the target plays the
 part of an overlay: the inventory merges the classes in order, and the
 target's `parameters` override them.
-[Helm vs Kustomize vs Kapitan on one Kubernetes app](/blog/same-app/)
+[Helm vs Kustomize and Kapitan, diffed on one app](/guides/same-app/)
 compares overlays for two environments with the same app as an inventory.
 
 A field that neither the recipe nor a chart sets is changed after
 rendering, with a patch in Kustomize and with the
-[mutate](/generators/mutate/) generator in Kapitan. Three posts make the
+[mutate](/generators/mutate/) generator in Kapitan. Three guides make the
 same change both ways on rendered charts:
-[adding fields with a JSON patch](/blog/kustomize-json-patch-helm-chart/),
-[setting an environment variable with `valueFrom`](/blog/kustomize-patch-env-helm-chart/)
-and [deleting a resource](/blog/kustomize-delete-resource-helm-chart/).
+[adding fields with a JSON patch](/guides/kustomize-json-patch-helm-chart/),
+[setting an environment variable with `valueFrom`](/guides/kustomize-patch-env-helm-chart/)
+and [deleting a resource](/guides/kustomize-delete-resource-helm-chart/).

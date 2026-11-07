@@ -1,15 +1,16 @@
 ---
 title: Actions Runner Controller dind image from your own registry
-date: 2026-10-21
-topics: [helm, kustomize, kapitan, ci]
+layout: prose
 description: "GitHub Actions Runner Controller dind image from a mirror or air-gapped registry: gha-runner-scale-set patched with Kustomize or Kapitan, tested on kind."
+lastmod: 2026-11-07
+aliases: [/blog/actions-runner-controller-dind/]
 ---
 
 With `containerMode.type: dind`, the gha-runner-scale-set chart of
 actions-runner-controller (ARC) adds a Docker daemon to every runner pod.
 The chart fixes that container's image as `docker:dind`, which the kubelet
 pulls from Docker Hub, and the current release, 0.15.0 from 1 October 2026,
-has no value to change it. This post replaces the image on the rendered
+has no value to change it. This guide replaces the image on the rendered
 manifests, first with Kustomize over `helm template`, then with
 [Kapitan](/glossary/#kapitan)'s [mutate](/generators/mutate/)
 [generator](/glossary/#generator), for a pull-through mirror and for a

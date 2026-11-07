@@ -1,8 +1,9 @@
 ---
 title: cert-manager Helm chart initContainers and trust-manager issuer
-date: 2026-10-20
-topics: [helm, kapitan, generators]
+layout: prose
 description: "Helm chart initContainers for cert-manager and a trust-manager webhook certificate from your own ClusterIssuer, patched by Kapitan and tested on kind."
+lastmod: 2026-11-07
+aliases: [/blog/cert-manager-helm-chart-patches/]
 ---
 
 Two requests against the cert-manager project's Helm charts have no value
@@ -10,7 +11,7 @@ to set in the current releases, cert-manager v1.21.2 and trust-manager
 v0.25.0: init containers on the cert-manager controller, and a
 trust-manager webhook certificate signed by an issuer you manage instead
 of the self-signed one the chart creates. Both can be fixed on the rendered
-manifests without forking the chart. This post does it with
+manifests without forking the chart. This guide does it with
 [Kapitan](/glossary/#kapitan)'s [mutate](/generators/mutate/)
 [generator](/glossary/#generator), one section per issue.
 

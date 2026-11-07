@@ -713,10 +713,10 @@ class Site(unittest.TestCase):
         def links(heading):
             section = page.split(f">{heading}</h2>", 1)[1].split("<h2", 1)[0]
             return [posixpath.normpath(posixpath.join("/quickstart/", h)) for h in re.findall(r'href="([^"#]+)"', section)]
-        kustomize = sorted(f"/blog/{os.path.basename(p)[:-3]}" for p in glob.glob(os.path.join(HERE, "site", "content", "blog", "kustomize-*.md")))
+        kustomize = sorted(f"/guides/{os.path.basename(p)[:-3]}" for p in glob.glob(os.path.join(HERE, "site", "content", "guides", "kustomize-*.md")))
         self.assertEqual(len(kustomize), 3)
-        for heading, posts in (("Coming from Helm?", ["/blog/helm-chart-vs-kapitan-inventory", "/blog/same-app", "/guides/bitnami-chart-alternatives"]),
-                               ("Coming from Kustomize?", ["/blog/same-app", *kustomize])):
+        for heading, posts in (("Coming from Helm?", ["/guides/helm-chart-vs-kapitan-inventory", "/guides/same-app", "/guides/bitnami-chart-alternatives"]),
+                               ("Coming from Kustomize?", ["/guides/same-app", *kustomize])):
             for post in posts:
                 self.assertIn(post, links(heading))
                 self.assertTrue(os.path.isfile(os.path.join(self.out, post.strip("/"), "index.html")), post)
@@ -875,7 +875,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 12)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 38)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -1232,7 +1232,7 @@ class Site(unittest.TestCase):
         blog = self.page("blog")
         self.assertIn(f'<a href="../blog/{slug}/">Kapitan generators as supply-chain artifacts</a> <time datetime="2026-10-17">', blog)
         self.assertIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog" href="../blog/index.xml">', blog)
-        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("blog", "first-platform"))  # CAT-11a
+        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("guides", "first-platform"))  # CAT-11a
         post = self.page("blog", slug)
         self.assertIn('<time datetime="2026-10-17">17 October 2026</time>', post)
         self.assertIn('<a href="../../guides/checking-custom-resources-against-crds/">', post)  # internal, so no rel=nofollow

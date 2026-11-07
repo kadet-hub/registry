@@ -1,8 +1,9 @@
 ---
 title: "Convert a Helm chart to Kapitan inventory in five minutes"
-date: 2026-11-22
-topics: [helm, kapitan, generators, verification]
+layout: prose
 description: "kadet-convert turns the oauth2-proxy Helm chart and your values into a Kapitan inventory, proves on kind that it renders the same objects, and lists the gaps."
+lastmod: 2026-11-07
+aliases: [/blog/convert-helm-chart-to-kapitan/]
 ---
 
 A Helm user who looks at [Kapitan](/glossary/#kapitan) usually asks first
@@ -15,7 +16,7 @@ as `helm template`. The proof is the comparison that kadet-hub's
 [recipes](/glossary/#recipe) pass. The converter is part of `check` in
 kadet-hub/recipes and first shipped in check 0.16.0, tag `check-v0.16.0`.
 
-This post converts the Helm chart of oauth2-proxy, an authentication
+This guide converts the Helm chart of oauth2-proxy, an authentication
 proxy, in version 10.7.2 from its Helm repository. Every command below ran
 as printed. The outputs come from that run, two of them in part, as the
 text says.
@@ -292,7 +293,7 @@ kept. That is the better choice if you want to keep following upstream
 releases of the chart. The converter is for the other case. You want the
 objects in your inventory, rendered by a generator you can read, and you
 accept that later chart releases do not reach you on their own.
-[Helmfile vs Kapitan](/blog/helmfile-vs-kapitan/) shows the helm input on
+The [Helmfile guide](/guides/helmfile-vs-kapitan/) shows the helm input on
 podinfo and Valkey, and
 [Kapitan inputs](/guides/generator-helm-or-jinja2/) compares it with kadet
 generators, Jinja2 and Kustomize.

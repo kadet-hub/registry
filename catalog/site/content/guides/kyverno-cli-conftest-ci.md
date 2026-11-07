@@ -1,8 +1,9 @@
 ---
 title: "Kyverno CLI and conftest in CI vs Kyverno at admission"
-date: 2026-11-18
-topics: [kapitan, ci, security, validation]
+layout: prose
 description: "Kyverno CLI and conftest on Kapitan's compiled output in a pull request, next to the compile diff, and the same Kyverno policies at admission on kind."
+lastmod: 2026-11-07
+aliases: [/blog/kyverno-cli-conftest-ci/]
 ---
 
 [Kapitan](/glossary/#kapitan) compiles an [inventory](/glossary/#inventory)
@@ -13,7 +14,7 @@ image on the tag `latest` is one line in the diff, and Kapitan compiles it
 without an error. Kyverno as an admission controller can reject such an
 object when it reaches the cluster, after the merge.
 
-This post runs two policy tools on `compiled/` in the pull request: the
+This guide runs two policy tools on `compiled/` in the pull request: the
 Kyverno CLI with policies from
 [kyverno/policies](https://github.com/kyverno/policies), and conftest with
 Rego rules of your own. It then installs Kyverno into a

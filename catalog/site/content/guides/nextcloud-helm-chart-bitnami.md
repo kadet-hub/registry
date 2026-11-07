@@ -1,8 +1,9 @@
 ---
 title: "Nextcloud Helm chart: Bitnami subcharts and Kapitan"
-date: 2026-11-03
-topics: [helm, bitnami, kapitan]
+layout: prose
 description: "Nextcloud Helm chart and Bitnami: what the 9.4.1 subcharts run today, the chart on your own PostgreSQL and Valkey, and a Kapitan recipe tested on kind."
+lastmod: 2026-11-07
+aliases: [/blog/nextcloud-helm-chart-bitnami/]
 ---
 
 The Nextcloud Helm chart 9.4.1 packages Bitnami's PostgreSQL, MariaDB and
@@ -13,7 +14,7 @@ it, with credentials from existing Secrets. The
 [nextcloud recipe](/recipes/nextcloud/) rebuilds the chart for
 [Kapitan](/glossary/#kapitan) and puts a CloudNativePG cluster and Valkey
 in place of the subcharts. What Bitnami changed is in the
-[Bitnami post](/blog/bitnami/), and the replacements for other charts are
+[Bitnami PostgreSQL guide](/guides/bitnami/), and the replacements for other charts are
 in [Bitnami chart alternatives](/guides/bitnami-chart-alternatives/).
 
 ## What chart 9.4.1 declares
