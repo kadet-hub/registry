@@ -608,7 +608,7 @@ review go into the review comment and do not fail the gate.
     `gate-selftest`
   - Since: #416; `expired_at`: #574; `.gopclntab` statements and expiry on
     every entry: #576; `sandbox/gopclntab/check`: #581; in the weekly
-    run: this change
+    run: #636
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
