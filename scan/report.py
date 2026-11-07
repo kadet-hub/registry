@@ -6,7 +6,7 @@ Exits 1 when the output holds a finding or cannot be read (GI-7).
 
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 def load(path):
@@ -62,7 +62,7 @@ def clamav_age(path):
         for line in f:
             if line.startswith("built: "):
                 built = datetime.strptime(line[7:].strip(), "%d %b %Y %H:%M %z")
-                if datetime.now(timezone.utc) - built > timedelta(days=2):
+                if datetime.now(UTC) - built > timedelta(days=2):
                     return [f"warning: ClamAV database built {built:%Y-%m-%d}, older than two days"], False
                 return [], False
     return ["warning: ClamAV database age unknown"], False

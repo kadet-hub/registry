@@ -23,6 +23,8 @@
 {{ with $r.latest -}}
 - {{ with $r.renders }}renders passed in the release run of {{ substr .at 0 10 }} with {{ .tool }}: {{ .run }}{{ else }}No renders result in the release run's record{{ end }}
 - Output capabilities: {{ with .output_capabilities }}{{ delimit . ", " }}{{ else }}none{{ end }}
+{{ with .backends }}- Inventory backends: {{ delimit . ", " }}
+{{ end -}}
 {{ end -}}
 {{ with $r.requires }}- Prerequisites, installed once per cluster before the recipe: {{ delimit . ", " }}
 {{ end -}}

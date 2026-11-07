@@ -62,7 +62,7 @@ class TagCheck(unittest.TestCase):
                 f.write("tags: [kubernetes]\n")
             p = subprocess.run([sys.executable, "-I", os.path.join(os.path.dirname(os.path.abspath(__file__)), "tag_check.py"),
                                 "--manifest", os.path.join(out, "manifest.yaml"), "--out", os.path.join(out, "compiled"), "--kinds", result],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, check=False)
             self.assertEqual(p.returncode, 0, p.stdout)
             with open(result, encoding="utf-8") as f:
                 self.assertEqual(json.load(f), expected)

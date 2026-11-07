@@ -1,0 +1,10 @@
+# CI-3: ruff's default rules on the registry's own Python. Generators are
+# checked with policy/ruff.toml instead (QA-3).
+target-version = "py311" # the lowest interpreter here: ClusterFuzzLite's base-builder-python (GI-14)
+# The gate samples (AC-1 to AC-5) stay as the gate has to see them.
+extend-exclude = ["tests/samples/fail-unparseable/broken.py"] # the syntax error is the sample
+
+[lint.per-file-ignores]
+"tests/samples/*/__init__.py" = ["N999"] # the directory is the sample's name, with dashes
+"tests/samples/fail-base64-exec/__init__.py" = ["S102"] # the planted exec
+"tests/samples/fail-{padded-flag,post-renderer,symlink-helm,undeclared-binary}/__init__.py" = ["PLW1510"] # the planted binary call

@@ -72,7 +72,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   the index job would list that package as a generator.
 
   - Test: `gate/test_check_entry.py::Entry.test_registry_packages_are_reserved`
-  - Since: this change
+  - Since: #410
 
 - REG-3: The gate MUST fail a new entry whose name equals an existing or
   reserved name after removing `-` and `_`, and MUST flag it for the reviewer
@@ -140,7 +140,9 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     `sandbox/Dockerfile` copies kube-apiserver with `COPY --from`, which
     Renovate's dockerfile manager updates; `tf-schema-verify` copies
     terraform out with `docker create` and `docker cp`. Both binaries are
-    identical to the dl.k8s.io and releases.hashicorp.com downloads.
+    identical to the dl.k8s.io and releases.hashicorp.com downloads. The
+    Go toolchain of `sandbox/gopclntab/check` (SEC-18) is the Docker
+    Official Image `golang`, pinned the same way.
   - Check: helm (`sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`), gVisor
     and kubectl (`.github/actions/setup-kind/`) have neither a release
     asset nor an image published by the project. Renovate bumps the
@@ -187,7 +189,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     one release back; `checksum-pins` workflow.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
     #306; recipe entries: #378; branch and title per entry: #381; kind,
-    kubectl and uv: #389
+    kubectl and uv: #389; golang: #581
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.

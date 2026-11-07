@@ -41,7 +41,8 @@
         "/^sandbox/Dockerfile$/",
         "/^\\.github/workflows/[^/]+\\.yml$/",
         "/^\\.github/actions/[^/]+/action\\.yml$/",
-        "/^sandbox/gitlab-ci\\.yml$/"
+        "/^sandbox/gitlab-ci\\.yml$/",
+        "/^sandbox/gopclntab/check$/"
       ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>github-releases) depName=(?<depName>\\S+)\\n\\s*(?:ARG )?[A-Z_]+[=:] ?\"?(?<currentValue>[^\"\\s]+)\"?",

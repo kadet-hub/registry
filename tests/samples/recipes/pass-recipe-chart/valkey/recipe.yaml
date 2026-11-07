@@ -1,0 +1,6 @@
+backends:
+  - omegaconf
+required:
+  - path: applications.valkey.password
+    description: Password of Valkey's user default.
+    secret: true

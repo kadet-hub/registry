@@ -78,7 +78,7 @@ since the documented package API has no visibility call.
 
   - Test: `release/test_release.py` (partial: reproducibility and tree ID;
     the sign job's comparison by AC-6)
-  - Since: #13, #226; `attestations: read`: this change; the LICENSE of PUB-15: #418
+  - Since: #13, #226; `attestations: read`: #391; the LICENSE of PUB-15: #418
 
 - PUB-15: When the shipped tree has no `LICENSE` at its root, the build job
   MUST add the source repository's root `LICENSE` at `source.sha` to the
@@ -528,7 +528,7 @@ since the documented package API has no visibility call.
     first release run after the merge creates `index-<serial>` and the
     documented verification passes on its assets; the changelog sections:
     see CON-10
-  - Since: #249; changelog sections: this change
+  - Since: #249; changelog sections: #554
 
 ## Mirrored images
 

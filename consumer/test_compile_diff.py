@@ -111,7 +111,7 @@ class Render(unittest.TestCase):  # CD-7, CD-9, CD-11
         self.assertIn("+  replicas: 2\n```\n", body)
 
     def test_hostile_artifact_stays_text(self):
-        text = "+@someone <img src=x> [x](https://example.org) ‮evil‬ ü\n+``````\n+</details>\n"
+        text = "+@someone <img src=x> [x](https://example.org) \u202eevil\u202c ü\n+``````\n+</details>\n"
         self.diff("x<b>y", text)
         write(os.path.join(self.dir, "notes.md"), b"**injected**")
         os.symlink("/etc/passwd", os.path.join(self.dir, "link.diff"))
@@ -161,9 +161,8 @@ class Render(unittest.TestCase):  # CD-7, CD-9, CD-11
         self.assertNotIn("+x", failed)
 
     def exit_code(self, conclusion="success"):
-        with open(os.devnull, "w") as null, unittest.mock.patch("sys.stdout", null):
-            with self.assertRaises(SystemExit) as e:
-                compile_diff.main(["compile_diff.py", "render", self.dir, conclusion, "0" * 40, "https://github.com/o/r/actions/runs/1"])
+        with open(os.devnull, "w") as null, unittest.mock.patch("sys.stdout", null), self.assertRaises(SystemExit) as e:
+            compile_diff.main(["compile_diff.py", "render", self.dir, conclusion, "0" * 40, "https://github.com/o/r/actions/runs/1"])
         return e.exception.code
 
     def test_missing_marker(self):

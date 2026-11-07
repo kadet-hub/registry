@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from typing import ClassVar
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from images import images
@@ -258,8 +259,8 @@ class Sbom(unittest.TestCase):
                 for p in doc["packages"][1:]}
         self.assertEqual(deps, {
             "kubernetes": ("1.9.0", None, f"pkg:oci/kubernetes@sha256%3A{'b' * 64}?repository_url=ghcr.io/kadet-hub/kubernetes&tag=1.9.0"),
-            "quay.io/jetstack/cert-manager-controller": ("v1.21.2", "CONTAINER", f"pkg:oci/cert-manager-controller@sha256%3A{'b' * 64}"
-                                                         "?repository_url=quay.io/jetstack/cert-manager-controller&tag=v1.21.2"),
+            "quay.io/jetstack/cert-manager-controller": ("v1.21.2", "CONTAINER", (f"pkg:oci/cert-manager-controller@sha256%3A{'b' * 64}"
+                                                          "?repository_url=quay.io/jetstack/cert-manager-controller&tag=v1.21.2")),
             # Without a digest pkg:oci does not apply.
             "docker.io/library/nginx": ("1.25", "CONTAINER", "pkg:docker/library/nginx@1.25?repository_url=docker.io")})
         depends = [r["relatedSpdxElement"] for r in doc["relationships"] if r["relationshipType"] == "DEPENDS_ON" and r["spdxElementId"] == "SPDXRef-Package"]
@@ -506,7 +507,7 @@ echo x >>{calls!r}
             root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             p = subprocess.run(["bash", "-c", f". {os.path.join(root, 'release', 'common.sh')!r} && attested ghcr.io/x/demo@sha256:0"],
                                env={**os.environ, "PATH": f"{tmp}:{os.environ['PATH']}", "ATTESTED_DELAY_SCALE": "0",
-                                    "GITHUB_REPOSITORY": "o/r", "IDENTITY": "i"})
+                                    "GITHUB_REPOSITORY": "o/r", "IDENTITY": "i"}, check=False)
             with open(calls, encoding="utf-8") as f:
                 return p.returncode, len(f.readlines())
 
@@ -530,8 +531,8 @@ class PublishIndex(unittest.TestCase):
     The fake oras answers `<command> ... <ref>` with the file $FAKE/<command>/<ref with / as _>."""
 
     REG = "ghcr.io/kadet-hub"
-    TAGS = {"a": ["1.0.0", "latest", "1.1.0", "2.0.0"], "b": ["1.0.0", "1.0.1"], "recipes/r": ["0.1.0"]}
-    FAKE_TOOLS = {
+    TAGS: ClassVar[dict] = {"a": ["1.0.0", "latest", "1.1.0", "2.0.0"], "b": ["1.0.0", "1.0.1"], "recipes/r": ["0.1.0"]}
+    FAKE_TOOLS: ClassVar[dict] = {
         "oras": '[[ $2 == push ]] && exit 0\nf=$FAKE/$1/$(tr / _ <<<"${!#}")\n'
                 '[[ -f $f ]] || { echo "${!#}: not found" >&2; exit 1; }\n'
                 'if [[ $3 == --output && $4 != - ]]; then cp -- "$f" "$4"; else cat -- "$f"; fi',
@@ -586,7 +587,7 @@ class PublishIndex(unittest.TestCase):
                                env=dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], FAKE=fake,
                                         REGISTRY=self.REG, IDENTITY="i", GITHUB_REPOSITORY="kadet-hub/registry", GH_TOKEN="x",
                                         PACKAGES_API="orgs/kadet-hub", ATTESTED_DELAY_SCALE="0", GITHUB_OUTPUT=result["output"],
-                                        INDEX_OUT=result["index.json"], NOTES_OUT=result["notes.md"]))
+                                        INDEX_OUT=result["index.json"], NOTES_OUT=result["notes.md"]), check=False)
             texts = {}
             for k, path in result.items():
                 if os.path.exists(path):
@@ -688,17 +689,17 @@ echo '[]' >"$out/names.json"
         with open(os.path.join(out, "licenses.txt"), encoding="utf-8") as f:
             self.assertEqual(f.read(), f"./demo.LICENSE:license at {'c' * 40}:LICENSE\n")
 
-    def build_recipe(self, source, renders_rc=0, rev="d" * 40):  # REC-12, REC-13
+    def build_recipe(self, source, renders_rc=0, rev="d" * 40, declared=None):  # REC-12, REC-13, REC-18
         recipe = {"pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:{'a' * 64}", f"ghcr.io/kadet-hub/certmanager:1.0.2@sha256:{'b' * 64}"],
                   "recipes": {"other": {"rule": "REC-16", "version": "1.0.0", "digest": "sha256:" + "d" * 64},
                               "req": {"rule": "REC-17", "version": "2.0.0", "digest": "sha256:" + "e" * 64}},
                   "included": ["other"], "required": {"req": []}, "source": ["Source: x"], "level": ["Level: x"],
-                  "description": "Demo recipe.", "license": "Apache-2.0"}
+                  "description": "Demo recipe.", "license": "Apache-2.0", "declared": declared}
         fields = {"source": source, "level": "deploys", "kinds": [{"group": "", "version": "v1", "kind": "Service"}],
                   "images": ["quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:" + "f" * 64]}
-        sec12 = (f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole x\nSEC-12: admission-webhook: compiled/demo/w.yml: x\n"
-                 f"SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole y\nSEC-12: host-path: compiled/other/x.yml: x\n"
-                 f"SEC-12: unparsed output compiled/demo/notes.txt (*)\n")
+        sec12 = ("SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole x\nSEC-12: admission-webhook: compiled/demo/w.yml: x\n"
+                 "SEC-12: rbac-admin: compiled/demo/rbac.yml: ClusterRole y\nSEC-12: host-path: compiled/other/x.yml: x\n"
+                 "SEC-12: unparsed output compiled/demo/notes.txt (*)\n")
         log = os.path.join(self.tmp, "log")
         fakes = {
             "bin/docker": """#!/usr/bin/env bash
@@ -730,7 +731,7 @@ exit {renders_rc}
         open(log, "w").close()
         p = subprocess.run([os.path.join(self.root, "release", "build-all"), out], capture_output=True, text=True,
                            env=dict(self.env, FAKE_LOG=log, FAKE_RECIPE_JSON=os.path.join(self.tmp, "recipe.json"),
-                                    FAKE_FIELDS=os.path.join(self.tmp, "fields.json"), FAKE_SEC12=sec12, RECIPES_CHECK=self.tmp))
+                                    FAKE_FIELDS=os.path.join(self.tmp, "fields.json"), FAKE_SEC12=sec12, RECIPES_CHECK=self.tmp), check=False)
         with open(log, encoding="utf-8") as f:
             calls = f.read().splitlines()
         if p.returncode:
@@ -768,6 +769,11 @@ exit {renders_rc}
         for source in (["design", ["docker.io/library/rabbitmq", "4.3.6-management", "sha256:" + "c" * 64]], None):
             meta = self.build_recipe(source)[2]
             self.assertEqual(("chart" in meta, "manifest" in meta, meta["level"]), (False, False, "deploys"))
+        # REC-18: recipe.yaml's keys when the version has the file, neither key without it.
+        self.assertEqual(("required" in meta, "backends" in meta), (False, False))
+        required = [{"path": "applications.demo.password", "description": "Password of the demo.", "secret": True}]
+        meta = self.build_recipe(None, declared={"backends": ["omegaconf"], "required": required})[2]
+        self.assertEqual((meta["backends"], meta["required"]), (["omegaconf"], required))
 
     def test_recipe_checks_and_renders_fail_the_build(self):  # REC-12
         p, _, _ = self.build_recipe(None, renders_rc=1)
@@ -807,7 +813,7 @@ class Recipe(unittest.TestCase):
     """REC-11, PUB-15: release/sign with git on a real repository and a fake registry."""
 
     setUp = OutputDiff.setUp
-    FILES = {"LICENSE": "Apache License\n", "demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n",
+    FILES: ClassVar[dict] = {"LICENSE": "Apache License\n", "demo/init.yml": "classes: [.demo]\n", "demo/README.md": "# demo\n",
              "demo/vendor/crds.yaml": "kind: CRD\n", "demo/tests/target.yml": "classes: [recipes.demo]\n",
              "demo/tests/smoke": "#!/bin/sh\n", "other/init.yml": "{}\n", "gen/kapitan-generator.yaml": "name: gen\n",
              "gen/schemas/core/secret_v1.json": "{}\n"}
@@ -862,7 +868,7 @@ exec {shutil.which("git")} "${{args[@]}}"
         if os.path.exists(pushed):
             os.remove(pushed)
         p = subprocess.run([os.path.join(self.root, "release", "sign"), name, built], capture_output=True, text=True,
-                           env=dict(self.env, GITHUB_OUTPUT=outputs, FAKE_PUSHED=pushed), cwd=self.root)
+                           env=dict(self.env, GITHUB_OUTPUT=outputs, FAKE_PUSHED=pushed), cwd=self.root, check=False)
         with open(outputs, encoding="utf-8") as f:
             out = dict(line.rstrip("\n").split("=", 1) for line in f)
         if not os.path.exists(pushed):
@@ -935,7 +941,7 @@ esac
                                 "kubevirt-csi-driver", "https://github.com/kubevirt/csi-driver", "https://srpm/a/", "https://srpm/b/"],
                                capture_output=True, text=True,
                                env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], REGISTRY="ghcr.io/kadet-hub",
-                                        FAKE_TAGS=tags, GITHUB_STEP_SUMMARY=summary))
+                                        FAKE_TAGS=tags, GITHUB_STEP_SUMMARY=summary), check=False)
             with open(calls, encoding="utf-8") as f:
                 writes = [c.split()[0] for c in f.read().splitlines() if c.split()[0] in ("cp", "tag")]
             summary_text = ""
@@ -992,7 +998,7 @@ class PublishSandbox(unittest.TestCase):
                 os.chmod(os.path.join(tmp, name), 0o755)
             p = subprocess.run([os.path.join(ROOT, "release", "publish-sandbox")], capture_output=True, text=True,
                                env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], REGISTRY="ghcr.io/kadet-hub",
-                                        GITHUB_OUTPUT=output, RUNNER_TEMP=tmp))
+                                        GITHUB_OUTPUT=output, RUNNER_TEMP=tmp), check=False)
             self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
             with open(output, encoding="utf-8") as f:
                 out = dict(line.split("=", 1) for line in f.read().splitlines())

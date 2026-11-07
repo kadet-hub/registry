@@ -16,7 +16,7 @@ Exits 0 after writing --out, 3 when the content equals --previous.
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def section(versions, entries, before, now):
@@ -112,7 +112,7 @@ def main():
     if a.previous:
         with open(a.previous, encoding="utf-8") as f:
             previous = json.load(f)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     index = build(versions, entries, previous, now, recipe_versions, recipe_entries)
     if index is None:
         print("index unchanged")

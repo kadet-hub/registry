@@ -7,7 +7,7 @@
   {{- end -}}
 {{- end -}}
 {{- with resources.Get (printf "classes/recipes/%s/init.yml" $name) -}}
-  {{- range (transform.Unmarshal .Content).classes -}}
+  {{- range (transform.Unmarshal .).classes -}}
     {{- with findRESubmatch `^recipes\.([a-z0-9-]+)$` . 1 -}}
       {{- range partial "recipe-requires.html" (index (index . 0) 1) }}{{ if not (in $all .) }}{{ $all = $all | append . }}{{ end }}{{ end -}}
     {{- end -}}

@@ -46,6 +46,8 @@ multiprocessing pool and runs some inputs as subprocesses.
   sources).
 - DEC-47: The Terraform example uses terraform-opentelekomcloud, the
   smallest of the four Terraform generators in the index (Examples).
+- DEC-48: The page highlights the read-only output with Prism 1.30.0 and
+  leaves the editor a plain textarea (Highlighting).
 
 ## Runtime
 
@@ -83,7 +85,7 @@ nothing; the runtime lets that one debug record through.
   checked against the sha256 of that Pyodide's `pyodide-lock.json`.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_build_takes_the_latest_listed_version_and_the_gate_hashes`); `build.py` exits on a mismatch, in the `playground` workflow and the release's catalog job
-  - Since: this change
+  - Since: #543
 
 - PG-2: The playground MUST NOT change Kapitan's code. The runtime MAY
   replace `multiprocessing.Pool` and `Manager` and serve the modules in
@@ -93,12 +95,12 @@ nothing; the runtime lets that one debug record through.
   reaches one.
 
   - Test: `.github/workflows/playground.yml` (`check`)
-  - Since: this change
+  - Since: #543
 
 - PG-3: When a compile fails, the page MUST show Kapitan's error message.
 
   - Test: `catalog/playground/browser.mjs`, YAML error, via `Playground.test_runs_in_chrome`
-  - Since: this change
+  - Since: #543
 
 ## Inventory backends and limits
 
@@ -112,7 +114,7 @@ none of them is available.
   and MUST name the backends, inputs and features it does not support.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`)
-  - Since: this change
+  - Since: #543
 
 ## Examples
 
@@ -147,14 +149,14 @@ that it was rendered when the site was built and is not affected by edits.
   the gate vetted.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_build_takes_the_latest_listed_version_and_the_gate_hashes`); `build.py` checks each manifest's `artifactType`
-  - Since: this change
+  - Since: #543
 
 - PG-11: The Helm side MUST be `helm template`'s output of the chart the
   recipe's index record names, rendered by the build, and the page MUST
   label it as rendered at build time and not compiled in the browser.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`), `browser.mjs`
-  - Since: this change
+  - Since: #543
 
 The four Terraform generators in the index, terraform-aws, terraform-google,
 terraform-azurerm and terraform-opentelekomcloud, are pure Python, list no
@@ -175,12 +177,12 @@ plan.
   PG-6 compares it with the gate image like every other example.
 
   - Test: `browser.mjs` (PG-21); `.github/workflows/playground.yml` (`check`)
-  - Since: this change
+  - Since: #563
 
 - PG-22: The page MUST say that terraform plan does not run in the browser.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_backends_and_limits`), `browser.mjs` (PG-22)
-  - Since: this change
+  - Since: #563
 
 ## Equivalence with the gate
 
@@ -197,7 +199,7 @@ daily on `main` against the index published at that time.
   to the same files with the same bytes as in the gate's sandbox image.
 
   - Test: `.github/workflows/playground.yml` (`catalog/playground/check`)
-  - Since: this change
+  - Since: #543
 
 - PG-14: The `playground` workflow MUST run daily against the published
   index. When a scheduled run fails, it MUST open one issue titled
@@ -211,7 +213,7 @@ daily on `main` against the index published at that time.
   comparison did not run. Decided with #543, formerly OQ-43.
 
   - Test: `catalog/test_catalog.py` (`PlaygroundReport`); `.github/workflows/playground.yml` (job `report`)
-  - Since: this change
+  - Since: #543
 
 ## Merge order and parameter sources
 
@@ -269,13 +271,13 @@ as the file next to it and reclass as the class itself.
   by the target, each with the file whose `classes:` named it.
 
   - Test: `catalog/playground/test_provenance.py` (`Provenance.test_class_order`), `browser.mjs` (PG-15)
-  - Since: this change
+  - Since: #562
 
 - PG-16: The page MUST say whether the other backend merges the same class
   files in the same order, and when it cannot read the inventory, why.
 
   - Test: `test_provenance.py` (`Provenance.test_class_order`, `Provenance.test_other_backend_cannot_read`)
-  - Since: this change
+  - Since: #562
 
 - PG-17: For every leaf of the target's merged parameters, the page MUST
   name the file that set its final value and list the files that set it
@@ -285,25 +287,81 @@ as the file next to it and reclass as the class itself.
   interpolation shows the raw and the resolved value.
 
   - Test: `test_provenance.py` (`test_override_chain`, `test_list_merge`, `test_none_replaces_a_mapping`, `test_reclass_override_prefix`, `test_interpolation`), `browser.mjs` (PG-17)
-  - Since: this change
+  - Since: #562
 
 - PG-18: The page MUST filter the parameters by a path the visitor types.
 
   - Test: `browser.mjs` (PG-17, PG-18)
-  - Since: this change
+  - Since: #562
 
 - PG-19: The runtime MUST compare the replay with the inventory Kapitan
   rendered on every compile, and the page MUST name every path where they
   differ.
 
   - Test: `test_provenance.py` (`Provenance.test_difference_is_reported`), `browser.mjs` (PG-19)
-  - Since: this change
+  - Since: #562
 
 - PG-20: Every example MUST compile under each backend it names with no
   difference between the replay and Kapitan's inventory.
 
   - Test: `.github/workflows/playground.yml` (`compile.mjs`, in the build step)
-  - Since: this change
+  - Since: #562
+
+## Highlighting
+
+The compiled files and the Helm output are highlighted, the editor is not
+(DEC-48). Long YAML is read in the output; the files a visitor edits are a
+target, a few classes and a component. An overlay over the textarea would
+have to match its wrapping, scrolling and font metrics after every
+keystroke. Python and Jinja2 appear only in the editor, and no example
+writes HCL: the Terraform example's output is `*.tf.json`. So the page needs
+grammars for YAML, JSON and Markdown and picks one by the file name's
+extension: `.yml` and `.yaml`, `.json` including `.tf.json`, and `.md`. Other
+files stay plain text.
+
+Prism's `tokenize` returns tokens, so `syntax.js` builds the spans with
+`createElement` and `textContent`, and no markup string from the
+highlighter reaches `innerHTML`. The spans hold the output's characters
+unchanged, so selection and copy return what Kapitan wrote. The package is
+pinned in `catalog/playground/package-lock.json`, whose integrity `npm ci`
+checks, and `build.py` copies Prism's core, the markup grammar that Markdown
+extends, the Markdown, YAML and JSON grammars and Prism's licence to
+`prism/`. The five files and `syntax.js` are 19,061 bytes. Gzipped as
+`build.py` counts the download the start button names, they add 7,948
+bytes, 0.06 % of it (own calculation from the built files).
+
+An output is highlighted when it is first opened, so a closed one costs
+nothing. Measurement in headless Chrome 156 on a shared 24-core x86_64
+host, two rounds of seven runs in each of three viewports: highlighting a
+generated YAML of 2,000 lines (500 mappings with a quoted string, a
+comment, a number and a boolean) took a median of 11 to 20 ms per viewport
+and round, and 44 to 60 ms with Chrome's 4x CPU throttling, which reaches
+the page's thread. The editor stays a textarea, so editing a large file
+costs what it cost before.
+
+The token colours are the site's `--accent`, `--ok`, `--warn` and
+`--text-muted` on `pre`'s `--bg-subtle`. The lowest ratio is 5.58:1, for
+`--text-muted` in the light theme.
+
+- PG-23: The page MUST highlight the compiled files and the Helm output
+  whose names end in `.yml`, `.yaml`, `.json` or `.md`, and MUST NOT change
+  their text.
+
+  - Test: `browser.mjs` (PG-23)
+  - Since: #565
+
+- PG-24: The highlighter MUST come from the npm package
+  `catalog/playground/package-lock.json` pins, be served from the site with
+  its licence, and load only after the visitor starts the playground.
+
+  - Test: `browser.mjs` (PG-8, PG-9, PG-24); `build.py` exits when `node_modules` holds another version than `package.json` pins
+  - Since: #565
+
+- PG-25: Every token colour MUST reach a contrast of 4.5:1 on the output's
+  background in the light and the dark theme.
+
+  - Test: `catalog/test_catalog.py` (`Playground.test_highlight_colours_reach_aa`)
+  - Since: #565
 
 ## Loading, CSP and hosting
 
@@ -329,32 +387,32 @@ page needs no change.
   CSP MUST be the one `baseof.html` renders for every page.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_csp_is_the_home_page_csp`, `Playground.test_no_inline_script_or_style`), `browser.mjs`
-  - Since: this change
+  - Since: #543
 
 - PG-8: Every file the playground loads MUST come from the site's origin.
 
   - Test: `browser.mjs` (PG-8)
-  - Since: this change
+  - Since: #543
 
 - PG-9: The page MUST NOT load the worker or Pyodide before the visitor
   starts the playground, and the start control MUST state the download size
   the build measured.
 
   - Test: `catalog/test_catalog.py` (`Playground.test_start_button_names_the_download`, `Playground.test_only_its_own_script_before_start`), `browser.mjs` (PG-9)
-  - Since: this change
+  - Since: #543
 
 - PG-10: The playground MUST NOT send what the visitor edits, and MUST NOT
   load a project from the URL or another origin.
 
   - Test: `browser.mjs` (every request is a GET to the site's origin)
-  - Since: this change
+  - Since: #543
 
 - PG-13: Without the playground's files, offline without
   `CATALOG_PLAYGROUND` or when the online build fails, the catalog MUST still
   build and the page MUST say that the playground is not part of the build.
 
   - Test: `catalog/test_catalog.py` (`Site.test_playground_without_its_files`)
-  - Since: this change
+  - Since: #543
 
 ## Start-up
 
@@ -371,7 +429,7 @@ to other sources.
   it serves, from the files it serves, in the same build.
 
   - Test: `.github/workflows/playground.yml` (`compile.mjs` writes it, `browser.mjs` runs on it)
-  - Since: this change
+  - Since: #543
 
 Measurement for DEC-44, on a prototype of this page: three cold runs per
 variant in headless Chrome 156 on a shared 24-core x86_64 host, files from
@@ -427,6 +485,10 @@ wheels and the standard library are deflate archives already: gzip saves
   Terraform example identical to the gate image under both backends, and
   Chrome shows only `*.tf.json` files for it and the note that terraform
   plan does not run.
+- AC-46 (PG-23 to PG-25): Chrome loads no Prism file before the start,
+  shows the first output with tokens, and gets back the same text from a
+  highlighted 2,000-line YAML, a JSON and a Markdown file; Prism's licence
+  is served; the catalog tests find every token colour at 4.5:1 or more.
 
 ## Alternatives
 
@@ -440,6 +502,8 @@ wheels and the standard library are deflate archives already: gzip saves
 | Record sources inside the backends | Changes Kapitan's code (PG-2) |
 | Merge class by class with the backend and compare after each step | Works for omegaconf only: reclass keeps values in its own types until it interpolates the whole merge. It also costs one merge per class on every compile |
 | Take the class order from `target.classes` | For reclass it is not the merge order (Merge order and parameter sources) |
+| Highlight the editor with an overlay | Wrapping, scrolling and font metrics of the textarea and the layer under it must stay identical in every browser; the edited files are short |
+| highlight.js | Returns highlighted HTML as a string, which the page would have to put into `innerHTML` |
 
 ## Open questions
 
@@ -454,22 +518,23 @@ wheels and the standard library are deflate archives already: gzip saves
 
 | Path | Purpose |
 |---|---|
-| `catalog/playground/build.py` | Fetches and checks Pyodide and the wheels, assembles the examples, renders the Helm side, runs `compile.mjs`, writes `data/playground.json` (PG-1, PG-5, PG-11, PG-12) |
+| `catalog/playground/build.py` | Fetches and checks Pyodide and the wheels, copies Prism, assembles the examples, renders the Helm side, runs `compile.mjs`, writes `data/playground.json` (PG-1, PG-5, PG-11, PG-12, PG-24) |
 | `catalog/playground/compile.mjs` | Compiles every example in Pyodide in Node, checks its provenance, writes the bytecode archives (PG-6, PG-12, PG-20) |
 | `catalog/playground/test_provenance.py` | Unit tests of the replay against fixture inventories, run in the sandbox image (PG-15 to PG-19) |
 | `catalog/playground/check` | Compiles every example in the sandbox image and compares (PG-6) |
 | `catalog/playground/report` | Opens or updates the issue of a failed scheduled run (PG-14) |
-| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11, PG-15, PG-17 to PG-19, PG-21, PG-22) |
+| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11, PG-15, PG-17 to PG-19, PG-21 to PG-24) |
 | `catalog/playground/examples.json`, `examples/` | The examples (PG-21) |
-| `catalog/playground/package.json`, `package-lock.json` | Pyodide and playwright-core pins; Renovate's npm manager moves them |
-| `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19) |
+| `catalog/playground/package.json`, `package-lock.json` | Pyodide, Prism and playwright-core pins; Renovate's npm manager moves them (PG-24) |
+| `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19), `syntax.js` (PG-23) |
 | `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13, PG-15 to PG-18, PG-22) |
 | `catalog/build` | Runs `build.py` online, copies `$CATALOG_PLAYGROUND` offline (PG-13) |
-| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44, AC-45, PG-14 |
+| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44 to AC-46, PG-14 |
 
 | Value | Setting |
 |---|---|
 | Pyodide | 314.0.7, Python 3.14 |
+| Prism | 1.30.0: core, markup, markdown, yaml, json |
 | Packages from Pyodide | pyyaml, jinja2, markupsafe, pydantic, regex, six, pyparsing, cachetools, packaging and their lock file dependencies |
 | Wheels from PyPI | kapitan, kadet, python-box, typeguard, pydantic-settings, python-dotenv, kapicorp-reclass, filetype, toml, omegaconf |
 | Served empty (`STUBBED`) | git, copier, boto3, googleapiclient, azure, gnupg, hvac, yamllint, cryptography, requests, jsonschema |

@@ -1,7 +1,7 @@
 # Kapitan generator marketplace
 
 Status: Approved
-Code: `generators/`, `recipes/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `docs/incident.md`, `README.md`, `.github/`, `renovate.json`
+Code: `generators/`, `recipes/`, `gate/`, `policy/`, `sandbox/`, `scan/`, `release/`, `consumer/`, `catalog/`, `tests/`, `docs/consumers.md`, `docs/authors.md`, `docs/incident.md`, `README.md`, `.github/`, `renovate.json`, `ruff.toml`
 Verified against: main @ 970a5d4
 
 ## Problem
@@ -173,6 +173,7 @@ cover none of the changed files.
   | `checksum-pins` | `checksum-pins.yml` | `sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`, `tests/checksum-pins`, actions `setup-gvisor`, `setup-kind`; pull requests from `renovate/` branches only (REG-7) |
   | `sandbox-advisories` | `sandbox-advisories.yml` | `sandbox/`, action `setup-trivy`; also weekly (SEC-18) |
   | `fuzz` | `fuzz.yml` | `.clusterfuzzlite/`, `tests/fuzz/`, `gate/check_entry.py`, `gate/schema_diff.py`, `consumer/plan.py`, `sandbox/schema_check.py`, `sandbox/tag_check.py`, `sandbox/tf_schema.py`, `policy/` (GI-14) |
+  | `code-lint` | `code-lint.yml` | every pull request, because the Python files and shell scripts it checks share no directory (CI-3) |
 
   Every workflow also lists its own file. `workflow_dispatch` runs a job
   regardless of the change.
@@ -182,7 +183,7 @@ cover none of the changed files.
 
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
-  Markdown files at the repository root, `renovate.json`, issue and pull
+  Markdown files at the repository root, `renovate.json`, `ruff.toml`, issue and pull
   request templates, `CODEOWNERS`, the rulesets `.github/ruleset*.json`,
   the test-only workflows of CI-1, the `scorecard`, `codeql` and `fuzz`
   workflows and `.clusterfuzzlite/` (GI-12 to GI-14).
@@ -193,6 +194,23 @@ cover none of the changed files.
 
   - Test: manual: the release run after the merge of the pull request that introduced this
   - Since: #58, #237, #243
+
+- CI-3: The `code-lint` job MUST run ruff with its default rules on every
+  Python file and shellcheck on every shell script of the registry, on
+  every pull request, and MUST fail on any finding.
+
+  A finding is fixed, or silenced for one line or one file with its reason
+  next to it: a `# noqa` or `# shellcheck disable` comment, or a
+  `per-file-ignores` entry in `ruff.toml`. The gate samples in
+  `tests/samples/` keep the code the gate has to find, so `ruff.toml`
+  excludes the syntax-error sample and ignores the planted findings of the
+  other samples per file. Shell scripts are the tracked files named `*.sh`
+  or starting with a `sh`, `bash` or `dash` shebang. Generators are checked
+  by QA-3 with `policy/ruff.toml`, which the gate passes with `--config`, so
+  `ruff.toml` does not reach them.
+
+  - Test: workflow job `code-lint`; manual: a pull request with an unused import fails it
+  - Since: this change
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
@@ -422,11 +440,23 @@ cover none of the changed files.
   images are redistributed with references to their upstream sources only.
 - RISK-14 (accepted, SEC-18): helm, conftest, etcd and kube-apiserver
   link Go modules or a Go release with published fixes, even in their
-  newest releases, and `govulncheck -mode=binary` finds the vulnerable
-  symbols for most of them. The binaries run in the sandbox image on
-  fixture output, without credentials, and without network except
-  `helm pull` in `gate/fetch-charts`. `sandbox/.trivyignore.yaml` lists
-  each advisory until a release carries its fix.
+  newest releases. `sandbox/.trivyignore.yaml` lists each advisory per
+  binary until a release carries its fix, with what the binary's
+  `.gopclntab` holds of it.
+
+  Where a binary holds the vulnerable functions, the sandbox gives them no
+  attacker-controlled input, except for helm's certificate verification.
+  conftest, etcd and kube-apiserver run after the compile, without
+  credentials, in containers without network. conftest reads the compiled
+  output as files. kube-apiserver receives it over HTTP/1.1 from
+  `sandbox/apiserver_check.py`, and its HTTP/2 and gRPC peers are etcd and
+  kube-apiserver itself on loopback.
+
+  helm has network only for `helm pull` (SEC-8, REC-7). The author names
+  the chart repository, so its certificate chain reaches crypto/x509 as
+  attacker-controlled input. The gate compares the pulled chart with a
+  pinned sha256 or pulls it by digest, so a forged chain cannot change the
+  chart that is compiled.
 
 ## Out of scope
 
@@ -504,10 +534,11 @@ coverage is named at each:
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/{consumer-selftest,catalog-tests,release-tests}.yml` | CI-1: `consumer-selftest`, `catalog-tests`, `release-tests` |
+| `.github/workflows/code-lint.yml`, `ruff.toml` | CI-3 |
 | `.github/workflows/release.yml` | PUB-1 to PUB-14, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, CAT-39c, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-15: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff`, `mirror-image`, `publish-sandbox` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
-| `.github/workflows/sandbox-advisories.yml`, `.github/actions/setup-trivy/`, `sandbox/.trivyignore.yaml` | SEC-18 |
+| `.github/workflows/sandbox-advisories.yml`, `.github/actions/setup-trivy/`, `sandbox/.trivyignore.yaml`, `sandbox/gopclntab/` | SEC-18 |
 | `scan/images.py`, `scan/image_report.py`, `.github/actions/setup-trivy/` | SEC-19, CAT-39a: the images a version names and their Trivy scan |
 | `.github/workflows/consumer.yml`, `consumer/`, `consumer-selftest` | CON-1, CON-2, CON-4, CON-5 |
 | `sandbox/gitlab-ci.yml` | CON-1a |
@@ -534,6 +565,6 @@ coverage is named at each:
 
 Tool versions (Kapitan, krab, gVisor, gitleaks, GuardDog, semgrep, ruff,
 ClamAV, Trivy, syft, conftest, oras, helm, kube-apiserver, etcd, gh, zizmor, actionlint,
-Hugo, atheris, kind, kubectl, uv) are pinned in
-`sandbox/Dockerfile`, `.clusterfuzzlite/Dockerfile`, the requirements files, `.github/actions/` and
+shellcheck, Hugo, atheris, kind, kubectl, uv) are pinned in
+`sandbox/Dockerfile`, `.clusterfuzzlite/Dockerfile`, the requirements files, `.github/actions/`, `.github/workflows/` and
 `sandbox/gitlab-ci.yml`; Renovate proposes updates (REG-7).

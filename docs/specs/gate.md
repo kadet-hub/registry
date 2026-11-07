@@ -508,12 +508,80 @@ review go into the review comment and do not fail the gate.
   first, and the digest bump Renovate then proposes brings it in. The
   weekly run catches advisories published after the image last changed.
 
-  An ignore entry names one advisory and one binary. Its statement says
-  why the pinned binary cannot take the fix yet and what
-  `govulncheck -mode=binary` reports for that binary. The entries cover Go
-  modules and Go releases that helm, conftest, etcd and kube-apiserver link
-  even in their newest releases (RISK-14). An entry is removed once its
-  advisory no longer shows in the step summary.
+  An ignore entry names one advisory and one binary whose newest release
+  still links the affected Go module or Go release (RISK-14). Its statement
+  names the pinned release and says what the binary's `.gopclntab` holds of
+  the advisory's packages: none of their code, the package without the
+  vulnerable functions, or the vulnerable functions. For the vulnerable
+  functions it also says why the sandbox gives them no attacker-controlled
+  input. An entry is removed once its advisory no longer shows in the step
+  summary.
+
+  `.gopclntab` is the function and source file table that stripping keeps,
+  which Go's `debug/gosym` reads. govulncheck cannot answer the question
+  for these binaries. They are stripped, so it falls back to module
+  precision and reports every symbol of the advisory as found.
+
+  Every entry has an `expired_at` date three months after the check. The
+  statement rests on the pinned build, and a later release can link the
+  vulnerable functions while the entry still hides them. After the date
+  the job fails on the advisory again until someone repeats the check and
+  renews or removes the entry. Until then Renovate merges no pull request
+  that changes `sandbox/`, because it waits for every check (REV-5).
+
+  The check runs on the four Go binaries copied out of the image built
+  from `sandbox/` (`docker create`, then `docker cp` of
+  `/usr/local/bin/<binary>`):
+
+  1. The build info (`debug/buildinfo`, what `go version -m` prints) gives
+     the Go release and the module versions. The advisory's entry in the
+     Go vulnerability database (`https://vuln.go.dev/ID/GO-<id>.json`,
+     found for a CVE ID through the aliases in
+     `https://vuln.go.dev/index/vulns.json`) gives the affected versions,
+     packages and functions (`ecosystem_specific.imports`). An advisory
+     without an entry takes the functions its fix commit changes.
+  2. `debug/elf` and `debug/gosym` read three lists from `.gopclntab`: the
+     functions (`Table.Funcs`), the source files (`Table.Files`), and every
+     name in the function name table, which adds the functions that exist
+     only inlined into a caller.
+  3. A package with no function and no source file in these lists is none
+     of the code. A package with functions, none of them the entry's, is
+     the package without the vulnerable functions. Otherwise the binary
+     holds the vulnerable functions. A package listed without functions,
+     or a module listed without packages, is vulnerable as a whole. An
+     advisory limited to another `goos` is none of the code when the
+     binary holds no source file for it.
+  4. When the pin is not the binary's newest release, step 1 runs on the
+     newest release too. An advisory that release fixes is fixed by the
+     bump, not ignored.
+
+  `sandbox/gopclntab/check [image]` runs steps 1 to 3 for every entry on
+  the image built from `sandbox/`, or on the given one, and prints one
+  line per entry. It fails when the binary links no affected version,
+  when step 3 gives another outcome than the statement, or when a version
+  the statement names differs from the build info. An entry it cannot
+  check fails as well: one without a binary, without a database entry,
+  or with input it cannot read. `pclndump.go` reads the
+  binaries in the pinned `golang` image without network. `classify.py`
+  carries the fix commits' functions of the three go-jose advisories,
+  which had no database entry on 2026-11-06.
+
+  The script reads the statement's outcome from its sentence with
+  `.gopclntab holds`. `holds no` or `holds nothing` is none of the code.
+  `without`, `, not` or `, none of` in that sentence is the package
+  without the vulnerable functions. Any other wording is the vulnerable
+  functions. The versions it compares are the Go release after `built
+  with Go` and each `<module path> v<version>`. Step 4 and the reason why
+  the sandbox gives the vulnerable functions no attacker-controlled input
+  stay manual.
+
+  The script runs by hand when the entries are renewed. On pull requests
+  it would hold every Renovate update of helm, conftest, etcd or
+  kube-apiserver until someone rewrites the statements, because Renovate
+  merges only once every check passed (REV-5). Its statement rule reads
+  prose, so a reworded statement can fail it while the binary is
+  unchanged. The `expired_at` date already brings every entry back to the
+  check.
 
   The job is not a required check and runs only when its inputs change
   (CI-1). A required check has to report on every pull request. As a
@@ -525,8 +593,17 @@ review go into the review comment and do not fail the gate.
   - Test: workflow job `sandbox-advisories` on #416, failing before
     `sandbox/.trivyignore.yaml` had entries and passing after;
     manual: the job's Trivy command fails on the image of `main` before
-    #415 (pip's advisories) and passes on the image of #415
-  - Since: #416
+    #415 (pip's advisories) and passes on the image of #415;
+    manual: with every entry's `expired_at` set to a past date the job's
+    Trivy command fails on each entry's advisory, with the file's dates it
+    passes;
+    manual: `sandbox/gopclntab/check` passes on the image of `main`, and
+    fails on an entry whose statement claims another outcome or names
+    another module version;
+    `sandbox/gopclntab/test_classify.py`, run by workflow job
+    `gate-selftest`
+  - Since: #416; `expired_at`: #574; `.gopclntab` statements and expiry on
+    every entry: #576; `sandbox/gopclntab/check`: #581
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
@@ -1565,7 +1642,7 @@ code diff and the output diff, not only the verdict.
     lists `neat-bot`;
     `gh api repos/kadet-hub/registry/collaborators/neat-bot/permission`
     reports `read`
-  - Since: #353; approval before the merge: this change
+  - Since: #353; approval before the merge: #555
 
 - REV-5: Renovate MUST merge its own pull request once every check on it
   passed, unless the update is a major update, an entry bump (REG-7), or a
@@ -1592,4 +1669,4 @@ code diff and the output diff, not only the verdict.
   without `neat-bot` (REV-5).
 
   - Test: none (documentation)
-  - Since: this change
+  - Since: #555

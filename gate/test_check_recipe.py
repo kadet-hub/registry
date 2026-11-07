@@ -91,15 +91,53 @@ class Recipe(unittest.TestCase):
                                         "pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@{LISTED}"],
                                         "source": ["Source: `oci://ghcr.io/x/demo:1.0.0@sha256:0`"], "level": ["Level: `renders`"],
                                         "description": "The demo recipe, rendered by the `kubernetes` generator.",
-                                        "license": "Apache-2.0"}))
+                                        "license": "Apache-2.0", "declared": None}))
         # Nothing below tests/ is judged.
         self.assertEqual(check({"tests/run.py": "", "tests/x.yml": "classes: [kapitan]\n"})[0], [])
+
+    def test_declared(self):  # REC-4, REC-18
+        meta = ("backends:\n  - omegaconf\nrequired:\n  - path: applications.demo.password\n    description: Password of the demo.\n"
+                "    secret: true\n  - path: applications.demo.crds.name\n    description: Name of the CRDs.\n    secret: false\n    option: crds\n")
+        findings, result = check({"recipe.yaml": meta})
+        self.assertEqual(findings, [])
+        self.assertEqual(result["declared"], {"backends": ["omegaconf"], "required": [
+            {"path": "applications.demo.password", "description": "Password of the demo.", "secret": True},
+            {"path": "applications.demo.crds.name", "description": "Name of the CRDs.", "secret": False, "option": "crds"}]})
+        self.assertIsNone(check()[1]["declared"])
+        entry = "required:\n  - path: applications.demo.password\n    description: Password.\n    secret: true\n"
+        for text, finding in [
+            ("backends: [omegaconf]\n", "REC-18: recipe.yaml has the keys backends and required and no other"),
+            ("backends: [omegaconf]\nrequired: []\nlevel: x\n", "REC-18: recipe.yaml has the keys backends and required and no other"),
+            ("- omegaconf\n", "REC-18: recipe.yaml has the keys"),
+            ("backends: [omegaconf\n", "REC-18: recipe.yaml is not YAML"),
+            ("backends: [reclass]\nrequired: []\n", "REC-18: recipe.yaml: backends lists omegaconf"),
+            ("backends: [omegaconf, omegaconf]\nrequired: []\n", "REC-18: recipe.yaml: backends lists omegaconf"),
+            ("backends: [omegaconf, kadet]\nrequired: []\n", "REC-18: recipe.yaml: backends lists omegaconf"),
+            ("backends: omegaconf\nrequired: []\n", "REC-18: recipe.yaml: backends lists omegaconf"),
+            ("backends: [omegaconf]\nrequired: {}\n", "REC-18: recipe.yaml: required is a list"),
+            ("backends: [omegaconf]\nrequired:\n  - path: x\n", "REC-18: recipe.yaml: required[0] has path, description, secret"),
+            ("backends: [omegaconf]\n" + entry.replace("applications.demo.password", "applications..x"), "REC-18: recipe.yaml: required[0]: path"),
+            ("backends: [omegaconf]\n" + entry + entry[len("required:\n"):], "REC-18: recipe.yaml: required[1]: path"),
+            ("backends: [omegaconf]\n" + entry.replace("Password.", '"a\\u202eb"'),"REC-18: recipe.yaml: required[0]: description"),
+            ("backends: [omegaconf]\n" + entry.replace("Password.", "x" * 301), "REC-18: recipe.yaml: required[0]: description"),
+            ("backends: [omegaconf]\n" + entry.replace("Password.", '"a\\nb"'), "REC-18: recipe.yaml: required[0]: description"),
+            ("backends: [omegaconf]\n" + entry.replace("secret: true", "secret: maybe"), "REC-18: recipe.yaml: required[0]: secret"),
+            ("backends: [omegaconf]\n" + entry + "    option: route\n", "REC-18: recipe.yaml: required[0]: option"),
+            ("backends: [omegaconf]\n" + entry + "    option: ../crds\n", "REC-18: recipe.yaml: required[0]: option"),
+        ]:
+            with self.subTest(text):
+                findings, result = check({"recipe.yaml": text})
+                self.assertTrue(any(f.startswith(finding) for f in findings), findings)
+                self.assertIsNone(result["declared"])
 
     def test_layout(self):  # REC-4
         for changes in ({"notes.txt": ""}, {"x.yaml": ""}, {"sub/x.yml": "parameters: {}\n"}, {"orphan.yml.LICENSE": ""},
                         {"README.md.LICENSE": ""}, {"x.py": ""}, {"vendor/x.py": ""}, {"vendor/x.yml": "parameters: {}\n"},
-                        {"vendor/x.yaml": ""}, {"tests/target.yml": None, "tests/smoke": None, "tests": ""}):
+                        {"vendor/x.yaml": ""}, {"tests/target.yml": None, "tests/smoke": None, "tests": ""},
+                        {"sub/recipe.yaml": ""}):
             self.assert_finding("REC-4", changes)
+        # Only at the root; check lint checks its content (RCP-260, REC-5).
+        self.assertEqual(check({"recipe.yaml": "backends:\n  - omegaconf\nrequired: []\n"})[0], [])
 
     def test_license(self):  # REC-4, REC-13
         self.assert_finding("REC-4: the source repository's root LICENSE", license_text="All rights reserved.\n")
