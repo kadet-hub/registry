@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: jitsi-meet
+  tag: jitsi-meet-v1.0.0
+  sha: a7c4854e61f7d567823ed88388e50a078e463e4b
+owners: [3042152]
+exceptions: []
