@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: stalwart
+  tag: stalwart-v1.0.0
+  sha: ad1b429d5ed18712aca2d5213a8ba810dd4dfe29
+owners: [3042152]
+exceptions: []

@@ -405,7 +405,10 @@ the rules it is judged by.
   `check-v0.18.0` on, the comparison leaves out the labels the API server
   generates for a Job and its pod template (RCP-9), so a Job on both
   sides, such as one a chart renders through `extraDeploy`, can compare
-  equal.
+  equal. From `check-v0.19.0` on, a pod's `automountServiceAccountToken:
+  false` where the chart leaves the field unset is an Explicit default
+  when the pod's ServiceAccount sets `false` (RCP-12), as mlflow's chart
+  renders it.
 
   kind needs Docker on the runner, so the job runs outside the sandbox and
   receives data only (DEC-21). Once every check before REC-9 has passed,
@@ -448,8 +451,8 @@ the rules it is judged by.
   reports `REC-9: not run, a check before it failed`, and the `renders`
   job is skipped.
 
-  - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`; RCP-308 by `check/tests/test_lint.py` in kadet-hub/recipes, no sample; the Job labels of RCP-9 by `check/tests/test_compare.py` there, no sample)
-  - Since: #389; required recipes and `gateway-api` (REC-17): #390; read-only RBAC of designed recipes (RCP-308): #572; Job labels (RCP-9): #575
+  - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`; RCP-308 by `check/tests/test_lint.py` in kadet-hub/recipes, no sample; the Job labels of RCP-9 and a pod's `false` of RCP-12 by `check/tests/test_compare.py` there, no sample)
+  - Since: #389; required recipes and `gateway-api` (REC-17): #390; read-only RBAC of designed recipes (RCP-308): #572; Job labels (RCP-9): #575; a pod's `false` (RCP-12): #634
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
@@ -834,5 +837,5 @@ REG-2. They fail closed.
 | Config media type | `application/vnd.kadet-hub.recipe.config.v1+json` |
 | Consumer path | `inventory/classes/recipes/<name>/` |
 | Inventory backend | omegaconf |
-| `check` | kadet-hub/recipes `check-v0.18.0`, commit `8c389ec8f45061d521fffaa2e53b22ab1d4dad62`, in `gate/.check/` |
+| `check` | kadet-hub/recipes `check-v0.19.0`, commit `a02551d04063097b387a1af2efd576fdc93b3f20`, in `gate/.check/` |
 | cloud-provider-kind | v0.12.0 in `.github/actions/setup-kind/` (REC-17) |
