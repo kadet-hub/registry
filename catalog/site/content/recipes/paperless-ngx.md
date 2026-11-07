@@ -1,6 +1,6 @@
 ---
-title: "Paperless-ngx on Kubernetes without Docker Compose, with Kapitan"
+title: "Paperless-ngx on Kubernetes, a document archive on PostgreSQL"
 description: "Paperless-ngx Docker Compose to Kubernetes with Kapitan: inventory classes for Paperless-ngx with PostgreSQL and Valkey, deployed on kind."
 layout: chart-recipe
-lastmod: 2026-11-04
+lastmod: 2026-11-07
 ---

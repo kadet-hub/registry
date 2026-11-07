@@ -1,5 +1,5 @@
 ---
-title: "Talos homelab: node configs and apps from one Kapitan inventory"
+title: "Talos homelab: machine configs and apps compiled together"
 date: 2026-11-20
 topics: [kapitan, generators, security, verification]
 description: "Talos machine configs and the app on the cluster from one Kapitan inventory, with an egress policy from the same networks, booted as Talos in Docker in CI."

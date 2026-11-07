@@ -1,5 +1,5 @@
 ---
-title: "Helm chart vs operator: PostgreSQL installed both ways on kind"
+title: "Helm chart vs operator for PostgreSQL when the primary dies"
 layout: prose
 description: "Helm chart vs operator, measured: PostgreSQL from the Bitnami chart and from CloudNativePG on kind, with write gaps on a lost primary and a config change."
 lastmod: 2026-11-07

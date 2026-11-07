@@ -1,5 +1,5 @@
 ---
-title: "gVisor in CI: sandboxing untrusted code on GitHub Actions"
+title: "gVisor sandbox for untrusted pull request code on GitHub Actions"
 layout: prose
 description: How kadet-hub runs untrusted contributor code in CI inside a gVisor sandbox on GitHub Actions, what it adds over a plain container and what it misses.
 lastmod: 2026-11-07

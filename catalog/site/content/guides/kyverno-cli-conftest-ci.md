@@ -1,5 +1,5 @@
 ---
-title: "Kyverno CLI and conftest in CI vs Kyverno at admission"
+title: "Kyverno CLI and conftest on Kapitan's compiled output"
 layout: prose
 description: "Kyverno CLI and conftest on Kapitan's compiled output in a pull request, next to the compile diff, and the same Kyverno policies at admission on kind."
 lastmod: 2026-11-07

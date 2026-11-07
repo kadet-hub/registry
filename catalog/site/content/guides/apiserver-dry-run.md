@@ -1,5 +1,5 @@
 ---
-title: kubectl server-side dry run in CI, without a cluster
+title: "kubectl dry run server-side in CI on a bare kube-apiserver"
 layout: prose
 description: "What kubeconform passes and the API server rejects: a GitHub Actions job that starts etcd and kube-apiserver, installs your CRDs and dry-runs every manifest."
 lastmod: 2026-11-07

@@ -1,5 +1,5 @@
 ---
-title: cdk8s vs Tanka vs Kapitan for Kubernetes config
+title: "Kubernetes configuration management tools: Tanka, cdk8s, Kapitan"
 layout: prose
 description: "Kubernetes configuration management tools: one app built with Tanka, cdk8s and Kapitan to identical manifests, with size, speed, type safety and GitOps."
 lastmod: 2026-11-07

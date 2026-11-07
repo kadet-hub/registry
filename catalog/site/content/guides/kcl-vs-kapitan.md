@@ -1,5 +1,5 @@
 ---
-title: "KCL vs Kapitan for Kubernetes: typed schemas and OCI modules"
+title: "KCL for Kubernetes: a typo and a bad checksum in kcl.mod.lock"
 layout: prose
 description: "KCL and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value, and a wrong checksum for the k8s module in kcl.mod.lock."
 lastmod: 2026-11-07

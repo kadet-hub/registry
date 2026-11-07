@@ -1,8 +1,8 @@
 ---
-title: "Patch a Helm chart: post-renderers, Kustomize and Kapitan"
+title: "Patch a Helm chart without forking it"
 layout: prose
 description: "Patch a Helm chart without forking it: Helm post-renderers, Kustomize, Flux and Argo CD compared with Kapitan's mutate generator, checked on kind."
-lastmod: 2026-10-19
+lastmod: 2026-11-07
 ---
 
 A Helm chart exposes what its templates read from `values.yaml`. A field

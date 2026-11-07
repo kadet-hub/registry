@@ -1,5 +1,5 @@
 ---
-title: "Kubernetes multiple environments: dev, stage and prod in Kapitan"
+title: "Kubernetes multiple environments with a diff for every promotion"
 layout: prose
 description: "Kubernetes multiple environments from one Kapitan inventory: dev, stage and prod on two clusters, the compile diff of a promotion, and a CI guard."
 lastmod: 2026-11-07

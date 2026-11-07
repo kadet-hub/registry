@@ -1,5 +1,5 @@
 ---
-title: "Helmfile vs Kapitan: environments, secrets and release order"
+title: "Helmfile environments and release order, rebuilt in Kapitan"
 layout: prose
 description: "Helmfile environments, secrets and needs next to a Kapitan inventory: podinfo and Valkey from their charts render the same manifests for dev and prod."
 lastmod: 2026-11-07

@@ -1,5 +1,5 @@
 ---
-title: "Kustomize JSON patch add: fields a Helm chart does not template"
+title: "Kustomize JSON patch add for nine fields charts leave out"
 layout: prose
 description: "Kustomize JSON patch add and Kapitan's mutate for fields charts lack: appProtocol, trafficDistribution, topologySpreadConstraints, annotations, hostNetwork."
 lastmod: 2026-11-07

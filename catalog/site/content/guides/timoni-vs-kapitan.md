@@ -1,5 +1,5 @@
 ---
-title: "Timoni vs Kapitan for Kubernetes: CUE modules, OCI bundles"
+title: "Timoni bundles pinned by digest, and a module tag that moved"
 layout: prose
 description: "A Timoni module and bundle and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value and a module tag that moved."
 lastmod: 2026-11-07
