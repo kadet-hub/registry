@@ -1,8 +1,8 @@
 # Kapitan generator marketplace: Recipes
 
-Status: Draft
+Status: As-built
 Code: `recipes/`, `policy/reserved-names.txt`, `gate/`, `sandbox/`, `release/`, `scan/rescan`, `.github/workflows/{gate,release,scheduled}.yml`, `.github/actions/{setup-gate,setup-check,setup-kind}/`
-Verified against: main @ aa7e00c
+Verified against: main @ b79c5c4
 
 Related: [marketplace.md](marketplace.md) holds the threat model, acceptance
 criteria and open questions; [consumers.md](consumers.md) (CON-4, CON-5) and
