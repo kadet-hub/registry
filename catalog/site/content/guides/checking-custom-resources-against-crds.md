@@ -1,8 +1,8 @@
 ---
-title: Validate Kubernetes custom resources against their CRDs
+title: "kubectl validate CRD with a throwaway API server"
 layout: prose
 description: Why JSON Schema checks miss rejected custom resources, how a throwaway kube-apiserver dry run catches them, and what to do when upstream ships no CRD YAML.
-lastmod: 2026-10-19
+lastmod: 2026-11-07
 ---
 
 A rendered manifest can be valid YAML, match the JSON Schema of its [kind](/glossary/#kind)

@@ -1,8 +1,8 @@
 ---
-title: Bitnami chart alternatives, chart by chart
+title: "Bitnami alternatives, chart by chart"
 layout: prose
 description: What replaces the frozen Bitnami charts for PostgreSQL, RabbitMQ, Kafka, Keycloak, Grafana, Loki, Thanos, Argo CD, cert-manager and kube-prometheus.
-lastmod: 2026-10-25
+lastmod: 2026-11-07
 ---
 
 Bitnami stopped publishing new images and charts to Docker Hub on 28
