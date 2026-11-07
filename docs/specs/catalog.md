@@ -151,12 +151,14 @@ remembered in the browser's `localStorage`.
   titles lead with the term searched for, such as "ingress-nginx Gateway
   API migration" or "Bitnami alternatives".
 
-  In a guide or on a recipe or generator page, a comparison leads with
-  what it compares, "<A> vs <B>", also where CAT-11f records another query
-  for it, as in "Argo CD vs Flux". The words after the colon say what the
-  reader gets from the page. These titles name that result, not an
-  anecdote or a detail from the text that only makes sense after reading
-  it.
+  A guide that compares named tools leads with them, "<A> vs <B>", also
+  where CAT-11f records another query for it, as in "Argo CD vs Flux" or
+  "cdk8s vs Tanka vs Kapitan". A guide that surveys alternatives leads
+  with its query, as "Helm alternatives for Kubernetes" does, although its
+  rows hold "vs" queries too. The words after the colon say what the
+  reader gets from the page. Titles of guides, recipe pages and generator
+  pages name that result, not an anecdote or a detail from the text that
+  only makes sense after reading it.
 
   The Bitnami guide is one page with a section per chart rather than a
   page per chart: near-identical pages per search term are doorway pages
