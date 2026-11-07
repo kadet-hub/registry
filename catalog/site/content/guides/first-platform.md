@@ -1,11 +1,12 @@
 ---
 title: "Kapitan on Kubernetes: a first platform from four generators"
-date: 2026-10-17
-topics: [kapitan, generators, verification]
+layout: prose
 description: Two Kapitan targets from four verified kadet-hub generators, from an empty directory to 23 schema-valid manifests and a CI workflow.
+lastmod: 2026-11-07
+aliases: [/blog/first-platform/]
 ---
 
-This post builds a small platform from the catalog: a `dev` and a `prod`
+This guide builds a small platform from the catalog: a `dev` and a `prod`
 [target](/glossary/#target) that share one [inventory](/glossary/#inventory) and render a web workload, its TLS
 certificate, a Cilium network policy and the Argo CD Application that deploys
 it. Four [generators](/glossary/#generator) do the rendering: [kubernetes](/generators/kubernetes/),
@@ -16,7 +17,7 @@ it. Four [generators](/glossary/#generator) do the rendering: [kubernetes](/gene
 The finished project is in
 [kadet-hub/examples](https://github.com/kadet-hub/examples/tree/main/first-platform).
 Replayed from an empty directory with a cold package cache, the commands in
-this post take 79 seconds: 33 for installing [Kapitan](/glossary/#kapitan), 44 for verifying and
+this guide take 79 seconds: 33 for installing [Kapitan](/glossary/#kapitan), 44 for verifying and
 fetching the index and the four generators, two for compiling and
 validating. The
 rest of your time goes into reading four generator pages and writing 109

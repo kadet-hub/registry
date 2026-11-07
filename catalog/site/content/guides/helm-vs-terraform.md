@@ -149,5 +149,5 @@ come from a Terraform output, a data source or an operator in the cluster.
 
 [Helm alternatives for Kubernetes](/guides/helm-alternatives-for-kubernetes/)
 compares Helm with Kustomize, Pulumi, cdk8s, Tanka and Kapitan on one app,
-and [a first platform from four generators](/blog/first-platform/) shows a
+and [a first platform from four generators](/guides/first-platform/) shows a
 complete Kapitan project with kadet-hub generators.

@@ -486,6 +486,19 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
     return out
 
 
+# CAT-36e: the posts that moved to /guides/ on 2026-11-07; each keeps its old URL as an alias (CAT-36f).
+MOVED_POSTS = {"actions-runner-controller-dind", "apiserver-dry-run", "bitnami", "cert-manager-helm-chart-patches", "config-tools", "first-platform",
+               "gvisor-ci", "helm-chart-vs-kapitan-inventory", "helm-chart-vs-operator", "kube-prometheus-stack-dashboards",
+               "kustomize-delete-resource-helm-chart", "kustomize-json-patch-helm-chart", "kustomize-patch-env-helm-chart",
+               "renovate-automerge-required-reviews", "same-app", "verify-oci"}
+CONTENT = os.path.join(HERE, "site", "content")
+
+
+def front_matter(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read().split("\n---\n", 1)[0]
+
+
 class Site(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -655,10 +668,10 @@ class Site(unittest.TestCase):
         def links(heading):
             section = page.split(f">{heading}</h2>", 1)[1].split("<h2", 1)[0]
             return [posixpath.normpath(posixpath.join("/quickstart/", h)) for h in re.findall(r'href="([^"#]+)"', section)]
-        kustomize = sorted(f"/blog/{os.path.basename(p)[:-3]}" for p in glob.glob(os.path.join(HERE, "site", "content", "blog", "kustomize-*.md")))
+        kustomize = sorted(f"/guides/{os.path.basename(p)[:-3]}" for p in glob.glob(os.path.join(HERE, "site", "content", "guides", "kustomize-*.md")))
         self.assertEqual(len(kustomize), 3)
-        for heading, posts in (("Coming from Helm?", ["/blog/helm-chart-vs-kapitan-inventory", "/blog/same-app", "/guides/bitnami-chart-alternatives"]),
-                               ("Coming from Kustomize?", ["/blog/same-app", *kustomize])):
+        for heading, posts in (("Coming from Helm?", ["/guides/helm-chart-vs-kapitan-inventory", "/guides/same-app", "/guides/bitnami-chart-alternatives"]),
+                               ("Coming from Kustomize?", ["/guides/same-app", *kustomize])):
             for post in posts:
                 self.assertIn(post, links(heading))
                 self.assertTrue(os.path.isfile(os.path.join(self.out, post.strip("/"), "index.html")), post)
@@ -817,7 +830,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 12)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 28)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -1174,7 +1187,7 @@ class Site(unittest.TestCase):
         blog = self.page("blog")
         self.assertIn(f'<a href="../blog/{slug}/">Kapitan generators as supply-chain artifacts</a> <time datetime="2026-10-17">', blog)
         self.assertIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog" href="../blog/index.xml">', blog)
-        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("blog", "first-platform"))  # CAT-11a
+        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("guides", "first-platform"))  # CAT-11a
         post = self.page("blog", slug)
         self.assertIn('<time datetime="2026-10-17">17 October 2026</time>', post)
         self.assertIn('<a href="../../guides/checking-custom-resources-against-crds/">', post)  # internal, so no rel=nofollow
@@ -1242,6 +1255,39 @@ class Site(unittest.TestCase):
                 self.assertRegex(sitemap, rf"/{section}/{name}/</loc>\s*<lastmod>{day.group(1)}")
         titles = re.findall(r'<li><a href="[^"]*">([^<]*)</a>', self.page("guides"))
         self.assertEqual(titles, sorted(titles, key=str.lower))  # lastmod does not reorder the list
+    def test_moved_posts(self):  # CAT-36e to CAT-36g
+        moved = {}
+        for path in sorted(glob.glob(os.path.join(CONTENT, "guides", "*.md"))):
+            front, name = front_matter(path), os.path.basename(path)[:-3]
+            self.assertNotRegex(front, r"(?m)^date:", name)  # CAT-36e: lastmod only
+            self.assertRegex(front, r"(?m)^layout: prose$", name)
+            aliases = re.search(r"^aliases: \[(.*)\]$", front, re.MULTILINE)
+            for alias in aliases.group(1).split(", ") if aliases else ():
+                old = re.fullmatch(r"/blog/([a-z0-9-]+)/", alias).group(1)
+                moved[old] = name
+        self.assertLessEqual(MOVED_POSTS, set(moved))
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            sitemap = f.read()
+        with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
+            feed = f.read()
+        for old, name in moved.items():
+            url = f"https://kadet-hub.org/guides/{name}/"
+            self.assertFalse(os.path.exists(os.path.join(CONTENT, "blog", old + ".md")), old)
+            page = self.page("blog", old)
+            self.assertIn(f'<meta http-equiv="refresh" content="0; url={url}">', page)  # CAT-36f: instant, so permanent for Google
+            self.assertIn(f'<link rel="canonical" href="{url}">', page)
+            self.assertIn(f"<loc>{url}</loc>", sitemap)
+            self.assertNotIn(f"/blog/{old}/", sitemap)
+            self.assertNotIn(f"/blog/{old}/", feed)
+            self.assertTrue(self.markdown("guides", name).startswith("# "), name)  # CAT-28: the guide's Markdown variant
+        sources = glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True) + glob.glob(os.path.join(HERE, "site", "layouts", "**", "*.*"), recursive=True)
+        for path in sources:  # CAT-36g: no internal link to an alias
+            with open(path, encoding="utf-8") as f:
+                body = f.read()
+            if path.startswith(CONTENT):
+                body = body.split("\n---\n", 1)[1]
+            for old in moved:
+                self.assertNotRegex(body, rf"blog/{old}/", os.path.relpath(path, HERE))
 
     def test_generator_mentions_linked(self):  # CAT-11h
         names = [f[:-5] for f in os.listdir(os.path.join(HERE, "..", "generators"))]

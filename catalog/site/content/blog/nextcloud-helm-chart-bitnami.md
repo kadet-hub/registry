@@ -13,7 +13,7 @@ it, with credentials from existing Secrets. The
 [nextcloud recipe](/recipes/nextcloud/) rebuilds the chart for
 [Kapitan](/glossary/#kapitan) and puts a CloudNativePG cluster and Valkey
 in place of the subcharts. What Bitnami changed is in the
-[Bitnami post](/blog/bitnami/), and the replacements for other charts are
+[Bitnami PostgreSQL guide](/guides/bitnami/), and the replacements for other charts are
 in [Bitnami chart alternatives](/guides/bitnami-chart-alternatives/).
 
 ## What chart 9.4.1 declares

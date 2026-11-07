@@ -1,8 +1,9 @@
 ---
-title: "Helm chart vs operator: PostgreSQL installed both ways on kind"
-date: 2026-10-22
-topics: [helm, operators, kapitan]
+title: "Helm chart vs operator: PostgreSQL failover and config changes"
+layout: prose
 description: "Helm chart vs operator, measured: PostgreSQL from the Bitnami chart and from CloudNativePG on kind, with write gaps on a lost primary and a config change."
+lastmod: 2026-11-07
+aliases: [/blog/helm-chart-vs-operator/]
 ---
 
 A Helm chart writes objects when you run `helm install` or `helm upgrade`,
@@ -11,7 +12,7 @@ resource and keeps acting on it. For a stateless app the difference
 hardly matters. For a database it decides what happens when the primary
 goes away at night.
 
-This post installs PostgreSQL both ways on the same kind cluster and
+This guide installs PostgreSQL both ways on the same kind cluster and
 measures three things: how long writes stop when the primary pod is
 deleted, how long they stop when a parameter that needs a restart
 changes, and what happens when someone deletes the Service that clients
@@ -26,7 +27,7 @@ Helm 4.3.1, and each setup in its own namespace:
   `oci://registry-1.docker.io/bitnamicharts/postgresql`, with
   `architecture=replication` and two read replicas. Its default image is
   `bitnami/postgresql:latest`, the only tag Bitnami still publishes for
-  free. The [Bitnami post](/blog/bitnami/) covers that change.
+  free. The [Bitnami PostgreSQL guide](/guides/bitnami/) covers that change.
 - **Operator:** CloudNativePG 1.30.1 from its chart `cloudnative-pg`
   0.29.1, and one `Cluster` with three instances on
   `ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie`, pinned by

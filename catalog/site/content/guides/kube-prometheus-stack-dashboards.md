@@ -1,15 +1,16 @@
 ---
 title: "kube-prometheus-stack default Grafana dashboards, one by one"
-date: 2026-10-21
-topics: [helm, kustomize, kapitan, monitoring]
+layout: prose
 description: "kube-prometheus-stack dashboards: which values switch removes which default Grafana dashboard, and how to drop single ones with Kustomize or Kapitan."
+lastmod: 2026-11-07
+aliases: [/blog/kube-prometheus-stack-dashboards/]
 ---
 
 kube-prometheus-stack 92.11.0, the release of 20 October 2026, renders 29
 Grafana dashboards by default, each as a ConfigMap that Grafana's sidecar
 loads. `grafana.defaultDashboardsEnabled` turns all of them off at once,
 and the switches for scraped components remove some of them along with
-the scraping. No value turns off a single dashboard. This post shows which
+the scraping. No value turns off a single dashboard. This guide shows which
 dashboard depends on which switch and removes single dashboards from the
 rendered manifests, first with Kustomize over `helm template`, then with
 [Kapitan](/glossary/#kapitan)'s [mutate](/generators/mutate/)
