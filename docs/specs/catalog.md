@@ -141,20 +141,22 @@ remembered in the browser's `localStorage`.
 
   The home page's title, `h1` and description, and the titles of guides
   about Kapitan, name Kapitan together with Kubernetes or Terraform; only
-  the home page is tested. The titles of posts, of other guides, of recipe
-  pages and of generated pages (generator, tag, kind, release digest) lead
-  with the searched term instead and name Kapitan where it fits. On its own,
+  the home page is tested. The titles of other guides, of recipe pages and
+  of generated pages (generator, tag, kind, release digest) lead with the
+  searched term instead and name Kapitan where it fits; post titles follow
+  CAT-11n. On its own,
   "kapitan" completes in search suggestions to a restaurant and a border
   crossing, and "kadet" to a car (checked 2026-10-17 with Google's and DuckDuckGo's suggestion endpoints);
   "kapitan kubernetes" and "kapitan generator" are unambiguous. Guide
   titles lead with the term searched for, such as "ingress-nginx Gateway
   API migration" or "Bitnami alternatives".
 
-  A comparison leads with what it compares, "<A> vs <B>", also where
-  CAT-11f records another query for it, as in "Helmfile vs Kapitan" or
-  "Argo CD vs Flux". The words after the colon say what the reader gets
-  from the page. A title names that result, not an anecdote or a detail
-  from the text that only makes sense after reading it.
+  In a guide or on a recipe or generator page, a comparison leads with
+  what it compares, "<A> vs <B>", also where CAT-11f records another query
+  for it, as in "Argo CD vs Flux". The words after the colon say what the
+  reader gets from the page. These titles name that result, not an
+  anecdote or a detail from the text that only makes sense after reading
+  it.
 
   The Bitnami guide is one page with a section per chart rather than a
   page per chart: near-identical pages per search term are doorway pages
@@ -241,7 +243,8 @@ remembered in the browser's `localStorage`.
   cert-manager/cert-manager#6071 or cert-manager/trust-manager#778 for
   example, stays valid when a heading changes.
 
-  One page answers a query first, and its title leads with it. Other pages
+  One page answers a query first, and its title leads with it, or, for a
+  post, its title or description names it (CAT-11m). Other pages
   on the topic link to that page instead of competing with it. The
   Bitnami guide is that page for the generic query, the PostgreSQL guide
   for PostgreSQL, and `/recipes/` lists the tested recipes. The guide on
@@ -339,14 +342,18 @@ remembered in the browser's `localStorage`.
   - Since: #645
 
 - CAT-11m: Every page the table of CAT-11f names by its title MUST carry
-  exactly that title, and the title MUST lead with one of the queries of
+  exactly that title. A guide's title MUST lead with one of the queries of
   the rows that name it or, for a comparison, with "<A> vs <B>" (CAT-11a).
+  A post MUST contain one of those queries in its title or its description.
 
   "Leads with" compares the words of query and title in lower case,
   without punctuation and without "a", "an", "the", "on", "in", "for",
   "with", "to" and "of", run together, so "Immich on Kubernetes" leads
   with "immich kubernetes", "Argo CD config management plugin" with
-  "argocd config management plugin", and a plural with its singular. A
+  "argocd config management plugin", and a plural with its singular.
+  "Contains" compares the same way anywhere in the text. A post may lead
+  with its point instead of the query (CAT-11n), and the description, the
+  snippet search engines show under the title, carries the query then. A
   row that says "same guide" or "same post" names the page of the row
   above it. Before this change the table named four pages by a shorter
   form of their title, and three titles led with neither one of their
@@ -354,6 +361,19 @@ remembered in the browser's `localStorage`.
   without a cluster" for "kubectl dry run server side".
 
   - Test: `catalog/test_catalog.py` (`test_titles`)
+  - Since: #645
+
+- CAT-11n: A post's title MAY be pointed, opinionated or a teaser. Every
+  claim it makes MUST be one the post itself proves.
+
+  A post argues a point from what was built and measured, and a title
+  that states the point gets read. A claim the text does not back would
+  publish something unproven under kadet-hub's name. The contrast
+  template of CAT-11j and the limits of CAT-11k and CAT-11l apply to
+  posts as to every other title.
+
+  - Test: manual: the review of the post checks each claim of its title
+    against the text
   - Since: #645
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
