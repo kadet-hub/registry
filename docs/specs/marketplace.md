@@ -210,7 +210,7 @@ cover none of the changed files.
   `ruff.toml` does not reach them.
 
   - Test: workflow job `code-lint`; manual: a pull request with an unused import fails it
-  - Since: this change
+  - Since: #553
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
