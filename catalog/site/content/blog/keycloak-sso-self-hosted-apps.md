@@ -24,10 +24,11 @@ issuer. When one side changes and the other does not, the login breaks.
 This post keeps both sides in one [Kapitan](/glossary/#kapitan)
 [class](/glossary/#class). The project is
 [sso-keycloak](https://github.com/kadet-hub/examples/tree/main/sso-keycloak)
-in kadet-hub/examples. Its `check` script deploys Keycloak and the three
-apps to a new [kind](/glossary/#kind) cluster on every change and once a
+in kadet-hub/examples. Its `check` script deploys Keycloak and the apps
+to a new [kind](/glossary/#kind) cluster on every change and once a
 week. It then logs in with curl as a browser would, and fails when a
-step below stops working.
+step below stops working. The project also signs in to Mattermost and
+Synapse, which its README covers and this post leaves out.
 
 ## What each recipe brings {#recipes}
 
@@ -54,9 +55,9 @@ own.
 - [miniflux](/recipes/miniflux/) 1.0.0 runs Miniflux 2.3.4 with its own
   PostgreSQL container.
 
-The fetch inventory pins the seven recipes the targets include. `check`
-adds the three they include from the signed [index](/glossary/#index),
-verifies all ten and the four generators they pin, and pulls them by
+The fetch inventory pins the recipes the targets include. `check` adds
+the three they include from the signed [index](/glossary/#index),
+verifies them all and the four generators they pin, and pulls them by
 [digest](/glossary/#digest), as the
 [Open WebUI and SearXNG post](/blog/open-webui-searxng-kubernetes/#verify-then-pull-by-digest)
 shows step by step.
