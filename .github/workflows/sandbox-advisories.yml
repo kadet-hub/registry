@@ -1,7 +1,8 @@
 name: sandbox-advisories
 
 # SEC-18: an advisory with a fix in the sandbox image fails pull requests that
-# change it, and the weekly run on main. Not a required check (CI-1).
+# change it, and the weekly run on main. The weekly run also fails when an
+# ignore statement no longer matches its binary. Not a required check (CI-1).
 on:
   pull_request:
     paths:
@@ -40,3 +41,8 @@ jobs:
             trivy image --quiet --skip-db-update --scanners vuln --ignorefile sandbox/.trivyignore.yaml --show-suppressed kadet-hub/sandbox
             echo '```'
           } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Ignore statements against the binaries
+        # Not on pull requests, where it would hold Renovate's binary bumps until the statements are rewritten (REV-5).
+        if: ${{ !cancelled() && github.event_name != 'pull_request' }}
+        run: sandbox/gopclntab/check kadet-hub/sandbox

@@ -502,7 +502,9 @@ review go into the review comment and do not fail the gate.
   advisory with a fix in the sandbox image that `sandbox/.trivyignore.yaml`
   does not list. It MUST run on every pull request that changes `sandbox/`
   and weekly on `main`, and MUST list every advisory, the ignored ones
-  included, in its step summary.
+  included, in its step summary. Its weekly and dispatched runs MUST also
+  fail when `sandbox/gopclntab/check` finds an ignore statement that no
+  longer matches its binary.
 
   An advisory without a fix does not fail the job: Debian ships the fix
   first, and the digest bump Renovate then proposes brings it in. The
@@ -575,13 +577,14 @@ review go into the review comment and do not fail the gate.
   the sandbox gives the vulnerable functions no attacker-controlled input
   stay manual.
 
-  The script runs by hand when the entries are renewed. On pull requests
-  it would hold every Renovate update of helm, conftest, etcd or
+  The weekly and dispatched runs of `sandbox-advisories` run the script on
+  the image the job built, after the Trivy steps. Pull requests skip it.
+  There it would hold every Renovate update of helm, conftest, etcd or
   kube-apiserver until someone rewrites the statements, because Renovate
-  merges only once every check passed (REV-5). Its statement rule reads
-  prose, so a reworded statement can fail it while the binary is
-  unchanged. The `expired_at` date already brings every entry back to the
-  check.
+  merges only once every check passed (REV-5). A bump that changes a
+  version a statement names fails the next weekly run instead, and the
+  entries are rewritten then. Its statement rule reads prose, so a
+  reworded statement can fail it while the binary is unchanged.
 
   The job is not a required check and runs only when its inputs change
   (CI-1). A required check has to report on every pull request. As a
@@ -597,13 +600,15 @@ review go into the review comment and do not fail the gate.
     manual: with every entry's `expired_at` set to a past date the job's
     Trivy command fails on each entry's advisory, with the file's dates it
     passes;
-    manual: `sandbox/gopclntab/check` passes on the image of `main`, and
-    fails on an entry whose statement claims another outcome or names
-    another module version;
+    workflow job `sandbox-advisories` on its weekly and dispatched runs
+    (`sandbox/gopclntab/check` on the image it built);
+    manual: `sandbox/gopclntab/check` fails on an entry whose statement
+    claims another outcome or names another module version;
     `sandbox/gopclntab/test_classify.py`, run by workflow job
     `gate-selftest`
   - Since: #416; `expired_at`: #574; `.gopclntab` statements and expiry on
-    every entry: #576; `sandbox/gopclntab/check`: #581
+    every entry: #576; `sandbox/gopclntab/check`: #581; in the weekly
+    run: #636
 
 - SEC-10: The gate MUST fail when the gVisor syscall trace of a fixture
   compile shows any of:
