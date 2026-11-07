@@ -311,7 +311,7 @@ remembered in the browser's `localStorage`.
   comparison is in its text.
 
   - Test: `catalog/test_catalog.py` (`test_titles`)
-  - Since: #645
+  - Since: #651, #652, #653
 
 - CAT-11k: Outside the searched term a hand-written title leads with, no
   three words in a row MUST appear in more than two hand-written titles.
@@ -329,7 +329,7 @@ remembered in the browser's `localStorage`.
   its own, which stays a review question.
 
   - Test: `catalog/test_catalog.py` (`test_titles`)
-  - Since: #645
+  - Since: #651, #653
 
 - CAT-11l: A colon followed by a list, with a comma and a final "and" or
   "or" after the colon, MUST NOT appear in more than three hand-written
@@ -339,7 +339,7 @@ remembered in the browser's `localStorage`.
   shape four titles had before this change.
 
   - Test: `catalog/test_catalog.py` (`test_titles`)
-  - Since: #645
+  - Since: #651, #653
 
 - CAT-11m: Every page the table of CAT-11f names by its title MUST carry
   exactly that title. A guide's title MUST lead with one of the queries of
@@ -361,7 +361,7 @@ remembered in the browser's `localStorage`.
   without a cluster" for "kubectl dry run server side".
 
   - Test: `catalog/test_catalog.py` (`test_titles`)
-  - Since: #645
+  - Since: #651
 
 - CAT-11n: A post's title MAY be pointed, opinionated or a teaser. Every
   claim it makes MUST be one the post itself proves.
@@ -374,7 +374,7 @@ remembered in the browser's `localStorage`.
 
   - Test: manual: the review of the post checks each claim of its title
     against the text
-  - Since: #645
+  - Since: #651
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
@@ -1573,7 +1573,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_moved_posts`, partial: dates
     and layouts; which article is a guide is a review question); manual:
     the closed `devto` issue for the post's URL before it moves
-  - Since: #645
+  - Since: #650
 
 - CAT-36f: A post that moves to `/guides/` MUST keep its URL
   `/blog/<name>/` as a Hugo alias whose page redirects to the guide at
@@ -1598,7 +1598,7 @@ Related: CAT-15, CAT-30, CON-2.
   the old `index.md` gets no redirect: Hugo writes alias pages as HTML.
 
   - Test: `catalog/test_catalog.py` (`test_moved_posts`)
-  - Since: #645
+  - Since: #650
 
 - CAT-36g: A page of the site that links a moved post MUST link the
   guide's URL.
@@ -1611,7 +1611,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_moved_posts`, partial: the
     content and layouts of this repository, not READMEs and descriptions
     the build fetches)
-  - Since: #645
+  - Since: #650
 
 - CAT-36a: A post page MUST show a byline (author, publication date, an
   update date only when `lastmod` is later, reading time), the post's
