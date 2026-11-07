@@ -2,7 +2,7 @@
 title: "Timoni vs Kapitan: CUE schemas and bundles pinned by digest"
 date: 2026-11-13
 topics: [kapitan, comparison, validation, supply chain]
-description: "A Timoni module and bundle and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value and a module tag that moved."
+description: "A Timoni bundle with its module and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value and a module tag that moved."
 ---
 
 [Timoni](https://timoni.sh/) builds Kubernetes objects from modules

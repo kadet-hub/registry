@@ -500,11 +500,11 @@ def front_matter(path):
         return f.read().split("\n---\n", 1)[0]
 
 
-def titles():
-    """CAT-11j: the hand-written title of every page under content/, by its path without .md."""
+def titles(field="title"):
+    """CAT-11j: the hand-written title (or another front matter field) of every page under content/, by its path without .md."""
     found = {}
     for path in sorted(glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True)):
-        m = re.search(r'^title: "?(.*?)"?$', front_matter(path), re.MULTILINE)
+        m = re.search(rf'^{field}: "?(.*?)"?$', front_matter(path), re.MULTILINE)
         if m:
             found[os.path.relpath(path, CONTENT)[:-3]] = m.group(1)
     return found
@@ -514,9 +514,14 @@ def title_words(text):
     return re.findall(r"[a-z0-9]+", text.lower())
 
 
+def joined(text):
+    """CAT-11m: the words of a query or title without connectives, run together."""
+    return "".join(w for w in title_words(text) if w not in CONNECTIVES)
+
+
 def leads(title, query):
     """CAT-11m: the number of the title's words that make up the query, 0 when it does not lead with it."""
-    want = "".join(w for w in title_words(query) if w not in CONNECTIVES)
+    want = joined(query)
     got = ""
     for i, w in enumerate(title_words(title), 1):
         got += "" if w in CONNECTIVES else w
@@ -1306,7 +1311,7 @@ class Site(unittest.TestCase):
         self.assertEqual(titles, sorted(titles, key=str.lower))  # lastmod does not reorder the list
 
     def test_titles(self):  # CAT-11j to CAT-11m
-        pages, queries, found = titles(), title_queries(), []
+        pages, descriptions, queries, found = titles(), titles("description"), title_queries(), []
         by_title = {title: name for name, title in pages.items()}
         contrast = re.compile(r"\bwithout\b.*\bwith\b|\bnot with\b|,\s*not\b|\binstead of\b|\brather than\b|[\u2013\u2014]", re.IGNORECASE)
         found += [f"CAT-11j: {name}: {title}" for name, title in pages.items() if contrast.search(title)]
@@ -1317,6 +1322,10 @@ class Site(unittest.TestCase):
         for title, qs in queries.items():
             if title not in by_title:
                 found.append(f"CAT-11m: CAT-11f names {title!r}, which no page has")
+            elif by_title[title].startswith("blog/"):  # a post names a query in its title or description
+                if not any(joined(q) in joined(title) or joined(q) in joined(descriptions.get(by_title[title], "")) for q in qs):
+                    found.append(f"CAT-11m: {by_title[title]}: neither title nor description contains one of {qs}")
+                lead[title] = max(leads(title, q) for q in qs)
             elif not any(leads(title, q) for q in qs) and not compares(title):
                 found.append(f"CAT-11m: {by_title[title]}: {title!r} leads with none of {qs}")
             else:

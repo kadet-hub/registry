@@ -2,7 +2,7 @@
 title: "KCL vs Kapitan: typed schemas and locked modules on one app"
 date: 2026-11-14
 topics: [kapitan, comparison, validation, supply chain]
-description: "KCL and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value, and a wrong checksum for the k8s module in kcl.mod.lock."
+description: "KCL for Kubernetes and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value and a wrong checksum in kcl.mod.lock."
 ---
 
 [KCL](https://www.kcl-lang.io/) is a configuration language with types.
