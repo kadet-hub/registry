@@ -1,5 +1,5 @@
 ---
-title: "Kubernetes cluster add-ons from one Kapitan inventory, on kind"
+title: "Kubernetes cluster add-ons with one set of shared values"
 date: 2026-11-08
 topics: [kapitan, generators, verification]
 description: "cert-manager, Kyverno, Prometheus, Grafana, External Secrets, Velero and Argo CD from one Kapitan inventory with shared values, tested through one app on kind."
@@ -65,7 +65,7 @@ from the merged parameters of the target. `kapitan compile` writes each
 target into `compiled/<target>/`. A generator is a Python library that
 reads one section of the parameters, such as `generators.certmanager`, and
 writes manifests. The
-[first platform post](/blog/first-platform/) shows the setup from an empty
+[first platform guide](/guides/first-platform/) shows the setup from an empty
 directory.
 
 This project has one target per component, `cert-manager`, `kyverno`,

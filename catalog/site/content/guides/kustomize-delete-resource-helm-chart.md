@@ -1,12 +1,13 @@
 ---
 title: "Kustomize delete resource: Kyverno PDBs and ESO webhooks"
-date: 2026-10-21
-topics: [helm, kustomize, kapitan]
+layout: prose
 description: "Kustomize patch delete resource on a rendered Helm chart, and the same with Kapitan's mutate: Kyverno's forced PDBs and External Secrets' webhooks, on kind."
+lastmod: 2026-11-07
+aliases: [/blog/kustomize-delete-resource-helm-chart/]
 ---
 
 Some Helm charts render an object you need to own yourself and offer no
-value to leave it out. This post covers two such cases from open issues:
+value to leave it out. This guide covers two such cases from open issues:
 the Kyverno chart creates a PodDisruptionBudget for every controller that
 runs more than one replica, and the External Secrets chart renders its two
 ValidatingWebhookConfigurations whenever it renders the webhook. In both,

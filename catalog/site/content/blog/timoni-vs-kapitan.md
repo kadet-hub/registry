@@ -1,5 +1,5 @@
 ---
-title: "Timoni vs Kapitan for Kubernetes: CUE modules, OCI bundles"
+title: "Timoni vs Kapitan: CUE schemas and bundles pinned by digest"
 date: 2026-11-13
 topics: [kapitan, comparison, validation, supply chain]
 description: "A Timoni module and bundle and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value and a module tag that moved."
@@ -17,7 +17,7 @@ YAML from an [inventory](/glossary/#inventory) and passes it to a
 
 The
 [example](https://github.com/kadet-hub/examples/tree/main/timoni-vs-kapitan)
-renders the app of the [Helm vs Kustomize vs Kapitan post](/blog/same-app/)
+renders the app of the [Helm vs Kustomize vs Kapitan guide](/guides/same-app/)
 with both tools. Its `check` fails unless the manifests match for each
 environment. It also tests two differences: a misspelled value, and a
 module tag that moves after the bundle pinned it. CI runs `check` on every
@@ -33,7 +33,7 @@ prod, PodDisruptionBudgets in prod only. The api's ConfigMap carries
 - Timoni 0.37.0, which embeds CUE 0.17.1, with the Kubernetes 1.37 API
   schemas that `timoni mod vendor k8s -v 1.37` wrote into the module.
 - Kapitan 0.36.3 with the kubernetes generator 1.14.0 and the inventory of
-  the [cdk8s vs Tanka vs Kapitan post](/blog/config-tools/).
+  the [cdk8s vs Tanka vs Kapitan guide](/guides/config-tools/).
 
 `check` sorts the objects and their keys and drops one label,
 `app.kubernetes.io/managed-by`, which only the generator sets. Nothing

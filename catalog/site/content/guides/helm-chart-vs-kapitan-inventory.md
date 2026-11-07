@@ -1,13 +1,14 @@
 ---
-title: "Writing a Helm chart vs Kapitan: three popular charts rebuilt"
-date: 2026-10-23
-topics: [helm, kapitan, generators, comparison]
+title: "Writing a Helm chart vs Kapitan: three charts rebuilt"
+layout: prose
 description: "Writing a Helm chart vs a Kapitan inventory, measured on metrics-server, cert-manager and kube-prometheus-stack: equal objects and behaviour on kind."
+lastmod: 2026-11-07
+aliases: [/blog/helm-chart-vs-kapitan-inventory/]
 ---
 
 If you install a third-party chart, keep the chart. Its values are the
 interface its maintainers support, and for what they do not expose you can
-[patch the rendered output](/guides/patch-helm-chart/). This post is about
+[patch the rendered output](/guides/patch-helm-chart/). This guide is about
 the other side: the people who write and maintain a chart. What would they
 maintain if the same objects came from a [Kapitan](/glossary/#kapitan)
 [inventory](/glossary/#inventory) and a [generator](/glossary/#generator)
@@ -55,7 +56,7 @@ is the kadet-hub [kubernetes](/generators/kubernetes/) and
 versioned, signed and maintained once for every project that uses them.
 Someone who only installs a chart writes far less: 2 lines of values for
 metrics-server on kind, 4 for cert-manager. That is the comparison the
-first paragraph of this post sets aside.
+first paragraph of this guide sets aside.
 
 ## metrics-server {#metrics-server}
 

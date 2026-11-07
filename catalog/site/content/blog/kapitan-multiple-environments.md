@@ -1,5 +1,5 @@
 ---
-title: "Kubernetes multiple environments: dev, stage and prod in Kapitan"
+title: "Kubernetes multiple environments with a diff for every promotion"
 date: 2026-11-19
 topics: [kapitan, helm, kustomize, ci]
 description: "Kubernetes multiple environments from one Kapitan inventory: dev, stage and prod on two clusters, the compile diff of a promotion, and a CI guard."
@@ -290,7 +290,7 @@ With the probe on it, `rollout status` waits through the restarts.
 
 ## Helm values files and Kustomize overlays {#helm-kustomize}
 
-[Helm vs Kustomize vs Kapitan on one Kubernetes app](/blog/same-app/)
+[Helm vs Kustomize vs Kapitan](/guides/same-app/)
 builds dev and prod of the same app with all three tools and compares
 the output. [Helmfile vs Kapitan](/blog/helmfile-vs-kapitan/#environments)
 does the same for environment files. Only what changes with a third
@@ -309,7 +309,7 @@ another one.
 overlays. An overlay per environment, with a component per cluster,
 covers this setup. Kustomize has no parameters, so a value built from
 another one, such as `BASE_URL` from the hostname, is written out in each
-overlay or copied with `replacements`, as the same-app post shows.
+overlay or copied with `replacements`, as the same-app guide shows.
 
 None of the three tools compares environments. A check like the guard
 needs each environment's rendered objects in a directory of its own.

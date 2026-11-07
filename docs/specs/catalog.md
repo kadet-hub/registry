@@ -140,16 +140,21 @@ remembered in the browser's `localStorage`.
   publish.
 
   The home page's title, `h1` and description, and the titles of guides
-  and recipes about Kapitan, name Kapitan together with Kubernetes or
-  Terraform; only the home page is tested. Blog post titles and generated
-  page titles (generator, tag, kind, release digest) lead with the
-  searched term instead and name Kapitan where it fits. On its own,
+  about Kapitan, name Kapitan together with Kubernetes or Terraform; only
+  the home page is tested. The titles of posts, of other guides, of recipe
+  pages and of generated pages (generator, tag, kind, release digest) lead
+  with the searched term instead and name Kapitan where it fits. On its own,
   "kapitan" completes in search suggestions to a restaurant and a border
   crossing, and "kadet" to a car (checked 2026-10-17 with Google's and DuckDuckGo's suggestion endpoints);
   "kapitan kubernetes" and "kapitan generator" are unambiguous. Guide
-  titles lead with the term searched for: "migrate ingress-nginx to
-  Gateway API", "kapitan generator vs helm chart vs kustomize", "Bitnami
-  chart alternatives".
+  titles lead with the term searched for, such as "ingress-nginx Gateway
+  API migration" or "Bitnami alternatives".
+
+  A comparison leads with what it compares, "<A> vs <B>", also where
+  CAT-11f records another query for it, as in "Helmfile vs Kapitan" or
+  "Argo CD vs Flux". The words after the colon say what the reader gets
+  from the page. A title names that result, not an anecdote or a detail
+  from the text that only makes sense after reading it.
 
   The Bitnami guide is one page with a section per chart rather than a
   page per chart: near-identical pages per search term are doorway pages
@@ -173,63 +178,63 @@ remembered in the browser's `localStorage`.
 
   | Query | Answered by |
   |---|---|
-  | helm alternatives kubernetes | home page, guide "Helm alternatives for Kubernetes" |
+  | helm alternatives kubernetes | home page, guide "Helm alternatives for Kubernetes that render the same app" |
   | kustomize alternatives | home page, same guide |
   | pulumi vs helm | same guide |
   | helm vs helmfile (also "helmfile vs helm"), helm chart vs helmfile, helm umbrella chart vs helmfile (checked 2026-10-22) | same guide, section #helmfile |
-  | helmfile environments (also "helmfile environments example", "helmfile multiple environments"), helmfile secrets example, helmfile release needs (also "helmfile needs"), helmfile alternatives (checked 2026-11-05) | blog post "Helmfile vs Kapitan: environments, secrets and release order", sections #environments, #secrets and #needs for the first three |
-  | kubernetes multiple environments, helm multiple environments, helm values per environment, kustomize multiple environments (Google's suggestions, checked 2026-11-05) | blog post "Kubernetes multiple environments: dev, stage and prod in Kapitan", section #helm-kustomize for the last three |
-  | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | same guide, blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
-  | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
-  | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | blog post "Helm vs Kustomize vs Kapitan on one Kubernetes app" |
-  | bitnami alternative | guide "Bitnami chart alternatives" |
-  | thanos helm chart not bitnami, thanos bitnami alternative, prometheus operator helm chart bitnami | guide "Bitnami chart alternatives" |
-  | bitnami alternative postgres, cloudnativepg vs bitnami | blog post "Bitnami PostgreSQL chart alternatives", `/recipes/postgresql/` |
+  | helmfile environments (also "helmfile environments example", "helmfile multiple environments"), helmfile secrets example, helmfile release needs (also "helmfile needs"), helmfile alternatives (checked 2026-11-05) | blog post "Helmfile vs Kapitan: per-environment values and release order", sections #environments, #secrets and #needs for the first three |
+  | kubernetes multiple environments, helm multiple environments, helm values per environment, kustomize multiple environments (Google's suggestions, checked 2026-11-05) | blog post "Kubernetes multiple environments with a diff for every promotion", section #helm-kustomize for the last three |
+  | cdk8s vs helm, cdk8s vs kustomize, cdk8s vs pulumi, grafana tanka vs helm | guide "Helm alternatives for Kubernetes that render the same app", guide "cdk8s vs Tanka vs Kapitan: which to pick for Kubernetes config" |
+  | kustomize vs helm (also "helm vs kustomize"), kustomize vs helm charts, helm chart vs kustomize, helm template vs kustomize | guide "Helm vs Kustomize vs Kapitan: where each saves work on one app" |
+  | helm vs kustomize vs jsonnet, helm vs kustomize vs terraform | guide "Helm vs Kustomize vs Kapitan: where each saves work on one app" |
+  | bitnami alternative | guide "Bitnami alternatives, chart by chart" |
+  | thanos helm chart not bitnami, thanos bitnami alternative, prometheus operator helm chart bitnami | guide "Bitnami alternatives, chart by chart" |
+  | bitnami alternative postgres, cloudnativepg vs bitnami | guide "Bitnami alternative for Postgres: moving to CloudNativePG", `/recipes/postgresql/` |
   | bitnami alternative redis, bitnami alternative kafka | `/recipes/valkey/`, `/recipes/kafka/` |
   | postgres, redis, keycloak, rabbitmq or kafka helm chart without bitnami (also "not bitnami", "bitnami alternative"), valkey helm chart not bitnami | the matching `/recipes/<name>/` page, `/recipes/valkey/` for redis |
   | mysql helm chart not bitnami, bitnami mysql alternative, bitnami alternative mongodb | `/recipes/mysql/`, `/recipes/mongodb/` |
   | nextcloud helm chart, nextcloud helm chart bitnami (checked 2026-11-02) | blog post "Nextcloud Helm chart: Bitnami subcharts and Kapitan" |
-  | kubernetes configuration management tools | blog post "cdk8s vs Tanka vs Kapitan for Kubernetes config" |
-  | timoni kubernetes, timoni bundle (checked 2026-11-05) | blog post "Timoni vs Kapitan for Kubernetes: CUE modules, OCI bundles" |
-  | kcl kubernetes, kcl kubernetes example (checked 2026-11-05) | blog post "KCL vs Kapitan for Kubernetes: typed schemas and OCI modules" |
+  | kubernetes configuration management tools | guide "cdk8s vs Tanka vs Kapitan: which to pick for Kubernetes config" |
+  | timoni kubernetes, timoni bundle (checked 2026-11-05) | blog post "Timoni vs Kapitan: CUE schemas and bundles pinned by digest" |
+  | kcl kubernetes, kcl kubernetes example (checked 2026-11-05) | blog post "KCL vs Kapitan: typed schemas and locked modules on one app" |
   | external secrets operator vault (also "external secrets operator vault example", "external secrets operator vault approle"), external secrets operator rotation (checked 2026-11-05) | blog post "External Secrets Operator with Vault AppRole and Kapitan refs" |
-  | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "Migrate ingress-nginx to Gateway API" |
-  | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | blog post "kubectl server-side dry run in CI, without a cluster" |
+  | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "ingress-nginx Gateway API migration for Kapitan targets" |
+  | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | guide "kubectl dry run server-side in CI on a bare kube-apiserver" |
+  | kubeconform vs kubeval, helm lint vs kubeconform, kubelinter vs kubeconform (checked 2026-10-22) | same guide, section #kubeval-helm-lint-kube-linter |
   | kubectl wait for condition (checked 2026-11-02) | blog post "kubectl wait for condition fails on null conditions" |
-| kubeconform vs kubeval, helm lint vs kubeconform, kubelinter vs kubeconform (checked 2026-10-22) | same post, section #kubeval-helm-lint-kube-linter |
-  | kubectl validate crd | guide "Validate Kubernetes custom resources against their CRDs" |
-  | kustomize json patch add, kustomize add annotation, service appprotocol, kubernetes trafficdistribution (checked 2026-10-21) | blog post "Kustomize JSON patch add: fields a Helm chart does not template", one section per chart |
-  | kustomize patch tolerations, kustomize patch nodeselector, kustomize patch add label, ipfamilypolicy requiredualstack, kubernetes service ipfamilypolicy, cilium ingress ipv6 (checked 2026-10-22) | same post, sections #consul-hook-job-tolerations, #apisix-ingress-controller-pod-labels and #cilium-ingress-ipfamilypolicy |
-  | cosign verify-attestation, gh attestation verify, slsa provenance attestations | blog post "cosign verify-attestation vs gh attestation verify" |
+  | kubectl validate crd | guide "kubectl validate CRD with a throwaway API server" |
+  | kustomize json patch add, kustomize add annotation, service appprotocol, kubernetes trafficdistribution (checked 2026-10-21) | guide "Kustomize JSON patch add for nine fields charts leave out", one section per chart |
+  | kustomize patch tolerations, kustomize patch nodeselector, kustomize patch add label, ipfamilypolicy requiredualstack, kubernetes service ipfamilypolicy, cilium ingress ipv6 (checked 2026-10-22) | same guide, sections #consul-hook-job-tolerations, #apisix-ingress-controller-pod-labels and #cilium-ingress-ipfamilypolicy |
+  | cosign verify-attestation, gh attestation verify, slsa provenance attestations | guide "cosign verify-attestation vs gh attestation verify" |
   | docker tag and digest (also "docker tag digest"), docker image tag and digest (checked 2026-11-02) | blog post "Docker tag and digest: which one Kubernetes runs" |
-  | docker compose and kubernetes, docker compose vs kubernetes (also "kubernetes docker compose"), miniflux docker compose, miniflux kubernetes (checked 2026-11-05) | blog post "Docker Compose and Kubernetes from one Kapitan inventory", section #gaps for the second; `/recipes/miniflux/` also answers the last |
-  | renovate automerge (also "renovate bot automerge", "renovate auto merge"), renovate automerge github (checked 2026-11-02) | blog post "Renovate automerge with required reviews on GitHub" |
+  | docker compose and kubernetes, docker compose vs kubernetes (also "kubernetes docker compose"), miniflux docker compose, miniflux kubernetes (checked 2026-11-05) | blog post "Docker Compose and Kubernetes files compiled from one class", section #gaps for the second; `/recipes/miniflux/` also answers the last |
+  | renovate automerge (also "renovate bot automerge", "renovate auto merge"), renovate automerge github (checked 2026-11-02) | guide "Renovate automerge with required reviews on GitHub" |
   | argocd config management plugin, argocd cmp plugin, argocd cmp sidecar, argocd sidecar plugin (checked 2026-11-05) | blog post "Argo CD config management plugin for Kapitan" |
-  | open webui searxng (also "openwebui searxng", "openwebui searxng 403"), open webui web search searxng, open webui kubernetes, ollama + open webui kubernetes, searxng kubernetes (checked 2026-11-04) | blog post "Open WebUI with SearXNG on Kubernetes, from Kapitan recipes"; `/recipes/open-webui/` and `/recipes/searxng/` also answer the kubernetes queries |
+  | open webui searxng (also "openwebui searxng", "openwebui searxng 403"), open webui web search searxng, open webui kubernetes, ollama + open webui kubernetes, searxng kubernetes (checked 2026-11-04) | blog post "Open WebUI with SearXNG web search and local Ollama models"; `/recipes/open-webui/` and `/recipes/searxng/` also answer the kubernetes queries |
   | self hosted google photos alternative (also "google photos alternative self hosted", "self hosted google photos replacement"), immich kubernetes (also "immich k8s"), immich kubernetes deployment, immich pgvector, immich reverse geocoding, immich smart search, immich backup database (also "immich database backup location"), immich backup and restore (checked 2026-11-05) | blog post "Self-hosted Google Photos alternative: Immich on Kubernetes"; `/recipes/immich/` also answers the kubernetes queries |
-  | matrix synapse federation, matrix federation setup, synapse federation port, synapse well known (also "matrix synapse well known"), matrix synapse kubernetes (checked 2026-11-07) | blog post "Matrix Synapse federation on Kubernetes, tested on kind"; `/recipes/matrix-synapse/` also answers the kubernetes query |
-  | gvisor sandbox | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions" |
-  | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI" |
+  | matrix synapse federation, matrix federation setup, synapse federation port, synapse well known (also "matrix synapse well known"), matrix synapse kubernetes (checked 2026-11-07) | blog post "Matrix Synapse federation: well-known delegation and TLS on 443"; `/recipes/matrix-synapse/` also answers the kubernetes query |
+  | gvisor sandbox | guide "gVisor sandbox for untrusted pull request code on GitHub Actions" |
+  | kyverno chainsaw, chainsaw test kubernetes, kubernetes e2e testing, kubernetes end to end testing, kind cluster github actions | blog post "Kyverno Chainsaw e2e tests that fail fast on a broken pod" |
   | kindest node (also "kindest node image", "kindest node images"), kindest node version, kind node image, kind node image version, kind custom node image, kind build node image, kind ensuring node image stuck (checked 2026-11-03) | blog post "kindest/node images: picking the version for your kind release", sections #kind-build-node-image for the custom and build queries and #ensuring-node-image-stuck for the last |
   | talos machine config, talos machine config example, talos machine config patch, talos machine config network, talos machine config schema | guide "Talos machine config for Kubernetes from a Kapitan inventory" |
-  | talos homelab, talos network policy (also "talos linux network policy"), talos linux docker (checked 2026-11-05) | blog post "Talos homelab: node configs and apps from one Kapitan inventory", sections #talos-network-policy and #talos-in-docker for the last two |
-  | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux, deployed side by side on kind" |
+  | talos homelab, talos network policy (also "talos linux network policy"), talos linux docker (checked 2026-11-05) | blog post "Talos homelab: machine configs and apps compiled together", sections #talos-network-policy and #talos-in-docker for the last two |
+  | argocd vs flux (also "flux vs argocd", "argo cd vs flux") | guide "Argo CD vs Flux: sync time and drift handling measured" |
   | helm vs argocd, kustomize vs helm vs argocd, kustomize vs argocd | same guide |
-  | kubernetes cluster add-ons (also "kubernetes cluster addons"), external secrets kubernetes provider (also "external secrets operator kubernetes provider"), velero s3 compatible storage (checked 2026-11-05) | blog post "Kubernetes cluster add-ons from one Kapitan inventory, on kind", sections #external-secrets-with-the-kubernetes-provider and #velero-with-s3-compatible-storage for the last two |
-  | gvisor vs docker (also "docker vs gvisor", "gvisor docker runtime") | blog post "gVisor in CI: sandboxing untrusted code on GitHub Actions", section #gvisor-vs-docker |
-  | write your own helm chart, how to write helm charts, kube prometheus stack alternative (checked 2026-10-22) | blog post "Writing a Helm chart vs Kapitan: three popular charts rebuilt", section #kube-prometheus-stack-alternative for the last |
-  | helm chart vs operator, operator vs helm chart, kubernetes operator vs helm chart, k8s operator vs helm chart (checked 2026-10-22) | blog post "Helm chart vs operator: PostgreSQL installed both ways on kind" |
+  | kubernetes cluster add-ons (also "kubernetes cluster addons"), external secrets kubernetes provider (also "external secrets operator kubernetes provider"), velero s3 compatible storage (checked 2026-11-05) | blog post "Kubernetes cluster add-ons with one set of shared values", sections #external-secrets-with-the-kubernetes-provider and #velero-with-s3-compatible-storage for the last two |
+  | gvisor vs docker (also "docker vs gvisor", "gvisor docker runtime") | guide "gVisor sandbox for untrusted pull request code on GitHub Actions", section #gvisor-vs-docker |
+  | write your own helm chart, how to write helm charts, kube prometheus stack alternative (checked 2026-10-22) | guide "Writing a Helm chart vs Kapitan: three charts rebuilt", section #kube-prometheus-stack-alternative for the last |
+  | helm chart vs operator, operator vs helm chart, kubernetes operator vs helm chart, k8s operator vs helm chart (checked 2026-10-22) | guide "Helm chart vs operator: PostgreSQL failover and config changes" |
   | helm vs terraform, helm chart vs terraform, kubernetes manifests terraform | guide "Helm vs Terraform for Kubernetes, and Kapitan for both" |
-  | kustomize patch env variable, kustomize patch environment variable, kustomize patch add env var (checked 2026-10-21) | blog post "Kustomize patch env variable with valueFrom in a Helm chart", sections #keda-http-add-on-env and #crossplane-env-secret |
-  | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart: post-renderers, Kustomize and Kapitan" |
-  | kustomize delete resource, kustomize patch delete resource, kustomize remove resource (checked 2026-10-21) | blog post "Kustomize delete resource: Kyverno PDBs and ESO webhooks", sections #kyverno-pdb and #external-secrets-webhooks |
-  | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | same guide |
-  | kube prometheus stack dashboards, kube prometheus stack default dashboards, kube prometheus stack default grafana dashboards (checked 2026-10-21) | blog post "kube-prometheus-stack default Grafana dashboards, one by one", section #disable-default-dashboards |
-  | kustomize helm chart generator, kustomize render helm chart, kustomize enable helm, kustomize helm values file, kustomize helm argocd, render helm chart locally | same guide, section "Kustomize with helmCharts" |
-  | cert-manager helm chart, helm chart initcontainers, trust-manager helm chart, cert manager trust manager helm chart | blog post "cert-manager Helm chart initContainers and trust-manager issuer" |
-  | actions runner controller dind, github actions runner controller dind, gha runner scale set dind (checked 2026-10-21) | blog post "Actions Runner Controller dind image from your own registry", section #arc-dind-image |
+  | kustomize patch env variable, kustomize patch environment variable, kustomize patch add env var (checked 2026-10-21) | guide "Kustomize patch env variable with valueFrom by container name", sections #keda-http-add-on-env and #crossplane-env-secret |
+  | patch helm chart, patch helm chart with kustomize, kustomize patch helm chart, helm patch chart, modify helm chart, edit helm chart | guide "Patch a Helm chart without forking it" |
+  | kustomize delete resource, kustomize patch delete resource, kustomize remove resource (checked 2026-10-21) | guide "Kustomize delete resource: Kyverno PDBs and ESO webhooks", sections #kyverno-pdb and #external-secrets-webhooks |
+  | helm post renderer, helm post renderer kustomize, helm post renderer argocd, kustomize helm charts, argocd kustomize helm, flux helmrelease postrenderer patch example | guide "Patch a Helm chart without forking it" |
+  | kube prometheus stack dashboards, kube prometheus stack default dashboards, kube prometheus stack default grafana dashboards (checked 2026-10-21) | guide "kube-prometheus-stack default Grafana dashboards, one by one", section #disable-default-dashboards |
+  | kustomize helm chart generator, kustomize render helm chart, kustomize enable helm, kustomize helm values file, kustomize helm argocd, render helm chart locally | guide "Patch a Helm chart without forking it", section "Kustomize with helmCharts" |
+  | cert-manager helm chart, helm chart initcontainers, trust-manager helm chart, cert manager trust manager helm chart | guide "cert-manager Helm chart initContainers and trust-manager issuer" |
+  | actions runner controller dind, github actions runner controller dind, gha runner scale set dind (checked 2026-10-21) | guide "Actions Runner Controller dind image from your own registry", section #arc-dind-image |
 
-  The two requests that post answers, "cert-manager helm chart
+  The two requests that guide answers, "cert-manager helm chart
   initcontainers" and "trust-manager custom issuer", complete in neither
   engine. Its sections keep the fixed anchors `#cert-manager-initcontainers`
   and `#trust-manager-custom-issuer`, so that a link to a section, from
@@ -238,10 +243,11 @@ remembered in the browser's `localStorage`.
 
   One page answers a query first, and its title leads with it. Other pages
   on the topic link to that page instead of competing with it. The
-  Bitnami guide is that page for the generic query, the Bitnami post for
-  PostgreSQL, and `/recipes/` lists the tested recipes. The guide on
+  Bitnami guide is that page for the generic query, the PostgreSQL guide
+  for PostgreSQL, and `/recipes/` lists the tested recipes. The guide on
   Kapitan inputs is titled for that choice, so "helm vs kustomize" queries
-  go to the post that compares the tools on one app.
+  go to the guide that compares the tools on one app. CAT-11m checks the
+  titles against the table.
 
   "kapicorp" is not a target: the people who search it know Kapitan
   already, and a page ranking for it could be taken for kapicorp's own.
@@ -286,6 +292,69 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py` (`test_indexnow_key`)
   - Since: #325
+
+- CAT-11j: A hand-written title MUST NOT set Kapitan against another tool
+  by a contrast such as "without Helm, with Kapitan", "not with Helm",
+  "Kapitan, not Helm", "instead of" or "rather than", and MUST NOT
+  contain an en or em dash.
+
+  Hand-written titles are the `title` of every page under
+  `catalog/site/content/`: posts, guides, recipe pages and the pages of
+  the site's sections. Titles a template or the content adapter writes
+  (generator, tag, kind, release digest) are left to their template.
+  Before this change 37 of the 55 recipe titles read "<name> on Kubernetes
+  without Helm, with Kapitan" or "without Docker Compose, with Kapitan".
+  A title names what the page shows; where the page compares tools, the
+  comparison is in its text.
+
+  - Test: `catalog/test_catalog.py` (`test_titles`)
+  - Since: #645
+
+- CAT-11k: Outside the searched term a hand-written title leads with, no
+  three words in a row MUST appear in more than two hand-written titles.
+
+  Many titles ended the same way: "from one Kapitan inventory" in three
+  posts, "<name> on Kubernetes with Kapitan" in 18 recipe titles, and the
+  stack posts with ", from Kapitan recipes" and ", tested on kind". The
+  check compares lower-case words without punctuation. The searched term
+  is the CAT-11f query a title leads with (CAT-11m), for a comparison its
+  "<A> vs <B>" up to the first colon or comma (CAT-11a), and, for a recipe
+  page, the software followed by "on Kubernetes" (CAT-37). It counts as
+  one placeholder word, so the words right after different terms still
+  count: three recipe titles that each go on with "with Kapitan" fail. A floor like this
+  keeps the commonest repetition out; it does not make titles varied on
+  its own, which stays a review question.
+
+  - Test: `catalog/test_catalog.py` (`test_titles`)
+  - Since: #645
+
+- CAT-11l: A colon followed by a list, with a comma and a final "and" or
+  "or" after the colon, MUST NOT appear in more than three hand-written
+  titles.
+
+  "Helmfile vs Kapitan: environments, secrets and release order" was the
+  shape four titles had before this change.
+
+  - Test: `catalog/test_catalog.py` (`test_titles`)
+  - Since: #645
+
+- CAT-11m: Every page the table of CAT-11f names by its title MUST carry
+  exactly that title, and the title MUST lead with one of the queries of
+  the rows that name it or, for a comparison, with "<A> vs <B>" (CAT-11a).
+
+  "Leads with" compares the words of query and title in lower case,
+  without punctuation and without "a", "an", "the", "on", "in", "for",
+  "with", "to" and "of", run together, so "Immich on Kubernetes" leads
+  with "immich kubernetes", "Argo CD config management plugin" with
+  "argocd config management plugin", and a plural with its singular. A
+  row that says "same guide" or "same post" names the page of the row
+  above it. Before this change the table named four pages by a shorter
+  form of their title, and three titles led with neither one of their
+  queries nor a comparison, such as "kubectl server-side dry run in CI,
+  without a cluster" for "kubectl dry run server side".
+
+  - Test: `catalog/test_catalog.py` (`test_titles`)
+  - Since: #645
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
@@ -341,7 +410,8 @@ remembered in the browser's `localStorage`.
   Lengths are counted after HTML unescaping, as a browser shows the text.
   The canonical URL must be the absolute URL of the page itself. A Hugo
   alias page (a meta refresh to the new URL) is a redirect, not a page,
-  and is not checked; the site has none.
+  and is not checked; every post that moved to `/guides/` has one
+  (CAT-36f).
 
   README headings are rendered one level below the page's own (`#`
   becomes `h2`), so a README that skips a level, such as `#` followed by
@@ -1140,9 +1210,8 @@ Related: CAT-15, CAT-30, CON-2.
   of copying them. The feed lists one entry per published version, newest
   first, linking its permalink (CAT-17). Titles and summaries in the
   feed pass through the control-character filter of `llms.txt`, so a
-  description listed before QA-5a cannot make it invalid XML. The guides are articles for
-  people deciding whether and how to write or consume a generator; they
-  link the reference documents instead of repeating them.
+  description listed before QA-5a cannot make it invalid XML. The guides
+  (CAT-36e) link the reference documents instead of repeating them.
 
   - Test: `catalog/test_catalog.py`
   - Since: #55, #232
@@ -1449,6 +1518,81 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py`
   - Since: #271, #308
 
+- CAT-36e: An article that has to stay correct while the tools it covers
+  change, such as a comparison, a how-to or a migration, MUST be a guide
+  under `/guides/`. A post MUST have an occasion: a stack walkthrough
+  (CAT-45), a release (CAT-36b), a finding or an announcement. An article
+  MUST appear as a post first and MAY move to `/guides/` only once its date
+  has passed and kadet-hub/outreach has published it on dev.to.
+
+  A guide is maintained. It carries `lastmod` (CAT-11g) and no `date`, and
+  a change in a tool it covers changes its text. A post stays as it was on
+  its date, and its `lastmod` marks corrections only (CAT-36a). Which one
+  an article is follows from its text, not from its title. A comparison
+  measured once is still a comparison: readers come to it from a search
+  for the comparison, and a result that no longer holds misleads them for
+  as long as the page is up.
+
+  The blog feed is what kadet-hub/outreach publishes on dev.to (OUT-1
+  there), and the daily schedule of CAT-36a is built from queued posts. A
+  guide is in neither, so an article that started as a guide would never
+  reach dev.to, and moving a queued post would leave its day empty. A
+  post is on dev.to when a closed issue labelled `devto` in
+  kadet-hub/outreach names its URL (OUT-4 there).
+
+  On 2026-11-07, 16 of the 39 posts moved to `/guides/` by this rule.
+  Ten more are guides by their text and stay posts until both conditions
+  hold: eight were queued for 12 to 22 November 2026, and two were not on
+  dev.to yet. Among the posts that stay for good, `chainsaw-kind` and
+  `docker-tag-and-digest` report what the examples CI and the recipes ran
+  into at the time, and `kubectl-wait-null-conditions` one failure on one
+  day.
+
+  Related: CAT-18, CAT-36a.
+
+  - Test: `catalog/test_catalog.py` (`test_moved_posts`, partial: dates
+    and layouts; which article is a guide is a review question); manual:
+    the closed `devto` issue for the post's URL before it moves
+  - Since: #645
+
+- CAT-36f: A post that moves to `/guides/` MUST keep its URL
+  `/blog/<name>/` as a Hugo alias whose page redirects to the guide at
+  once, with `content="0; url=<guide URL>"`. The alias MUST stay.
+
+  GitHub Pages has no server-side redirects, so the redirect is the page
+  Hugo writes for each entry of `aliases`: a meta refresh of 0 seconds and
+  a canonical link to the guide, from Hugo's built-in alias template
+  (checked with Hugo 0.168.0). The site has no alias template of its own. Google reads an instant meta refresh as a
+  permanent redirect and a delayed one as temporary ("Google Search
+  interprets instant meta refresh redirects as permanent redirects",
+  [Redirects and Google Search](https://developers.google.com/search/docs/crawling-indexing/301-redirects)).
+  For a site move it asks to keep redirects "for as long as possible,
+  generally at least 1 year"
+  ([site moves](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes)).
+  The aliases stay without an end date, because the READMEs in
+  kadet-hub/examples and the dev.to copies link the old URLs, and an
+  alias is one small file.
+
+  Hugo leaves alias pages out of `sitemap.xml`, so the sitemap names the
+  guide only, and CAT-11d skips them as redirects. The Markdown variant at
+  the old `index.md` gets no redirect: Hugo writes alias pages as HTML.
+
+  - Test: `catalog/test_catalog.py` (`test_moved_posts`)
+  - Since: #645
+
+- CAT-36g: A page of the site that links a moved post MUST link the
+  guide's URL.
+
+  The site-move guidance asks to change internal links to the new URLs,
+  so a reader on the site does not pass through a redirect. Links from
+  other repositories, such as the READMEs in kadet-hub/examples, reach
+  the guide through the alias.
+
+  - Test: `catalog/test_catalog.py` (`test_moved_posts`, partial: the
+    content and layouts of this repository, not READMEs and descriptions
+    the build fetches)
+  - Since: #645
+
 - CAT-36a: A post page MUST show a byline (author, publication date, an
   update date only when `lastmod` is later, reading time), the post's
   description as a lead, a contents list when the post has 800 words or
@@ -1732,8 +1876,10 @@ Related: CAT-15, CAT-30, CON-2.
   kadet-hub/recipes (CAT-38a), and the layout for their pages was removed.
 
   As CAT-11a asks, every recipe title and the index title lead with the
-  searched term and name Kapitan, such as "PostgreSQL on Kubernetes with
-  Kapitan". Titles MUST NOT say "without Bitnami". Every description
+  searched term and name Kapitan where it fits. For a recipe the term is
+  its software followed by "on Kubernetes", as in "PostgreSQL on
+  Kubernetes: CloudNativePG clusters from Kapitan". Titles MUST NOT say
+  "without Bitnami". Every description
   leads with "Bitnami
   <chart> Helm chart alternative:" and names Kapitan with Kubernetes. A title that leaves no room for the " · kadet-hub" suffix
   within CAT-11's 65 characters stands alone; the template counts bytes,
@@ -1870,8 +2016,10 @@ Related: CAT-15, CAT-30, CON-2.
   the source and the level, because a reader who comes from the examples
   recipe needs it before anything else.
 
-  Titles lead with the chart and "without Helm" and name Kapitan, such as
-  "cert-manager on Kubernetes without Helm, with Kapitan". Descriptions
+  Titles lead with the chart's software and "on Kubernetes" and go on
+  with what the recipe deploys or how it was built (CAT-11j to CAT-11l),
+  such as "cert-manager on Kubernetes, matched to its chart object by
+  object". Descriptions
   lead with "<chart> Helm chart alternative:" and name Kapitan with
   Kubernetes. "Bitnami" appears only where the chart is a Bitnami chart,
   or where the recipe replaces a kadet-hub/examples recipe that stood in
@@ -1880,27 +2028,23 @@ Related: CAT-15, CAT-30, CON-2.
   Such a recipe keeps the queries CAT-11f routes to the examples page, so
   its description leads with them. The title names the project and the
   searched term without "without Bitnami". valkey replaces the stand-in
-  for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes with
-  Kapitan", with a description that leads with "Bitnami redis Helm chart
-  alternative:". external-dns-powerdns replaces the stand-in for
-  Bitnami's `external-dns` chart, rebuilt from the project's own chart
-  that only an HTTP repository publishes, and keeps "external-dns and
-  PowerDNS on Kubernetes with Kapitan" with a description that leads with
-  "Bitnami external-dns Helm chart alternative:". postgresql replaces the
-  stand-in for Bitnami's `postgresql` and `postgresql-ha` charts, rebuilt
-  from CloudNativePG's chart `cluster`, and keeps "PostgreSQL on
-  Kubernetes with Kapitan" with a description that leads with "Bitnami
+  for Bitnami's `redis` chart: "Valkey (Redis) on Kubernetes, the
+  BSD-licensed fork in Kapitan", with a description that leads with
+  "Bitnami redis Helm chart alternative:". external-dns-powerdns replaces
+  the stand-in for Bitnami's `external-dns` chart, rebuilt from the
+  project's own chart that only an HTTP repository publishes, and has a
+  description that leads with "Bitnami external-dns Helm chart
+  alternative:". postgresql replaces the stand-in for Bitnami's
+  `postgresql` and `postgresql-ha` charts, rebuilt from CloudNativePG's
+  chart `cluster`, and has a description that leads with "Bitnami
   postgresql Helm chart alternative:". It requires `cnpg`, the operator
-  from the project's chart, whose page is "CloudNativePG on Kubernetes
-  without Helm, with Kapitan". keycloak replaces the stand-in for
-  Bitnami's `keycloak` chart, designed on Keycloak's image (CAT-37f), and
-  keeps "Keycloak on Kubernetes with Kapitan" with a description that leads
-  with "Bitnami keycloak Helm chart alternative:". It requires
-  `keycloak-operator`, whose page is "Keycloak Operator on Kubernetes
-  without Helm, with Kapitan", and `cert-manager`. nextcloud, rebuilt
-  from Nextcloud's own chart, which Bitnami has no counterpart for, is
-  "Nextcloud on Kubernetes without Helm, with Kapitan" with a description
-  that leads with "Nextcloud Helm chart alternative:". The title "Valkey on
+  from the project's chart. keycloak replaces the stand-in for Bitnami's
+  `keycloak` chart, designed on Keycloak's image (CAT-37f), and has a
+  description that leads with "Bitnami keycloak Helm chart alternative:".
+  It requires `keycloak-operator` and `cert-manager`. nextcloud, rebuilt
+  from Nextcloud's own chart, which Bitnami has no counterpart for, has a
+  description that leads with "Nextcloud Helm chart alternative:". The
+  title "Valkey on
   Kubernetes without Helm" named neither Redis nor Bitnami, although
   CAT-11f sends the Redis queries and "valkey helm chart not bitnami" to
   the page. Moving those queries to the Bitnami guide was considered, but
@@ -1945,10 +2089,10 @@ Related: CAT-15, CAT-30, CON-2.
   of the forms of CAT-37c, CAT-37e, CAT-37f and CAT-37g stops the build as
   a missing one does.
 
-  Titles lead with the application and "without Docker Compose" and name
-  Kapitan, such as "Miniflux on Kubernetes without Docker Compose, with
-  Kapitan". Descriptions lead with "<application> Docker Compose to
-  Kubernetes" and name Kapitan.
+  Titles lead with the application and "on Kubernetes", such as
+  "Miniflux on Kubernetes, migrated from Docker Compose by Kapitan".
+  Descriptions lead with "<application> Docker Compose to Kubernetes" and
+  name Kapitan.
 
   Related: DEC-8, DEC-9, RCP-37 to RCP-39 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c.
 
@@ -1969,50 +2113,43 @@ Related: CAT-15, CAT-30, CON-2.
   DEC-11, RCP-23 there). It is at level `deploys` only, proven by the
   deploy on kind and the smoke test (RCP-44, RCP-45 there). Titles and
   descriptions follow CAT-37c. mysql, the first such recipe, replaces the
-  kadet-hub/examples stand-in for Bitnami's `mysql` chart, so it keeps
-  "MySQL on Kubernetes with Kapitan" and a description
-  that leads with "Bitnami mysql Helm chart alternative:". mongodb, the
-  stand-in for Bitnami's `mongodb` chart, moved the same way and keeps
-  "MongoDB on Kubernetes with Kapitan" and "Bitnami
-  mongodb Helm chart alternative:".
+  kadet-hub/examples stand-in for Bitnami's `mysql` chart, so its
+  description leads with "Bitnami mysql Helm chart alternative:". mongodb,
+  the stand-in for Bitnami's `mongodb` chart, moved the same way, with
+  "Bitnami mongodb Helm chart alternative:".
 
   mariadb, designed on the MariaDB Foundation's image, had no stand-in in
   kadet-hub/examples, but its README says it can replace Bitnami's
-  `mariadb` chart in that chart's default architecture. It is "MariaDB on
-  Kubernetes with Kapitan" with a description that leads with "Bitnami
-  mariadb Helm chart alternative:", because that chart is what readers
-  search a replacement for. wordpress, designed on the Docker Official
-  Image with mariadb included, follows it as "WordPress on Kubernetes with
-  Kapitan" and "Bitnami wordpress Helm chart alternative:". memcached,
-  designed on the Docker Official Image, follows it as "Memcached on
-  Kubernetes with Kapitan" and "Bitnami memcached Helm chart alternative:".
+  `mariadb` chart in that chart's default architecture. Its description
+  leads with "Bitnami mariadb Helm chart alternative:", because that chart
+  is what readers search a replacement for. wordpress, designed on the
+  Docker Official Image with mariadb included, follows it with "Bitnami
+  wordpress Helm chart alternative:". memcached, designed on the Docker
+  Official Image, follows it with "Bitnami memcached Helm chart
+  alternative:".
 
   powerdns is the PowerDNS part of the kadet-hub/examples recipe
   `external-dns-powerdns`, which stood in for Bitnami's `external-dns`
-  chart. PowerDNS itself replaces no Bitnami chart, so its new page is
-  "PowerDNS on Kubernetes with Kapitan" with a description that leads with
-  "PowerDNS Helm chart alternative:". The external-dns part moved to
+  chart. PowerDNS itself replaces no Bitnami chart, so the description of
+  its new page leads with "PowerDNS Helm chart alternative:". The external-dns part moved to
   kadet-hub/recipes under the name `external-dns-powerdns`, and its page
   `/recipes/external-dns-powerdns/` with it (CAT-37c, CAT-38a).
 
   kafka, the stand-in for Bitnami's `kafka` chart, moved the same way. It
-  is designed on Strimzi's Kafka image and keeps "Kafka on Kubernetes with
-  Kapitan" with a description that leads with "Bitnami kafka Helm chart
-  alternative:". It requires `strimzi`, the operator from Strimzi's chart,
-  whose page is "Strimzi on Kubernetes without Helm, with Kapitan"
-  (CAT-37c).
+  is designed on Strimzi's Kafka image, and its description leads with
+  "Bitnami kafka Helm chart alternative:". It requires `strimzi`, the
+  operator from Strimzi's chart (CAT-37c).
 
   rabbitmq, the stand-in for Bitnami's `rabbitmq` chart, moved the same
-  way. It is designed on the Docker Official Image and keeps "RabbitMQ on
-  Kubernetes with Kapitan" with a description that leads with "Bitnami
-  rabbitmq Helm chart alternative:". It requires
+  way. It is designed on the Docker Official Image, and its description
+  leads with "Bitnami rabbitmq Helm chart alternative:". It requires
   `rabbitmq-cluster-operator`, whose page is described in CAT-37g and which
   requires `cert-manager`.
 
   keycloak, the stand-in for Bitnami's `keycloak` chart, moved the same
   way. It is designed on Keycloak's image as a resource of the Keycloak
-  Operator, and keeps "Keycloak on Kubernetes with Kapitan" with a
-  description that leads with "Bitnami keycloak Helm chart alternative:".
+  Operator, and its description leads with "Bitnami keycloak Helm chart
+  alternative:".
   It requires `keycloak-operator` and `cert-manager` and includes
   `postgresql` (CAT-37c).
 
@@ -2037,11 +2174,10 @@ Related: CAT-15, CAT-30, CON-2.
   recipe is at level `deploys`, and `check` compares it with the
   manifest's objects at `renders` (RCP-59 there).
 
-  Titles lead with the application and name Kapitan, such as "RabbitMQ
-  Cluster Operator on Kubernetes with Kapitan". They leave out "without
-  Helm", which the source does not use and which would take the title past
-  CAT-11's 65 characters. Descriptions lead with "<application> release
-  manifest alternative:" and name Kapitan with Kubernetes.
+  Titles lead with the application and "on Kubernetes", such as
+  "RabbitMQ Cluster Operator on Kubernetes from its release manifest".
+  Descriptions lead with "<application> release manifest alternative:" and
+  name Kapitan with Kubernetes.
 
   Related: RCP-23, RCP-59 (kadet-hub/recipes `docs/specs/recipes.md`), CAT-37c.
 
@@ -2207,13 +2343,13 @@ Related: CAT-15, CAT-30, CON-2.
   - Since: #540
 
 - CAT-40b: The quickstart MUST have the sections "Coming from Helm?" and
-  "Coming from Kustomize?". The first MUST link the posts
-  `helm-chart-vs-kapitan-inventory` and `same-app` and the Bitnami guide,
-  the second `same-app` and every post whose name starts with
-  `kustomize-`.
+  "Coming from Kustomize?". The first MUST link the guides
+  `helm-chart-vs-kapitan-inventory`, `same-app` and
+  `bitnami-chart-alternatives`, the second `same-app` and every guide
+  whose name starts with `kustomize-`.
 
   The sections map what such a reader knows to what the quickstart did,
-  and link the posts that compare the tools on real charts.
+  and link the guides that compare the tools on real charts.
 
   - Test: `catalog/test_catalog.py` (`Site.test_quickstart_linked`)
   - Since: #540

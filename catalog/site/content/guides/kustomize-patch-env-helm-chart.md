@@ -1,14 +1,15 @@
 ---
-title: Kustomize patch env variable with valueFrom in a Helm chart
-date: 2026-10-21
-topics: [helm, kustomize, kapitan]
+title: "Kustomize patch env variable with valueFrom by container name"
+layout: prose
 description: "Kustomize patch environment variable with valueFrom into Helm chart containers by name, and the same with Kapitan's mutate: KEDA HTTP add-on and Crossplane."
+lastmod: 2026-11-07
+aliases: [/blog/kustomize-patch-env-helm-chart/]
 ---
 
 Many charts take extra environment variables as a map of names to values
 and render each entry as `name` and `value`. A variable that comes from a
 Secret, a ConfigMap or the downward API needs `valueFrom`, which such a map
-cannot express. This post adds those entries to the rendered Deployments
+cannot express. This guide adds those entries to the rendered Deployments
 instead, merged into the container by its name, first with a Kustomize
 strategic merge patch over `helm template`, then with
 [Kapitan](/glossary/#kapitan)'s [mutate](/generators/mutate/)

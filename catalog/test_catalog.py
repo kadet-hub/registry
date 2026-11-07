@@ -486,6 +486,68 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
     return out
 
 
+# CAT-36e: the posts that moved to /guides/ on 2026-11-07; each keeps its old URL as an alias (CAT-36f).
+MOVED_POSTS = {"actions-runner-controller-dind", "apiserver-dry-run", "bitnami", "cert-manager-helm-chart-patches", "config-tools", "first-platform",
+               "gvisor-ci", "helm-chart-vs-kapitan-inventory", "helm-chart-vs-operator", "kube-prometheus-stack-dashboards",
+               "kustomize-delete-resource-helm-chart", "kustomize-json-patch-helm-chart", "kustomize-patch-env-helm-chart",
+               "renovate-automerge-required-reviews", "same-app", "verify-oci"}
+CONTENT = os.path.join(HERE, "site", "content")
+CONNECTIVES = {"a", "an", "the", "on", "in", "for", "with", "to", "of"}  # CAT-11m: left out when a title is matched with a query
+
+
+def front_matter(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read().split("\n---\n", 1)[0]
+
+
+def titles():
+    """CAT-11j: the hand-written title of every page under content/, by its path without .md."""
+    found = {}
+    for path in sorted(glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True)):
+        m = re.search(r'^title: "?(.*?)"?$', front_matter(path), re.MULTILINE)
+        if m:
+            found[os.path.relpath(path, CONTENT)[:-3]] = m.group(1)
+    return found
+
+
+def title_words(text):
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def leads(title, query):
+    """CAT-11m: the number of the title's words that make up the query, 0 when it does not lead with it."""
+    want = "".join(w for w in title_words(query) if w not in CONNECTIVES)
+    got = ""
+    for i, w in enumerate(title_words(title), 1):
+        got += "" if w in CONNECTIVES else w
+        if len(got) >= len(want):
+            return i if got.startswith(want) else 0
+    return 0
+
+
+def compares(title):
+    """CAT-11a: the number of words of a comparison's "<A> vs <B>" up to the first colon or comma, 0 for any other title."""
+    head = re.split(r"[:,]", title, maxsplit=1)[0]
+    return len(title_words(head)) if " vs " in head else 0
+
+
+def title_queries():
+    """CAT-11f: every title the table names, with the queries of the rows that name it; "same guide" or "same post" is the row above."""
+    with open(os.path.join(HERE, "..", "docs", "specs", "catalog.md"), encoding="utf-8") as f:
+        table = f.read().split("\n- CAT-11f:", 1)[1].split("\n- CAT-", 1)[0]
+    found, above = {}, []
+    for query, pages in re.findall(r"^ *\| (.+) \| (.+) \|$", table, re.MULTILINE):
+        if query == "Query":
+            continue
+        also = [a for group in re.findall(r"\(also ([^)]*)\)", query) for a in re.findall(r'"([^"]+)"', group)]
+        query = re.sub(r"\((also|checked|Google)[^)]*\)", "", query)
+        named = re.findall(r'(?:guide|blog post) "([^"]+)"', pages) or (above if re.search(r"\bsame (guide|post)\b", pages) else [])
+        for title in named:
+            found.setdefault(title, []).extend([q.strip() for q in query.split(",") if q.strip()] + also)
+        above = named or above
+    return found
+
+
 class Site(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -655,10 +717,10 @@ class Site(unittest.TestCase):
         def links(heading):
             section = page.split(f">{heading}</h2>", 1)[1].split("<h2", 1)[0]
             return [posixpath.normpath(posixpath.join("/quickstart/", h)) for h in re.findall(r'href="([^"#]+)"', section)]
-        kustomize = sorted(f"/blog/{os.path.basename(p)[:-3]}" for p in glob.glob(os.path.join(HERE, "site", "content", "blog", "kustomize-*.md")))
+        kustomize = sorted(f"/guides/{os.path.basename(p)[:-3]}" for p in glob.glob(os.path.join(HERE, "site", "content", "guides", "kustomize-*.md")))
         self.assertEqual(len(kustomize), 3)
-        for heading, posts in (("Coming from Helm?", ["/blog/helm-chart-vs-kapitan-inventory", "/blog/same-app", "/guides/bitnami-chart-alternatives"]),
-                               ("Coming from Kustomize?", ["/blog/same-app", *kustomize])):
+        for heading, posts in (("Coming from Helm?", ["/guides/helm-chart-vs-kapitan-inventory", "/guides/same-app", "/guides/bitnami-chart-alternatives"]),
+                               ("Coming from Kustomize?", ["/guides/same-app", *kustomize])):
             for post in posts:
                 self.assertIn(post, links(heading))
                 self.assertTrue(os.path.isfile(os.path.join(self.out, post.strip("/"), "index.html")), post)
@@ -810,14 +872,14 @@ class Site(unittest.TestCase):
         for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
-        self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
+        self.assertIn("\n- [Kafka on Kubernetes in KRaft mode under Strimzi](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
         self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 55)
-        self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
+        self.assertIn("\n- [cert-manager on Kubernetes, matched to its chart object by object](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 12)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 28)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -946,25 +1008,25 @@ class Site(unittest.TestCase):
         self.assertRegex(chart, r'recipes/rabbitmq-cluster-operator/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37g
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         page = self.page("recipes", "postgresql")
-        self.assertIn("<title>PostgreSQL on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>PostgreSQL on Kubernetes: CloudNativePG clusters from Kapitan</title>", page)  # no room for the suffix
         self.assertIn('<meta name="description" content="Bitnami postgresql Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>postgresql</code> recipe of kadet-hub/examples.", page)
-        self.assertIn("<title>CloudNativePG on Kubernetes without Helm, with Kapitan</title>", self.page("recipes", "cnpg"))  # no room for the suffix
-        self.assertIn("<title>MongoDB on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))
-        self.assertIn("<title>PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "powerdns"))
-        self.assertIn("<title>external-dns and PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "external-dns-powerdns"))
-        self.assertIn("<title>Kafka on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "kafka"))
-        self.assertIn("<title>Strimzi on Kubernetes without Helm, with Kapitan · kadet-hub</title>", self.page("recipes", "strimzi"))
-        self.assertIn("<title>RabbitMQ on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq"))
-        self.assertIn("<title>RabbitMQ Cluster Operator on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq-cluster-operator"))
+        self.assertIn("<title>CloudNativePG on Kubernetes: the operator from Kapitan classes</title>", self.page("recipes", "cnpg"))  # no room for the suffix
+        self.assertIn("<title>MongoDB on Kubernetes with Community Server, as a Kapitan class</title>", self.page("recipes", "mongodb"))  # no room for the suffix
+        self.assertIn("<title>PowerDNS on Kubernetes, the Authoritative Server in Kapitan</title>", self.page("recipes", "powerdns"))  # no room for the suffix
+        self.assertIn("<title>external-dns and PowerDNS on Kubernetes as one Kapitan recipe</title>", self.page("recipes", "external-dns-powerdns"))  # no room for the suffix
+        self.assertIn("<title>Kafka on Kubernetes in KRaft mode under Strimzi · kadet-hub</title>", self.page("recipes", "kafka"))
+        self.assertIn("<title>Strimzi on Kubernetes, its Kafka operator chart in Kapitan</title>", self.page("recipes", "strimzi"))  # no room for the suffix
+        self.assertIn("<title>RabbitMQ on Kubernetes through the Cluster Operator and Kapitan</title>", self.page("recipes", "rabbitmq"))  # no room for the suffix
+        self.assertIn("<title>RabbitMQ Cluster Operator on Kubernetes from its release manifest</title>", self.page("recipes", "rabbitmq-cluster-operator"))  # no room for the suffix
         page = self.page("recipes", "keycloak")
-        self.assertIn("<title>Keycloak on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>Keycloak on Kubernetes run by the Keycloak Operator · kadet-hub</title>", page)
         self.assertIn('<meta name="description" content="Bitnami keycloak Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
-        self.assertIn("<title>Keycloak Operator on Kubernetes without Helm, with Kapitan</title>", self.page("recipes", "keycloak-operator"))  # no room for the suffix
+        self.assertIn("<title>Keycloak Operator on Kubernetes, its chart rebuilt for Kapitan</title>", self.page("recipes", "keycloak-operator"))  # no room for the suffix
         page = self.page("recipes", "nextcloud")
-        self.assertIn("<title>Nextcloud on Kubernetes without Helm, with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>Nextcloud on Kubernetes, its own Helm chart rebuilt in Kapitan</title>", page)  # no room for the suffix
         self.assertIn('<meta name="description" content="Nextcloud Helm chart alternative: Kapitan', page)
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
@@ -1020,7 +1082,7 @@ class Site(unittest.TestCase):
 
     def test_chart_recipe(self):  # CAT-37c
         page = self.page("recipes", "cert-manager")
-        self.assertIn("<title>cert-manager on Kubernetes without Helm, with Kapitan</title>", page)  # no room for the suffix
+        self.assertIn("<title>cert-manager on Kubernetes, matched to its chart object by object</title>", page)  # no room for the suffix
         self.assertIn('<p class="lead">The controller and the webhook, rendered by the kadet-hub <code>kubernetes</code> generator. Derived from the chart.</p>', page)
         self.assertIn(f"<li>Source chart: <code>oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}</code></li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
@@ -1044,7 +1106,7 @@ class Site(unittest.TestCase):
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{CHART_RECIPE_SHA}/cert-manager" data-goatcounter-click="source-repo/recipes/cert-manager">kadet-hub/recipes</a>', page)
         self.assertNotIn("Bitnami", page.split("<main")[1])
         md = self.markdown("recipes", "cert-manager")
-        self.assertTrue(md.startswith("# cert-manager on Kubernetes without Helm, with Kapitan\n\n> The controller and the webhook, rendered by the kadet-hub `kubernetes` generator."))
+        self.assertTrue(md.startswith("# cert-manager on Kubernetes, matched to its chart object by object\n\n> The controller and the webhook, rendered by the kadet-hub `kubernetes` generator."))
         self.assertIn(f"\n- Generators: kubernetes 1.7.0 (sha256:{'d' * 64})\n", md)
         self.assertIn("\n- Option recipes.cert-manager.crds (crds.yml)\n", md)
         self.assertIn(f"ref: {CHART_RECIPE_SHA}\n", md)
@@ -1053,7 +1115,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n## Proof\n\n`check cert-manager --level deploys` on kind.\n", md)
         self.assertNotIn("## Replaces", md)
         page = self.page("recipes", "valkey")  # Replaces after the source and the level
-        self.assertIn("<title>Valkey (Redis) on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>Valkey (Redis) on Kubernetes, the BSD-licensed fork in Kapitan</title>", page)  # no room for the suffix
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>valkey</code> recipe of kadet-hub/examples.", page)
         self.assertIn("<td>StatefulSet <code>valkey</code></td>", page)
         self.assertNotIn("alert(9)</script>", page)
@@ -1064,7 +1126,7 @@ class Site(unittest.TestCase):
 
     def test_compose_recipe(self):  # CAT-37e
         page = self.page("recipes", "miniflux")
-        self.assertIn("<title>Miniflux on Kubernetes without Docker Compose, with Kapitan</title>", page)
+        self.assertIn("<title>Miniflux on Kubernetes, migrated from Docker Compose by Kapitan</title>", page)  # no room for the suffix
         self.assertIn(f'<li>Source: Docker Compose file <a href="{COMPOSE_SOURCE}"><code>miniflux/v2@{"2" * 40}</code></a> '
                       f"(<code>contrib/docker-compose/basic.yml</code>), <code>sha256:{'f' * 64}</code></li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
@@ -1087,7 +1149,7 @@ class Site(unittest.TestCase):
 
     def test_designed_recipe(self):  # CAT-37f
         page = self.page("recipes", "mysql")
-        self.assertIn("<title>MySQL on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>MySQL on Kubernetes from Oracle&#39;s Community Server image</title>", page)  # no room for the suffix
         self.assertIn(f"<li>Source: container image <code>{DESIGN_SOURCE}</code>, recipe designed in kadet-hub</li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
         self.assertNotIn("Source chart", page)
@@ -1174,7 +1236,7 @@ class Site(unittest.TestCase):
         blog = self.page("blog")
         self.assertIn(f'<a href="../blog/{slug}/">Kapitan generators as supply-chain artifacts</a> <time datetime="2026-10-17">', blog)
         self.assertIn('<link rel="alternate" type="application/atom+xml" title="kadet-hub blog" href="../blog/index.xml">', blog)
-        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("blog", "first-platform"))  # CAT-11a
+        self.assertIn("<title>Kapitan on Kubernetes: a first platform from four generators</title>", self.page("guides", "first-platform"))  # CAT-11a
         post = self.page("blog", slug)
         self.assertIn('<time datetime="2026-10-17">17 October 2026</time>', post)
         self.assertIn('<a href="../../guides/checking-custom-resources-against-crds/">', post)  # internal, so no rel=nofollow
@@ -1242,6 +1304,68 @@ class Site(unittest.TestCase):
                 self.assertRegex(sitemap, rf"/{section}/{name}/</loc>\s*<lastmod>{day.group(1)}")
         titles = re.findall(r'<li><a href="[^"]*">([^<]*)</a>', self.page("guides"))
         self.assertEqual(titles, sorted(titles, key=str.lower))  # lastmod does not reorder the list
+
+    def test_titles(self):  # CAT-11j to CAT-11m
+        pages, queries, found = titles(), title_queries(), []
+        by_title = {title: name for name, title in pages.items()}
+        contrast = re.compile(r"\bwithout\b.*\bwith\b|\bnot with\b|,\s*not\b|\binstead of\b|\brather than\b|[\u2013\u2014]", re.IGNORECASE)
+        found += [f"CAT-11j: {name}: {title}" for name, title in pages.items() if contrast.search(title)]
+        lists = [name for name, title in pages.items() if re.search(r":\s[^:]*,[^:]*\b(and|or)\b", title)]
+        if len(lists) > 3:
+            found.append(f"CAT-11l: {len(lists)} titles end in a colon and a list: {', '.join(lists)}")
+        lead = {}
+        for title, qs in queries.items():
+            if title not in by_title:
+                found.append(f"CAT-11m: CAT-11f names {title!r}, which no page has")
+            elif not any(leads(title, q) for q in qs) and not compares(title):
+                found.append(f"CAT-11m: {by_title[title]}: {title!r} leads with none of {qs}")
+            else:
+                lead[title] = max(leads(title, q) for q in qs)
+        phrases = {}
+        for name, title in pages.items():
+            words = title_words(title)
+            n = max(lead.get(title, 0), compares(title))
+            if not n and name.startswith("recipes/") and "kubernetes" in words:  # CAT-37: the software on Kubernetes
+                n = words.index("kubernetes") + 1
+            words = ["_"] * bool(n) + words[n:]
+            for phrase in set(zip(words, words[1:], words[2:])):
+                phrases.setdefault(phrase, []).append(name)
+        found += [f"CAT-11k: {' '.join(p)!r} in {len(names)} titles: {', '.join(names)}" for p, names in sorted(phrases.items()) if len(names) > 2]
+        self.assertFalse(found, "\n" + "\n".join(found))
+
+    def test_moved_posts(self):  # CAT-36e to CAT-36g
+        moved = {}
+        for path in sorted(glob.glob(os.path.join(CONTENT, "guides", "*.md"))):
+            front, name = front_matter(path), os.path.basename(path)[:-3]
+            self.assertNotRegex(front, r"(?m)^date:", name)  # CAT-36e: lastmod only
+            self.assertRegex(front, r"(?m)^layout: prose$", name)
+            aliases = re.search(r"^aliases: \[(.*)\]$", front, re.MULTILINE)
+            for alias in aliases.group(1).split(", ") if aliases else ():
+                old = re.fullmatch(r"/blog/([a-z0-9-]+)/", alias).group(1)
+                moved[old] = name
+        self.assertLessEqual(MOVED_POSTS, set(moved))
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            sitemap = f.read()
+        with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
+            feed = f.read()
+        for old, name in moved.items():
+            url = f"https://kadet-hub.org/guides/{name}/"
+            self.assertFalse(os.path.exists(os.path.join(CONTENT, "blog", old + ".md")), old)
+            page = self.page("blog", old)
+            self.assertIn(f'<meta http-equiv="refresh" content="0; url={url}">', page)  # CAT-36f: instant, so permanent for Google
+            self.assertIn(f'<link rel="canonical" href="{url}">', page)
+            self.assertIn(f"<loc>{url}</loc>", sitemap)
+            self.assertNotIn(f"/blog/{old}/", sitemap)
+            self.assertNotIn(f"/blog/{old}/", feed)
+            self.assertTrue(self.markdown("guides", name).startswith("# "), name)  # CAT-28: the guide's Markdown variant
+        sources = glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True) + glob.glob(os.path.join(HERE, "site", "layouts", "**", "*.*"), recursive=True)
+        for path in sources:  # CAT-36g: no internal link to an alias
+            with open(path, encoding="utf-8") as f:
+                body = f.read()
+            if path.startswith(CONTENT):
+                body = body.split("\n---\n", 1)[1]
+            for old in moved:
+                self.assertNotRegex(body, rf"blog/{old}/", os.path.relpath(path, HERE))
 
     def test_generator_mentions_linked(self):  # CAT-11h
         names = [f[:-5] for f in os.listdir(os.path.join(HERE, "..", "generators"))]
@@ -1618,8 +1742,8 @@ class Site(unittest.TestCase):
         self.assertIn("Helm alternative", title)  # CAT-11f
         desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
         self.assertTrue("Helm" in desc and "Kustomize" in desc, desc)
-        for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan inputs"),
-                            ("bitnami-chart-alternatives", "Bitnami chart alternatives"),
+        for slug, start in (("ingress-nginx-to-gateway-api", "ingress-nginx Gateway API migration"), ("generator-helm-or-jinja2", "Kapitan inputs"),
+                            ("bitnami-chart-alternatives", "Bitnami alternatives"),
                             ("helm-alternatives-for-kubernetes", "Helm alternatives for Kubernetes"),
                             ("talos-machine-config", "Talos machine config"),
                             ("helm-vs-terraform", "Helm vs Terraform for Kubernetes"),
@@ -2201,7 +2325,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
 
     def test_page_from_the_artifact(self):  # CAT-38: README sections, chart, level and generators of the latest listed version
         page = self.page("recipes", "cert-manager")
-        self.assertIn("<title>cert-manager on Kubernetes without Helm, with Kapitan</title>", page)  # same URL and content page
+        self.assertIn("<title>cert-manager on Kubernetes, matched to its chart object by object</title>", page)  # same URL and content page
         self.assertIn(f"<li>Source chart: <code>{ARTIFACT_CHART}</code></li>", page)
         self.assertNotIn("v1.21.2", page)  # main's chart
         self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.1">kubernetes 1.7.1</a> <code>sha256:{"e" * 64}</code></li>', page)

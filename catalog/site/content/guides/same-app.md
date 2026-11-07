@@ -1,8 +1,9 @@
 ---
-title: Helm vs Kustomize vs Kapitan on one Kubernetes app
-date: 2026-10-21
-topics: [kapitan, helm, kustomize, comparison]
+title: "Helm vs Kustomize vs Kapitan: where each saves work on one app"
+layout: prose
 description: One app, two environments, three tools, matching manifests. Where Kapitan saves work and where Helm and Kustomize stay ahead, checked by a script.
+lastmod: 2026-11-07
+aliases: [/blog/same-app/]
 ---
 
 Comparisons between Helm, Kustomize and [Kapitan](/glossary/#kapitan) usually compare features.

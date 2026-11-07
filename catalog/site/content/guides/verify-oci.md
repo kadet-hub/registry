@@ -1,8 +1,9 @@
 ---
 title: cosign verify-attestation vs gh attestation verify
-date: 2026-10-21
-topics: [supply chain, sigstore, verification]
+layout: prose
 description: Verify SLSA provenance attestations on OCI artifacts with gh and cosign, using kadet-hub's signed index, real digests and the failures that matter.
+lastmod: 2026-11-07
+aliases: [/blog/verify-oci/]
 ---
 
 To verify an [OCI artifact](/glossary/#oci-artifact) that carries GitHub [artifact attestations](/glossary/#attestation), run
@@ -10,7 +11,7 @@ To verify an [OCI artifact](/glossary/#oci-artifact) that carries GitHub [artifa
 workflow identity. gh reads the Sigstore bundles from GitHub's attestation
 API, which has them for every kadet-hub [generator](/glossary/#generator) version. cosign reads
 them from the registry, where the release workflow has pushed them since
-17 October 2026. This post walks through both on a real generator, shows
+17 October 2026. This guide walks through both on a real generator, shows
 the failures you want to see, and ends with a script that does it in one
 call. Why a generator needs this at all is covered in
 [supply-chain security for Kapitan generators](/guides/supply-chain-security-for-kapitan-generators/).

@@ -1,6 +1,6 @@
 ---
-title: "external-dns and PowerDNS on Kubernetes with Kapitan"
+title: "external-dns and PowerDNS on Kubernetes as one Kapitan recipe"
 description: "Bitnami external-dns Helm chart alternative: Kapitan inventory classes for external-dns and PowerDNS on Kubernetes, rebuilt from the project's Helm chart."
 layout: chart-recipe
-lastmod: 2026-10-25
+lastmod: 2026-11-07
 ---

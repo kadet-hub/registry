@@ -1,5 +1,5 @@
 ---
-title: "KCL vs Kapitan for Kubernetes: typed schemas and OCI modules"
+title: "KCL vs Kapitan: typed schemas and locked modules on one app"
 date: 2026-11-14
 topics: [kapitan, comparison, validation, supply chain]
 description: "KCL and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value, and a wrong checksum for the k8s module in kcl.mod.lock."
@@ -18,7 +18,7 @@ module carries schemas for the kinds of the Kubernetes API.
 
 The
 [example](https://github.com/kadet-hub/examples/tree/main/kcl-vs-kapitan)
-renders the app of the [Helm vs Kustomize vs Kapitan post](/blog/same-app/)
+renders the app of the [Helm vs Kustomize vs Kapitan guide](/guides/same-app/)
 with both tools. Its `check` fails unless the manifests match for each
 environment. It also tests a misspelled value on both sides and what kcl
 does with the checksum in `kcl.mod.lock`. CI runs `check` on every change
@@ -34,7 +34,7 @@ prod, PodDisruptionBudgets in prod only. The api's ConfigMap carries
 
 - kcl 0.13.3 with the `k8s` module 1.36 from `ghcr.io/kcl-lang/k8s`.
 - Kapitan 0.36.3 with the kubernetes generator 1.14.0 and the inventory of
-  the [cdk8s vs Tanka vs Kapitan post](/blog/config-tools/).
+  the [cdk8s vs Tanka vs Kapitan guide](/guides/config-tools/).
 
 `check` sorts the objects and their keys and drops one label,
 `app.kubernetes.io/managed-by`, which only the generator sets. Nothing
