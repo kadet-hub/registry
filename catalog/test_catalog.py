@@ -877,9 +877,9 @@ class Site(unittest.TestCase):
         for link in ("generator-template/blob/main/AGENTS.md", "docs/authors.md", "policy/imports.txt", "policy/tags.yaml", "kadet-hub.org/glossary/"):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
-        self.assertIn("\n- [Kafka on Kubernetes with Kapitan](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
+        self.assertIn("\n- [Kafka on Kubernetes in KRaft mode under Strimzi](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
         self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 55)
-        self.assertIn("\n- [cert-manager on Kubernetes without Helm, with Kapitan](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
+        self.assertIn("\n- [cert-manager on Kubernetes, matched to its chart object by object](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
@@ -1017,19 +1017,19 @@ class Site(unittest.TestCase):
         self.assertIn('<meta name="description" content="Bitnami postgresql Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>postgresql</code> recipe of kadet-hub/examples.", page)
-        self.assertIn("<title>CloudNativePG on Kubernetes without Helm, with Kapitan</title>", self.page("recipes", "cnpg"))  # no room for the suffix
+        self.assertIn("<title>CloudNativePG on Kubernetes: the operator from Kapitan classes</title>", self.page("recipes", "cnpg"))  # no room for the suffix
         self.assertIn("<title>MongoDB on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))
         self.assertIn("<title>PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "powerdns"))
-        self.assertIn("<title>external-dns and PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "external-dns-powerdns"))
-        self.assertIn("<title>Kafka on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "kafka"))
+        self.assertIn("<title>external-dns and PowerDNS on Kubernetes as one Kapitan recipe</title>", self.page("recipes", "external-dns-powerdns"))  # no room for the suffix
+        self.assertIn("<title>Kafka on Kubernetes in KRaft mode under Strimzi · kadet-hub</title>", self.page("recipes", "kafka"))
         self.assertIn("<title>Strimzi on Kubernetes without Helm, with Kapitan · kadet-hub</title>", self.page("recipes", "strimzi"))
         self.assertIn("<title>RabbitMQ on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq"))
         self.assertIn("<title>RabbitMQ Cluster Operator on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq-cluster-operator"))
         page = self.page("recipes", "keycloak")
-        self.assertIn("<title>Keycloak on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>Keycloak on Kubernetes run by the Keycloak Operator · kadet-hub</title>", page)
         self.assertIn('<meta name="description" content="Bitnami keycloak Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
-        self.assertIn("<title>Keycloak Operator on Kubernetes without Helm, with Kapitan</title>", self.page("recipes", "keycloak-operator"))  # no room for the suffix
+        self.assertIn("<title>Keycloak Operator on Kubernetes, its chart rebuilt for Kapitan</title>", self.page("recipes", "keycloak-operator"))  # no room for the suffix
         page = self.page("recipes", "nextcloud")
         self.assertIn("<title>Nextcloud on Kubernetes without Helm, with Kapitan · kadet-hub</title>", page)
         self.assertIn('<meta name="description" content="Nextcloud Helm chart alternative: Kapitan', page)
@@ -1087,7 +1087,7 @@ class Site(unittest.TestCase):
 
     def test_chart_recipe(self):  # CAT-37c
         page = self.page("recipes", "cert-manager")
-        self.assertIn("<title>cert-manager on Kubernetes without Helm, with Kapitan</title>", page)  # no room for the suffix
+        self.assertIn("<title>cert-manager on Kubernetes, matched to its chart object by object</title>", page)  # no room for the suffix
         self.assertIn('<p class="lead">The controller and the webhook, rendered by the kadet-hub <code>kubernetes</code> generator. Derived from the chart.</p>', page)
         self.assertIn(f"<li>Source chart: <code>oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}</code></li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
@@ -1111,7 +1111,7 @@ class Site(unittest.TestCase):
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes/tree/{CHART_RECIPE_SHA}/cert-manager" data-goatcounter-click="source-repo/recipes/cert-manager">kadet-hub/recipes</a>', page)
         self.assertNotIn("Bitnami", page.split("<main")[1])
         md = self.markdown("recipes", "cert-manager")
-        self.assertTrue(md.startswith("# cert-manager on Kubernetes without Helm, with Kapitan\n\n> The controller and the webhook, rendered by the kadet-hub `kubernetes` generator."))
+        self.assertTrue(md.startswith("# cert-manager on Kubernetes, matched to its chart object by object\n\n> The controller and the webhook, rendered by the kadet-hub `kubernetes` generator."))
         self.assertIn(f"\n- Generators: kubernetes 1.7.0 (sha256:{'d' * 64})\n", md)
         self.assertIn("\n- Option recipes.cert-manager.crds (crds.yml)\n", md)
         self.assertIn(f"ref: {CHART_RECIPE_SHA}\n", md)
@@ -1131,7 +1131,7 @@ class Site(unittest.TestCase):
 
     def test_compose_recipe(self):  # CAT-37e
         page = self.page("recipes", "miniflux")
-        self.assertIn("<title>Miniflux on Kubernetes without Docker Compose, with Kapitan</title>", page)
+        self.assertIn("<title>Miniflux on Kubernetes, migrated from Docker Compose by Kapitan</title>", page)  # no room for the suffix
         self.assertIn(f'<li>Source: Docker Compose file <a href="{COMPOSE_SOURCE}"><code>miniflux/v2@{"2" * 40}</code></a> '
                       f"(<code>contrib/docker-compose/basic.yml</code>), <code>sha256:{'f' * 64}</code></li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
@@ -2335,7 +2335,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
 
     def test_page_from_the_artifact(self):  # CAT-38: README sections, chart, level and generators of the latest listed version
         page = self.page("recipes", "cert-manager")
-        self.assertIn("<title>cert-manager on Kubernetes without Helm, with Kapitan</title>", page)  # same URL and content page
+        self.assertIn("<title>cert-manager on Kubernetes, matched to its chart object by object</title>", page)  # same URL and content page
         self.assertIn(f"<li>Source chart: <code>{ARTIFACT_CHART}</code></li>", page)
         self.assertNotIn("v1.21.2", page)  # main's chart
         self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.1">kubernetes 1.7.1</a> <code>sha256:{"e" * 64}</code></li>', page)
