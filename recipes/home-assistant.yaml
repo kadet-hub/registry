@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: home-assistant
+  tag: home-assistant-v1.0.0
+  sha: a352d9eaf8faf201b9a11819281dc678ee9c1473
+owners: [3042152]
+exceptions: []
