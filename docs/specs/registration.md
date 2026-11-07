@@ -204,7 +204,7 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     proposed ruff 0.17.3 and semgrep 1.183.0 for the scan.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
     #306; recipe entries: #378; branch and title per entry: #381; kind,
-    kubectl and uv: #389; golang: #581; lock headers: this change
+    kubectl and uv: #389; golang: #581; lock headers: #633
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.
