@@ -1954,7 +1954,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_compose_recipe`, `test_recipes`, `test_recipe_file_missing_fails_the_build`)
   - Since: #343; paperless-ngx, pihole, searxng, uptime-kuma and
     vaultwarden: #507; umami: #519; actual, ejabberd and memos: #577;
-    navidrome: #592
+    navidrome: #592; jitsi-meet: #635
 
 - CAT-37f: A CAT-37c page whose README `Source:` line is an image
   reference MUST show the source as the container image the recipe is
