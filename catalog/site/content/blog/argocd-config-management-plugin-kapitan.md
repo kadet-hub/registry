@@ -387,5 +387,5 @@ Application.
 
 kadet-hub's consumer workflow compiles in a gVisor sandbox and checks the
 output before anything reaches the cluster, as in the
-[first platform post](/blog/first-platform/). The sidecar runs none of
+[first platform guide](/guides/first-platform/). The sidecar runs none of
 those checks.

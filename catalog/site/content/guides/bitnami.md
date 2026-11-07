@@ -1,8 +1,9 @@
 ---
-title: "Bitnami PostgreSQL chart alternatives: CloudNativePG and Kapitan"
-date: 2026-10-21
-topics: [helm, bitnami, generators]
+title: "Bitnami alternative for Postgres: moving to CloudNativePG"
+layout: prose
 description: "Bitnami PostgreSQL chart alternatives, now that the free charts and images get no updates: from the upstream operator chart to a verified Kapitan generator."
+lastmod: 2026-11-07
+aliases: [/blog/bitnami/]
 ---
 
 If you installed PostgreSQL, Redis or nginx from a Bitnami chart, the
