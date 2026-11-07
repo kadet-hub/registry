@@ -486,6 +486,64 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
     return out
 
 
+# CAT-36e: the posts that moved to /guides/ on 2026-11-07; each keeps its old URL as an alias (CAT-36f).
+MOVED_POSTS = {"actions-runner-controller-dind", "apiserver-dry-run", "bitnami", "cert-manager-helm-chart-patches", "config-tools",
+               "convert-helm-chart-to-kapitan", "docker-compose-kubernetes", "external-secrets-operator-vault-kapitan", "first-platform",
+               "gvisor-ci", "helm-chart-vs-kapitan-inventory", "helm-chart-vs-operator", "helmfile-vs-kapitan", "kapitan-multiple-environments",
+               "kcl-vs-kapitan", "kindest-node-images", "kube-prometheus-stack-dashboards", "kustomize-delete-resource-helm-chart",
+               "kustomize-json-patch-helm-chart", "kustomize-patch-env-helm-chart", "kyverno-cli-conftest-ci", "nextcloud-helm-chart-bitnami",
+               "renovate-automerge-required-reviews", "same-app", "timoni-vs-kapitan", "verify-oci"}
+CONTENT = os.path.join(HERE, "site", "content")
+CONNECTIVES = {"a", "an", "the", "on", "in", "for", "with", "to", "of"}  # CAT-11m: left out when a title is matched with a query
+
+
+def front_matter(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read().split("\n---\n", 1)[0]
+
+
+def titles():
+    """CAT-11j: the hand-written title of every page under content/, by its path without .md."""
+    found = {}
+    for path in sorted(glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True)):
+        m = re.search(r'^title: "?(.*?)"?$', front_matter(path), re.MULTILINE)
+        if m:
+            found[os.path.relpath(path, CONTENT)[:-3]] = m.group(1)
+    return found
+
+
+def title_words(text):
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def leads(title, query):
+    """CAT-11m: the number of the title's words that make up the query, 0 when it does not lead with it."""
+    want = "".join(w for w in title_words(query) if w not in CONNECTIVES)
+    got = ""
+    for i, w in enumerate(title_words(title), 1):
+        got += "" if w in CONNECTIVES else w
+        if len(got) >= len(want):
+            return i if got.startswith(want) else 0
+    return 0
+
+
+def title_queries():
+    """CAT-11f: every title the table names, with the queries of the rows that name it; "same guide" or "same post" is the row above."""
+    with open(os.path.join(HERE, "..", "docs", "specs", "catalog.md"), encoding="utf-8") as f:
+        table = f.read().split("\n- CAT-11f:", 1)[1].split("\n- CAT-", 1)[0]
+    found, above = {}, []
+    for query, pages in re.findall(r"^ *\| (.+) \| (.+) \|$", table, re.MULTILINE):
+        if query == "Query":
+            continue
+        also = [a for group in re.findall(r"\(also ([^)]*)\)", query) for a in re.findall(r'"([^"]+)"', group)]
+        query = re.sub(r"\((also|checked|Google)[^)]*\)", "", query)
+        named = re.findall(r'(?:guide|blog post) "([^"]+)"', pages) or (above if re.search(r"\bsame (guide|post)\b", pages) else [])
+        for title in named:
+            found.setdefault(title, []).extend([q.strip() for q in query.split(",") if q.strip()] + also)
+        above = named or above
+    return found
+
+
 class Site(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -1242,6 +1300,67 @@ class Site(unittest.TestCase):
                 self.assertRegex(sitemap, rf"/{section}/{name}/</loc>\s*<lastmod>{day.group(1)}")
         titles = re.findall(r'<li><a href="[^"]*">([^<]*)</a>', self.page("guides"))
         self.assertEqual(titles, sorted(titles, key=str.lower))  # lastmod does not reorder the list
+
+    def test_titles(self):  # CAT-11j to CAT-11m
+        pages, queries, found = titles(), title_queries(), []
+        by_title = {title: name for name, title in pages.items()}
+        contrast = re.compile(r"\bwithout\b.*\bwith\b|\bnot with\b|,\s*not\b|\binstead of\b|\brather than\b|[\u2013\u2014]", re.IGNORECASE)
+        found += [f"CAT-11j: {name}: {title}" for name, title in pages.items() if contrast.search(title)]
+        lists = [name for name, title in pages.items() if re.search(r":\s[^:]*,[^:]*\b(and|or)\b", title)]
+        if len(lists) > 3:
+            found.append(f"CAT-11l: {len(lists)} titles end in a colon and a list: {', '.join(lists)}")
+        lead = {}
+        for title, qs in queries.items():
+            if title not in by_title:
+                found.append(f"CAT-11m: CAT-11f names {title!r}, which no page has")
+            elif not any(leads(title, q) for q in qs):
+                found.append(f"CAT-11m: {by_title[title]}: {title!r} leads with none of {qs}")
+            else:
+                lead[title] = max(leads(title, q) for q in qs)
+        phrases = {}
+        for name, title in pages.items():
+            words = title_words(title)
+            n = lead.get(title, 0)
+            if not n and name.startswith("recipes/") and "kubernetes" in words:  # CAT-37: the software on Kubernetes
+                n = words.index("kubernetes") + 1
+            words = ["_"] * bool(n) + words[n:]
+            for phrase in set(zip(words, words[1:], words[2:])):
+                phrases.setdefault(phrase, []).append(name)
+        found += [f"CAT-11k: {' '.join(p)!r} in {len(names)} titles: {', '.join(names)}" for p, names in sorted(phrases.items()) if len(names) > 2]
+        self.assertFalse(found, "\n" + "\n".join(found))
+
+    def test_moved_posts(self):  # CAT-36e to CAT-36g
+        moved = {}
+        for path in sorted(glob.glob(os.path.join(CONTENT, "guides", "*.md"))):
+            front, name = front_matter(path), os.path.basename(path)[:-3]
+            self.assertNotRegex(front, r"(?m)^date:", name)  # CAT-36e: lastmod only
+            self.assertRegex(front, r"(?m)^layout: prose$", name)
+            for alias in re.findall(r"^aliases: \[(.*)\]$", front, re.MULTILINE)[0].split(", ") if "\naliases:" in front else ():
+                old = re.fullmatch(r"/blog/([a-z0-9-]+)/", alias).group(1)
+                moved[old] = name
+        self.assertLessEqual(MOVED_POSTS, set(moved))
+        with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
+            sitemap = f.read()
+        with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
+            feed = f.read()
+        for old, name in moved.items():
+            url = f"https://kadet-hub.org/guides/{name}/"
+            self.assertFalse(os.path.exists(os.path.join(CONTENT, "blog", old + ".md")), old)
+            page = self.page("blog", old)
+            self.assertIn(f'<meta http-equiv="refresh" content="0; url={url}">', page)  # CAT-36f: instant, so permanent for Google
+            self.assertIn(f'<link rel="canonical" href="{url}">', page)
+            self.assertIn(f"<loc>{url}</loc>", sitemap)
+            self.assertNotIn(f"/blog/{old}/", sitemap)
+            self.assertNotIn(f"/blog/{old}/", feed)
+            self.assertTrue(self.markdown("guides", name).startswith("# "), name)  # CAT-28: the guide's Markdown variant
+        sources = glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True) + glob.glob(os.path.join(HERE, "site", "layouts", "**", "*.*"), recursive=True)
+        for path in sources:  # CAT-36g: no internal link to an alias
+            with open(path, encoding="utf-8") as f:
+                body = f.read()
+            if path.startswith(CONTENT):
+                body = body.split("\n---\n", 1)[1]
+            for old in moved:
+                self.assertNotRegex(body, rf"blog/{old}/", os.path.relpath(path, HERE))
 
     def test_generator_mentions_linked(self):  # CAT-11h
         names = [f[:-5] for f in os.listdir(os.path.join(HERE, "..", "generators"))]
