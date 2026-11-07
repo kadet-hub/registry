@@ -1013,25 +1013,25 @@ class Site(unittest.TestCase):
         self.assertRegex(chart, r'recipes/rabbitmq-cluster-operator/">.*?Proof level: <code>deploys</code></p></li>')  # CAT-37g
         self.assertIn('href="../guides/bitnami-chart-alternatives/">Bitnami chart alternatives</a> lists', index)  # CAT-11f: one page per query
         page = self.page("recipes", "postgresql")
-        self.assertIn("<title>PostgreSQL on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>PostgreSQL on Kubernetes: CloudNativePG clusters from Kapitan</title>", page)  # no room for the suffix
         self.assertIn('<meta name="description" content="Bitnami postgresql Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>postgresql</code> recipe of kadet-hub/examples.", page)
         self.assertIn("<title>CloudNativePG on Kubernetes: the operator from Kapitan classes</title>", self.page("recipes", "cnpg"))  # no room for the suffix
-        self.assertIn("<title>MongoDB on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "mongodb"))
-        self.assertIn("<title>PowerDNS on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "powerdns"))
+        self.assertIn("<title>MongoDB on Kubernetes with Community Server, as a Kapitan class</title>", self.page("recipes", "mongodb"))  # no room for the suffix
+        self.assertIn("<title>PowerDNS on Kubernetes, the Authoritative Server in Kapitan</title>", self.page("recipes", "powerdns"))  # no room for the suffix
         self.assertIn("<title>external-dns and PowerDNS on Kubernetes as one Kapitan recipe</title>", self.page("recipes", "external-dns-powerdns"))  # no room for the suffix
         self.assertIn("<title>Kafka on Kubernetes in KRaft mode under Strimzi · kadet-hub</title>", self.page("recipes", "kafka"))
-        self.assertIn("<title>Strimzi on Kubernetes without Helm, with Kapitan · kadet-hub</title>", self.page("recipes", "strimzi"))
-        self.assertIn("<title>RabbitMQ on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq"))
-        self.assertIn("<title>RabbitMQ Cluster Operator on Kubernetes with Kapitan · kadet-hub</title>", self.page("recipes", "rabbitmq-cluster-operator"))
+        self.assertIn("<title>Strimzi on Kubernetes, its Kafka operator chart in Kapitan</title>", self.page("recipes", "strimzi"))  # no room for the suffix
+        self.assertIn("<title>RabbitMQ on Kubernetes through the Cluster Operator and Kapitan</title>", self.page("recipes", "rabbitmq"))  # no room for the suffix
+        self.assertIn("<title>RabbitMQ Cluster Operator on Kubernetes from its release manifest</title>", self.page("recipes", "rabbitmq-cluster-operator"))  # no room for the suffix
         page = self.page("recipes", "keycloak")
         self.assertIn("<title>Keycloak on Kubernetes run by the Keycloak Operator · kadet-hub</title>", page)
         self.assertIn('<meta name="description" content="Bitnami keycloak Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
         self.assertIn("<title>Keycloak Operator on Kubernetes, its chart rebuilt for Kapitan</title>", self.page("recipes", "keycloak-operator"))  # no room for the suffix
         page = self.page("recipes", "nextcloud")
-        self.assertIn("<title>Nextcloud on Kubernetes without Helm, with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>Nextcloud on Kubernetes, its own Helm chart rebuilt in Kapitan</title>", page)  # no room for the suffix
         self.assertIn('<meta name="description" content="Nextcloud Helm chart alternative: Kapitan', page)
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "index.md")))
         guide = self.page("guides", "bitnami-chart-alternatives")
@@ -1120,7 +1120,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n## Proof\n\n`check cert-manager --level deploys` on kind.\n", md)
         self.assertNotIn("## Replaces", md)
         page = self.page("recipes", "valkey")  # Replaces after the source and the level
-        self.assertIn("<title>Valkey (Redis) on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>Valkey (Redis) on Kubernetes, the BSD-licensed fork in Kapitan</title>", page)  # no room for the suffix
         self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>valkey</code> recipe of kadet-hub/examples.", page)
         self.assertIn("<td>StatefulSet <code>valkey</code></td>", page)
         self.assertNotIn("alert(9)</script>", page)
@@ -1154,7 +1154,7 @@ class Site(unittest.TestCase):
 
     def test_designed_recipe(self):  # CAT-37f
         page = self.page("recipes", "mysql")
-        self.assertIn("<title>MySQL on Kubernetes with Kapitan · kadet-hub</title>", page)
+        self.assertIn("<title>MySQL on Kubernetes from Oracle&#39;s Community Server image</title>", page)  # no room for the suffix
         self.assertIn(f"<li>Source: container image <code>{DESIGN_SOURCE}</code>, recipe designed in kadet-hub</li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, deployed on kind and smoke tested by the kadet-hub/recipes CI</li>", page)
         self.assertNotIn("Source chart", page)
@@ -1312,7 +1312,6 @@ class Site(unittest.TestCase):
 
     def test_titles(self):  # CAT-11j to CAT-11m
         pages, descriptions, queries, found = titles(), titles("description"), title_queries(), []
-        pages = {name: title for name, title in pages.items() if not name.startswith("recipes/")}  # until the recipe titles change
         by_title = {title: name for name, title in pages.items()}
         contrast = re.compile(r"\bwithout\b.*\bwith\b|\bnot with\b|,\s*not\b|\binstead of\b|\brather than\b|[\u2013\u2014]", re.IGNORECASE)
         found += [f"CAT-11j: {name}: {title}" for name, title in pages.items() if contrast.search(title)]
