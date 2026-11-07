@@ -1335,7 +1335,8 @@ class Site(unittest.TestCase):
             front, name = front_matter(path), os.path.basename(path)[:-3]
             self.assertNotRegex(front, r"(?m)^date:", name)  # CAT-36e: lastmod only
             self.assertRegex(front, r"(?m)^layout: prose$", name)
-            for alias in re.findall(r"^aliases: \[(.*)\]$", front, re.MULTILINE)[0].split(", ") if "\naliases:" in front else ():
+            aliases = re.search(r"^aliases: \[(.*)\]$", front, re.MULTILINE)
+            for alias in aliases.group(1).split(", ") if aliases else ():
                 old = re.fullmatch(r"/blog/([a-z0-9-]+)/", alias).group(1)
                 moved[old] = name
         self.assertLessEqual(MOVED_POSTS, set(moved))
