@@ -487,12 +487,10 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
 
 
 # CAT-36e: the posts that moved to /guides/ on 2026-11-07; each keeps its old URL as an alias (CAT-36f).
-MOVED_POSTS = {"actions-runner-controller-dind", "apiserver-dry-run", "bitnami", "cert-manager-helm-chart-patches", "config-tools",
-               "convert-helm-chart-to-kapitan", "docker-compose-kubernetes", "external-secrets-operator-vault-kapitan", "first-platform",
-               "gvisor-ci", "helm-chart-vs-kapitan-inventory", "helm-chart-vs-operator", "helmfile-vs-kapitan", "kapitan-multiple-environments",
-               "kcl-vs-kapitan", "kindest-node-images", "kube-prometheus-stack-dashboards", "kustomize-delete-resource-helm-chart",
-               "kustomize-json-patch-helm-chart", "kustomize-patch-env-helm-chart", "kyverno-cli-conftest-ci", "nextcloud-helm-chart-bitnami",
-               "renovate-automerge-required-reviews", "same-app", "timoni-vs-kapitan", "verify-oci"}
+MOVED_POSTS = {"actions-runner-controller-dind", "apiserver-dry-run", "bitnami", "cert-manager-helm-chart-patches", "config-tools", "first-platform",
+               "gvisor-ci", "helm-chart-vs-kapitan-inventory", "helm-chart-vs-operator", "kube-prometheus-stack-dashboards",
+               "kustomize-delete-resource-helm-chart", "kustomize-json-patch-helm-chart", "kustomize-patch-env-helm-chart",
+               "renovate-automerge-required-reviews", "same-app", "verify-oci"}
 CONTENT = os.path.join(HERE, "site", "content")
 CONNECTIVES = {"a", "an", "the", "on", "in", "for", "with", "to", "of"}  # CAT-11m: left out when a title is matched with a query
 
@@ -525,6 +523,12 @@ def leads(title, query):
         if len(got) >= len(want):
             return i if got.startswith(want) else 0
     return 0
+
+
+def compares(title):
+    """CAT-11a: the number of words of a comparison's "<A> vs <B>" up to the first colon or comma, 0 for any other title."""
+    head = re.split(r"[:,]", title, maxsplit=1)[0]
+    return len(title_words(head)) if " vs " in head else 0
 
 
 def title_queries():
@@ -875,7 +879,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 38)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 28)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31
@@ -1313,14 +1317,14 @@ class Site(unittest.TestCase):
         for title, qs in queries.items():
             if title not in by_title:
                 found.append(f"CAT-11m: CAT-11f names {title!r}, which no page has")
-            elif not any(leads(title, q) for q in qs):
+            elif not any(leads(title, q) for q in qs) and not compares(title):
                 found.append(f"CAT-11m: {by_title[title]}: {title!r} leads with none of {qs}")
             else:
                 lead[title] = max(leads(title, q) for q in qs)
         phrases = {}
         for name, title in pages.items():
             words = title_words(title)
-            n = lead.get(title, 0)
+            n = max(lead.get(title, 0), compares(title))
             if not n and name.startswith("recipes/") and "kubernetes" in words:  # CAT-37: the software on Kubernetes
                 n = words.index("kubernetes") + 1
             words = ["_"] * bool(n) + words[n:]

@@ -1,15 +1,14 @@
 ---
 title: "Docker Compose and Kubernetes files compiled from one class"
-layout: prose
+date: 2026-11-21
+topics: [kapitan, docker compose, comparison]
 description: "Miniflux and PostgreSQL from one Kapitan inventory, deployed to kind and started with docker compose up, and what does not map between the two."
-lastmod: 2026-11-07
-aliases: [/blog/docker-compose-kubernetes/]
 ---
 
 Many self-hosted apps ship a Docker Compose file. Teams that run some of
 them on a Docker host and others on Kubernetes end up with a Compose file
 and a set of manifests for the same app, with the image, the environment
-and the passwords written twice. This guide keeps one
+and the passwords written twice. This post keeps one
 [Kapitan](/glossary/#kapitan) [inventory](/glossary/#inventory) with two
 [targets](/glossary/#target) that include the same
 [class](/glossary/#class). One compiles Kubernetes manifests, the other a
@@ -22,7 +21,7 @@ new [kind](/glossary/#kind) cluster and starts the second with
 `docker compose up` on the CI runner, on every change and once a week.
 The app is Miniflux, a feed reader, with its PostgreSQL database, from the
 [recipe](/glossary/#recipe) [miniflux](/recipes/miniflux/) 1.0.0. That
-recipe was migrated from Miniflux's own Compose file, so the guide also
+recipe was migrated from Miniflux's own Compose file, so the post also
 shows how much of that file comes back.
 
 ## The shared class {#shared}

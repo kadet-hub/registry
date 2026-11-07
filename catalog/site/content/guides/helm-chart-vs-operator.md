@@ -1,5 +1,5 @@
 ---
-title: "Helm chart vs operator for PostgreSQL when the primary dies"
+title: "Helm chart vs operator: PostgreSQL failover and config changes"
 layout: prose
 description: "Helm chart vs operator, measured: PostgreSQL from the Bitnami chart and from CloudNativePG on kind, with write gaps on a lost primary and a config change."
 lastmod: 2026-11-07

@@ -1,15 +1,14 @@
 ---
 title: "Kubernetes multiple environments with a diff for every promotion"
-layout: prose
+date: 2026-11-19
+topics: [kapitan, helm, kustomize, ci]
 description: "Kubernetes multiple environments from one Kapitan inventory: dev, stage and prod on two clusters, the compile diff of a promotion, and a CI guard."
-lastmod: 2026-11-07
-aliases: [/blog/kapitan-multiple-environments/]
 ---
 
 Most teams run the same app more than once: dev for trying things, stage
 for rehearsing the release, prod for users. The three should differ in a
 few values, such as the hostname or the number of replicas, and in nothing
-else. This guide builds that with one [Kapitan](/glossary/#kapitan)
+else. This post builds that with one [Kapitan](/glossary/#kapitan)
 [inventory](/glossary/#inventory) for three environments on two clusters.
 It shows where each value is set, which environments a change reaches,
 and a CI check that fails when prod drifts from stage.
@@ -291,9 +290,9 @@ With the probe on it, `rollout status` waits through the restarts.
 
 ## Helm values files and Kustomize overlays {#helm-kustomize}
 
-[Helm vs Kustomize and Kapitan, diffed on one app](/guides/same-app/)
+[Helm vs Kustomize vs Kapitan](/guides/same-app/)
 builds dev and prod of the same app with all three tools and compares
-the output. The [Helmfile guide](/guides/helmfile-vs-kapitan/#environments)
+the output. [Helmfile vs Kapitan](/blog/helmfile-vs-kapitan/#environments)
 does the same for environment files. Only what changes with a third
 environment and a second cluster is added here.
 

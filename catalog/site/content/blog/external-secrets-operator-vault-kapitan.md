@@ -1,9 +1,8 @@
 ---
 title: "External Secrets Operator with Vault AppRole and Kapitan refs"
-layout: prose
+date: 2026-11-17
+topics: [kapitan, security, operators]
 description: "Which secret goes in a Kapitan ref and which in Vault: the AppRole secret ID as a gpg ref, an admin token synced from Vault and rotated, tested on kind."
-lastmod: 2026-11-07
-aliases: [/blog/external-secrets-operator-vault-kapitan/]
 ---
 
 A [Kapitan](/glossary/#kapitan) project can keep every secret as a
@@ -11,7 +10,7 @@ A [Kapitan](/glossary/#kapitan) project can keep every secret as a
 External Secrets Operator takes the other route. It reads a secret
 manager such as Vault from inside the cluster and writes Kubernetes
 Secrets from it. Most clusters end up with both, and then each secret
-needs a place. This guide puts one app on both and shows where each of its
+needs a place. This post puts one app on both and shows where each of its
 secrets goes and why.
 
 The app is Vaultwarden, from the [vaultwarden](/recipes/vaultwarden/)

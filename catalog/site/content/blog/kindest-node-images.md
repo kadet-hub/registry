@@ -1,9 +1,8 @@
 ---
 title: "kindest/node images: picking the version for your kind release"
-layout: prose
+date: 2026-11-06
+topics: [ci, testing, supply chain]
 description: "A kindest/node image belongs to the kind release that built it. Where to find its digest, how to pin it, and a CI matrix that follows kind's releases."
-lastmod: 2026-11-07
-aliases: [/blog/kindest-node-images/]
 ---
 
 A `kindest/node` image is the container image that kind runs as a

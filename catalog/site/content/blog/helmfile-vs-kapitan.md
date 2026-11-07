@@ -1,13 +1,12 @@
 ---
-title: "Helmfile environments and release order, rebuilt in Kapitan"
-layout: prose
+title: "Helmfile vs Kapitan: per-environment values and release order"
+date: 2026-11-12
+topics: [helmfile, kapitan, helm, comparison]
 description: "Helmfile environments, secrets and needs next to a Kapitan inventory: podinfo and Valkey from their charts render the same manifests for dev and prod."
-lastmod: 2026-11-07
-aliases: [/blog/helmfile-vs-kapitan/]
 ---
 
 A cluster that runs several upstream Helm charts, each with values per
-environment, is the setup Helmfile is usually picked for. This guide puts
+environment, is the setup Helmfile is usually picked for. This post puts
 the same setup into a [Kapitan](/glossary/#kapitan)
 [inventory](/glossary/#inventory) and compares the two where they differ:
 how environments are written, where the password goes, the order of

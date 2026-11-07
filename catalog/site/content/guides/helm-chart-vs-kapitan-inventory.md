@@ -1,5 +1,5 @@
 ---
-title: "Write your own Helm chart? Three rebuilt as Kapitan inventories"
+title: "Writing a Helm chart vs Kapitan: three charts rebuilt"
 layout: prose
 description: "Writing a Helm chart vs a Kapitan inventory, measured on metrics-server, cert-manager and kube-prometheus-stack: equal objects and behaviour on kind."
 lastmod: 2026-11-07

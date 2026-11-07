@@ -1,5 +1,5 @@
 ---
-title: "Argo CD vs Flux: sync time, drift and install size measured"
+title: "Argo CD vs Flux: sync time and drift handling measured"
 layout: prose
 description: Argo CD vs Flux on one app from one Git commit, with install size, sync time and drift handling measured on kind, and where Helm and Kustomize fit in.
 lastmod: 2026-11-07

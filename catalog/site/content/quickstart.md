@@ -16,7 +16,7 @@ and nothing keeps a release in the cluster.
 The guide on [writing your own Helm chart](/guides/helm-chart-vs-kapitan-inventory/)
 rebuilds metrics-server, cert-manager and kube-prometheus-stack as one
 inventory and compares the objects on kind.
-[Helm vs Kustomize and Kapitan, diffed on one app](/guides/same-app/)
+[Helm vs Kustomize vs Kapitan](/guides/same-app/)
 renders the same app with all three tools for two environments. For a
 Bitnami chart, [Bitnami chart alternatives](/guides/bitnami-chart-alternatives/)
 names the replacement and the recipe where there is one.
@@ -26,7 +26,7 @@ names the replacement and the recipe where there is one.
 The recipe's classes play the part of a base, and the target plays the
 part of an overlay: the inventory merges the classes in order, and the
 target's `parameters` override them.
-[Helm vs Kustomize and Kapitan, diffed on one app](/guides/same-app/)
+[Helm vs Kustomize vs Kapitan](/guides/same-app/)
 compares overlays for two environments with the same app as an inventory.
 
 A field that neither the recipe nor a chart sets is changed after
