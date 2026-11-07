@@ -157,6 +157,16 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
   also returns digests, a commit SHA, which it would write into a
   `_SHA256` field.
 
+  The Python locks, `requirements.txt` under `scan/`, `sandbox/`,
+  `sandbox/krab/` and `.clusterfuzzlite/`, go through Renovate's
+  `pip-compile` manager. It reruns the `uv pip compile` command from the
+  lock's header with `--upgrade-package`. Every option in that header
+  MUST carry its value as `--option=value`. The manager skips a lock whose
+  header has `--override <file>` or `-c <file>` and reports "pip-compile
+  error" on the Dependency Dashboard, and the pins of that lock then get no
+  update pull request. uv copies the command line into the header as
+  typed.
+
   Renovate opens pull requests on Mondays before 06:00 Europe/Berlin
   (`schedule`, cron syntax), so they wait as one batch at the start of the
   week. Vulnerability fixes and the Dependency Dashboard's manual
@@ -186,10 +196,15 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
     bump and kube-apiserver v1.37.1 from one release back, and held docker
     29.9.1 when the anonymous Docker Hub tag list failed, which
     `timestamp-optional` proposed. Checksums: lookup with tool pins set
-    one release back; `checksum-pins` workflow.
+    one release back; `checksum-pins` workflow. Python locks:
+    `renovate --platform=local --dry-run=extract`. On 2026-11-07
+    Renovate 44.188.2 skipped the `scan/`, `sandbox/` and
+    `.clusterfuzzlite/` locks with "pip-compile error" and extracted all
+    four once their headers used `--option=value`. The lookup then
+    proposed ruff 0.17.3 and semgrep 1.183.0 for the scan.
   - Since: #6; release age: #259; checksums: #292; timestamps required:
     #306; recipe entries: #378; branch and title per entry: #381; kind,
-    kubectl and uv: #389; golang: #581
+    kubectl and uv: #389; golang: #581; lock headers: #633
 
 - REG-8: `source.repo` and `source.path` MUST NOT change after registration
   unless the pull request is authored by a maintainer.

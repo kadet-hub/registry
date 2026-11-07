@@ -299,7 +299,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   advisory. The override goes into `overrides.txt` next to the lock, as a
   lower bound on the fixed release with a comment that names the upstream
   constraint, and its `uv pip compile` header names the file with
-  `--override`. The override is removed once upstream allows the fixed
+  `--override=`. The override is removed once upstream allows the fixed
   release.
 
   Kapitan 0.36.3 requires `cryptography<49`; the gate overrides it to
@@ -318,8 +318,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
   run.
 
   Both images install with `pip --no-deps`, so pip does not reject the
-  lifted constraint. Renovate's `pip-compile` manager reruns the header
-  command and accepts `--override`. Nothing tests the upstream packages
+  lifted constraint. Renovate reruns the header command, override
+  included (REG-7). Nothing tests the upstream packages
   against the overridden version beyond the gate's own selftests.
 
   - Test: workflow job `gate-selftest` (Kapitan renders and semgrep scans
