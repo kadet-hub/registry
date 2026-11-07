@@ -1,5 +1,5 @@
 ---
-title: "Kyverno Chainsaw: Kubernetes e2e testing on kind in CI"
+title: "Kyverno Chainsaw e2e tests that fail fast on a broken pod"
 date: 2026-10-21
 topics: [ci, testing, kapitan, verification]
 description: "Kubernetes end-to-end testing with Kyverno Chainsaw on kind in GitHub Actions: six Kapitan recipes, a fail-fast pod watcher, webhook races, measured timeouts."

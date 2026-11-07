@@ -1,5 +1,5 @@
 ---
-title: "Kubernetes cluster add-ons from one Kapitan inventory, on kind"
+title: "Kubernetes cluster add-ons with one set of shared values"
 date: 2026-11-08
 topics: [kapitan, generators, verification]
 description: "cert-manager, Kyverno, Prometheus, Grafana, External Secrets, Velero and Argo CD from one Kapitan inventory with shared values, tested through one app on kind."

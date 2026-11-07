@@ -1,5 +1,5 @@
 ---
-title: "Convert a Helm chart to Kapitan inventory in five minutes"
+title: "Converting the oauth2-proxy Helm chart to a Kapitan inventory"
 date: 2026-11-22
 topics: [helm, kapitan, generators, verification]
 description: "kadet-convert turns the oauth2-proxy Helm chart and your values into a Kapitan inventory, proves on kind that it renders the same objects, and lists the gaps."

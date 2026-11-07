@@ -1,5 +1,5 @@
 ---
-title: "Kubernetes multiple environments: dev, stage and prod in Kapitan"
+title: "Kubernetes multiple environments with a diff for every promotion"
 date: 2026-11-19
 topics: [kapitan, helm, kustomize, ci]
 description: "Kubernetes multiple environments from one Kapitan inventory: dev, stage and prod on two clusters, the compile diff of a promotion, and a CI guard."

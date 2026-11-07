@@ -492,11 +492,65 @@ MOVED_POSTS = {"actions-runner-controller-dind", "apiserver-dry-run", "bitnami",
                "kustomize-delete-resource-helm-chart", "kustomize-json-patch-helm-chart", "kustomize-patch-env-helm-chart",
                "renovate-automerge-required-reviews", "same-app", "verify-oci"}
 CONTENT = os.path.join(HERE, "site", "content")
+CONNECTIVES = {"a", "an", "the", "on", "in", "for", "with", "to", "of"}  # CAT-11m: left out when a title is matched with a query
 
 
 def front_matter(path):
     with open(path, encoding="utf-8") as f:
         return f.read().split("\n---\n", 1)[0]
+
+
+def titles(field="title"):
+    """CAT-11j: the hand-written title (or another front matter field) of every page under content/, by its path without .md."""
+    found = {}
+    for path in sorted(glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True)):
+        m = re.search(rf'^{field}: "?(.*?)"?$', front_matter(path), re.MULTILINE)
+        if m:
+            found[os.path.relpath(path, CONTENT)[:-3]] = m.group(1)
+    return found
+
+
+def title_words(text):
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def joined(text):
+    """CAT-11m: the words of a query or title without connectives, run together."""
+    return "".join(w for w in title_words(text) if w not in CONNECTIVES)
+
+
+def leads(title, query):
+    """CAT-11m: the number of the title's words that make up the query, 0 when it does not lead with it."""
+    want = joined(query)
+    got = ""
+    for i, w in enumerate(title_words(title), 1):
+        got += "" if w in CONNECTIVES else w
+        if len(got) >= len(want):
+            return i if got.startswith(want) else 0
+    return 0
+
+
+def compares(title):
+    """CAT-11a: the number of words of a comparison's "<A> vs <B>" up to the first colon or comma, 0 for any other title."""
+    head = re.split(r"[:,]", title, maxsplit=1)[0]
+    return len(title_words(head)) if " vs " in head else 0
+
+
+def title_queries():
+    """CAT-11f: every title the table names, with the queries of the rows that name it; "same guide" or "same post" is the row above."""
+    with open(os.path.join(HERE, "..", "docs", "specs", "catalog.md"), encoding="utf-8") as f:
+        table = f.read().split("\n- CAT-11f:", 1)[1].split("\n- CAT-", 1)[0]
+    found, above = {}, []
+    for query, pages in re.findall(r"^ *\| (.+) \| (.+) \|$", table, re.MULTILINE):
+        if query == "Query":
+            continue
+        also = [a for group in re.findall(r"\(also ([^)]*)\)", query) for a in re.findall(r'"([^"]+)"', group)]
+        query = re.sub(r"\((also|checked|Google)[^)]*\)", "", query)
+        named = re.findall(r'(?:guide|blog post) "([^"]+)"', pages) or (above if re.search(r"\bsame (guide|post)\b", pages) else [])
+        for title in named:
+            found.setdefault(title, []).extend([q.strip() for q in query.split(",") if q.strip()] + also)
+        above = named or above
+    return found
 
 
 class Site(unittest.TestCase):
@@ -1255,6 +1309,40 @@ class Site(unittest.TestCase):
                 self.assertRegex(sitemap, rf"/{section}/{name}/</loc>\s*<lastmod>{day.group(1)}")
         titles = re.findall(r'<li><a href="[^"]*">([^<]*)</a>', self.page("guides"))
         self.assertEqual(titles, sorted(titles, key=str.lower))  # lastmod does not reorder the list
+
+    def test_titles(self):  # CAT-11j to CAT-11m
+        pages, descriptions, queries, found = titles(), titles("description"), title_queries(), []
+        pages = {name: title for name, title in pages.items() if not name.startswith("recipes/")}  # until the recipe titles change
+        by_title = {title: name for name, title in pages.items()}
+        contrast = re.compile(r"\bwithout\b.*\bwith\b|\bnot with\b|,\s*not\b|\binstead of\b|\brather than\b|[\u2013\u2014]", re.IGNORECASE)
+        found += [f"CAT-11j: {name}: {title}" for name, title in pages.items() if contrast.search(title)]
+        lists = [name for name, title in pages.items() if re.search(r":\s[^:]*,[^:]*\b(and|or)\b", title)]
+        if len(lists) > 3:
+            found.append(f"CAT-11l: {len(lists)} titles end in a colon and a list: {', '.join(lists)}")
+        lead = {}
+        for title, qs in queries.items():
+            if title not in by_title:
+                found.append(f"CAT-11m: CAT-11f names {title!r}, which no page has")
+            elif by_title[title].startswith("blog/"):  # a post names a query in its title or description
+                if not any(joined(q) in joined(title) or joined(q) in joined(descriptions.get(by_title[title], "")) for q in qs):
+                    found.append(f"CAT-11m: {by_title[title]}: neither title nor description contains one of {qs}")
+                lead[title] = max(leads(title, q) for q in qs)
+            elif not any(leads(title, q) for q in qs) and not compares(title):
+                found.append(f"CAT-11m: {by_title[title]}: {title!r} leads with none of {qs}")
+            else:
+                lead[title] = max(leads(title, q) for q in qs)
+        phrases = {}
+        for name, title in pages.items():
+            words = title_words(title)
+            n = max(lead.get(title, 0), compares(title))
+            if not n and name.startswith("recipes/") and "kubernetes" in words:  # CAT-37: the software on Kubernetes
+                n = words.index("kubernetes") + 1
+            words = ["_"] * bool(n) + words[n:]
+            for phrase in set(zip(words, words[1:], words[2:])):
+                phrases.setdefault(phrase, []).append(name)
+        found += [f"CAT-11k: {' '.join(p)!r} in {len(names)} titles: {', '.join(names)}" for p, names in sorted(phrases.items()) if len(names) > 2]
+        self.assertFalse(found, "\n" + "\n".join(found))
+
     def test_moved_posts(self):  # CAT-36e to CAT-36g
         moved = {}
         for path in sorted(glob.glob(os.path.join(CONTENT, "guides", "*.md"))):
@@ -1664,8 +1752,8 @@ class Site(unittest.TestCase):
         self.assertIn("Helm alternative", title)  # CAT-11f
         desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
         self.assertTrue("Helm" in desc and "Kustomize" in desc, desc)
-        for slug, start in (("ingress-nginx-to-gateway-api", "Migrate ingress-nginx"), ("generator-helm-or-jinja2", "Kapitan inputs"),
-                            ("bitnami-chart-alternatives", "Bitnami chart alternatives"),
+        for slug, start in (("ingress-nginx-to-gateway-api", "ingress-nginx Gateway API migration"), ("generator-helm-or-jinja2", "Kapitan inputs"),
+                            ("bitnami-chart-alternatives", "Bitnami alternatives"),
                             ("helm-alternatives-for-kubernetes", "Helm alternatives for Kubernetes"),
                             ("talos-machine-config", "Talos machine config"),
                             ("helm-vs-terraform", "Helm vs Terraform for Kubernetes"),

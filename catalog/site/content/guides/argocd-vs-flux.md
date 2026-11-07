@@ -1,8 +1,8 @@
 ---
-title: Argo CD vs Flux, deployed side by side on kind
+title: "Argo CD vs Flux: sync time and drift handling measured"
 layout: prose
 description: Argo CD vs Flux on one app from one Git commit, with install size, sync time and drift handling measured on kind, and where Helm and Kustomize fit in.
-lastmod: 2026-10-19
+lastmod: 2026-11-07
 ---
 
 Argo CD and Flux both pull Kubernetes manifests from Git and keep a cluster
