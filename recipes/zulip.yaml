@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: zulip
+  tag: zulip-v1.0.0
+  sha: dd2c0a7bdb6263cf4e6703a4ef5487a7f844c35b
+owners: [3042152]
+exceptions: []
