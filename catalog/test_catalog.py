@@ -1101,7 +1101,7 @@ class Site(unittest.TestCase):
                       "        subdir: cert-manager\n        output_path: inventory/classes/recipes/cert-manager", fetch)
         self.assertIn('<pre id="commands"><code>kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch</code></pre>', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes#using-a-recipe">Using a recipe</a>', page)
-        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+        self.assertEqual([h for h in re.findall(r"<h2>([^<]+)</h2>", page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
         self.assertIn("<h2>Required parameters</h2>\n<p>No parameter has to be set.</p>", page)
         self.assertIn("<td><code>replicaCount</code></td>", page)  # rendered from the README
