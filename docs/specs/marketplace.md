@@ -529,6 +529,7 @@ coverage is named at each:
 | `sandbox/apiserver_check.py` | QA-10 to QA-12 |
 | `.github/workflows/tf-schema-verify.yml`, `gate/tf-schema-verify` | QA-9 |
 | `sandbox/` | SEC-9 to SEC-12, SEC-17, PUB-14a: image, `gate-compile` runner, `check.py`, `output_check.py`; reused by CON-1 |
+| `sandbox/github_fetch.py` | GI-6: the image build's downloads from GitHub, with the build secret `GH_TOKEN` |
 | `tests/samples/` | AC-1 to AC-5, AC-8 |
 | `tests/consumers/` | AC-10, AC-12 |
 | `.github/workflows/gate.yml` | GI-*, REG, SEC, CMP, QA, REV-2 |

@@ -71,15 +71,50 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
 - GI-6: Every third-party action MUST be pinned by full commit SHA and every
   downloaded tool binary by sha256 or by the digest of the image it is
-  copied from.
+  copied from. A download from GitHub MUST carry the job's `GITHUB_TOKEN`.
 
   `tests/workflow-policy` checks that every `uses:` other than `./` and
-  `$/` ends in a 40-character SHA, that every `curl` in `.github/` is
-  followed by a `sha256sum -c` or `sha512sum -c`, and that every `ADD` from
-  a URL in `sandbox/Dockerfile` carries `--checksum`.
+  `$/` ends in a 40-character SHA, that every `curl` and
+  `gh release download` in `.github/` is followed by a `sha256sum -c` or
+  `sha512sum -c`, and that every `ADD` from a URL in `sandbox/Dockerfile`
+  carries `--checksum`.
 
-  - Test: workflow job `workflow-lint`
-  - Since: #27
+  GitHub rate-limits anonymous requests more tightly. On 2026-11-08, during
+  its timeouts for unauthenticated users, anonymous downloads failed the
+  release runs 42468824183, with HTTP 504 for gitleaks and oras, and
+  42475340173, where the three `ADD`s from github.com in
+  `sandbox/Dockerfile` all received the same wrong file in place of their
+  assets.
+
+  github.com ignores a token on a release download URL. The actions and
+  workflows therefore take release assets through the REST API with
+  `gh release download` and `GH_TOKEN` set to `github.token` on the step.
+  No job needs a new permission for it.
+
+  `ADD` cannot send the token. BuildKit reads `HTTP_AUTH_TOKEN_<host>`
+  secrets from v0.23 on, the runners' Docker 28.0.4 ships an older one, and
+  github.com would ignore the header. The build stage of
+  `sandbox/Dockerfile` downloads its GitHub files with
+  `sandbox/github_fetch.py` instead. When the build gets the secret
+  `GH_TOKEN`, the script takes a release asset through the API and a
+  raw.githubusercontent.com file with the token. Without the secret, as in
+  a local `docker build`, it fetches the URL as it is. The secret is
+  mounted for that one `RUN` and is not stored in a layer. Each download
+  is followed by a `sha256sum -c` of the pin its `ADD --checksum` had, and
+  every workflow that builds the image passes the secret.
+
+  `tests/workflow-policy` also fails on a `curl` of a github.com URL in
+  `.github/`, on an `ADD` from GitHub in `sandbox/Dockerfile` and on a
+  `github_fetch.py` download without a `sha256sum -c` on the next line.
+
+  Still anonymous are the `git fetch` of check in `setup-check` and of the
+  entries' sources in the gate, the release build and the rescan. git
+  sends credentials only when the server asks for them, which GitHub does
+  not for a public repository. `sandbox/gitlab-ci.yml` runs on GitLab,
+  where there is no GitHub token.
+
+  - Test: workflow job `workflow-lint` (`tests/workflow-policy`, actionlint and zizmor, GI-11)
+  - Since: #27; downloads with the job's token: this change
 
 - GI-7: Any gate tool error, timeout or missing result MUST fail the gate. The
   gate job has a 30-minute timeout and the compile output a 50 MiB limit.
