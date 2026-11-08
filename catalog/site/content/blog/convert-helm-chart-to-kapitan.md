@@ -260,10 +260,10 @@ Apart from CRDs, which it copies unchanged, it passes no object through.
 The report lists the fields it cannot map under "Not mappable fields".
 With check 0.16.0 and the kubernetes generator 1.14.0, which this post
 runs, they include a StatefulSet's `serviceName` that differs from its own
-name and a container's `workingDir`. check 0.20.0 pins the generator
+name and a container's `workingDir`. check 0.20.1 pins the generator
 1.15.0 and maps that `serviceName` to the generator's
 `statefulset_service_name`. 1.15.0 has a key for `workingDir` as well,
-but check 0.20.0 does not map it yet and still lists it. A StatefulSet's
+but check 0.20.1 does not map it yet and still lists it. A StatefulSet's
 `podManagementPolicy` has no key in 1.15.0. Objects with a `helm.sh/hook`
 annotation are left out and listed, such as the three test pods of
 podinfo's chart.
