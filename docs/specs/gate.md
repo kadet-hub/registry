@@ -114,7 +114,7 @@ which only a maintainer pull request changes (GI-2, REV-1).
   where there is no GitHub token.
 
   - Test: workflow job `workflow-lint` (`tests/workflow-policy`, actionlint and zizmor, GI-11)
-  - Since: #27; downloads with the job's token: this change
+  - Since: #27; downloads with the job's token: #656
 
 - GI-7: Any gate tool error, timeout or missing result MUST fail the gate. The
   gate job has a 30-minute timeout and the compile output a 50 MiB limit.
