@@ -839,5 +839,5 @@ REG-2. They fail closed.
 | Config media type | `application/vnd.kadet-hub.recipe.config.v1+json` |
 | Consumer path | `inventory/classes/recipes/<name>/` |
 | Inventory backend | omegaconf |
-| `check` | kadet-hub/recipes `check-v0.20.1`, commit `cd0203772211f8be4f6a4043e116127edfa42324`, in `gate/.check/` |
+| `check` | kadet-hub/recipes `check-v0.20.2`, commit `f70103dd574a01e9b825a330b6b68f827ee76ddc`, in `gate/.check/` |
 | cloud-provider-kind | v0.12.0 in `.github/actions/setup-kind/` (REC-17) |
