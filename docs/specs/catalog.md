@@ -1611,7 +1611,7 @@ Related: CAT-15, CAT-30, CON-2.
   list it.
 
   - Test: `catalog/test_catalog.py` (`test_moved_posts`)
-  - Since: #650, this change
+  - Since: #650, #654
 
 - CAT-36g: A page of the site that links a moved post MUST link the
   guide's URL.
