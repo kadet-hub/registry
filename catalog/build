@@ -60,8 +60,10 @@ else
   sha=$(git ls-remote "https://github.com/$OWNER/recipes.git" refs/heads/main | cut -f1)
   [[ $sha =~ ^[0-9a-f]{40}$ ]] || { echo "::error::recipes: main of $OWNER/recipes not resolved"; exit 1; }
   echo "$sha" >"$recipes/inventory/classes/recipes.sha"
+  auth=()  # GI-6: the job's token, when there is one
+  if [[ -n ${GH_TOKEN:-} ]]; then auth=(-H "Authorization: Bearer $GH_TOKEN"); fi
   fetch_recipe() {
-    curl -fsSL --max-time 20 "https://raw.githubusercontent.com/$OWNER/recipes/$sha/$1" -o "$recipes/inventory/classes/recipes/$1" \
+    curl -fsSL --max-time 20 "${auth[@]}" "https://raw.githubusercontent.com/$OWNER/recipes/$sha/$1" -o "$recipes/inventory/classes/recipes/$1" \
       || { echo "::error::recipes: $1 not fetched from $OWNER/recipes@$sha"; exit 1; }
   }
   for page in $recipe_pages; do
