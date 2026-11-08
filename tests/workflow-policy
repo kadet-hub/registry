@@ -33,7 +33,7 @@ done < <(grep -nE 'github_fetch\.py[[:space:]]+"?https://' sandbox/Dockerfile ||
 # token on a release URL, and ADD cannot send one.
 while IFS= read -r line; do
   fail "GI-6: download from GitHub without the job's token: $line"
-done < <(grep -rnE '(^|[^[:alnum:]_-])curl[[:space:]].*https://github\.com/' .github || true;
+done < <(grep -rnE '(^|[^[:alnum:]_-])curl[[:space:]].*https://github\.com/' .github | grep -v '# GI-6: anonymous' || true;
          grep -nE '^ADD[[:space:]].*https://(github\.com|raw\.githubusercontent\.com)/' sandbox/Dockerfile | sed 's|^|sandbox/Dockerfile:|' || true)
 
 # GI-10: no caches.

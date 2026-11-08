@@ -45,7 +45,9 @@ def source(url, token):
 
 
 def main(url, out):
-    with urllib.request.urlopen(source(url, os.environ.get("GH_TOKEN")), timeout=60) as r, open(out, "wb") as f:
+    token = os.environ.get("GH_TOKEN")
+    print(f"github_fetch.py: {url} {'with the token' if token else 'anonymously'}", file=sys.stderr)
+    with urllib.request.urlopen(source(url, token), timeout=60) as r, open(out, "wb") as f:
         shutil.copyfileobj(r, f)
 
 
