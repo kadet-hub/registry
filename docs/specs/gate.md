@@ -104,8 +104,15 @@ which only a maintainer pull request changes (GI-2, REV-1).
   every workflow that builds the image passes the secret.
 
   `tests/workflow-policy` also fails on a `curl` of a github.com URL in
-  `.github/`, on an `ADD` from GitHub in `sandbox/Dockerfile` and on a
-  `github_fetch.py` download without a `sha256sum -c` on the next line.
+  `.github/`, unless the line ends in `# GI-6: anonymous` and a reason, on
+  an `ADD` from GitHub in `sandbox/Dockerfile` and on a `github_fetch.py`
+  download without a `sha256sum -c` on the next line.
+
+  An organization with an IP allow list refuses the job's token from a
+  runner address with HTTP 403, also for its public releases.
+  aquasecurity has one (run 42483338507), so `setup-trivy` downloads trivy
+  anonymously and marks the line. Should another publisher add an allow
+  list, its download fails with that 403 until it gets the same mark.
 
   Still anonymous are the `git fetch` of check in `setup-check` and of the
   entries' sources in the gate, the release build and the rescan. git
