@@ -6,10 +6,11 @@ runs:
     - name: Install Hugo
       shell: bash
       env:
+        GH_TOKEN: ${{ github.token }}
         # renovate: datasource=github-release-attachments depName=gohugoio/hugo
         HUGO_VERSION: v0.168.0
         HUGO_SHA256: fada83ad56bb27ed4cb7dd81590303bdac16140f944ac4e66fc248117e2d5594
       run: |
-        curl -fsSLo "$RUNNER_TEMP/hugo.tar.gz" "https://github.com/gohugoio/hugo/releases/download/${HUGO_VERSION}/hugo_${HUGO_VERSION#v}_linux-amd64.tar.gz"
+        gh release download "$HUGO_VERSION" -R gohugoio/hugo -p "hugo_${HUGO_VERSION#v}_linux-amd64.tar.gz" -O "$RUNNER_TEMP/hugo.tar.gz"
         echo "${HUGO_SHA256}  $RUNNER_TEMP/hugo.tar.gz" | sha256sum -c -
         sudo tar -xzf "$RUNNER_TEMP/hugo.tar.gz" -C /usr/local/bin hugo

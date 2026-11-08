@@ -28,7 +28,9 @@ jobs:
       - uses: ./.github/actions/setup-trivy # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
       - name: Build the sandbox image
-        run: docker build -q -t kadet-hub/sandbox sandbox
+        env:
+          GH_TOKEN: ${{ github.token }} # sandbox/github_fetch.py (GI-6)
+        run: docker build -q --secret id=GH_TOKEN,env=GH_TOKEN -t kadet-hub/sandbox sandbox
 
       - name: Advisories with a fix
         run: trivy image --quiet --scanners vuln --ignore-unfixed --ignorefile sandbox/.trivyignore.yaml --exit-code 1 kadet-hub/sandbox

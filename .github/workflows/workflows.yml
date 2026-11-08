@@ -30,6 +30,7 @@ jobs:
 
       - name: Install actionlint and zizmor
         env:
+          GH_TOKEN: ${{ github.token }}
           # renovate: datasource=github-release-attachments depName=rhysd/actionlint
           ACTIONLINT_VERSION: v1.7.12
           ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
@@ -37,9 +38,9 @@ jobs:
           ZIZMOR_VERSION: v1.30.1
           ZIZMOR_SHA256: e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a
         run: |
-          curl -fsSLo "$RUNNER_TEMP/actionlint.tar.gz" "https://github.com/rhysd/actionlint/releases/download/${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION#v}_linux_amd64.tar.gz"
+          gh release download "$ACTIONLINT_VERSION" -R rhysd/actionlint -p "actionlint_${ACTIONLINT_VERSION#v}_linux_amd64.tar.gz" -O "$RUNNER_TEMP/actionlint.tar.gz"
           echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
-          curl -fsSLo "$RUNNER_TEMP/zizmor.tar.gz" "https://github.com/zizmorcore/zizmor/releases/download/${ZIZMOR_VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          gh release download "$ZIZMOR_VERSION" -R zizmorcore/zizmor -p zizmor-x86_64-unknown-linux-gnu.tar.gz -O "$RUNNER_TEMP/zizmor.tar.gz"
           echo "${ZIZMOR_SHA256}  $RUNNER_TEMP/zizmor.tar.gz" | sha256sum -c -
           sudo tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C /usr/local/bin actionlint
           sudo tar -xzf "$RUNNER_TEMP/zizmor.tar.gz" -C /usr/local/bin zizmor

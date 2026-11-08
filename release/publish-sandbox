@@ -30,7 +30,7 @@ if ((rc == 0)); then
   exit 0
 fi
 
-docker build -q -t kadet-hub/sandbox "$root/sandbox" >/dev/null
+docker build -q --secret id=GH_TOKEN,env=GH_TOKEN -t kadet-hub/sandbox "$root/sandbox" >/dev/null
 skopeo copy -q docker-daemon:kadet-hub/sandbox:latest "oci:$work/layout:image"
 digest=$(jq -er '.manifests[0].digest' "$work/layout/index.json")
 oras cp --from-oci-layout -- "$work/layout@$digest" "$ref@$digest" >/dev/null

@@ -13,19 +13,28 @@ ADD --checksum=sha256:${HELM_SHA256} https://get.helm.sh/helm-${HELM_VERSION}-li
 # renovate: datasource=github-release-attachments depName=open-policy-agent/conftest
 ARG CONFTEST_VERSION=v0.71.1
 ARG CONFTEST_SHA256=c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985
-ADD --checksum=sha256:${CONFTEST_SHA256} https://github.com/open-policy-agent/conftest/releases/download/${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION#v}_Linux_x86_64.tar.gz /tmp/conftest.tgz
 # renovate: datasource=github-release-attachments depName=kapicorp/krab
 ARG KRAB_VERSION=v2.0.0-alpha.5
 ARG KRAB_SHA256=c57cb602e6c89174894708e00b9d4373e67f08582fdd6f7b95517a6658ab9c85
-ADD --checksum=sha256:${KRAB_SHA256} https://github.com/kapicorp/krab/releases/download/${KRAB_VERSION}/krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu.tar.gz /tmp/krab.tgz
 # renovate: datasource=github-release-attachments depName=etcd-io/etcd
 ARG ETCD_VERSION=v3.7.3
 ARG ETCD_SHA256=5dfa9cc3b3ce3b4b491fbcc2057d3daa166bcc6676f743fcd20f8e5760cb9775
-ADD --checksum=sha256:${ETCD_SHA256} https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz /tmp/etcd.tgz
+# GI-6: ADD cannot send a token, so the files from GitHub come through
+# github_fetch.py, with the job's token when the build gets the secret GH_TOKEN.
 # PUB-14a: etcd's archive and the kube-apiserver image ship no licence text,
 # so it comes from the release tag. Both are the Apache-2.0 text every release carries.
-ADD --checksum=sha256:43ca1b4bbf462789ba15b28373e0c536e510f49e4d05d85a7690cfee94de6f49 https://raw.githubusercontent.com/etcd-io/etcd/${ETCD_VERSION}/LICENSE /tmp/etcd.LICENSE
-ADD --checksum=sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30 https://raw.githubusercontent.com/kubernetes/kubernetes/v1.37.2/LICENSE /tmp/kube-apiserver.LICENSE
+COPY github_fetch.py /tmp/github_fetch.py
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN \
+    python3.13 -I /tmp/github_fetch.py "https://github.com/open-policy-agent/conftest/releases/download/${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION#v}_Linux_x86_64.tar.gz" /tmp/conftest.tgz \
+ && echo "${CONFTEST_SHA256}  /tmp/conftest.tgz" | sha256sum -c - \
+ && python3.13 -I /tmp/github_fetch.py "https://github.com/kapicorp/krab/releases/download/${KRAB_VERSION}/krab-${KRAB_VERSION#v}-x86_64-unknown-linux-gnu.tar.gz" /tmp/krab.tgz \
+ && echo "${KRAB_SHA256}  /tmp/krab.tgz" | sha256sum -c - \
+ && python3.13 -I /tmp/github_fetch.py "https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz" /tmp/etcd.tgz \
+ && echo "${ETCD_SHA256}  /tmp/etcd.tgz" | sha256sum -c - \
+ && python3.13 -I /tmp/github_fetch.py "https://raw.githubusercontent.com/etcd-io/etcd/${ETCD_VERSION}/LICENSE" /tmp/etcd.LICENSE \
+ && echo "43ca1b4bbf462789ba15b28373e0c536e510f49e4d05d85a7690cfee94de6f49  /tmp/etcd.LICENSE" | sha256sum -c - \
+ && python3.13 -I /tmp/github_fetch.py https://raw.githubusercontent.com/kubernetes/kubernetes/v1.37.2/LICENSE /tmp/kube-apiserver.LICENSE \
+ && echo "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  /tmp/kube-apiserver.LICENSE" | sha256sum -c -
 COPY requirements.txt /tmp/requirements.txt
 COPY krab/requirements.txt /tmp/krab-requirements.txt
 # Kapitan's venv is /usr/local, so the interpreter, kapitan and the tools keep
