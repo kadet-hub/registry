@@ -7,8 +7,8 @@ runs:
       shell: bash
       env:
         # renovate: datasource=github-tags depName=kadet-hub/recipes versioning=regex:^check-v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$
-        CHECK_VERSION: check-v0.19.0
-        CHECK_SHA: a02551d04063097b387a1af2efd576fdc93b3f20
+        CHECK_VERSION: check-v0.20.1
+        CHECK_SHA: cd0203772211f8be4f6a4043e116127edfa42324
       run: |
         git init -q --bare "$RUNNER_TEMP/check.git"
         git --git-dir="$RUNNER_TEMP/check.git" fetch -q --depth=1 --no-tags https://github.com/kadet-hub/recipes.git "$CHECK_SHA"
