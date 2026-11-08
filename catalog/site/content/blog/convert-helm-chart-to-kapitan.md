@@ -257,11 +257,16 @@ It exits with status 1. The Objects section of its report:
 The generator itself renders PodDisruptionBudgets, NetworkPolicies and
 APIServices. The converter reports them as not mapped until it maps them.
 Apart from CRDs, which it copies unchanged, it passes no object through.
-Some fields have no generator setting either, such as a StatefulSet's
-`serviceName` that differs from its own name or a container's
-`workingDir`. The report lists them under "Not mappable fields". Objects
-with a `helm.sh/hook` annotation are left out and listed, such as the three
-test pods of podinfo's chart.
+The report lists the fields it cannot map under "Not mappable fields".
+With check 0.16.0 and the kubernetes generator 1.14.0, which this post
+runs, they include a StatefulSet's `serviceName` that differs from its own
+name and a container's `workingDir`. check 0.20.1 pins the generator
+1.15.0 and maps that `serviceName` to the generator's
+`statefulset_service_name`. 1.15.0 has a key for `workingDir` as well,
+but check 0.20.1 does not map it yet and still lists it. A StatefulSet's
+`podManagementPolicy` has no key in 1.15.0. Objects with a `helm.sh/hook`
+annotation are left out and listed, such as the three test pods of
+podinfo's chart.
 
 `--out` must not be named like a chart that comes from a repository. The
 converter creates the directory first and then takes the chart name for a
