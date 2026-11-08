@@ -1,4 +1,4 @@
-{{- /* CAT-36: one entry per blog post, newest first. */ -}}
+{{- /* CAT-36: one entry per blog post, newest first; CAT-52: a category per entry of its tools. */ -}}
 {{- $posts := (where site.RegularPages "Section" "blog").ByDate.Reverse -}}
 {{ printf "<?xml version=\"1.0\" encoding=\"utf-8\"?>" | safeHTML }}
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -16,6 +16,9 @@
     <published>{{ .Date.UTC.Format "2006-01-02T15:04:05Z" }}</published>
     <updated>{{ .Lastmod.UTC.Format "2006-01-02T15:04:05Z" }}</updated>
     <summary>{{ .Description }}</summary>
+{{- range .Params.tools }}
+    <category term="{{ . }}"/>
+{{- end }}
   </entry>
 {{- end }}
 </feed>

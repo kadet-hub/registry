@@ -2,6 +2,7 @@
 title: "RAG on Kubernetes: Open WebUI answers from documents in Qdrant"
 date: 2026-11-26
 topics: [kapitan, helm, verification]
+tools: [OpenWebUI, Qdrant, LiteLLM]
 description: "Open WebUI, Qdrant, LiteLLM and Ollama from four Kapitan recipes: a document embedded through LiteLLM into Qdrant and a question only it answers, on kind."
 stack:
   recipes: [open-webui, litellm, qdrant, ollama, valkey]

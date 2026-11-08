@@ -2,6 +2,7 @@
 title: "Keycloak SSO for Gitea, Open WebUI and Miniflux on Kubernetes"
 date: 2026-11-25
 topics: [kapitan, keycloak, security, verification]
+tools: [Keycloak, Gitea, OpenWebUI]
 description: "Keycloak as OIDC provider for Gitea, Open WebUI and Miniflux, with realm, clients and secrets in one Kapitan inventory, tested with scripted logins on kind."
 stack:
   recipes: [keycloak, keycloak-operator, postgresql, cert-manager, cnpg, gitea, valkey, open-webui, miniflux]

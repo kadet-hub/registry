@@ -2,6 +2,7 @@
 title: "Try Kapitan in your browser"
 date: 2026-11-24
 topics: [kapitan, generators, terraform]
+tools: [Pyodide, Terraform]
 description: "The kadet-hub playground runs Kapitan 0.36.3 in the browser with Pyodide: edit a target, compile Kubernetes or Terraform output, see where values come from."
 ---
 

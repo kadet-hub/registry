@@ -2,6 +2,7 @@
 title: "Matrix Synapse federation: well-known delegation and TLS on 443"
 date: 2026-11-27
 topics: [kapitan, matrix, verification]
+tools: [Matrix, Synapse]
 description: "Matrix Synapse federation between two homeservers from one Kapitan recipe on kind: the well-known file, TLS on port 443, and what a missing setting breaks."
 stack:
   recipes: [matrix-synapse, postgresql, cnpg]

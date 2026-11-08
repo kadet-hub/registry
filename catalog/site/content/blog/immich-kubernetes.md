@@ -2,6 +2,7 @@
 title: "Self-hosted Google Photos alternative: Immich on Kubernetes"
 date: 2026-11-10
 topics: [kapitan, operators, verification]
+tools: [Immich, CloudNativePG, PostgreSQL]
 description: "Immich on Kubernetes with CloudNativePG from four Kapitan recipes: EXIF timeline, offline geocoding, shared albums, smart search and backups, tested on kind."
 stack:
   recipes: [immich, postgresql, valkey, cnpg]

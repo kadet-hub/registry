@@ -2,6 +2,7 @@
 title: "KCL vs Kapitan: typed schemas and locked modules on one app"
 date: 2026-11-14
 topics: [kapitan, comparison, validation, supply chain]
+tools: [KCL]
 description: "KCL for Kubernetes and a Kapitan inventory render one app to identical manifests. Also tested: a misspelled value and a wrong checksum in kcl.mod.lock."
 ---
 

@@ -2,6 +2,7 @@
 title: "Docker Compose and Kubernetes files compiled from one class"
 date: 2026-11-21
 topics: [kapitan, docker compose, comparison]
+tools: [DockerCompose, Kubernetes, Miniflux]
 description: "Miniflux and PostgreSQL from one Kapitan inventory, deployed to kind and started with docker compose up, and what does not map between the two."
 ---
 
