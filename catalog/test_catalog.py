@@ -1138,7 +1138,7 @@ class Site(unittest.TestCase):
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with", page)
         self.assertIn("<li><code>recipes.miniflux.db</code> (<code>db.yml</code>): <code>miniflux-db</code></li>", page)
-        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+        self.assertEqual([h for h in re.findall(r"<h2>([^<]+)</h2>", page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Mapping", "Proof"])
         self.assertIn("<h2>Required parameters</h2>\n<p>The password must be set as a ref. Without it the compile stops with\n"
                       "<code>Interpolation key 'applications.miniflux.admin.password' not found</code>.</p>", page)
