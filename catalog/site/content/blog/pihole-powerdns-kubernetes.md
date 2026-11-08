@@ -2,6 +2,7 @@
 title: "Pi-hole on Kubernetes with PowerDNS and external-dns"
 date: 2026-11-11
 topics: [kapitan, dns, verification]
+tools: [PiHole, PowerDNS, ExternalDNS]
 description: "Home and office DNS on Kubernetes from three Kapitan recipes: PowerDNS holds the zone, external-dns fills it from Services, Pi-hole blocks ads. Tested on kind."
 stack:
   recipes: [pihole, powerdns, external-dns-powerdns]

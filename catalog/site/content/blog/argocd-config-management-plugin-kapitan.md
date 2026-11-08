@@ -2,6 +2,7 @@
 title: "Argo CD config management plugin for Kapitan"
 date: 2026-11-15
 topics: [kapitan, ci, security]
+tools: [ArgoCD]
 description: "Argo CD config management plugin that runs kapitan compile in a sidecar of the repo server, tested on kind, with what it can reach and who can push."
 stack:
   recipes: [blackbox-exporter]

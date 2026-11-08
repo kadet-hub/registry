@@ -2,6 +2,7 @@
 title: "Docker tag and digest: which one Kubernetes runs"
 date: 2026-11-04
 topics: [supply chain, kapitan, validation]
+tools: [Docker, Kubernetes, Renovate]
 description: "A Kubernetes image reference with a tag and a digest runs the digest and drops the tag. Tested on kind, and why both belong in one literal line."
 ---
 

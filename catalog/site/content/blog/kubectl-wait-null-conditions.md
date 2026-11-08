@@ -2,6 +2,7 @@
 title: kubectl wait for condition fails on null conditions
 date: 2026-11-02
 topics: [ci, crds, validation]
+tools: [kubectl, kind]
 description: "kubectl wait --for condition exits at once with an accessor error when status.conditions is null. A kind reproduction and a wait loop that holds."
 ---
 

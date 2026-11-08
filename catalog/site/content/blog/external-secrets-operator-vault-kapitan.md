@@ -2,6 +2,7 @@
 title: "External Secrets Operator with Vault AppRole and Kapitan refs"
 date: 2026-11-17
 topics: [kapitan, security, operators]
+tools: [ExternalSecrets, Vault, GnuPG]
 description: "Which secret goes in a Kapitan ref and which in Vault: the AppRole secret ID as a gpg ref, an admin token synced from Vault and rotated, tested on kind."
 ---
 

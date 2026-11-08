@@ -2,6 +2,7 @@
 title: "kindest/node images: picking the version for your kind release"
 date: 2026-11-06
 topics: [ci, testing, supply chain]
+tools: [kind, Docker, Renovate]
 description: "A kindest/node image belongs to the kind release that built it. Where to find its digest, how to pin it, and a CI matrix that follows kind's releases."
 ---
 

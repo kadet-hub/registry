@@ -2,6 +2,7 @@
 title: "Helmfile vs Kapitan: per-environment values and release order"
 date: 2026-11-12
 topics: [helmfile, kapitan, helm, comparison]
+tools: [Helmfile, Helm]
 description: "Helmfile environments, secrets and needs next to a Kapitan inventory: podinfo and Valkey from their charts render the same manifests for dev and prod."
 ---
 

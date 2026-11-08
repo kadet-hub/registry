@@ -1295,6 +1295,25 @@ class Site(unittest.TestCase):
         self.assertIn('rel="prev"', first.split('class="pager"')[1])
         self.assertIn('<h2 id="related">Related posts</h2>', first)  # shares the topic gate
 
+    def test_blog_tools(self):  # CAT-51, CAT-52
+        tools = {}
+        for path in sorted(glob.glob(os.path.join(CONTENT, "blog", "*.md"))):
+            name = os.path.basename(path)[:-3]
+            m = re.search(r"^tools: \[(.*)\]$", front_matter(path), re.MULTILINE)
+            self.assertIsNotNone(m, f"{name}.md has no tools")
+            tools[name] = m.group(1).split(", ")
+            self.assertIn(len(tools[name]), (1, 2, 3), name)
+            for tool in tools[name]:
+                self.assertRegex(tool, r"^[A-Za-z0-9]+$", name)
+                self.assertNotEqual(tool.lower(), "kapitan", name)
+        atom = "{http://www.w3.org/2005/Atom}"
+        published = 0
+        for entry in ET.parse(os.path.join(self.out, "blog", "index.xml")).getroot().iter(f"{atom}entry"):
+            name = entry.findtext(f"{atom}id").rstrip("/").rsplit("/", 1)[1]
+            self.assertEqual([c.get("term") for c in entry.findall(f"{atom}category")], tools.get(name, []), name)  # a release post has none
+            published += name in tools
+        self.assertGreater(published, 0)
+
     def test_guides_and_recipes_dated(self):  # CAT-11g
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             sitemap = f.read()

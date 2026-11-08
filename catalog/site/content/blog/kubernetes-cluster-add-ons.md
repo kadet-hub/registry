@@ -2,6 +2,7 @@
 title: "Kubernetes cluster add-ons with one set of shared values"
 date: 2026-11-08
 topics: [kapitan, generators, verification]
+tools: [CertManager, Prometheus, ArgoCD]
 description: "cert-manager, Kyverno, Prometheus, Grafana, External Secrets, Velero and Argo CD from one Kapitan inventory with shared values, tested through one app on kind."
 stack:
   recipes: [cert-manager]

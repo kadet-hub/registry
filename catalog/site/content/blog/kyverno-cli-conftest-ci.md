@@ -2,6 +2,7 @@
 title: "Kyverno CLI and conftest in CI vs Kyverno at admission"
 date: 2026-11-18
 topics: [kapitan, ci, security, validation]
+tools: [Kyverno, conftest, GitHubActions]
 description: "Kyverno CLI and conftest on Kapitan's compiled output in a pull request, next to the compile diff, and the same Kyverno policies at admission on kind."
 ---
 
