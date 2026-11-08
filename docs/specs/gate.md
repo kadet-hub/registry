@@ -89,7 +89,9 @@ which only a maintainer pull request changes (GI-2, REV-1).
   github.com ignores a token on a release download URL. The actions and
   workflows therefore take release assets through the REST API with
   `gh release download` and `GH_TOKEN` set to `github.token` on the step.
-  No job needs a new permission for it.
+  `catalog/build` sends the token as a Bearer header for the recipe files
+  it reads from raw.githubusercontent.com. No job needs a new permission
+  for it.
 
   `ADD` cannot send the token. BuildKit reads `HTTP_AUTH_TOKEN_<host>`
   secrets from v0.23 on, the runners' Docker 28.0.4 ships an older one, and
@@ -105,8 +107,10 @@ which only a maintainer pull request changes (GI-2, REV-1).
 
   `tests/workflow-policy` also fails on a `curl` of a github.com URL in
   `.github/`, unless the line ends in `# GI-6: anonymous` and a reason, on
-  an `ADD` from GitHub in `sandbox/Dockerfile` and on a `github_fetch.py`
-  download without a `sha256sum -c` on the next line.
+  an `ADD` from GitHub in `sandbox/Dockerfile`, on a `github_fetch.py`
+  download without a `sha256sum -c` on the next line, and on a
+  `docker build` of the sandbox image in `.github/` or `release/` without
+  the secret.
 
   An organization with an IP allow list refuses the job's token from a
   runner address with HTTP 403, also for its public releases.
@@ -114,11 +118,16 @@ which only a maintainer pull request changes (GI-2, REV-1).
   anonymously and marks the line. Should another publisher add an allow
   list, its download fails with that 403 until it gets the same mark.
 
-  Still anonymous are the `git fetch` of check in `setup-check` and of the
-  entries' sources in the gate, the release build and the rescan. git
-  sends credentials only when the server asks for them, which GitHub does
-  not for a public repository. `sandbox/gitlab-ci.yml` runs on GitLab,
-  where there is no GitHub token.
+  Still anonymous is every `git fetch` and `git ls-remote` against GitHub:
+  check in `setup-check`, the entries' sources in the gate, the release
+  jobs and the rescan, kadet-hub/recipes in `catalog/build` and the `git`
+  dependencies of a consumer project in `consumer/run`. git sends
+  credentials only when the server asks for them, which GitHub does not
+  for a public repository. `catalog/build` reads the pull counts from the
+  github.com package pages (CAT-23), which ignore a token like the release
+  URLs do. The `https` dependencies of a consumer project are the
+  consumer's own URLs. `sandbox/gitlab-ci.yml` runs on GitLab, where there
+  is no GitHub token.
 
   - Test: workflow job `workflow-lint` (`tests/workflow-policy`, actionlint and zizmor, GI-11)
   - Since: #27; downloads with the job's token: #656
