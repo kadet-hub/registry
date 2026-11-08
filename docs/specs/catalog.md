@@ -1900,6 +1900,38 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`Stacks.test_unknown_recipe_fails_the_build`, `Stacks.test_queued_stack_posts`)
   - Since: #561
 
+- CAT-51: Every post under `catalog/site/content/blog/` MUST have a front
+  matter field `tools` with one to three entries, on one line as in
+  `tools: [ArgoCD, kind, Helm]`. An entry MUST consist of letters and
+  digits only and MUST NOT be Kapitan in any casing.
+
+  kadet-hub/outreach posts each entry as a hashtag, after the two it
+  always sets, #KadetHub and #Kapitan, and takes at most three. An entry
+  is therefore the tool's hashtag without the `#`. It has no hyphen and
+  keeps the tool's own casing, or CamelCase where that reads better, as
+  in `kind`, `CertManager` and `OAuth2Proxy`. The entries are the tools
+  the post is most about that a Helm, Kustomize or Kubernetes user would
+  follow. Subjects such as security belong in `topics` (CAT-36a). The
+  weekly release posts of CAT-36b come from the content adapter and have
+  no `tools`.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_blog_tools`; partial:
+    which tools a post is most about is a review question)
+  - Since: #659
+
+- CAT-52: Every entry of the blog feed (CAT-36) MUST carry one
+  `<category term="<tool>"/>` per entry of its post's `tools`, in the
+  order of the field.
+
+  The feed is Atom, which names a category by its `term` attribute
+  (RFC 4287, section 4.2.2). kadet-hub/outreach reads the posts from the
+  feed alone. A post without `tools`, such as a release post, has no
+  category.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_blog_tools`; partial:
+    the posts the test build publishes on the day it runs)
+  - Since: #659
+
 - CAT-37: The site MUST have an index of the recipes at `/recipes/`, and
   the site navigation MUST link it. Each recipe has a page at
   `/recipes/<name>/` (CAT-37c).
