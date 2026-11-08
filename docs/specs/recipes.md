@@ -454,7 +454,7 @@ the rules it is judged by.
   job is skipped.
 
   - Test: workflow job `gate-selftest` (`pass-recipe`, `pass-recipe-chart`, `fail-recipe-object-diff`, `fail-recipe-dry-run`) (partial: the `renders` job itself runs only from `main`; RCP-308 by `check/tests/test_lint.py` in kadet-hub/recipes, no sample; the Job labels of RCP-9, a pod's `false` and an empty `lifecycle` of RCP-12 by `check/tests/test_compare.py` there, no sample)
-  - Since: #389; required recipes and `gateway-api` (REC-17): #390; read-only RBAC of designed recipes (RCP-308): #572; Job labels (RCP-9): #575; a pod's `false` (RCP-12): #634; an empty `lifecycle` (RCP-12): this change
+  - Since: #389; required recipes and `gateway-api` (REC-17): #390; read-only RBAC of designed recipes (RCP-308): #572; Job labels (RCP-9): #575; a pod's `false` (RCP-12): #634; an empty `lifecycle` (RCP-12): #657
 
 - REC-10: The gate comment MUST show, on a bump, the output diff against the
   previous version as SEC-13 does, and the SEC-12 matches, generator pins,
