@@ -1101,7 +1101,7 @@ class Site(unittest.TestCase):
                       "        subdir: cert-manager\n        output_path: inventory/classes/recipes/cert-manager", fetch)
         self.assertIn('<pre id="commands"><code>kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch</code></pre>', page)
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes#using-a-recipe">Using a recipe</a>', page)
-        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+        self.assertEqual([h for h in re.findall(r"<h2>([^<]+)</h2>", page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
         self.assertIn("<h2>Required parameters</h2>\n<p>No parameter has to be set.</p>", page)
         self.assertIn("<td><code>replicaCount</code></td>", page)  # rendered from the README
@@ -1138,7 +1138,7 @@ class Site(unittest.TestCase):
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with", page)
         self.assertIn("<li><code>recipes.miniflux.db</code> (<code>db.yml</code>): <code>miniflux-db</code></li>", page)
-        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+        self.assertEqual([h for h in re.findall(r"<h2>([^<]+)</h2>", page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Mapping", "Proof"])
         self.assertIn("<h2>Required parameters</h2>\n<p>The password must be set as a ref. Without it the compile stops with\n"
                       "<code>Interpolation key 'applications.miniflux.admin.password' not found</code>.</p>", page)
@@ -1357,6 +1357,8 @@ class Site(unittest.TestCase):
             sitemap = f.read()
         with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
             feed = f.read()
+        with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
+            llms = f.read()
         for old, name in moved.items():
             url = f"https://kadet-hub.org/guides/{name}/"
             self.assertFalse(os.path.exists(os.path.join(CONTENT, "blog", old + ".md")), old)
@@ -1366,7 +1368,11 @@ class Site(unittest.TestCase):
             self.assertIn(f"<loc>{url}</loc>", sitemap)
             self.assertNotIn(f"/blog/{old}/", sitemap)
             self.assertNotIn(f"/blog/{old}/", feed)
-            self.assertTrue(self.markdown("guides", name).startswith("# "), name)  # CAT-28: the guide's Markdown variant
+            self.assertNotIn(f"/blog/{old}/", llms)
+            variant = self.markdown("guides", name)
+            self.assertTrue(variant.startswith("# "), name)  # CAT-28: the guide's Markdown variant
+            heading = variant.split("\n", 1)[0]  # CAT-36f: the old variant links the guide and its variant, without its text
+            self.assertEqual(self.markdown("blog", old), f"{heading}\n\nThis page moved to <{url}>. Its Markdown variant is at <{url}index.md>.\n")
         sources = glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True) + glob.glob(os.path.join(HERE, "site", "layouts", "**", "*.*"), recursive=True)
         for path in sources:  # CAT-36g: no internal link to an alias
             with open(path, encoding="utf-8") as f:

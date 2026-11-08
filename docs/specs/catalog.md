@@ -1579,7 +1579,9 @@ Related: CAT-15, CAT-30, CON-2.
 
 - CAT-36f: A post that moves to `/guides/` MUST keep its URL
   `/blog/<name>/` as a Hugo alias whose page redirects to the guide at
-  once, with `content="0; url=<guide URL>"`. The alias MUST stay.
+  once, with `content="0; url=<guide URL>"`, and its Markdown variant
+  `/blog/<name>/index.md` (CAT-28) as a stub that links the guide and the
+  guide's variant by absolute URL. Both MUST stay.
 
   GitHub Pages has no server-side redirects, so the redirect is the page
   Hugo writes for each entry of `aliases`: a meta refresh of 0 seconds and
@@ -1596,11 +1598,20 @@ Related: CAT-15, CAT-30, CON-2.
   alias is one small file.
 
   Hugo leaves alias pages out of `sitemap.xml`, so the sitemap names the
-  guide only, and CAT-11d skips them as redirects. The Markdown variant at
-  the old `index.md` gets no redirect: Hugo writes alias pages as HTML.
+  guide only, and CAT-11d skips them as redirects.
+
+  Hugo renders aliases only for HTML output formats, so the old `index.md`
+  needs a file of its own (`pageRenderer` in `hugolib/site_render.go`,
+  Hugo 0.168.0). The guide's Markdown template `prose.markdown.md` writes
+  one per entry of `aliases` with `resources.FromString` and `.Publish`,
+  so the next move needs no list kept by hand. The stub has the guide's
+  title and the absolute URLs of the guide and of its variant. It leaves
+  out the guide's text, so there is no second copy to index. A published
+  resource is not a page, so `sitemap.xml` and `llms.txt` (CAT-16) do not
+  list it.
 
   - Test: `catalog/test_catalog.py` (`test_moved_posts`)
-  - Since: #650
+  - Since: #650, #654
 
 - CAT-36g: A page of the site that links a moved post MUST link the
   guide's URL.
