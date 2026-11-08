@@ -1357,6 +1357,8 @@ class Site(unittest.TestCase):
             sitemap = f.read()
         with open(os.path.join(self.out, "blog", "index.xml"), encoding="utf-8") as f:
             feed = f.read()
+        with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
+            llms = f.read()
         for old, name in moved.items():
             url = f"https://kadet-hub.org/guides/{name}/"
             self.assertFalse(os.path.exists(os.path.join(CONTENT, "blog", old + ".md")), old)
@@ -1366,7 +1368,11 @@ class Site(unittest.TestCase):
             self.assertIn(f"<loc>{url}</loc>", sitemap)
             self.assertNotIn(f"/blog/{old}/", sitemap)
             self.assertNotIn(f"/blog/{old}/", feed)
-            self.assertTrue(self.markdown("guides", name).startswith("# "), name)  # CAT-28: the guide's Markdown variant
+            self.assertNotIn(f"/blog/{old}/", llms)
+            variant = self.markdown("guides", name)
+            self.assertTrue(variant.startswith("# "), name)  # CAT-28: the guide's Markdown variant
+            heading = variant.split("\n", 1)[0]  # CAT-36f: the old variant links the guide and its variant, without its text
+            self.assertEqual(self.markdown("blog", old), f"{heading}\n\nThis page moved to <{url}>. Its Markdown variant is at <{url}index.md>.\n")
         sources = glob.glob(os.path.join(CONTENT, "**", "*.md"), recursive=True) + glob.glob(os.path.join(HERE, "site", "layouts", "**", "*.*"), recursive=True)
         for path in sources:  # CAT-36g: no internal link to an alias
             with open(path, encoding="utf-8") as f:
