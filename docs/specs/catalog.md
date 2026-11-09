@@ -1545,7 +1545,8 @@ Related: CAT-15, CAT-30, CON-2.
   under `/guides/`. A post MUST have an occasion: a stack walkthrough
   (CAT-45), a release (CAT-36b), a finding or an announcement. An article
   MUST appear as a post first and MAY move to `/guides/` only once its date
-  has passed and kadet-hub/outreach has published it on dev.to.
+  has passed and kadet-hub/outreach has published it on dev.to and
+  Bluesky.
 
   A guide is maintained. It carries `lastmod` (CAT-11g) and no `date`, and
   a change in a tool it covers changes its text. A post stays as it was on
@@ -1556,11 +1557,13 @@ Related: CAT-15, CAT-30, CON-2.
   as long as the page is up.
 
   The blog feed is what kadet-hub/outreach publishes on dev.to (OUT-1
-  there), and the daily schedule of CAT-36a is built from queued posts. A
-  guide is in neither, so an article that started as a guide would never
-  reach dev.to, and moving a queued post would leave its day empty. A
-  post is on dev.to when a closed issue labelled `devto` in
-  kadet-hub/outreach names its URL (OUT-4 there).
+  there) and links on Bluesky (OUT-23 there), and the daily schedule of
+  CAT-36a is built from queued posts. A guide is in neither, so an
+  article that started as a guide would never reach dev.to or Bluesky,
+  and moving a queued post would leave its day empty. A post is on dev.to
+  when a closed issue labelled `devto` in kadet-hub/outreach names its URL
+  (OUT-4 there), and on Bluesky when a closed issue labelled `bluesky`
+  does (OUT-25 there).
 
   On 2026-11-07, 16 of the 40 posts moved to `/guides/` by this rule.
   Ten more are guides by their text and stay posts until both conditions
@@ -1574,8 +1577,9 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_moved_posts`, partial: dates
     and layouts; which article is a guide is a review question); manual:
-    the closed `devto` issue for the post's URL before it moves
-  - Since: #650
+    the closed `devto` and `bluesky` issues for the post's URL before it
+    moves
+  - Since: #650, this change
 
 - CAT-36f: A post that moves to `/guides/` MUST keep its URL
   `/blog/<name>/` as a Hugo alias whose page redirects to the guide at
