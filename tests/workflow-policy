@@ -39,7 +39,7 @@ done < <(grep -rnE '(^|[^[:alnum:]_-])curl[[:space:]].*https://github\.com/' .gi
 # GI-6: every build of the sandbox image passes the job's token to github_fetch.py.
 while IFS= read -r line; do
   fail "GI-6: sandbox image build without the secret GH_TOKEN: $line"
-done < <(grep -rnE 'docker (buildx )?build .*(-t|--tag)[ =]kadet-hub/sandbox' .github release | grep -v -- '--secret id=GH_TOKEN,env=GH_TOKEN' || true)
+done < <(grep -rnE 'docker (buildx )?build .*((-t|--tag)[ =]kadet-hub/sandbox|[[:space:]/"]sandbox"?([[:space:]]|$))' .github release | grep -v -- '--secret id=GH_TOKEN,env=GH_TOKEN' || true)
 
 # GI-10: no caches.
 while IFS= read -r line; do

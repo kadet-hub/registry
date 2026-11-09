@@ -111,8 +111,8 @@ which only a maintainer pull request changes (GI-2, REV-1).
   download without a `sha256sum -c` on the next line, and on a
   `docker build` or `docker buildx build` of the sandbox image in
   `.github/` or `release/` without the secret. The build rule matches
-  lines that tag the image `kadet-hub/sandbox` with `-t` or `--tag`; an
-  untagged build of the image is not caught. Local builds and the
+  lines that tag the image `kadet-hub/sandbox` with `-t` or `--tag`, or
+  whose build context is the `sandbox` directory. Local builds and the
   untagged fallback in `sandbox/gopclntab/check` may stay anonymous, since
   the workflows pass the image they built with the secret.
 
