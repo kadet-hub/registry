@@ -19,6 +19,7 @@ jobs:
 
       - name: Install ruff and shellcheck
         env:
+          GH_TOKEN: ${{ github.token }}
           # renovate: datasource=github-release-attachments depName=astral-sh/ruff
           RUFF_VERSION: 0.17.3
           RUFF_SHA256: 2b0890f5a55900af741f133918c2656919bbf18c2ab7741b4ca8403a90e647a9
@@ -26,9 +27,9 @@ jobs:
           SHELLCHECK_VERSION: v0.11.0
           SHELLCHECK_SHA256: b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6
         run: |
-          curl -fsSLo "$RUNNER_TEMP/ruff.tar.gz" "https://github.com/astral-sh/ruff/releases/download/${RUFF_VERSION}/ruff-x86_64-unknown-linux-gnu.tar.gz"
+          gh release download "$RUFF_VERSION" -R astral-sh/ruff -p ruff-x86_64-unknown-linux-gnu.tar.gz -O "$RUNNER_TEMP/ruff.tar.gz"
           echo "${RUFF_SHA256}  $RUNNER_TEMP/ruff.tar.gz" | sha256sum -c -
-          curl -fsSLo "$RUNNER_TEMP/shellcheck.tar.gz" "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.gz"
+          gh release download "$SHELLCHECK_VERSION" -R koalaman/shellcheck -p "shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.gz" -O "$RUNNER_TEMP/shellcheck.tar.gz"
           echo "${SHELLCHECK_SHA256}  $RUNNER_TEMP/shellcheck.tar.gz" | sha256sum -c -
           sudo tar -xzf "$RUNNER_TEMP/ruff.tar.gz" -C /usr/local/bin --strip-components=1 ruff-x86_64-unknown-linux-gnu/ruff
           sudo tar -xzf "$RUNNER_TEMP/shellcheck.tar.gz" -C /usr/local/bin --strip-components=1 "shellcheck-${SHELLCHECK_VERSION}/shellcheck"

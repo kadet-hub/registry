@@ -31,7 +31,9 @@ jobs:
       - uses: ./.github/actions/setup-gvisor # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
       - name: Build sandbox image
-        run: docker build -t kadet-hub/sandbox sandbox
+        env:
+          GH_TOKEN: ${{ github.token }} # sandbox/github_fetch.py (GI-6)
+        run: docker build --secret id=GH_TOKEN,env=GH_TOKEN -t kadet-hub/sandbox sandbox
 
       - name: Unit tests in the sandbox image
         run: |

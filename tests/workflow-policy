@@ -18,13 +18,28 @@ done < <(grep -rnE '^[[:space:]]*(-[[:space:]]*)?uses:' .github | grep -vE 'uses
 while IFS= read -r file; do
   while IFS=: read -r n _; do
     sed -n "$((n + 1))p" -- "$file" | grep -qE 'sha(256|512)sum -c' || fail "GI-6: download without checksum: $file:$n"
-  done < <(grep -nE '(^|[^[:alnum:]_-])curl[[:space:]]' -- "$file" || true)
+  done < <(grep -nE '(^|[^[:alnum:]_-])(curl|gh release download)[[:space:]]' -- "$file" || true)
 done < <(find .github -type f \( -name '*.yml' -o -name '*.yaml' \))
 
 # GI-6: image downloads carry a checksum.
 while IFS= read -r line; do
   fail "GI-6: ADD without --checksum: sandbox/Dockerfile:$line"
 done < <(grep -nE '^ADD[[:space:]]+[^-]*https?://' sandbox/Dockerfile || true)
+while IFS=: read -r n _; do
+  sed -n "$((n + 1))p" sandbox/Dockerfile | grep -qE 'sha256sum -c' || fail "GI-6: download without checksum: sandbox/Dockerfile:$n"
+done < <(grep -nE 'github_fetch\.py[[:space:]]+"?https://' sandbox/Dockerfile || true)
+
+# GI-6: no download from GitHub without the job's token. github.com ignores a
+# token on a release URL, and ADD cannot send one.
+while IFS= read -r line; do
+  fail "GI-6: download from GitHub without the job's token: $line"
+done < <(grep -rnE '(^|[^[:alnum:]_-])curl[[:space:]].*https://github\.com/' .github | grep -v '# GI-6: anonymous' || true;
+         grep -nE '^ADD[[:space:]].*https://(github\.com|raw\.githubusercontent\.com)/' sandbox/Dockerfile | sed 's|^|sandbox/Dockerfile:|' || true)
+
+# GI-6: every build of the sandbox image passes the job's token to github_fetch.py.
+while IFS= read -r line; do
+  fail "GI-6: sandbox image build without the secret GH_TOKEN: $line"
+done < <(grep -rnE 'docker (buildx )?build .*((-t|--tag)[ =]kadet-hub/sandbox|[[:space:]/"]sandbox"?([[:space:]]|$))' .github release | grep -v -- '--secret id=GH_TOKEN,env=GH_TOKEN' || true)
 
 # GI-10: no caches.
 while IFS= read -r line; do

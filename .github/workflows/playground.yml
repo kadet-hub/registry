@@ -38,7 +38,9 @@ jobs:
       - uses: ./.github/actions/setup-oras # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
       - name: Build the sandbox image
-        run: docker build -t kadet-hub/sandbox sandbox
+        env:
+          GH_TOKEN: ${{ github.token }} # sandbox/github_fetch.py (GI-6)
+        run: docker build --secret id=GH_TOKEN,env=GH_TOKEN -t kadet-hub/sandbox sandbox
 
       - name: Unit tests of the provenance replay (PG-15 to PG-19)
         run: |
