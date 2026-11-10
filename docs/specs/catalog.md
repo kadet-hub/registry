@@ -1580,7 +1580,7 @@ Related: CAT-15, CAT-30, CON-2.
     and layouts; which article is a guide is a review question); manual:
     the closed `devto` and `bluesky` issues for the post's URL before it
     moves
-  - Since: #650, #665, this change
+  - Since: #650, #665, #666
 
 - CAT-36f: A post that moves to `/guides/` MUST keep its URL
   `/blog/<name>/` as a Hugo alias whose page redirects to the guide at
