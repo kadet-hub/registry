@@ -1568,7 +1568,8 @@ Related: CAT-15, CAT-30, CON-2.
   On 2026-11-07, 16 of the 40 posts moved to `/guides/` by this rule.
   Ten more are guides by their text and stay posts until both conditions
   hold: eight were queued for 12 to 22 November 2026, and two were not on
-  dev.to yet. Among the posts that stay for good, `chainsaw-kind` and
+  dev.to yet. `nextcloud-helm-chart-bitnami`, one of those two, moved on
+  2026-11-10. Among the posts that stay for good, `chainsaw-kind` and
   `docker-tag-and-digest` report what the examples CI and the recipes ran
   into at the time, and `kubectl-wait-null-conditions` one failure on one
   day.
@@ -1579,7 +1580,7 @@ Related: CAT-15, CAT-30, CON-2.
     and layouts; which article is a guide is a review question); manual:
     the closed `devto` and `bluesky` issues for the post's URL before it
     moves
-  - Since: #650, this change
+  - Since: #650, #665, #666
 
 - CAT-36f: A post that moves to `/guides/` MUST keep its URL
   `/blog/<name>/` as a Hugo alias whose page redirects to the guide at

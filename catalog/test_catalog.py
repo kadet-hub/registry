@@ -486,11 +486,11 @@ def build(index, tmp, artifacts=None, sboms=None, rekor=None, discussions=None, 
     return out
 
 
-# CAT-36e: the posts that moved to /guides/ on 2026-11-07; each keeps its old URL as an alias (CAT-36f).
+# CAT-36e: the posts that moved to /guides/; each keeps its old URL as an alias (CAT-36f).
 MOVED_POSTS = {"actions-runner-controller-dind", "apiserver-dry-run", "bitnami", "cert-manager-helm-chart-patches", "config-tools", "first-platform",
                "gvisor-ci", "helm-chart-vs-kapitan-inventory", "helm-chart-vs-operator", "kube-prometheus-stack-dashboards",
                "kustomize-delete-resource-helm-chart", "kustomize-json-patch-helm-chart", "kustomize-patch-env-helm-chart",
-               "renovate-automerge-required-reviews", "same-app", "verify-oci"}
+               "nextcloud-helm-chart-bitnami", "renovate-automerge-required-reviews", "same-app", "verify-oci"}
 CONTENT = os.path.join(HERE, "site", "content")
 CONNECTIVES = {"a", "an", "the", "on", "in", "for", "with", "to", "of"}  # CAT-11m: left out when a title is matched with a query
 
@@ -884,7 +884,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
         self.assertNotIn("generators/old/", text)  # CAT-26: no listed version
         self.assertIn("\n- [Writing a Kapitan generator](https://kadet-hub.org/guides/writing-a-kapitan-generator/index.md): How to write a reusable", text)
-        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 28)
+        self.assertEqual(text.count("](https://kadet-hub.org/guides/"), 29)
         self.assertIn("\n- [Kinds](https://kadet-hub.org/kinds/): ", text)  # CAT-29: the index, not kind pages
         self.assertIn("\n- [Compatibility](https://kadet-hub.org/compatibility/): ", text)  # CAT-30
         self.assertIn("\n- [Wanted generators](https://kadet-hub.org/wanted/): ", text)  # CAT-31

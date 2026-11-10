@@ -1,9 +1,9 @@
 ---
 title: "Nextcloud Helm chart: Bitnami subcharts and Kapitan"
-date: 2026-11-03
-topics: [helm, bitnami, kapitan]
-tools: [Nextcloud, Helm, Bitnami]
+layout: prose
 description: "Nextcloud Helm chart and Bitnami: what the 9.4.1 subcharts run today, the chart on your own PostgreSQL and Valkey, and a Kapitan recipe tested on kind."
+lastmod: 2026-11-10
+aliases: [/blog/nextcloud-helm-chart-bitnami/]
 ---
 
 The Nextcloud Helm chart 9.4.1 packages Bitnami's PostgreSQL, MariaDB and
