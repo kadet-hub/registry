@@ -2658,7 +2658,7 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py` (`Site.test_legal_pages_and_notices`
     for CAT-57, `Site.test_blog_post_page` for CAT-57a)
-  - Since: this change
+  - Since: #682
 
 - CAT-1: The release workflow MUST build the catalog from the index it
   published or verified in the same run, and deploy it from a job bound to
@@ -2845,7 +2845,7 @@ index is refused (CON-2).
   says what a generator and a recipe are and how they map to a Helm chart.
 
   - Test: `catalog/test_catalog.py` (`Quickstart.test_readme`)
-  - Since: this change
+  - Since: #682
 
 - CAT-56a: The quickstart in `README.md` MUST use the install command and
   the compile commands of `/quickstart/` (CAT-40) and MUST NOT pin a
@@ -2870,7 +2870,7 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py` (`Quickstart.test_readme`, partial:
     the target, which comes from the recipe's README in kadet-hub/recipes);
     manual: the run above
-  - Since: this change
+  - Since: #682
 
 - CAT-56b: Every row of the Helm comparison in `README.md` MUST link a
   guide of the site that backs it.
@@ -2881,4 +2881,4 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py` (`Quickstart.test_readme`, partial:
     the guide exists; whether it backs the row is a review question)
-  - Since: this change
+  - Since: #682
