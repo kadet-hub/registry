@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: multus
-  tag: multus-v1.0.3
-  sha: cca18f9c91c74892b720ed194ad0d2facb7646a2
+  tag: multus-v1.0.4
+  sha: 8419be2a5af48097a04dc7eebb59b48de695f801
 owners: [3042152]
