@@ -88,7 +88,7 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .chip:hover:not(:disabled) { border-color: var(--accent); }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .chip:disabled { opacity: .45; cursor: default; }
-.chip .count { font-variant-numeric: tabular-nums; color: inherit; opacity: .7; font-size: .8rem; }
+.chip .count { font-variant-numeric: tabular-nums; color: inherit; font-size: .8rem; }
 .chip.clear { border-style: dashed; color: var(--text-muted); }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: .5rem 1rem; flex-wrap: wrap; }
 .result { margin: 0; color: var(--text-muted); font-size: .95rem; }
@@ -115,14 +115,15 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .tag { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .3rem; min-height: 26px; padding: 0 .6rem; border-radius: 999px; background: var(--accent-bg); color: var(--accent-strong); font-size: .8rem; font-weight: 600; text-decoration: none; }
 .tag:hover { color: var(--accent-strong); outline: 1px solid var(--accent); }
 .facts { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: auto 0 0; padding-top: .75rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: .875rem; }
-.facts div { display: flex; align-items: center; gap: .35rem; }
-.facts dt { display: flex; }
+.facts div { display: flex; align-items: baseline; gap: .35rem; }
+/* CAT-9b: labels keep their width; overflow-wrap: anywhere would let them shrink to one letter. */
+.facts dt { display: flex; flex: none; }
 .facts dd { margin: 0; }
 .card .facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .3rem .9rem; }
 .card .facts div { display: contents; }
 .card .facts dt::after { content: ":"; }
 .card .facts dd { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; color: var(--text); }
-.fact-link { position: relative; z-index: 1; }
+.fact-link { position: relative; z-index: 1; min-width: 24px; min-height: 24px; }
 .empty { padding: 3rem 1rem; text-align: center; color: var(--text-muted); }
 
 /* Monogram */
@@ -210,7 +211,6 @@ details.version > summary .v { font-weight: 700; color: var(--text); font-varian
 details.version > :not(summary) { margin-inline: 1.25rem; }
 details.version[open] { padding-bottom: 1rem; }
 details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
-.version.yanked { opacity: .85; }
 .pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
 .pill.warn { background: var(--warn-bg); color: var(--warn); }
 .warning { color: var(--warn); font-weight: 600; }
@@ -283,7 +283,8 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 
 .disclaimer { color: var(--text-muted); font-size: .875rem; }
 /* Checks (CAT-14) */
-.scan-head { display: flex; gap: .4rem; align-items: baseline; font-size: .9rem; }
+.scan-head { font-size: .9rem; }
+.scan-head .icon { margin-right: .4rem; }
 .checks { list-style: none; padding: 0; margin: .75rem 0; display: grid; gap: .6rem; font-size: .9rem; }
 .checks li { display: flex; gap: .55rem; align-items: flex-start; }
 .checks .icon.ok { color: var(--ok); margin-top: .2rem; }
@@ -315,11 +316,12 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
   .compat tr, .compat th, .compat td { display: block; }
   .compat tr { margin-bottom: .75rem; border: 1px solid var(--border); }
   .compat th, .compat td { border: 0; }
+  .compat th:first-child { width: auto; }
   .compat td::before { content: attr(data-label) ": "; color: var(--text-muted); }
 }
 /* Version permalinks (CAT-17) */
-.permalink { color: var(--text-muted); text-decoration: none; padding: 0 .25rem; opacity: .6; }
-.permalink:hover, .permalink:focus-visible { opacity: 1; color: var(--accent); }
+.permalink { min-width: 24px; min-height: 24px; color: var(--text-muted); text-align: center; text-decoration: none; padding: 0 .25rem; }
+.permalink:hover, .permalink:focus-visible { color: var(--accent); }
 details.version:target { border-color: var(--accent); }
 /* Process diagrams (CAT-35a): dot's SVG coloured by class; a failure path is --warn, dashed and labelled. */
 .diagram { margin: 1.5rem 0; overflow-x: auto; }
