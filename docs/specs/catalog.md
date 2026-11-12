@@ -1688,8 +1688,10 @@ Related: CAT-15, CAT-30, CON-2.
   all. On 11 and 12 November 2026 the 04:17 run had not started by 05:00,
   and on 11 November the day's post went out only after a manual
   dispatch. The second run publishes a post dated that day when the first
-  is missing. When both run, the second builds the same site again and
-  refreshes the counts of CAT-20.
+  is missing. Like every release run, it also runs the publish jobs, which
+  push only a version that no earlier run published (PUB-2). When both
+  runs succeed, the second publishes nothing, builds the same site again
+  and refreshes the counts of CAT-20.
 
   - Test: `catalog/test_catalog.py` (`Schedule.test_two_daily_runs`)
   - Since: #674
