@@ -36,6 +36,16 @@ from view import (
 OWNER = "kadet-hub"
 
 
+def contrast(a, b):
+    """WCAG contrast ratio of two #rrggbb colours (CAT-54, PG-25)."""
+    def luminance(hex_colour):
+        rgb = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        r, g, b = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    la, lb = luminance(a), luminance(b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
 def record(d, yanked=None, description="Renders a ConfigMap", tags=("helm",), advisories=()):
     return {"digest": "sha256:" + d * 64, "yanked": yanked, "advisories": list(advisories), "published": "2026-10-09T05:34:57Z",
             "description": description, "tags": list(tags), "license": "Apache-2.0", "kapitan": ">=0.36.3,<0.37",
@@ -698,6 +708,36 @@ class Site(unittest.TestCase):
         for rule in ('header.site[data-menu="closed"] nav { display: none; }', '.filters[data-tags="closed"] .tag-filter { display: none; }',
                      ".filters { position: static; }"):
             self.assertIn(rule, narrow)
+
+    def css(self):
+        with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_words_wrap_between_words(self):  # CAT-9b
+        css = self.css()
+        self.assertRegex(css, r"\n\.facts dt \{[^}]*flex: none;")
+        self.assertNotRegex(css, r"\.scan-head \{[^}]*display: flex")
+        narrow = re.search(r"@media \(max-width: 60rem\) \{(.*?)\n\}", css, re.DOTALL).group(1)
+        self.assertIn(".compat th:first-child { width: auto; }", narrow)
+
+    def test_text_reaches_aa(self):  # CAT-54
+        css = self.css()
+        colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
+        pairs = [(fg, bg) for fg in ("text", "text-muted", "accent", "accent-strong", "warn", "ok") for bg in ("bg", "bg-subtle", "surface")]
+        pairs += [("accent-strong", "accent-bg"), ("text-muted", "accent-bg"), ("on-accent", "accent"), ("warn", "warn-bg"), ("ok", "ok-bg")]
+        for fg, bg in pairs:
+            for theme in (0, 1):
+                self.assertGreaterEqual(contrast(colours[fg][theme], colours[bg][theme]), 4.5, (fg, bg, ("light", "dark")[theme]))
+        # Opacity between 0 and 1 fades text below what its tokens reach; only a disabled control may.
+        faded = {sel.strip() for sel, value in re.findall(r"([^{}]+)\{[^}]*opacity: ([.\d]+)", css) if 0 < float(value) < 1}
+        self.assertEqual(faded, {".chip:disabled"})
+
+    def test_targets_reach_24px(self):  # CAT-55
+        css = self.css()
+        for selector in (".fact-link", ".permalink"):
+            rule = re.search(rf"^{re.escape(selector)} \{{([^}}]*)\}}", css, re.MULTILINE).group(1)
+            self.assertIn("min-width: 24px;", rule, selector)
+            self.assertIn("min-height: 24px;", rule, selector)
 
     def test_issue_forms_are_linked(self):
         links = [__import__("html").unescape(h) for h in re.findall(r'href="([^"]*issues/new[^"]*)"', self.page("generators", "demo"))]
@@ -2138,17 +2178,10 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
         used = set(re.findall(r"\.token\.[^{]*\{[^}]*color: var\(--([\w-]+)\)", css))
         self.assertEqual(re.search(r"^pre \{[^}]*background: var\(--([\w-]+)\)", css, re.MULTILINE).group(1), "bg-subtle")
-
-        def luminance(hex_colour):
-            rgb = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
-            r, g, b = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
-            return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
         self.assertEqual(used, {"text-muted", "accent", "ok", "warn"})
         for name in used:
             for theme in (0, 1):
-                fg, bg = luminance(colours[name][theme]), luminance(colours["bg-subtle"][theme])
-                self.assertGreaterEqual((max(fg, bg) + 0.05) / (min(fg, bg) + 0.05), 4.5, (name, ("light", "dark")[theme]))
+                self.assertGreaterEqual(contrast(colours[name][theme], colours["bg-subtle"][theme]), 4.5, (name, ("light", "dark")[theme]))
 
     def test_build_takes_the_latest_listed_version_and_the_gate_hashes(self):  # PG-1, PG-5
         sys.path.insert(0, os.path.join(HERE, "playground"))

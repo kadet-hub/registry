@@ -103,6 +103,63 @@ remembered in the browser's `localStorage`.
     not sticky
   - Since: #309
 
+- CAT-9b: The fact labels of a generator page, the check line of each
+  version and the generator name of each row on `/compatibility/` MUST
+  wrap only between words.
+
+  CAT-9 rests on `overflow-wrap: anywhere` on `body`, which makes the
+  smallest width of any box one character. A flex item or a column with a
+  fixed share then shrinks to that width. On the live site at 375 px on
+  2026-11-12, "Source" and "Image security" in the facts broke into
+  pieces such as "So urc e", the check line under every version split
+  into columns ("Checke d by the", 46 broken words on the `kubernetes`
+  page), and the stacked rows of `/compatibility/` kept the 16 % width of
+  the first column, so "argocd" showed as "argo cd". At 1280 px "Image
+  security" still broke. Labels now keep their width, the check line is
+  one block of text, and the stacked rows drop the column width. Digests
+  and other long values still break anywhere.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_words_wrap_between_words`,
+    partial: the stylesheet rules); manual: 375 px, no broken word on a
+    generator page or `/compatibility/`
+  - Since: #680
+
+- CAT-54: Text MUST reach a contrast of at least 4.5:1 against its
+  background in the light and the dark theme.
+
+  4.5:1 is the WCAG 2.2 AA level for text below 24 px. It applies to all
+  text here, since every pair of colour tokens reaches it: the lowest,
+  `--text-muted` on `--accent-bg` in the light theme, has 5.38:1 by the
+  WCAG formula on the hex values in `style.css`. The failures came from
+  text faded with `opacity`. Measured in Chrome on the live site on
+  2026-11-12, the version permalink "#" had 2.64:1 in light and 3.31:1 in
+  dark, and the date of a yanked version 4.47:1 in light. The count in a
+  selected tag chip had 4.34:1 in light and 4.33:1 in dark, calculated
+  from the tokens and the rule's opacity. Text is therefore not faded. A
+  yanked version is marked by its "yanked" pill and its reason. A
+  disabled control stays faded, which WCAG exempts.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`,
+    partial: the token pairs and the `opacity` rules of the stylesheet,
+    not the rendered page)
+  - Since: #680
+
+- CAT-55: Every link and control MUST meet WCAG 2.2 success criterion
+  2.5.8: a target of at least 24 by 24 px, or the space around a smaller
+  one that the criterion allows.
+
+  The popularity score on a card is a link of 16 by 22 px on top of the
+  card's own link, and the version permalink, 18 by 25 px, sits inside
+  the version's summary, which is a control too. Neither has the space
+  the criterion allows, measured at 375 and 1280 px on 2026-11-12. Both
+  now have a minimum size of 24 px. Links inside a sentence are exempt
+  under the criterion.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_targets_reach_24px`,
+    partial: the stylesheet rules of the two links); manual: 375 px, no
+    link or control outside text below 24 px that overlaps another target
+  - Since: #680
+
 - CAT-10: The home page MUST let visitors sort the cards by name, by the
   time of the latest version and by popularity score (CAT-23).
 
