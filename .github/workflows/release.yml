@@ -29,6 +29,7 @@ on:
       - .clusterfuzzlite/**
   schedule:
     - cron: "17 4 * * *" # CAT-20: refresh the 👍 counts and stars daily
+    - cron: "47 10 * * *" # CAT-36h: catches a skipped 04:17 run
   workflow_dispatch:
 
 permissions: {}

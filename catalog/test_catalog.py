@@ -3185,5 +3185,13 @@ else:
         self.assertIn('no "Generators" discussion category', err)
 
 
+
+class Schedule(unittest.TestCase):
+    def test_two_daily_runs(self):  # CAT-36h
+        with open(os.path.join(HERE, "..", ".github", "workflows", "release.yml"), encoding="utf-8") as f:
+            crons = re.findall(r'^    - cron: "([^"]+)"', f.read(), re.MULTILINE)
+        self.assertEqual(crons, ["17 4 * * *", "47 10 * * *"])
+
+
 if __name__ == "__main__":
     unittest.main()
