@@ -1729,9 +1729,21 @@ Related: CAT-15, CAT-30, CON-2.
   published together on 21 October 2026, and so were the five posts on
   Helm chart patches queued for 22 to 27 October. Topics are
   front matter only; there are no topic pages, since `/tags/` belongs to
-  the generator tags (CAT-18). A per-post Open Graph image, a newsletter
-  and comments were left out: the first has no measured effect, the
-  others need third-party code the CSP does not allow.
+  the generator tags (CAT-18). A newsletter and comments were left out,
+  because they need third-party code the CSP does not allow.
+
+  Each post has its own Open Graph image (CAT-58), although no
+  measurement shows that it brings more clicks than one image for the
+  whole site. Buffer's 2026 data compares post formats by interactions,
+  not clicks, and no published test compares a per-post image with a
+  generic one ([Buffer](https://buffer.com/resources/data-best-content-format-social-media/)).
+  The reason is the feed. The blog publishes a post a day, and every
+  share on Mastodon, LinkedIn, Threads and dev.to showed the same
+  `og.png`, so a reader could not tell two posts apart. The effect is
+  checked with GoatCounter's referrers (CAT-25) per network, over the
+  four weeks before and the four weeks after the first deploy with the
+  cards. Growth of the site and the mix of posts in both periods
+  confound that comparison.
 
   Related: CAT-36, CAT-11d.
 
@@ -1927,6 +1939,106 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`Site.test_fediverse_verification`;
     partial: the check on hachyderm.io runs only after the owner actions)
   - Since: #678
+
+- CAT-58: Every post MUST have its own Open Graph image, a 1200x630 PNG
+  of less than 300,000 bytes that Hugo builds from
+  `catalog/site/assets/og/base.png`. `og:image`, `og:image:width`,
+  `og:image:height`, `twitter:image` and the `BlogPosting` `image` MUST
+  name it, and `og:image:alt` MUST contain the post's title. Other pages
+  keep `og.png`.
+
+  Hugo's `images.Text` draws the text at build time, so the build needs
+  no other tool. The file name carries a hash that changes with the
+  drawn text. A corrected title therefore gets a new URL, which a
+  platform that caches previews by URL fetches again. The size budget is
+  near the 244,751 bytes of `og.png` and far below LinkedIn's 5 MB, the
+  smallest documented limit of the platforms in use. The cards of the 23
+  posts on 2026-11-12 have 41,934 to 68,818 bytes.
+
+  `og:image:alt` is the only description a card gets on Mastodon, which
+  stores it as the card's `image_description` (`preview_card.rb` in
+  Mastodon v4.7.5). It reads "kadet-hub.org: <title> (tools: <tools>)",
+  the text the card shows. A release post (CAT-36b) has no `tools`, so
+  its card and its alt text show the title alone.
+
+  Related: CAT-36a, CAT-51.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_post_cards`,
+    `ReleaseDigest.test_posts` for a release post); manual: the Mastodon
+    and LinkedIn preview of the first post after deploy
+  - Since: this change
+
+- CAT-58a: Text on the card MUST stay out of the outer 80 px. The title
+  MUST take at most three lines and end in "…" when it needs more. Text
+  MUST reach a contrast of at least 4.5:1 against the background.
+
+  dev.to shows a cover at 1000x420 and cuts about 63 px from the top and
+  the bottom of a 1200x630 image (Forem `editor_helper_service.rb`). X
+  draws the page title in a label above the bottom edge, and Forem keeps
+  the bottom 80 px of its own cards clear for it. The 80 px cover both,
+  and the sides keep the same margin.
+
+  `images.Text` wraps 20 px before the image's right edge and does not
+  report overflow (`resources/images/text.go` in Hugo v0.168.0).
+  `og-lines.html` therefore breaks the lines itself. It adds up the
+  advance widths of the characters, read from the font's `hmtx` table
+  into `assets/og/advances.json`, and starts a new line before 1040 px.
+  Hugo draws with the font's kerning, which the sum leaves out. On 15
+  title lines measured on 2026-11-12 the drawn line was 1.3 to 6.3 px
+  narrower than the sum, the widest 1019 px. The tags take one line by
+  the same rule.
+
+  Mastodon scales a card down to 230,400 pixels, 640x360 at 16:9, so
+  text shows at about half the size it is drawn at (`preview_card.rb`).
+  The title is drawn at 64 px and keeps about 34 px there. The domain is
+  drawn at 36 px and the tags at 32 px.
+
+  The colours are tokens of the dark theme on its `--bg` `#0d1117`: the
+  title in `--text` at 15.84:1, the domain in `--accent` at 7.43:1 and
+  the tags in `--text-muted` at 7.55:1, by the WCAG formula. The mark
+  keeps the favicon's colours, which the WCAG exception for logos covers.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_post_cards`: on every
+    post's card and on a fixture title longer than three lines, the
+    outer band and the rows between the third title line and the tags
+    are background; the colours in `og-card.html`)
+  - Since: this change
+
+- CAT-58b: The card MUST show nothing but the site's "K" mark, the
+  domain `kadet-hub.org`, the post's title and its `tools` as hashtags.
+
+  The mark is the one of `static/favicon.svg`, drawn for this site in
+  65af103. `base.png` holds it at four times that size, 64 px at (80, 80)
+  on `--bg`, rasterised from the favicon's SVG with rsvg-convert 2.63.4.
+  A tool appears as the hashtag the social posts already carry, in the
+  card's font.
+
+  Third-party logos are left out. No mark owner checked on 2026-11-12
+  grants an unaffiliated project the use of its logo on an editorial
+  social card. The Linux Foundation guidelines that cover the CNCF
+  artwork allow fair use of word marks only
+  ([Linux Foundation](https://www.linuxfoundation.org/legal/trademark-usage)).
+  HashiCorp, Docker and AWS restrict logos to approved or plain-text use
+  ([HashiCorp](https://www.hashicorp.com/en/trademark-policy),
+  [Docker](https://www.docker.com/legal/trademark-guidelines/),
+  [AWS](https://aws.amazon.com/trademark-guidelines/)). Kapitan's
+  repository has no logo policy, and section 6 of its Apache 2.0 license
+  grants no rights to trademarks. Since the card admits no third-party
+  mark, there is no list of permitted marks. The owner also ruled out
+  generated imagery.
+
+  The font is Noto Sans Bold 2.015, the unhinted TTF of the release
+  `NotoSans-v2.015` of notofonts/latin-greek-cyrillic, in
+  `catalog/site/assets/og/`. It is licensed under the SIL Open Font
+  License 1.1, which allows redistribution with the license text, and
+  `OFL.txt` next to the font holds that text. The font declares no
+  Reserved Font Name. Hugo reads it at build time and does not publish
+  it. The stylesheet uses the system font stack, so the site ships no
+  other font.
+
+  - Test: manual: review of `base.png` and `og-card.html` in the merge
+    request
+  - Since: this change
 
 - CAT-45: A blog post that puts several recipes or generators together
   into one use case, backed by a project in kadet-hub/examples, MUST name
