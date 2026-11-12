@@ -2397,7 +2397,7 @@ narrow them.
   phone. The field of CAT-37i is what shortens the list.
 
   - Test: `catalog/test_catalog.py` (`Site.test_recipe_sources_listed`)
-  - Since: this change
+  - Since: #681
 
 - CAT-37i: `/recipes/` MUST have a field that shows only the entries whose
   text contains every word typed into it, and MUST say how many entries
@@ -2427,7 +2427,7 @@ narrow them.
 
   - Test: `catalog/test_catalog.py` (`Site.test_recipe_finder`, partial:
     the markup; the matching runs in the browser); manual: AC-47
-  - Since: this change
+  - Since: #681
 
 - AC-47 (CAT-37h, CAT-37i): the fixture build's `/recipes/` names the
   source of every entry, and holds the hidden field, the count and the
