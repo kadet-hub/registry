@@ -1953,7 +1953,7 @@ Related: CAT-15, CAT-30, CON-2.
   platform that caches previews by URL fetches again. The size budget is
   near the 244,751 bytes of `og.png` and far below LinkedIn's 5 MB, the
   smallest documented limit of the platforms in use. The cards of the 23
-  posts on 2026-11-12 have 41,934 to 68,818 bytes.
+  posts on 2026-11-12 have 41,880 to 68,853 bytes.
 
   `og:image:alt` is the only description a card gets on Mastodon, which
   stores it as the card's `image_description` (`preview_card.rb` in
@@ -1982,11 +1982,12 @@ Related: CAT-15, CAT-30, CON-2.
   report overflow (`resources/images/text.go` in Hugo v0.168.0).
   `og-lines.html` therefore breaks the lines itself. It adds up the
   advance widths of the characters, read from the font's `hmtx` table
-  into `assets/og/advances.json`, and starts a new line before 1040 px.
-  Hugo draws with the font's kerning, which the sum leaves out. On 15
-  title lines measured on 2026-11-12 the drawn line was 1.3 to 6.3 px
-  narrower than the sum, the widest 1019 px. The tags take one line by
-  the same rule.
+  into `assets/og/advances.json`, and starts a new line before 1030 px.
+  The sum leaves out the font's kerning, which Hugo draws with, and
+  glyphs that reach past their advance. On the 54 title lines of the 23
+  posts on 2026-11-12 the drawn line ended between 5.0 px before and
+  0.1 px after the sum, so 10 px below the 1040 px of the safe zone are
+  enough. The tags take one line by the same rule.
 
   Mastodon scales a card down to 230,400 pixels, 640x360 at 16:9, so
   text shows at about half the size it is drawn at (`preview_card.rb`).
@@ -1994,9 +1995,11 @@ Related: CAT-15, CAT-30, CON-2.
   drawn at 36 px and the tags at 32 px.
 
   The colours are tokens of the dark theme on its `--bg` `#0d1117`: the
-  title in `--text` at 15.84:1, the domain in `--accent` at 7.43:1 and
-  the tags in `--text-muted` at 7.55:1, by the WCAG formula. The mark
-  keeps the favicon's colours, which the WCAG exception for logos covers.
+  title in `--text` at 15.84:1, the tags in `--accent` at 7.43:1 and the
+  domain in `--text-muted` at 7.55:1, by the WCAG formula. The tags carry
+  the accent because a reader looks for a tool, and the domain is the
+  same on every card. The mark keeps the favicon's colours, which the
+  WCAG exception for logos covers.
 
   - Test: `catalog/test_catalog.py` (`Site.test_post_cards`: on every
     post's card and on a fixture title longer than three lines, the

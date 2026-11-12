@@ -1,8 +1,9 @@
-{{- /* CAT-58: .text in at most .max lines of at most 1040 px at .size px, measured with the advances of the card font
-  (font units, 1000 per em, without kerning); the last line ends in "…" when words are left over. images.Text wraps at
-  1100 px from x 80, so it keeps these lines. shortcut: a single word wider than a line overflows; no title has one. */ -}}
+{{- /* CAT-58a: .text in at most .max lines of at most 1030 px at .size px, measured with the advances of the card font
+  (font units, 1000 per em); 10 px below the 1040 px of the safe zone for the kerning and overhang the sum leaves out. The
+  last line ends in "…" when words are left over. images.Text wraps at 1100 px from x 80, so it keeps these lines.
+  shortcut: a single word wider than a line overflows; no title has one. */ -}}
 {{- $adv := .adv -}}
-{{- $limit := div (mul 1040 1000) .size -}}
+{{- $limit := div (mul 1030 1000) .size -}}
 {{- $lines := slice }}{{ $line := "" }}{{ $width := 0 }}{{ $cut := "" }}{{ $more := false -}}
 {{- range split .text " " -}}
   {{- $w := 0 }}{{ range split . "" }}{{ $w = add $w (index $adv . | default $adv.wide) }}{{ end -}}
@@ -14,4 +15,4 @@
   {{- end -}}
   {{- if le (add $width (index $adv "…")) $limit }}{{ $cut = $line }}{{ end -}}
 {{- end -}}
-{{- return delimit ($lines | append (cond $more (printf "%s…" $cut) $line)) "\n" -}}
+{{- return delimit ($lines | append (cond $more (printf "%s…" (strings.TrimRight ",;:" $cut)) $line)) "\n" -}}
