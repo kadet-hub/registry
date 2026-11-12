@@ -1480,8 +1480,8 @@ class Site(unittest.TestCase):
             with open(os.path.join(tmp, "hugo.toml"), "w", encoding="utf-8") as f:
                 f.write('disableKinds = ["page", "section", "taxonomy", "term", "rss", "sitemap", "404", "robotstxt"]\n')
             with open(os.path.join(tmp, "layouts", "home.html"), "w", encoding="utf-8") as f:
-                f.write('{{ partial "og-lines.html" (dict "text" "aa %s aa" "size" 100 "max" 2 "adv" (%s | transform.Unmarshal)) }}'
-                        % ("a" * 20, json.dumps(json.dumps(adv))))
+                f.write('{{ partial "og-lines.html" (dict "text" "aa ' + "a" * 20 + ' aa" "size" 100 "max" 2 "adv" ('
+                        + json.dumps(json.dumps(adv)) + " | transform.Unmarshal)) }}")
             subprocess.run(["hugo", "--quiet", "--source", tmp, "--destination", os.path.join(tmp, "out")], check=True)
             with open(os.path.join(tmp, "out", "index.html"), encoding="utf-8") as f:
                 self.assertEqual(f.read().strip(), "aa\n" + "a" * 20 + "…")  # the word stays, not a bare ellipsis
