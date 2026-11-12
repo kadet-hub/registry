@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: prometheus-operator
-  tag: prometheus-operator-v1.1.6
-  sha: 6f98010a008560b287805d59c1a3bfba1ee10ca0
+  tag: prometheus-operator-v1.1.7
+  sha: 1ccac6bd6b56ece25c1673a5777b58e63b6573fd
 owners: [3042152]
