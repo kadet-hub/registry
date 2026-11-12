@@ -1869,7 +1869,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`Site.test_fediverse_verification`;
     partial: the check on hachyderm.io runs only after the owner actions)
-  - Since: this change
+  - Since: #678
 
 - CAT-45: A blog post that puts several recipes or generators together
   into one use case, backed by a project in kadet-hub/examples, MUST name
