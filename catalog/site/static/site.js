@@ -1,4 +1,4 @@
-// Theme toggle, the menu (CAT-9a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), and the home page's
+// Theme toggle, the menu (CAT-9a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), the recipe finder (CAT-37i), and the home page's
 // search, tag filter and sort (CAT-8 to CAT-10, CAT-9a). No markup is built from data.
 const root = document.documentElement;
 const announce = (text) => { document.getElementById("announce").textContent = text; };
@@ -155,6 +155,35 @@ if (share) {
     try { localStorage.setItem("mastodon", host); } catch (e) { /* not remembered */ }
     window.open(`https://${host}/share?text=${encodeURIComponent(`${title} ${url}`)}`, "_blank", "noopener,noreferrer");
   });
+}
+
+// CAT-37i: /recipes/ shows the entries that contain every typed word; entries are hidden, the count is text.
+const recipeSearch = document.getElementById("recipe-search");
+if (recipeSearch) {
+  const entries = [...document.querySelectorAll(".guide-list > li")];
+  const texts = entries.map((li) => li.textContent.replace(/\s+/g, " ").toLowerCase());
+  const result = document.getElementById("recipe-result");
+  // A word from a digit, or v and a digit, is a version and an @ starts a digest: a recipe pins one chart version, the reader runs another.
+  const words = (q) => q.toLowerCase().replace(/@\S*/g, " ").split(/[\s/:]+/).filter((w) => w && !/^v?[0-9]/.test(w));
+
+  function apply() {
+    const q = recipeSearch.value.trim();
+    const typed = words(q);
+    let shown = 0;
+    entries.forEach((li, i) => {
+      li.hidden = !typed.every((w) => texts[i].includes(w));
+      if (!li.hidden) shown++;
+    });
+    result.textContent = q ? `${shown} of ${entries.length} recipes matching “${q}”` : "";
+    document.getElementById("recipe-empty").hidden = shown > 0;
+    history.replaceState(null, "", q ? "?q=" + encodeURIComponent(q) : location.pathname);
+  }
+
+  recipeSearch.value = new URLSearchParams(location.search).get("q") || "";
+  recipeSearch.closest(".recipe-find").hidden = false;
+  recipeSearch.addEventListener("input", apply);
+  document.getElementById("recipe-reset").addEventListener("click", () => { recipeSearch.value = ""; apply(); recipeSearch.focus(); });
+  apply();
 }
 
 // Home page
