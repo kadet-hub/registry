@@ -2371,6 +2371,76 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`test_release_manifest_recipe`, `test_recipes`)
   - Since: #367
 
+A reader who runs a Helm chart comes to `/recipes/` to find the recipe that
+replaces it. Most queries of CAT-11f have this form, such as "<app> helm
+chart" or "bitnami alternative <app>". The chart's name is often not the
+recipe's: blackbox-exporter rebuilds `prometheus-blackbox-exporter`, and
+postgresql rebuilds CloudNativePG's `cluster`. The entries named title,
+description and proof level only, so the list did not say which chart or
+version a recipe rebuilds. On the live site on 2026-11-12 the 55 entries
+took 17,062 px at a width of 375 px, 19 screens of 900 px, with no way to
+narrow them.
+
+- CAT-37h: Every entry on `/recipes/` MUST name its source the way the
+  recipe page does (CAT-37c, CAT-37e to CAT-37g), without digest and
+  without commit.
+
+  A chart keeps its version, since a reader compares it with the version
+  they run. Digest and commit stay on the recipe page. In the list they
+  add 40 to 64 hex characters per entry that no reader compares there. A
+  compose recipe and one designed on an image do not say "chart", as
+  CAT-37e and CAT-37f require of the entry.
+
+  The line makes the unfiltered list longer. Built from kadet-hub/recipes
+  at 04879f4, the page grew from 17,062 px to 21,711 px at 375 px and from
+  10,212 px to 12,074 px at 1280 px, because a chart reference wraps on a
+  phone. The field of CAT-37i is what shortens the list.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_recipe_sources_listed`)
+  - Since: this change
+
+- CAT-37i: `/recipes/` MUST have a field that shows only the entries whose
+  text contains every word typed into it, and MUST say how many entries
+  match.
+
+  The text of an entry is what it shows: title, description, source
+  (CAT-37h), proof level and version, compared in lower case. Words are
+  split at spaces, `/` and `:`. So `bitnami/redis` finds valkey, whose
+  description leads with "Bitnami redis Helm chart alternative", and
+  `prometheus-community/prometheus-blackbox-exporter` finds
+  blackbox-exporter by its chart. A word that starts with a digit, or with
+  `v` and a digit, is taken as a version and ignored, and so is everything
+  from an `@`. A recipe pins one chart version, and a reader who pastes a
+  chart reference usually runs another.
+
+  The query is kept in the URL as `?q=`, as on the home page (CAT-8), so
+  going back from a recipe page restores the list. The canonical URL stays
+  `/recipes/` (CAT-11). When no entry matches, the page says so and links
+  the Bitnami guide, the open recipe requests on `/wanted/` and the
+  request form (CAT-41).
+
+  The field is progressive enhancement in `site.js`, as the selector of
+  CAT-34a is. Without JavaScript the field stays hidden and the list shows
+  every entry with its source, which the browser's own find covers. The
+  script only hides entries and writes the count with `textContent`, so it
+  builds no markup from data (CAT-3).
+
+  - Test: `catalog/test_catalog.py` (`Site.test_recipe_finder`, partial:
+    the markup; the matching runs in the browser); manual: AC-47
+  - Since: this change
+
+- AC-47 (CAT-37h, CAT-37i): the fixture build's `/recipes/` names the
+  source of every entry, and holds the hidden field, the count and the
+  empty state with its three links. In Chrome at 375 px and 1280 px, light
+  and dark, `bitnami/redis` leaves valkey, `prometheus-community/prometheus-blackbox-exporter`
+  leaves blackbox-exporter, and the pasted chart reference
+  `oci://quay.io/jetstack/charts/cert-manager:v1.19.0` keeps cert-manager.
+  A word that matches nothing shows the empty state. The field is reached
+  by Tab with a visible focus ring and has an accessible name, and Back
+  from a recipe page restores the query. Check:
+  `Site.test_recipe_sources_listed`, `Site.test_recipe_finder`; manual:
+  browser run on the built site (2026-11-12).
+
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
   generators from the latest version that is not yanked, read from its
