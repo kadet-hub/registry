@@ -1662,9 +1662,9 @@ Related: CAT-15, CAT-30, CON-2.
 
   The update date comes from `lastmod` in the front matter, not from git,
   so a typo fix does not make a post look new. A post dated in the future
-  stays out of the build until the daily release run (04:17 UTC, the
-  schedule CAT-20 added to `release.yml`) on or after
-  that date, which schedules posts without another mechanism. A queued
+  stays out of the build until the first scheduled release run on or
+  after that date (CAT-36h), which schedules posts without another
+  mechanism. A queued
   article post is dated on the first day after the newest post that is
   not a Monday and has no post yet, so the blog gains one post a day;
   Mondays belong to the release posts (CAT-36b).
@@ -1680,6 +1680,19 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_blog_post_page`)
   - Since: #272, #278
+
+- CAT-36h: `release.yml` MUST run on two daily schedules, at 04:17 and
+  10:47 UTC.
+
+  GitHub starts scheduled workflows late under load and sometimes not at
+  all. On 11 and 12 November 2026 the 04:17 run had not started by 05:00,
+  and on 11 November the day's post went out only after a manual
+  dispatch. The second run publishes a post dated that day when the first
+  is missing. When both run, the second builds the same site again and
+  refreshes the counts of CAT-20.
+
+  - Test: `catalog/test_catalog.py` (`Schedule.test_two_daily_runs`)
+  - Since: this change
 
 - CAT-36b: For every week from Monday 12 October 2026 in which at least
   one version was published and is not yanked, the blog MUST have a post
