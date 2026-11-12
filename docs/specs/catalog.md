@@ -2638,6 +2638,28 @@ generator page's Versions section explains it: consumers set `index_serial`
 in `.kapitan-sandbox.yaml` to the serial they last checked, so an older
 index is refused (CON-2).
 
+- CAT-57: The footer of every page MUST link the repository
+  `https://github.com/<owner>/registry`.
+
+- CAT-57a: Every post page MUST link the repository
+  `https://github.com/<owner>/registry` in a line of its own after the
+  share links.
+
+  The footer linked only files inside the repository, and the post's own
+  links lead to its discussions and its source file. The navigation's
+  "GitHub" link sits behind the menu button on narrow screens (CAT-9a).
+  A reader who finishes a post or reaches the footer gets a direct link
+  to the repository's front page, which holds the README, the site, the
+  gate and the posts. The links carry no `rel="nofollow"`. CAT-36c sets
+  it on compose forms behind a login and CAT-36b on text from generator
+  authors, and this repository is the site's own.
+
+  Related: CAT-36a.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_legal_pages_and_notices`
+    for CAT-57, `Site.test_blog_post_page` for CAT-57a)
+  - Since: this change
+
 - CAT-1: The release workflow MUST build the catalog from the index it
   published or verified in the same run, and deploy it from a job bound to
   the `github-pages` environment, which admits only `main`.
@@ -2811,3 +2833,52 @@ index is refused (CON-2).
 
   - Test: `catalog/test_catalog.py`
   - Since: #18, #158
+
+- CAT-56: `README.md` MUST link the playground at
+  `https://kadet-hub.org/playground/` above its first `##` heading.
+
+  GitHub shows the README as the repository's front page. It said what
+  the registry is and linked the documents, but had no example and no way
+  to see compiled output without installing Kapitan. The playground
+  compiles in the browser ([playground.md](playground.md)), so it is the
+  shortest path from the README to output. Below the link, the README
+  says what a generator and a recipe are and how they map to a Helm chart.
+
+  - Test: `catalog/test_catalog.py` (`Quickstart.test_readme`)
+  - Since: this change
+
+- CAT-56a: The quickstart in `README.md` MUST use the install command and
+  the compile commands of `/quickstart/` (CAT-40) and MUST NOT pin a
+  recipe version.
+
+  The quickstart compiles the uptime-kuma recipe without a cluster, for a
+  reader who knows Kapitan, and links `/quickstart/` for the way to a
+  running app. The reader saves the fetch inventory from the recipe page,
+  whose build writes the latest version and digest (CAT-38). Nothing
+  updates a pin in the README, so one written there would go stale with
+  the recipe's next release. The test compares the install command with
+  the quickstart page, which `Quickstart.test_commands` compares with
+  `docs/consumers.md`.
+
+  Run on 2026-11-12 in a shell with an empty home directory and an empty
+  uv cache, with the fetch inventory of uptime-kuma 1.0.1 from its recipe
+  page: the install, the project files and both compile commands took 22
+  seconds. The first compile command exited with status 1 as the README
+  says, and the second wrote a StatefulSet and a Service under
+  `compiled/uptime-kuma/manifests/`.
+
+  - Test: `catalog/test_catalog.py` (`Quickstart.test_readme`, partial:
+    the target, which comes from the recipe's README in kadet-hub/recipes);
+    manual: the run above
+  - Since: this change
+
+- CAT-56b: Every row of the Helm comparison in `README.md` MUST link a
+  guide of the site that backs it.
+
+  A comparison on the front page is read as a claim about Helm. The
+  guides measured each difference on real charts or a script, so a reader
+  can check the row there.
+
+  - Test: `catalog/test_catalog.py` (`Quickstart.test_readme`, partial:
+    the guide exists; whether it backs the row is a review question)
+  - Since: this change
