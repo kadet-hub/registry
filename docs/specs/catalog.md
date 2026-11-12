@@ -1826,6 +1826,51 @@ Related: CAT-15, CAT-30, CON-2.
     `navigator.share` present and absent
   - Since: #307
 
+- CAT-53: Every page MUST carry `<link rel="me"
+  href="https://hachyderm.io/@kadethub">` in its `<head>`. Every post page
+  MUST also carry `<meta name="fediverse:creator"
+  content="@kadethub@hachyderm.io">` there.
+
+  `@kadethub@hachyderm.io` is the project's Mastodon account. Mastodon
+  shows a link in a profile's metadata as verified when the linked page
+  has an `a` or `link` element with `rel="me"` whose `href` is the
+  profile URL, compared without case. It accepts only https links, does
+  not run JavaScript and reads at most the first 1 MB of the response.
+  The `link` element sits at the top of the `<head>`, so a long page
+  cannot push it past that limit. This is `VerifyLinkService` and
+  `Account::Field` in mastodon/mastodon v4.7.5, and the
+  [verification docs](https://docs.joinmastodon.org/user/profile/#verification).
+
+  Mastodon checks a link only when the profile is saved with a link that
+  is not verified yet (`UpdateAccountService#check_links`). The owner
+  therefore adds `https://kadet-hub.org` to the profile metadata after the
+  first deploy that carries the element, or saves the profile again.
+
+  Since Mastodon 4.3.0 a link preview names the author's account when the
+  page's `<head>` has a `fediverse:creator` meta tag, read from `name` or
+  `property`. Mastodon credits the account only when its owner lists the
+  page's domain under "Author attribution" in the profile settings, so the
+  owner adds `kadet-hub.org` there. This is `LinkDetailsExtractor`,
+  `FetchLinkCardService` and `Account::AttributionDomains` in v4.7.5, the
+  [v4.3.0 release notes](https://github.com/mastodon/mastodon/releases/tag/v4.3.0)
+  and the [attribution docs](https://docs.joinmastodon.org/user/profile/#attribution).
+
+  Only posts name the account as creator. A generator page shows its
+  author's README, which a preview must not credit to the project. Hugo
+  alias pages (CAT-36f) are redirects and carry neither element. A
+  browser fetches nothing for `rel="me"`, so the page still loads nothing
+  from another origin (CAT-3).
+
+  The handle is `params.mastodon` in `catalog/site/hugo.toml`. The
+  template builds the profile URL `https://<server>/@<user>` from it,
+  which holds where the server serves profiles on the handle's own
+  domain. For hachyderm.io the account lookup returns
+  `https://hachyderm.io/@kadethub` (checked 2026-11-12).
+
+  - Test: `catalog/test_catalog.py` (`Site.test_fediverse_verification`;
+    partial: the check on hachyderm.io runs only after the owner actions)
+  - Since: this change
+
 - CAT-45: A blog post that puts several recipes or generators together
   into one use case, backed by a project in kadet-hub/examples, MUST name
   them in a front matter field `stack`. The listings of CAT-46 and CAT-48
