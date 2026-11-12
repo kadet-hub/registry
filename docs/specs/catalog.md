@@ -1692,7 +1692,7 @@ Related: CAT-15, CAT-30, CON-2.
   refreshes the counts of CAT-20.
 
   - Test: `catalog/test_catalog.py` (`Schedule.test_two_daily_runs`)
-  - Since: this change
+  - Since: #674
 
 - CAT-36b: For every week from Monday 12 October 2026 in which at least
   one version was published and is not yanked, the blog MUST have a post
