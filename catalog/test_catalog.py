@@ -637,7 +637,7 @@ class Site(unittest.TestCase):
     def test_no_resource_from_another_origin(self):
         for html in self.pages():
             for ref in re.findall(r'<(?:script|link|img)\b[^>]*\b(?:src|href)="([^"]*)"', html):
-                if 'rel="canonical"' not in html[html.rfind("<", 0, html.index(ref)):html.index(ref)]:
+                if not re.search(r'rel="(canonical|me)"', html[html.rfind("<", 0, html.index(ref)):html.index(ref)]):  # load nothing (CAT-53)
                     self.assertNotRegex(ref, r"^(https?:)?//", ref)
             self.assertNotIn(' style="', html)  # the CSP blocks inline styles
 
@@ -1451,6 +1451,22 @@ class Site(unittest.TestCase):
                      self.page("recipes", "kafka"), self.page("generators", "demo")):
             self.assertNotIn('class="share"', page)
             self.assertNotIn("share-offsite", page)
+
+    def test_fediverse_verification(self):  # CAT-53
+        me = '<link rel="me" href="https://hachyderm.io/@kadethub">'
+        creator = '<meta name="fediverse:creator" content="@kadethub@hachyderm.io">'
+        heads = {}
+        for path in glob.glob(os.path.join(self.out, "**", "*.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                head = f.read().split("</head>")[0]
+            if 'http-equiv="refresh"' not in head:  # a Hugo alias page is a redirect (CAT-36f)
+                heads[os.path.relpath(path, self.out)] = head
+        self.assertGreater(len(heads), 20)
+        for path, head in heads.items():
+            self.assertIn(me, head, path)
+        self.assertIn(creator, heads[os.path.join("blog", "kapitan-generators-as-supply-chain-artifacts", "index.html")])
+        for path in ("index.html", os.path.join("generators", "demo", "index.html"), os.path.join("blog", "index.html")):
+            self.assertNotIn(creator, heads[path], path)
 
     def test_how_kadet_hub_works(self):  # CAT-35, CAT-35a, CAT-28, CAT-11b
         html = self.page("guides", "how-kadet-hub-works")
