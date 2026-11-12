@@ -1,12 +1,20 @@
-{{ define "main" }}{{/* CAT-37, CAT-37d */}}
+{{ define "main" }}{{/* CAT-37, CAT-37d, CAT-37h, CAT-37i */}}
 {{ $pages := where site.RegularPages "Section" "recipes" }}
 <section class="prose-page">
 <h1>{{ .Title }}</h1>
 <p class="lead">{{ .Description }} The files are read from kadet-hub/recipes when the site is built. <a href="{{ "/guides/bitnami-chart-alternatives/" | relURL }}">Bitnami chart alternatives</a> lists the replacement for every Bitnami chart, with or without a recipe.</p>
 <h2>Rebuilt from a Helm chart, a release manifest or a Docker Compose file, or designed on an image</h2>
 <p>From <a href="https://github.com/{{ site.Data.catalog.owner }}/recipes">kadet-hub/recipes</a>. Its CI compares each chart recipe with the chart or release manifest it rebuilds. At level <code>renders</code> it compares the objects and permissions, at <code>deploys</code> it also installs the recipe on kind and runs its smoke test. A compose file has no objects to compare with, so a compose recipe is at <code>deploys</code> and proven by the install and its smoke test alone. So is a recipe designed in kadet-hub on the image of a project that ships neither.</p>
+<div class="recipe-find" role="search" hidden>
+<label for="recipe-search">Find a recipe by Helm chart, image or app</label>
+<span class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="recipe-search" type="search" placeholder="e.g. bitnami/redis" autocomplete="off" spellcheck="false"></span>
+<p id="recipe-result" class="result" aria-live="polite"></p>
+</div>
 <ul class="guide-list">
-{{ range $pages }}{{ $r := partial "chart-recipe.html" . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p><p>Proof level: <code>{{ $r.level }}</code>{{ with $r.latest }}, version <code>{{ .version }}</code>{{ end }}</p></li>{{ end }}
+{{ range $pages }}{{ $r := partial "chart-recipe.html" . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a><p>{{ .Description }}</p>
+{{- /* CAT-37h: the source as the recipe page names it, without digest or commit. */ -}}
+<p>{{ with $r.compose }}Source: Docker Compose file <code>{{ .repo }}</code> (<code>{{ .path }}</code>){{ else with $r.image }}Source: container image <code>{{ index (split . "@") 0 }}</code>{{ else with $r.manifest }}Source: release manifest <code>{{ .repo }}@{{ .tag }}</code> (<code>{{ .file }}</code>){{ else }}Source chart: <code>{{ index (split $r.source "@") 0 }}</code>{{ end }}</p><p>Proof level: <code>{{ $r.level }}</code>{{ with $r.latest }}, version <code>{{ .version }}</code>{{ end }}</p></li>{{ end }}
 </ul>
+<p id="recipe-empty" class="empty" hidden>No recipe matches. <button type="button" id="recipe-reset" class="link">Show all</button>, look the chart up in <a href="{{ "/guides/bitnami-chart-alternatives/" | relURL }}">Bitnami chart alternatives</a>, or <a href="https://github.com/{{ site.Data.catalog.owner }}/recipes/issues/new?template=recipe-request.yml">request a recipe</a> if the <a href="{{ "/wanted/#recipes" | relURL }}">open requests</a> do not have it.</p>
 </section>
 {{ end }}

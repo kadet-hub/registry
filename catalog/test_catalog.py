@@ -1080,6 +1080,41 @@ class Site(unittest.TestCase):
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertIn("https://kadet-hub.org/recipes/kafka/<", f.read())
 
+    def test_recipe_sources_listed(self):  # CAT-37h
+        index = self.page("recipes")
+
+        def entry(name):
+            return re.search(rf'<li><a href="[./]*recipes/{name}/">.*?</li>', index, re.DOTALL)[0]
+
+        self.assertIn("<p>Source chart: <code>oci://quay.io/jetstack/charts/cert-manager:v1.21.2</code></p>", entry("cert-manager"))
+        self.assertIn("<p>Source chart: <code>https://kubernetes-sigs.github.io/external-dns/external-dns:1.23.0</code></p>",
+                      entry("external-dns-powerdns"))
+        self.assertIn("<p>Source: Docker Compose file <code>miniflux/v2</code> (<code>contrib/docker-compose/basic.yml</code>)</p>", entry("miniflux"))
+        self.assertIn("<p>Source: container image <code>container-registry.oracle.com/mysql/community-server:9.7.4</code></p>", entry("mysql"))
+        self.assertIn("<p>Source: release manifest <code>rabbitmq/cluster-operator@v2.23.1</code> (<code>cluster-operator.yml</code>)</p>",
+                      entry("rabbitmq-cluster-operator"))
+        for name in ("miniflux", "mysql", "rabbitmq-cluster-operator"):  # CAT-37e, CAT-37f, CAT-37g
+            self.assertNotIn("chart", entry(name).split("<p>Source")[1])
+        self.assertEqual(len(re.findall(r"<p>Source", index)), len(re.findall(r'<li><a href="[./]*recipes/', index)))
+        self.assertNotIn("sha256:", index)
+        self.assertNotIn("2" * 40, index)
+
+    def test_recipe_finder(self):  # CAT-37i
+        index = self.page("recipes")
+        find = re.search(r'<div class="recipe-find" role="search" hidden>.*?</div>', index, re.DOTALL)[0]
+        self.assertIn('<label for="recipe-search">Find a recipe by Helm chart, image or app</label>', find)
+        self.assertRegex(find, r'<input id="recipe-search" type="search" [^>]*autocomplete="off"')
+        self.assertIn('<p id="recipe-result" class="result" aria-live="polite"></p>', find)
+        self.assertLess(index.index('class="recipe-find"'), index.index('<ul class="guide-list">'))
+        empty = re.search(r'<p id="recipe-empty" class="empty" hidden>.*?</p>', index, re.DOTALL)[0]
+        self.assertIn('<button type="button" id="recipe-reset" class="link">Show all</button>', empty)
+        for href in ("../guides/bitnami-chart-alternatives/", "../wanted/#recipes",
+                     f"https://github.com/{OWNER}/recipes/issues/new?template=recipe-request.yml"):  # CAT-41
+            self.assertIn(f'href="{href}"', empty)
+        self.assertIn('<link rel="canonical" href="https://kadet-hub.org/recipes/">', index)  # CAT-11: ?q= shares it
+        with open(os.path.join(self.out, "site.js"), encoding="utf-8") as f:
+            self.assertIn('document.getElementById("recipe-search")', f.read())
+
     def test_http_chart_recipe(self):  # CAT-37c
         page = self.page("recipes", "external-dns-powerdns")
         self.assertIn(f"<li>Source chart: <code>{HTTP_CHART_SOURCE}</code></li>", page)
