@@ -131,12 +131,13 @@ remembered in the browser's `localStorage`.
   text here, since every pair of colour tokens reaches it: the lowest,
   `--text-muted` on `--accent-bg` in the light theme, has 5.38:1 by the
   WCAG formula on the hex values in `style.css`. The failures came from
-  text faded with `opacity`. From the colours Chrome computed on the live
-  site on 2026-11-12, the version permalink "#" had 2.64:1 in light and
-  3.31:1 in dark, the count in a selected tag chip 4.34:1 in light and
-  4.33:1 in dark, and the date of a yanked version 4.47:1 in light. So text is not faded; a yanked
-  version is marked by its "yanked" pill and its reason. A disabled
-  control stays faded, which WCAG exempts.
+  text faded with `opacity`. Measured in Chrome on the live site on
+  2026-11-12, the version permalink "#" had 2.64:1 in light and 3.31:1 in
+  dark, and the date of a yanked version 4.47:1 in light. The count in a
+  selected tag chip had 4.34:1 in light and 4.33:1 in dark, calculated
+  from the tokens and the rule's opacity. Text is therefore not faded. A
+  yanked version is marked by its "yanked" pill and its reason. A
+  disabled control stays faded, which WCAG exempts.
 
   - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`,
     partial: the token pairs and the `opacity` rules of the stylesheet,
