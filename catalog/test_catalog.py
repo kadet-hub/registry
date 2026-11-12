@@ -2668,6 +2668,22 @@ class Quickstart(unittest.TestCase):  # CAT-40
         self.assertIn('data-copy="verify" aria-label="Copy verify command" data-goatcounter-click="copy-verify/quickstart"', page)
         self.assertIn('data-goatcounter-click="copy-verify/recipes/uptime-kuma"', self.page("recipes", "uptime-kuma"))
 
+    def test_readme(self):  # CAT-56 to CAT-56b
+        with open(os.path.join(HERE, "..", "README.md"), encoding="utf-8") as f:
+            readme = f.read()
+        self.assertIn("(https://kadet-hub.org/playground/)", readme.split("\n## ", 1)[0])
+        page = dict(self.snippets(self.page("quickstart")))
+        blocks = re.findall(r"```sh\n(.*?)\n```", readme, re.DOTALL)
+        self.assertIn(page["install"], blocks)
+        self.assertIn(page["compile"], blocks)
+        self.assertNotRegex(readme, r"ghcr\.io/kadet-hub/recipes/[^\s`]*@sha256:[0-9a-f]{64}")
+        table = re.search(r"(?m)^\|[^\n]*\| Helm \|[^\n]*\n\|[-| ]+\|\n((?:\|[^\n]*\|\n)+)", readme)
+        self.assertIsNotNone(table)
+        for row in table.group(1).splitlines():
+            guides = re.findall(r"\(https://kadet-hub\.org/guides/([a-z0-9-]+)/\)", row)
+            self.assertTrue(guides, row)
+            for guide in guides:
+                self.assertTrue(os.path.isfile(os.path.join(HERE, "site", "content", "guides", f"{guide}.md")), guide)
 
     def test_without_a_usable_version(self):  # CAT-40: the latest version pins a yanked generator
         index = dict(QUICKSTART_INDEX, generators={"kubernetes": {"1.7.0": record("d", yanked="renders a broken Service")}})
