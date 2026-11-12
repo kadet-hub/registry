@@ -122,7 +122,7 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`Site.test_words_wrap_between_words`,
     partial: the stylesheet rules); manual: 375 px, no broken word on a
     generator page or `/compatibility/`
-  - Since: this change
+  - Since: #680
 
 - CAT-54: Text MUST reach a contrast of at least 4.5:1 against its
   background in the light and the dark theme.
@@ -141,7 +141,7 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`,
     partial: the token pairs and the `opacity` rules of the stylesheet,
     not the rendered page)
-  - Since: this change
+  - Since: #680
 
 - CAT-55: Every link and control MUST meet WCAG 2.2 success criterion
   2.5.8: a target of at least 24 by 24 px, or the space around a smaller
@@ -157,7 +157,7 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`Site.test_targets_reach_24px`,
     partial: the stylesheet rules of the two links); manual: 375 px, no
     link or control outside text below 24 px that overlaps another target
-  - Since: this change
+  - Since: #680
 
 - CAT-10: The home page MUST let visitors sort the cards by name, by the
   time of the latest version and by popularity score (CAT-23).
