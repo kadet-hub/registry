@@ -162,10 +162,10 @@ The four Terraform generators in the index, terraform-aws, terraform-google,
 terraform-azurerm and terraform-opentelekomcloud, are pure Python, list no
 binaries and import nothing besides Kapitan's kadet module and `ipaddress`,
 `itertools`, `json` and `re`, so each runs in Pyodide. As the build ships
-them, without `schemas/` and `tests/`, terraform-opentelekomcloud 0.1.3 is
-the smallest with 5 files of 31,942 bytes, 9,702 of them Python;
-terraform-google 0.1.4 has 34,303 bytes, terraform-aws 0.1.4 34,372 and
-terraform-azurerm 0.1.4 39,782 (DEC-47). Its example spreads the inventory over two classes and the target,
+them, without `schemas/` and `tests/`, terraform-opentelekomcloud 0.1.4 is
+the smallest with 5 files of 32,371 bytes, 9,702 of them Python;
+terraform-google 0.1.5 has 34,703 bytes, terraform-aws 0.1.5 34,756 and
+terraform-azurerm 0.1.5 40,576 (DEC-47). Its example spreads the inventory over two classes and the target,
 so the merge order and parameter sources have something to show. Kapitan
 writes `*.tf.json`; terraform itself does not run, because it is a native
 binary that downloads the provider and needs the cloud's credentials for a
