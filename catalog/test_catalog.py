@@ -894,6 +894,7 @@ class Site(unittest.TestCase):
             self.assertIn("as is and on a best-effort basis: use at your own risk", html)
             for href in ("privacy/", "imprint/", "registry/blob/main/TERMS.md", "SECURITY.md#removal-requests"):
                 self.assertIn(href, html)
+            self.assertIn(f'<a href="https://github.com/{OWNER}/registry">', html[html.index('<footer class="site">'):])  # CAT-57
         demo = self.page("generators", "demo")
         versions = demo[demo.index('id="versions"'):demo.index('id="v1.10.0"')]
         self.assertIn("use at your own risk", versions)
@@ -1374,6 +1375,8 @@ class Site(unittest.TestCase):
         self.assertEqual([(b["@type"], b["datePublished"], b["author"]["@type"]) for b in ld], [("BlogPosting", "2026-10-17T00:00:00Z", "Organization")])
         self.assertIn('<h2 id="what-a-version-goes-through">What a version goes through <a class="anchor" href="#what-a-version-goes-through" aria-label="Link to What a version goes through"></a></h2>', post)  # "#" only from CSS
         self.assertIn('/registry/blob/main/catalog/site/content/blog/kapitan-generators-as-supply-chain-artifacts.md">Edit this post</a>', post)
+        foot = post[post.index('<footer class="post-foot">'):post.index('<footer class="site">')]
+        self.assertRegex(foot[foot.index('class="share"'):], f'<p>[^<]*<a href="https://github.com/{OWNER}/registry">[^<]+</a>[^<]*</p>')  # CAT-57a
         self.assertNotIn('class="anchor"', self.page("guides", "writing-a-kapitan-generator"))
         self.assertIn('<meta property="og:type" content="website">', self.page("blog"))
         with tempfile.TemporaryDirectory() as tmp:  # a second, longer post with code: copy button, contents, pager, related
@@ -2779,6 +2782,23 @@ class Quickstart(unittest.TestCase):  # CAT-40
         self.assertIn('data-copy="fetch" aria-label="Copy fetch inventory" data-goatcounter-click="copy-fetch-inventory/quickstart"', page)
         self.assertIn('data-copy="verify" aria-label="Copy verify command" data-goatcounter-click="copy-verify/quickstart"', page)
         self.assertIn('data-goatcounter-click="copy-verify/recipes/uptime-kuma"', self.page("recipes", "uptime-kuma"))
+
+    def test_readme(self):  # CAT-56 to CAT-56b
+        with open(os.path.join(HERE, "..", "README.md"), encoding="utf-8") as f:
+            readme = f.read()
+        self.assertIn("(https://kadet-hub.org/playground/)", readme.split("\n## ", 1)[0])
+        page = dict(self.snippets(self.page("quickstart")))
+        blocks = re.findall(r"```sh\n(.*?)\n```", readme, re.DOTALL)
+        self.assertIn(page["install"], blocks)
+        self.assertIn(page["compile"], blocks)
+        self.assertNotRegex(readme, r"ghcr\.io/kadet-hub/recipes/[^\s`]*@sha256:[0-9a-f]{64}")
+        table = re.search(r"(?m)^\|[^\n]*\| Helm \|[^\n]*\n\|[-| ]+\|\n((?:\|[^\n]*\|\n)+)", readme)
+        self.assertIsNotNone(table)
+        for row in table.group(1).splitlines():
+            guides = re.findall(r"\(https://kadet-hub\.org/guides/([a-z0-9-]+)/\)", row)
+            self.assertTrue(guides, row)
+            for guide in guides:
+                self.assertTrue(os.path.isfile(os.path.join(HERE, "site", "content", "guides", f"{guide}.md")), guide)
 
     def test_without_a_usable_version(self):  # CAT-40: the latest version pins a yanked generator
         index = dict(QUICKSTART_INDEX, generators={"kubernetes": {"1.7.0": record("d", yanked="renders a broken Service")}})
