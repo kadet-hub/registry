@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: terraform-azurerm
-  tag: terraform-azurerm-v0.1.4
-  sha: 1026e0626462b5b6afc0c537935718ea90a063d8
+  tag: terraform-azurerm-v0.1.5
+  sha: c96fd6966b2d2b55caf0e6171f02b53ba570c039
 owners: [3042152]
