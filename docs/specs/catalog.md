@@ -2004,7 +2004,9 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`Site.test_post_cards`: on every
     post's card and on a fixture title longer than three lines, the
     outer band and the rows between the third title line and the tags
-    are background; the colours in `og-card.html`)
+    are background; the colours in `og-card.html`;
+    `Site.test_card_lines_keep_a_long_last_word`: a last line whose
+    first word leaves no room for "…" keeps that word)
   - Since: #683
 
 - CAT-58b: The card MUST show nothing but the site's "K" mark, the

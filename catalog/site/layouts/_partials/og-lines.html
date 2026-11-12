@@ -9,7 +9,7 @@
   {{- $w := 0 }}{{ range split . "" }}{{ $w = add $w (index $adv . | default $adv.wide) }}{{ end -}}
   {{- if and $line (gt (add $width (index $adv " ") $w) $limit) -}}
     {{- if eq (len $lines) (sub $.max 1) }}{{ $more = true }}{{ break }}{{ end -}}
-    {{- $lines = $lines | append $line }}{{ $line = . }}{{ $width = $w }}{{ $cut = "" -}}
+    {{- $lines = $lines | append $line }}{{ $line = . }}{{ $width = $w }}{{ $cut = . -}}
   {{- else -}}
     {{- $width = cond (eq $line "") $w (add $width (index $adv " ") $w) }}{{ $line = trim (printf "%s %s" $line .) " " -}}
   {{- end -}}
