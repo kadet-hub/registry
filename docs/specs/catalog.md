@@ -1966,7 +1966,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py` (`Site.test_post_cards`,
     `ReleaseDigest.test_posts` for a release post); manual: the Mastodon
     and LinkedIn preview of the first post after deploy
-  - Since: this change
+  - Since: #683
 
 - CAT-58a: Text on the card MUST stay out of the outer 80 px. The title
   MUST take at most three lines and end in "…" when it needs more. Text
@@ -2005,7 +2005,7 @@ Related: CAT-15, CAT-30, CON-2.
     post's card and on a fixture title longer than three lines, the
     outer band and the rows between the third title line and the tags
     are background; the colours in `og-card.html`)
-  - Since: this change
+  - Since: #683
 
 - CAT-58b: The card MUST show nothing but the site's "K" mark, the
   domain `kadet-hub.org`, the post's title and its `tools` as hashtags.
@@ -2041,7 +2041,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: manual: review of `base.png` and `og-card.html` in the merge
     request
-  - Since: this change
+  - Since: #683
 
 - CAT-45: A blog post that puts several recipes or generators together
   into one use case, backed by a project in kadet-hub/examples, MUST name
