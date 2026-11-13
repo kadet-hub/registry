@@ -1,12 +1,21 @@
 name: code-lint
 
-# CI-3: ruff and shellcheck on every pull request; the scripts share no directory a paths filter could name.
+# CI-3: ruff and shellcheck on every pull request that changes more than
+# Markdown and entries; the scripts share no directory a paths filter could name.
 on:
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - generators/*.yaml
+      - recipes/*.yaml
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency: # CI-4
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   code-lint:
