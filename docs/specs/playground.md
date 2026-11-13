@@ -460,6 +460,91 @@ with "offset is out of bounds", and was 21.3 MB gzipped on its own. The
 wheels and the standard library are deflate archives already: gzip saves
 1.9 % and 1.7 % of them, so recompressing them gains nothing on the wire.
 
+## Status, focus and errors
+
+The playground takes the place of the start button, so the button that had
+focus disappears and the browser moves focus to the document body. A screen
+reader then announces nothing of the controls that appeared. Measured in
+Chrome on the live site on 2026-11-13: after Enter on the start button,
+`document.activeElement` was `body`.
+
+- PG-26: When the visitor starts the playground, the page MUST move focus to
+  the example selector.
+
+  - Test: `browser.mjs` (PG-26)
+  - Since: this change
+
+The editor can be read and edited while the worker loads Python and Kapitan,
+3.4 s on a desktop with a fast connection (live site, 2026-11-13) and 26.5 s
+at the CPU quota of Start-up. The Compile button used to be enabled during
+that time. Pressing it replaced "Loading Python and Kapitan" with
+"Compiling..." while the download was still running, and the worker compiled
+twice once it was ready.
+
+- PG-27: Until the worker is ready, the Compile button MUST be disabled, and
+  neither Ctrl+Enter nor a change of the example or the backend MAY start a
+  compile. The first compile runs when the worker is ready, with the example
+  and backend selected then.
+
+  A disabled button is faded like a disabled chip, which CAT-54 allows for
+  disabled controls.
+
+  - Test: `browser.mjs` (PG-27, with `pyodide.asm.wasm` held back until the
+    check has read the page, so the worker cannot be ready before it)
+  - Since: this change
+
+The status "Loading Python and Kapitan" stays the same for the whole load,
+so a visitor cannot tell a slow download from a stalled one. The worker
+reports no byte counts, so the page shows an indeterminate progress bar
+beside the status: it shows activity, not a percentage.
+
+- PG-28: While the worker loads, the page MUST show a progress bar, and MUST
+  hide it when the worker is ready or failed to start.
+
+  - Test: `browser.mjs` (PG-28, `pyodide.asm.wasm` held back as for PG-27)
+  - Since: this change
+
+Below 60rem the editor and the output stack. At 390 px the output's heading
+starts 907 px below the top of the Compile button, in a viewport 844 px
+tall (live site, 2026-11-13). After a compile the viewport shows the status
+line and the editor, not the files or the error. A button-styled link beside
+the status jumps to the output. On wider screens the output is beside the
+editor and the link is hidden.
+
+- PG-29: Below 60rem the page MUST offer a link from the controls to the
+  output.
+
+  - Test: `catalog/test_catalog.py` (`Playground.test_link_to_the_output_on_phones`,
+    partial: the link, its target and the stylesheet rules, not that the
+    output sits below the fold at 390 px or that the link scrolls to it);
+    manual: at 390 px after a compile, the link brings the output's heading
+    to the top of the viewport
+  - Since: this change
+
+A failed compile said "The compile failed" in the colour of a successful one,
+above a log that looks like the log of a successful compile. A failed start
+leaves no worker to compile with and Compile stays disabled (PG-27), so the
+only way to try again is to reload the page. A start fails either inside the
+worker, which then posts an error, or when `worker.js` or Pyodide's module
+does not load, which the worker cannot report: the browser fires the
+worker's `error` event instead, and the page treats it the same way.
+
+- PG-30: The page MUST show the status of a failed compile or a failed start
+  in the site's warning style, and every other status without it. The
+  status of a failed start MUST say to reload the page.
+
+  - Test: `browser.mjs` (PG-3, PG-30)
+  - Since: this change
+
+The project files are toggle buttons in a `div` that named them "Project
+files" with `aria-label`. ARIA does not name an element without a role, so
+screen readers left the name out.
+
+- PG-31: The project file buttons MUST form a group named "Project files".
+
+  - Test: `catalog/test_catalog.py` (`Playground.test_project_files_are_a_named_group`)
+  - Since: this change
+
 ## Verification
 
 - AC-40 (PG-1, PG-2, PG-5, PG-6, PG-12): the `playground` workflow builds the
@@ -489,6 +574,20 @@ wheels and the standard library are deflate archives already: gzip saves
   shows the first output with tokens, and gets back the same text from a
   highlighted 2,000-line YAML, a JSON and a Markdown file; Prism's licence
   is served; the catalog tests find every token colour at 4.5:1 or more.
+- AC-48 (PG-26 to PG-31): Chrome finds focus on the example selector right
+  after the start, the Compile button disabled, Ctrl+Enter without effect
+  and the progress bar shown before the worker is ready, the progress bar
+  hidden after, the status of the YAML error in the warning style and that
+  of a successful compile without it, and a start whose `packages.json` or
+  `pyodide.mjs` fails to load as a warning that says to reload; the catalog
+  tests find the project files as a named group and the link to the output
+  below 60rem.
+
+  Partial: the Chrome part runs in the `playground` workflow, which a pull
+  request starts only when it changes one of the workflow's `paths`. A pull
+  request that changes only `catalog/test_catalog.py` or
+  `catalog/site/static/style.css` does not run it; the next daily run on
+  main does.
 
 ## Alternatives
 
@@ -523,13 +622,13 @@ wheels and the standard library are deflate archives already: gzip saves
 | `catalog/playground/test_provenance.py` | Unit tests of the replay against fixture inventories, run in the sandbox image (PG-15 to PG-19) |
 | `catalog/playground/check` | Compiles every example in the sandbox image and compares (PG-6) |
 | `catalog/playground/report` | Opens or updates the issue of a failed scheduled run (PG-14) |
-| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11, PG-15, PG-17 to PG-19, PG-21 to PG-24) |
+| `catalog/playground/browser.mjs` | The page in Chrome (PG-3, PG-7 to PG-11, PG-15, PG-17 to PG-19, PG-21 to PG-24, PG-26 to PG-28, PG-30) |
 | `catalog/playground/examples.json`, `examples/` | The examples (PG-21) |
 | `catalog/playground/package.json`, `package-lock.json` | Pyodide, Prism and playwright-core pins; Renovate's npm manager moves them (PG-24) |
-| `catalog/site/static/playground/` | `playground.js` (page), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19), `syntax.js` (PG-23) |
-| `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13, PG-15 to PG-18, PG-22) |
+| `catalog/site/static/playground/` | `playground.js` (page, PG-26 to PG-28, PG-30), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19), `syntax.js` (PG-23) |
+| `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13, PG-15 to PG-18, PG-22, PG-27 to PG-29, PG-31) |
 | `catalog/build` | Runs `build.py` online, copies `$CATALOG_PLAYGROUND` offline (PG-13) |
-| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44 to AC-46, PG-14 |
+| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44 to AC-46, AC-48, PG-14 |
 
 | Value | Setting |
 |---|---|

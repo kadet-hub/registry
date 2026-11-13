@@ -1,4 +1,4 @@
-{{ define "main" }}{{/* PG-4, PG-9, PG-11, PG-15 to PG-19, PG-22 */}}
+{{ define "main" }}{{/* PG-4, PG-9, PG-11, PG-15 to PG-19, PG-22, PG-27 to PG-29, PG-31 */}}
 {{ $pg := site.Data.playground }}
 <section class="prose-page wide playground">
 <h1>{{ .Title }}</h1>
@@ -13,19 +13,21 @@
 <div class="pg-bar">
   <label>Example <select id="pg-example"></select></label>
   <label>Inventory backend <select id="pg-backend"><option value="omegaconf">omegaconf</option><option value="reclass">reclass</option></select></label>
-  <button type="button" id="pg-compile" class="button primary">Compile</button>
+  <button type="button" id="pg-compile" class="button primary" disabled>Compile</button>
+  <progress id="pg-progress" aria-label="Loading Python and Kapitan" hidden></progress>
   <span id="pg-status" role="status" aria-live="polite"></span>
+  <a href="#pg-out" class="button pg-jump">Go to the output</a>
 </div>
 <p id="pg-description"></p>
 <div class="pg-grid">
   <div>
-    <div id="pg-files" class="pg-files" aria-label="Project files"></div>
+    <div id="pg-files" class="pg-files" role="group" aria-label="Project files"></div>
     <label for="pg-editor" id="pg-editor-label" class="pg-editor-label"></label>
     <textarea id="pg-editor" class="pg-editor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
     <p class="pg-note">Ctrl+Enter compiles. This example is tested with the <span id="pg-tested"></span> backend. <span id="pg-libs"></span></p>
   </div>
   <div>
-    <h2 class="pg-h">Kapitan output, compiled in your browser</h2>
+    <h2 class="pg-h" id="pg-out">Kapitan output, compiled in your browser</h2>
     <div id="pg-outputs" class="pg-outputs"></div>
     <pre id="pg-log" class="pg-log" hidden></pre>
     <div id="pg-helm" hidden>

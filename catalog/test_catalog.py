@@ -767,7 +767,7 @@ class Site(unittest.TestCase):
                 self.assertGreaterEqual(contrast(colours[fg][theme], colours[bg][theme]), 4.5, (fg, bg, ("light", "dark")[theme]))
         # Opacity between 0 and 1 fades text below what its tokens reach; only a disabled control may.
         faded = {sel.strip() for sel, value in re.findall(r"([^{}]+)\{[^}]*opacity: ([.\d]+)", css) if 0 < float(value) < 1}
-        self.assertEqual(faded, {".chip:disabled"})
+        self.assertEqual(faded, {".chip:disabled", ".button:disabled"})
 
     def test_targets_reach_24px(self):  # CAT-55
         css = self.css()
@@ -2273,6 +2273,34 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
     def page(self, *parts):
         with open(os.path.join(self.out, *parts, "index.html"), encoding="utf-8") as f:
             return f.read()
+
+    def css(self):
+        with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_project_files_are_a_named_group(self):  # PG-31
+        self.assertIn('<div id="pg-files" class="pg-files" role="group" aria-label="Project files"></div>', self.page("playground"))
+
+    def test_link_to_the_output_on_phones(self):  # PG-29: beside the status, shown below 60rem, where the output is under the editor
+        page = self.page("playground")
+        self.assertRegex(page, r'<span id="pg-status"[^>]*></span>\s*<a href="#pg-out" class="button pg-jump">Go to the output</a>')
+        self.assertIn('<h2 class="pg-h" id="pg-out">', page)
+        css = self.css()
+        self.assertIn("\n.pg-jump { display: none; }", css)
+        self.assertRegex(css, r"\n@media \(max-width: 60rem\) \{ \.pg-grid \{[^}]*\} \.pg-jump \{ display: inline-flex; \} \}")
+
+    def test_placeholders_reach_aa(self):  # CAT-54: Chrome's default placeholder grey has 3.71:1 on the dark field
+        # Site-wide, here because this fixture build is the only one with the playground's page too.
+        rules = re.findall(r"^([^{}\n]*::placeholder[^{}\n]*) \{ color: var\(--text-muted\); opacity: 1; \}", self.css(), re.MULTILINE)
+        muted = {s.strip() for r in rules for s in r.split(",")}
+        fields = {}
+        for path in glob.glob(os.path.join(self.out, "**", "*.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                for tag in re.findall(r"<(?:input|textarea)\b[^>]*>", f.read()):
+                    if "placeholder=" in tag:
+                        fields.setdefault(re.search(r'\bid="([^"]+)"', tag).group(1), os.path.relpath(path, self.out))
+        self.assertLessEqual({"search", "recipe-search", "match-version", "mastodon-server", "pg-search"}, set(fields))
+        self.assertEqual(sorted(f"#{i} on {p}" for i, p in fields.items() if not {"::placeholder", f"#{i}::placeholder"} & muted), [])
 
     def test_start_button_names_the_download(self):  # PG-9
         page = self.page("playground")
