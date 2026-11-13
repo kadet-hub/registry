@@ -3002,7 +3002,7 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py` (`test_glossary`)
   - Since: #286; fixture, proof level, operator and the recipe entry for
     kadet-hub/recipes: #371; inventory backend, dependency, fetch
-    inventory, sandbox and consumer workflow: this change
+    inventory, sandbox and consumer workflow: #687
 
 - CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
   - Test: none
