@@ -29,3 +29,4 @@ reused, and name their check and origin:
 
 Decisions are `DEC-n`, open questions `OQ-n`, acceptance criteria `AC-n`;
 every acceptance criterion names the requirements it checks.
+
