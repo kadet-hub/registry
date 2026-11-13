@@ -519,7 +519,10 @@ editor and the link is hidden.
 A failed compile said "The compile failed" in the colour of a successful one,
 above a log that looks like the log of a successful compile. A failed start
 leaves no worker to compile with and Compile stays disabled (PG-27), so the
-only way to try again is to reload the page.
+only way to try again is to reload the page. A start fails either inside the
+worker, which then posts an error, or when `worker.js` or Pyodide's module
+does not load, which the worker cannot report: the browser fires the
+worker's `error` event instead, and the page treats it the same way.
 
 - PG-30: The page MUST show the status of a failed compile or a failed start
   in the site's warning style, and every other status without it. The
@@ -570,9 +573,10 @@ screen readers left the name out.
   after the start, the Compile button disabled, Ctrl+Enter without effect
   and the progress bar shown before the worker is ready, the progress bar
   hidden after, the status of the YAML error in the warning style and that
-  of a successful compile without it, and a start whose `packages.json`
-  fails to load as a warning that says to reload; the catalog tests find
-  the project files as a named group and the link to the output below 60rem.
+  of a successful compile without it, and a start whose `packages.json` or
+  `pyodide.mjs` fails to load as a warning that says to reload; the catalog
+  tests find the project files as a named group and the link to the output
+  below 60rem.
 
 ## Alternatives
 
