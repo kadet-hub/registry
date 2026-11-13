@@ -489,7 +489,8 @@ twice once it was ready.
   A disabled button is faded like a disabled chip, which CAT-54 allows for
   disabled controls.
 
-  - Test: `browser.mjs` (PG-27)
+  - Test: `browser.mjs` (PG-27, with `pyodide.asm.wasm` held back until the
+    check has read the page, so the worker cannot be ready before it)
   - Since: this change
 
 The status "Loading Python and Kapitan" stays the same for the whole load,
@@ -500,7 +501,7 @@ beside the status: it shows activity, not a percentage.
 - PG-28: While the worker loads, the page MUST show a progress bar, and MUST
   hide it when the worker is ready or failed to start.
 
-  - Test: `browser.mjs` (PG-28)
+  - Test: `browser.mjs` (PG-28, `pyodide.asm.wasm` held back as for PG-27)
   - Since: this change
 
 Below 60rem the editor and the output stack. At 390 px the output's heading
@@ -513,7 +514,11 @@ editor and the link is hidden.
 - PG-29: Below 60rem the page MUST offer a link from the controls to the
   output.
 
-  - Test: `catalog/test_catalog.py` (`Playground.test_link_to_the_output_on_phones`)
+  - Test: `catalog/test_catalog.py` (`Playground.test_link_to_the_output_on_phones`,
+    partial: the link, its target and the stylesheet rules, not that the
+    output sits below the fold at 390 px or that the link scrolls to it);
+    manual: at 390 px after a compile, the link brings the output's heading
+    to the top of the viewport
   - Since: this change
 
 A failed compile said "The compile failed" in the colour of a successful one,
@@ -577,6 +582,12 @@ screen readers left the name out.
   `pyodide.mjs` fails to load as a warning that says to reload; the catalog
   tests find the project files as a named group and the link to the output
   below 60rem.
+
+  Partial: the Chrome part runs in the `playground` workflow, which a pull
+  request starts only when it changes one of the workflow's `paths`. A pull
+  request that changes only `catalog/test_catalog.py` or
+  `catalog/site/static/style.css` does not run it; the next daily run on
+  main does.
 
 ## Alternatives
 
