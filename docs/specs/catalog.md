@@ -139,9 +139,15 @@ remembered in the browser's `localStorage`.
   yanked version is marked by its "yanked" pill and its reason. A
   disabled control stays faded, which WCAG exempts.
 
+  Chrome's default placeholder grey has 3.71:1 on the dark field. The
+  recipe finder's placeholder takes `--text-muted` for that reason, and
+  the playground's parameter filter, measured at 3.71:1 on 2026-11-13,
+  does too.
+
   - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`,
     partial: the token pairs and the `opacity` rules of the stylesheet,
-    not the rendered page)
+    not the rendered page; `Playground.test_placeholders_reach_aa`, the
+    playground's placeholders)
   - Since: #680
 
 - CAT-55: Every link and control MUST meet WCAG 2.2 success criterion
