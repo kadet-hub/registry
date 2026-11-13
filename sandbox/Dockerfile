@@ -7,8 +7,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c12
 ENV PATH=/busybox:/usr/bin
 SHELL ["/busybox/sh", "-eu", "-c"]
 # renovate: datasource=github-releases depName=helm/helm
-ARG HELM_VERSION=v4.3.1
-ARG HELM_SHA256=0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
+ARG HELM_VERSION=v4.3.2
+ARG HELM_SHA256=d1c0278d46beab79582d7e50f5b3dc206944ba8e577cde618513fd07daa53983
 ADD --checksum=sha256:${HELM_SHA256} https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz /tmp/helm.tgz
 # renovate: datasource=github-release-attachments depName=open-policy-agent/conftest
 ARG CONFTEST_VERSION=v0.71.1
