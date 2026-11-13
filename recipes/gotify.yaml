@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: gotify
+  tag: gotify-v1.0.0
+  sha: 83ae8b742bb3a01f02db26bbb7f469e6bd821bef
+owners: [3042152]
+exceptions: []
