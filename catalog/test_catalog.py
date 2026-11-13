@@ -860,7 +860,7 @@ class Site(unittest.TestCase):
         html = self.page("glossary")
         terms = re.findall(r'<dt id="([^"]*)">([^<]*)</dt>', html)
         ids = [i for i, _ in terms]
-        self.assertGreaterEqual(len(ids), 23)
+        self.assertGreaterEqual(len(ids), 31)
         self.assertEqual(len(ids), len(set(ids)))
         for i in ids:
             self.assertRegex(i, r"^[a-z]+(-[a-z]+)*$")
@@ -2566,7 +2566,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertNotIn("without Bitnami", self.page("recipes", "valkey"))
 
     def test_backends(self):  # CAT-38, REC-18: the record's inventory backends, none for a record without them
-        self.assertIn("<li>Output capabilities: <code>admission-webhook</code></li>\n<li>Inventory backends: <code>omegaconf</code></li>",
+        self.assertIn('<li>Output capabilities: <code>admission-webhook</code></li>\n<li><a href="../../glossary/#inventory-backend">Inventory backends</a>: <code>omegaconf</code></li>',
                       self.page("recipes", "cert-manager"))
         self.assertNotIn("Inventory backends", self.page("recipes", "valkey"))
         self.assertNotIn("Inventory backends", self.page("recipes", "valkey", name="index.md"))

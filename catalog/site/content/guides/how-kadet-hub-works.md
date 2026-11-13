@@ -90,14 +90,14 @@ has the manifest, the fixture project and the entry format.
    description, headings and canonical URL before the deploy, and a
    finding stops the deploy, so the previous site stays live.
 
-The same run publishes the sandbox image the consumer workflow uses,
+The same run publishes the sandbox image the [consumer workflow](/glossary/#consumer-workflow) uses,
 tagged with the git tree of the registry's `sandbox/` directory.
 
 ## Using a generator
 
 {{< diagram name="consuming" title="Using a generator" desc="Flowchart: a Renovate pull request updates the pinned inventory entry, consumer CI runs the five steps of consumer.yml, four of which can fail it, then the output is reviewed." >}}
 
-1. The inventory pins the generator as an OCI dependency,
+1. The inventory pins the generator as an OCI [dependency](/glossary/#dependency),
    `ghcr.io/kadet-hub/<name>:<version>@sha256:<digest>`. The digest
    selects what is fetched. The tag is for reviewers and Renovate and must
    name the version the index lists for that digest. The Renovate preset

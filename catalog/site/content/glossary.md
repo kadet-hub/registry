@@ -40,6 +40,14 @@ terms:
       replaces with that parameter's value before compiling.
     url: https://kapitan.dev/latest/pages/inventory/parameters_interpolation/
     label: Parameter interpolation in the Kapitan docs
+  - id: inventory-backend
+    name: Inventory backend
+    text: >-
+      The library that loads the inventory and resolves its parameters, chosen in `.kapitan` or with
+      `--inventory-backend`. Kapitan's default is reclass, and reclass-rs is a drop-in replacement for it written
+      in Rust. omegaconf uses another interpolation syntax, and the recipes so far resolve on omegaconf only.
+    url: https://kapitan.dev/latest/pages/inventory/backends/
+    label: Inventory backends in the Kapitan docs
   - id: ref
     name: Ref
     text: >-
@@ -55,6 +63,14 @@ terms:
       Kapitan's Python input type: a Python module that returns objects, which Kapitan writes as files.
     url: https://kapitan.dev/latest/pages/input_types/kadet/
     label: kadet in the Kapitan docs
+  - id: dependency
+    name: Dependency
+    text: >-
+      An item under `parameters.kapitan.dependencies` that `kapitan compile --fetch` downloads into its
+      `output_path` before compiling: an OCI artifact, a Helm chart, a git repository or a file over HTTP. The
+      inventory entry on a generator page is one, pinning the version by digest.
+    url: https://kapitan.dev/latest/pages/external_dependencies/
+    label: External dependencies in the Kapitan docs
   - id: generator
     name: Generator
     text: >-
@@ -86,6 +102,14 @@ terms:
       file or designed on an image has nothing to compare and is at `deploys`.
     url: /recipes/
     label: Recipes and their levels
+  - id: fetch-inventory
+    name: Fetch inventory
+    text: >-
+      A second inventory under `fetch/` whose target, `fetch/targets/recipes.yml`, lists the recipes a project uses
+      as dependencies. It exists because Kapitan reads the inventory before it fetches, so the inventory that
+      includes a recipe as a class cannot fetch it.
+    url: docs/consumers.md#recipes
+    label: Recipes in the consumer docs
   - id: kind
     name: Kind
     text: >-
@@ -116,10 +140,18 @@ terms:
     name: Gate
     text: >-
       The checks every version passes before review: secret, malware and code scans, Python errors, and a compile
-      of the fixture project in a gVisor sandbox without network, with decoy credentials and a trace of the
-      programs it starts.
+      of the fixture project in the sandbox.
     url: docs/authors.md
     label: What the gate checks
+  - id: sandbox
+    name: Sandbox
+    text: >-
+      The container in which the gate compiles a fixture and the consumer workflow compiles a consumer's project,
+      without network and with decoy credentials. It runs under gVisor, a user-space kernel that handles the
+      compile's system calls instead of the host kernel and traces them, so the check fails when a program nobody
+      declared runs or code reads a decoy.
+    url: https://gvisor.dev/docs/
+    label: gVisor documentation
   - id: server-side-dry-run
     name: Server-side dry run
     text: >-
@@ -145,6 +177,15 @@ terms:
     text: >-
       An alternative Kapitan implementation. The gate also compiles each fixture with krab and records whether the
       output is the same; that is information, not a requirement.
+  - id: consumer-workflow
+    name: Consumer workflow
+    text: >-
+      The reusable GitHub Actions workflow `consumer.yml` of kadet-hub/registry, which a consumer's CI calls,
+      pinned by commit. It checks each dependency against the policy in `.kapitan-sandbox.yaml`, verifies every
+      kadet-hub artifact against its attestation and the attested index, compiles in the sandbox and fails on
+      output capabilities the policy does not accept.
+    url: docs/consumers.md#workflow
+    label: The workflow in the consumer docs
   - id: oci-artifact
     name: OCI artifact
     text: >-

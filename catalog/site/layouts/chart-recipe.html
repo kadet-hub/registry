@@ -23,7 +23,7 @@
 {{- end }}
 {{ with $r.latest }}<li>{{ with $r.renders }}<code>renders</code> passed in the <a href="{{ .run }}">release run</a> of <time datetime="{{ .at }}">{{ substr .at 0 10 }}</time> with {{ .tool }}{{ else }}No <code>renders</code> result in the release run's record{{ end }}</li>
 <li>Output capabilities: {{ range $i, $c := .output_capabilities }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ else }}none{{ end }}</li>
-{{ with .backends }}<li>Inventory backends: {{ range $i, $b := . }}{{ if $i }}, {{ end }}<code>{{ $b }}</code>{{ end }}</li>{{ end }}
+{{ with .backends }}<li><a href="{{ "/glossary/#inventory-backend" | relURL }}">Inventory backends</a>: {{ range $i, $b := . }}{{ if $i }}, {{ end }}<code>{{ $b }}</code>{{ end }}</li>{{ end }}
 {{ end -}}
 {{ with $r.requires }}<li>Prerequisites, installed once per cluster before the recipe: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/recipes/%s" $n) }}<a href="{{ printf "/recipes/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}<code>{{ $n }}</code>{{ end }}{{ end }}</li>
 {{ end -}}
@@ -51,7 +51,7 @@
 {{ range . }}<p class="warning">Version {{ $r.latest.version }} pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</p>
 {{ end }}<p>The consumer workflow rejects a yanked generator, so this page shows no fetch inventory for the version.</p>
 {{ else }}
-<p>A separate fetch inventory pins the recipe by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. This is <code>fetch/targets/recipes.yml</code> for version {{ $r.latest.version }}:</p>
+<p>A separate <a href="{{ "/glossary/#fetch-inventory" | relURL }}">fetch inventory</a> pins the recipe by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. This is <code>fetch/targets/recipes.yml</code> for version {{ $r.latest.version }}:</p>
 {{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" $r.fetch "event" (printf "copy-fetch-inventory/recipes/%s" $r.name)) }}
 {{ with $r.included }}<p>Version {{ $r.latest.version }} includes {{ . }}. The consumer workflow adds the included recipes at the digests the index lists. Kapitan's <code>--fetch</code> reads no index, so for a local compile pull them by digest first:</p>
 {{ partial "snippet.html" (dict "id" "pull" "label" "pull commands" "text" $r.pull) }}
@@ -64,7 +64,7 @@
 {{ partial "snippet.html" (dict "id" "policy" "label" "policy line" "text" .) }}{{ end }}
 {{ end }}
 {{ else }}
-<p>Until this recipe is published as an OCI artifact, a separate fetch inventory pins kadet-hub/recipes by commit. This is <code>fetch/targets/recipes.yml</code> at the commit the page was built from:</p>
+<p>Until this recipe is published as an OCI artifact, a separate <a href="{{ "/glossary/#fetch-inventory" | relURL }}">fetch inventory</a> pins kadet-hub/recipes by commit. This is <code>fetch/targets/recipes.yml</code> at the commit the page was built from:</p>
 {{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" $r.fetch "event" (printf "copy-fetch-inventory/recipes/%s" $r.name)) }}
 <p>The first command fetches the recipe into <code>inventory/classes/recipes/{{ $r.name }}</code>, the second the generators and compiles:</p>
 {{ partial "snippet.html" (dict "id" "commands" "label" "commands" "text" $r.commands) }}

@@ -69,7 +69,7 @@
 <section class="versions" aria-labelledby="versions">
 <h2 id="versions">Versions</h2>
 {{ with .latest }}
-<p>Add a version's inventory entry, then compile with the <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#workflow">consumer workflow</a>, which verifies the artifact and runs Kapitan in the sandbox.</p>
+<p>Add a version's inventory entry, then compile with the <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#workflow">consumer workflow</a>, which verifies the artifact and runs Kapitan in the <a href="{{ "/glossary/#sandbox" | relURL }}">sandbox</a>.</p>
 <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk, and review the compiled output before you apply it. <a href="https://github.com/{{ $owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
 <p class="note">This catalog was built from index serial {{ site.Data.catalog.serial }}. Set <code>index_serial: {{ site.Data.catalog.serial }}</code> in <code>.kapitan-sandbox.yaml</code> and the consumer workflow refuses any older index, so a rolled-back index cannot bring back a yanked version.</p>
 <p class="note">Checks find known patterns; they do not prove a generator safe. <a href="https://github.com/{{ $owner }}/registry/blob/main/docs/consumers.md#what-a-listing-covers">What a listing covers</a></p>
