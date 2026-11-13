@@ -191,7 +191,8 @@ async function start() {
   worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
   worker.onmessage = ({ data }) => {
     $("pg-progress").hidden = true; // PG-28: the worker's first message, ready or error, ends the load
-    if (data.type === "error") return status(`The playground failed to start: ${data.message}`, true);
+    // PG-30: without a worker Compile stays disabled (PG-27), so only a reload tries again.
+    if (data.type === "error") return status(`The playground failed to start; reload the page to try again: ${data.message}`, true);
     if (data.type === "ready") {
       ready = true;
       document.body.dataset.pgReady = "true";
