@@ -517,10 +517,13 @@ editor and the link is hidden.
   - Since: this change
 
 A failed compile said "The compile failed" in the colour of a successful one,
-above a log that looks like the log of a successful compile.
+above a log that looks like the log of a successful compile. A failed start
+leaves no worker to compile with and Compile stays disabled (PG-27), so the
+only way to try again is to reload the page.
 
 - PG-30: The page MUST show the status of a failed compile or a failed start
-  in the site's warning style, and every other status without it.
+  in the site's warning style, and every other status without it. The
+  status of a failed start MUST say to reload the page.
 
   - Test: `browser.mjs` (PG-3, PG-30)
   - Since: this change
@@ -563,12 +566,13 @@ screen readers left the name out.
   shows the first output with tokens, and gets back the same text from a
   highlighted 2,000-line YAML, a JSON and a Markdown file; Prism's licence
   is served; the catalog tests find every token colour at 4.5:1 or more.
-- AC-47 (PG-26 to PG-31): Chrome finds focus on the example selector right
+- AC-48 (PG-26 to PG-31): Chrome finds focus on the example selector right
   after the start, the Compile button disabled, Ctrl+Enter without effect
   and the progress bar shown before the worker is ready, the progress bar
   hidden after, the status of the YAML error in the warning style and that
-  of a successful compile without it; the catalog tests find the project
-  files as a named group and the link to the output below 60rem.
+  of a successful compile without it, and a start whose `packages.json`
+  fails to load as a warning that says to reload; the catalog tests find
+  the project files as a named group and the link to the output below 60rem.
 
 ## Alternatives
 
@@ -609,7 +613,7 @@ screen readers left the name out.
 | `catalog/site/static/playground/` | `playground.js` (page, PG-26 to PG-28, PG-30), `worker.js`, `kapitan_wasm.py` (PG-2, PG-3, PG-15 to PG-19), `syntax.js` (PG-23) |
 | `catalog/site/layouts/playground.html`, `content/playground.md` | The page (PG-4, PG-9, PG-11, PG-13, PG-15 to PG-18, PG-22, PG-27 to PG-29, PG-31) |
 | `catalog/build` | Runs `build.py` online, copies `$CATALOG_PLAYGROUND` offline (PG-13) |
-| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44 to AC-47, PG-14 |
+| `.github/workflows/playground.yml` | AC-40, AC-41, AC-44 to AC-46, AC-48, PG-14 |
 
 | Value | Setting |
 |---|---|
