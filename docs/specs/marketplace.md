@@ -173,13 +173,14 @@ cover none of the changed files.
   | `checksum-pins` | `checksum-pins.yml` | `sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`, `tests/checksum-pins`, actions `setup-gvisor`, `setup-kind`; pull requests from `renovate/` branches only (REG-7) |
   | `sandbox-advisories` | `sandbox-advisories.yml` | `sandbox/`, action `setup-trivy`; also weekly (SEC-18) |
   | `fuzz` | `fuzz.yml` | `.clusterfuzzlite/`, `tests/fuzz/`, `gate/check_entry.py`, `gate/schema_diff.py`, `consumer/plan.py`, `sandbox/schema_check.py`, `sandbox/tag_check.py`, `sandbox/tf_schema.py`, `policy/` (GI-14) |
-  | `code-lint` | `code-lint.yml` | every pull request, because the Python files and shell scripts it checks share no directory (CI-3) |
+  | `playground` | `playground.yml` | `catalog/playground/`, `catalog/site/static/playground/`, the page in Chrome: `catalog/site/content/playground.md`, layouts `playground.html` and `baseof.html` with its partials `seo.html` and `icons.html`, `catalog/site/static/style.css`, `site.js` and `theme.js`, `catalog/site/hugo.toml`; `catalog/test_catalog.py` (the `Playground` tests and the site build they run), `catalog/build`, `sandbox/Dockerfile`, `sandbox/requirements.in`, `sandbox/requirements.txt`, actions `setup-hugo`, `setup-oras`; also daily (PG-14) |
+  | `code-lint` | `code-lint.yml` | every pull request that changes a file other than Markdown and the entries `generators/*.yaml` and `recipes/*.yaml`, because the Python files and shell scripts it checks share no directory (CI-3) |
 
   Every workflow also lists its own file. `workflow_dispatch` runs a job
   regardless of the change.
 
   - Test: manual: the checks of the pull request that introduced this
-  - Since: #58, #243, #389
+  - Since: #58, #243, #389; `playground`: this change
 
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
@@ -193,11 +194,19 @@ cover none of the changed files.
   catches up on anything a skipped push left out.
 
   - Test: manual: the release run after the merge of the pull request that introduced this
-  - Since: #58, #237, #243
+  - Since: #58, #237, #243; `checksum-pins.yml` and `playground.yml`: this change
 
 - CI-3: The `code-lint` job MUST run ruff with its default rules on every
   Python file and shellcheck on every shell script of the registry, on
-  every pull request, and MUST fail on any finding.
+  every pull request that changes a file other than Markdown files and the
+  entries `generators/*.yaml` and `recipes/*.yaml`, and MUST fail on any
+  finding.
+
+  Neither tool reads a Markdown file or an entry. A pull request that
+  changes only those skips the workflow through `paths-ignore`. Of the 200
+  pull requests merged from 2026-11-04 to 2026-11-13, 145 were such, most
+  of them registrations. `code-lint` is no required check, so the skip
+  blocks no merge.
 
   A finding is fixed, or silenced for one line or one file with its reason
   next to it: a `# noqa` or `# shellcheck disable` comment, or a
@@ -209,8 +218,24 @@ cover none of the changed files.
   by QA-3 with `policy/ruff.toml`, which the gate passes with `--config`, so
   `ruff.toml` does not reach them.
 
-  - Test: workflow job `code-lint`; manual: a pull request with an unused import fails it
-  - Since: #553
+  - Test: workflow job `code-lint`; manual: a pull request with an unused import fails it;
+    manual: a pull request that changes only Markdown starts no `code-lint` run
+  - Since: #553; `paths-ignore`: this change
+
+- CI-4: A newer commit of a pull request MUST cancel the run that an older
+  commit of the same pull request started in each workflow that runs on
+  the commits of a pull request. Runs on any other event MUST NOT be
+  cancelled.
+
+  Each of these workflows sets `concurrency` to the group
+  `<workflow>-<pull request number>` with `cancel-in-progress: true`. A run
+  on another event takes its run ID as the group, so it shares the group
+  with no other run. `gate.yml` already did this for `pull_request_target`.
+  Before, a superseded `gate-selftest` ran its 35 to 45 minutes to the end.
+
+  - Test: manual: on the pull request that introduced this, the second
+    commit cancelled the runs of the first
+  - Since: this change
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
@@ -536,6 +561,7 @@ coverage is named at each:
 | `.github/workflows/selftest.yml` | `gate-selftest`, on maintainer pull requests |
 | `.github/workflows/{consumer-selftest,catalog-tests,release-tests}.yml` | CI-1: `consumer-selftest`, `catalog-tests`, `release-tests` |
 | `.github/workflows/code-lint.yml`, `ruff.toml` | CI-3 |
+| `concurrency` of every workflow that runs on pull request commits | CI-4 |
 | `.github/workflows/release.yml` | PUB-1 to PUB-14, GI-8, CAT-1, CAT-7, CAT-14, CAT-27, CAT-33, CAT-39c, index and catalog |
 | `release/` | PUB-1, PUB-4, PUB-5, PUB-9 to PUB-15: `build.py`, `build-all`, `tree.py`, `index.py`, `output-diff`, `mirror-image`, `publish-sandbox` |
 | `.github/workflows/scheduled.yml`, `scan/rescan`, `scan/rescan_issues.py` | SEC-15, SEC-16 |
