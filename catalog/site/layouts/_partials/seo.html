@@ -31,10 +31,19 @@
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ $desc }}">
 <meta property="og:url" content="{{ .Permalink }}">
+{{- $card := false }}{{ if and (eq .Section "blog") (eq .Kind "page") }}{{ $card = partial "og-card.html" . }}{{ end -}}
+{{- with $card }}{{/* CAT-58 */}}
+<meta property="og:image" content="{{ .Permalink }}">
+<meta property="og:image:width" content="{{ .Width }}">
+<meta property="og:image:height" content="{{ .Height }}">
+<meta property="og:image:alt" content="kadet-hub.org: {{ $.Title }}{{ with $.Params.tools }} (tools: {{ delimit . ", " }}){{ end }}">
+<meta name="twitter:image" content="{{ .Permalink }}">
+{{- else }}
 <meta property="og:image" content="{{ "og.png" | absURL }}">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="kadet-hub: Kapitan generators, scanned and attested">
+{{- end }}
 <meta name="twitter:card" content="summary_large_image">
 {{- with site.Params.mastodon }}{{/* CAT-53. shortcut: the profile URL assumes the server serves profiles on the handle's domain; a split web domain needs the URL as its own param. */}}
 {{- $acct := split (strings.TrimPrefix "@" .) "@" }}
@@ -54,7 +63,7 @@
 {{- end }}
 {{- if and (eq .Section "blog") (eq .Kind "page") }}{{/* CAT-36a */}}
 {{- $org := dict "@type" "Organization" "name" "kadet-hub maintainers" "url" (printf "https://github.com/%s" site.Data.catalog.owner) -}}
-<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "BlogPosting" "headline" .Title "description" .Description "url" .Permalink "mainEntityOfPage" .Permalink "image" ("og.png" | absURL) "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") "author" $org "publisher" (dict "@type" "Organization" "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL)) }}</script>
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "BlogPosting" "headline" .Title "description" .Description "url" .Permalink "mainEntityOfPage" .Permalink "image" $card.Permalink "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") "author" $org "publisher" (dict "@type" "Organization" "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL)) }}</script>
 {{- end }}
 {{- if and (in (slice "guides" "recipes") .Section) (eq .Kind "page") }}{{/* CAT-11g */}}
 <script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "TechArticle" "headline" .Title "description" .Description "url" .Permalink "mainEntityOfPage" .Permalink "image" ("og.png" | absURL) "dateModified" (.Lastmod.Format "2006-01-02") "author" (dict "@type" "Organization" "name" "kadet-hub maintainers" "url" (printf "https://github.com/%s" site.Data.catalog.owner)) "publisher" (dict "@type" "Organization" "name" site.Title "url" site.BaseURL "logo" ("favicon.svg" | absURL)) }}</script>

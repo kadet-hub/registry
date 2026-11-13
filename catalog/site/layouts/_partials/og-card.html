@@ -1,0 +1,11 @@
+{{- /* CAT-58: the post's Open Graph card, the base image (background and the site's mark) with the domain, the title
+  and the post's tools (CAT-51) as hashtags, in the dark theme's --text-muted, --text and --accent. */ -}}
+{{- $adv := resources.Get "og/advances.json" | transform.Unmarshal -}}
+{{- $text := dict "font" (resources.Get "og/NotoSans-Bold.ttf") "x" 80 -}}
+{{- $tags := slice }}{{ range .Params.tools }}{{ $tags = $tags | append (print "#" .) }}{{ end -}}
+{{- $title := partial "og-lines.html" (dict "text" .Title "size" 64 "max" 3 "adv" $adv) -}}
+{{- $tags = partial "og-lines.html" (dict "text" (delimit $tags " ") "size" 32 "max" 1 "adv" $adv) -}}
+{{- return (resources.Get "og/base.png" | images.Filter
+  (images.Text "kadet-hub.org" (merge $text (dict "x" 168 "y" 86 "size" 36 "color" "#9aa4b8")))
+  (images.Text $title (merge $text (dict "y" 184 "size" 64 "linespacing" 8 "color" "#e7ebf3")))
+  (images.Text $tags (merge $text (dict "y" 505 "size" 32 "color" "#8c9bff")))) -}}
