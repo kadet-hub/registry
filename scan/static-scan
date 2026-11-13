@@ -12,7 +12,7 @@ here=$(cd -- "$(dirname -- "$0")" && pwd)
 policy=$(cd -- "$here/../policy" && pwd)
 venv=${SCAN_VENV:-$here/.venv}
 sandbox=${SANDBOX_IMAGE:-kadet-hub/sandbox}
-clamav=clamav/clamav@sha256:e19130cdebaeacc71fa46eab3ed6f69941f2f22aa5e08d55e9197f8edf43ce5e # 1.5.4
+clamav=clamav/clamav@sha256:45fe5149fbee5a46509c9848ef20d0c354b7b2323c9369f285939a37cf33422a # 1.5.4
 
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
