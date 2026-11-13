@@ -3397,3 +3397,4 @@ if __name__ == "__main__":
     unittest.main()
 
 # evidence for #689, first commit
+# evidence for #689, second commit
