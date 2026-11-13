@@ -16,10 +16,6 @@ on:
 permissions:
   contents: read
 
-concurrency: # CI-4
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   sandbox-advisories:
     runs-on: ubuntu-24.04
