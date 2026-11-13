@@ -1,4 +1,4 @@
-// PG-3, PG-7 to PG-10, PG-15, PG-17 to PG-19, PG-21 to PG-24 in a browser: node browser.mjs <built site dir>
+// PG-3, PG-7 to PG-10, PG-15, PG-17 to PG-19, PG-21 to PG-24, PG-26 to PG-28, PG-30 in a browser: node browser.mjs <built site dir>
 // Serves the site, opens /playground/ in Chrome ($CHROME, default
 // /usr/bin/google-chrome) and exits 1 on any finding.
 import { createServer } from "node:http";
@@ -51,11 +51,30 @@ try {
   if ((await fetch(`${origin}/playground/prism/LICENSE`)).status !== 200) fail("PG-24: Prism's licence is not served");
   const t0 = Date.now();
   await page.click("#pg-start");
+  await page.waitForSelector("#pg-app:not([hidden])");
+  if (await page.evaluate(() => document.activeElement.id) !== "pg-example") fail("PG-26: focus is not on the example selector after the start");
+  // PG-27, PG-28: read in one task, so the worker's ready message cannot come in between.
+  const early = await page.evaluate(() => {
+    if (document.body.dataset.pgReady) return null;
+    const $ = (id) => document.getElementById(id);
+    const seen = { disabled: $("pg-compile").disabled, progress: $("pg-progress")?.checkVisibility() ?? false };
+    $("pg-editor").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true }));
+    return { ...seen, status: $("pg-status").textContent };
+  });
+  if (!early) console.log("PG-27, PG-28 not checked: the worker was ready first");
+  else {
+    if (!early.disabled) fail("PG-27: Compile is enabled before the worker is ready");
+    if (!early.progress) fail("PG-28: no progress bar while the worker loads");
+    // An extra compile would shift every run number the steps below wait for.
+    if (early.status.startsWith("Compiling")) throw new Error("PG-27: Ctrl+Enter compiled before the worker was ready");
+  }
   const options = await page.$$eval("#pg-example option", (os) => os.map((o) => o.value));
   let runs = 1;
   let r = await step(runs, options[0]);
   console.log(`first output ${((Date.now() - t0) / 1000).toFixed(1)} s after the start`);
   if (r.exit !== "0" || r.files === 0) fail(`${options[0]}: no output`);
+  if (await page.isVisible("#pg-progress")) fail("PG-28: the progress bar stays after the worker is ready");
+  if (await page.$eval("#pg-status", (s) => s.classList.contains("warning"))) fail("PG-30: a successful compile is shown as a warning");
   // The first example is basics: dev lists apps.web, which lists common, and each sets app.replicas.
   const classes = await page.$$eval("#pg-classes li > code", (cs) => cs.map((c) => c.textContent));
   if (classes.join() !== "common,apps.web,dev") fail(`PG-15: classes ${classes.join(", ")}`);
@@ -98,6 +117,7 @@ try {
   r = await step(++runs, "YAML error");
   const log = await page.textContent("#pg-log");
   if (r.exit === "0" || !/while parsing|expected|found/.test(log)) fail(`PG-3: the YAML error is not shown: ${log.slice(-200)}`);
+  if (!(await page.$eval("#pg-status", (s) => s.classList.contains("warning")))) fail("PG-30: the failed compile is not shown as a warning");
   if (await page.isVisible("#pg-prov")) fail("PG-15: provenance shown for an inventory that did not render");
   const foreign = requests.filter((u) => !u.startsWith(origin) && !u.startsWith("data:"));
   if (foreign.length) fail(`PG-8: requests to another origin: ${foreign.join(", ")}`);

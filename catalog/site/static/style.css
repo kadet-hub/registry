@@ -56,10 +56,11 @@ footer.site { margin-top: 4rem; padding-block: 2rem 3rem; border-top: 1px solid 
 footer.site p { margin: .25rem 0; }
 
 /* Buttons and chips */
-.button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1.1rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-weight: 600; text-decoration: none; }
+.button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1.1rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-weight: 600; text-decoration: none; }
 .button:hover { color: var(--text); border-color: var(--accent); }
 .button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .button.primary:hover { background: var(--accent-strong); color: var(--on-accent); }
+.button:disabled { opacity: .45; cursor: default; }
 .icon-button { display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; font-size: 1.05rem; }
 .icon-button:hover { color: var(--text); border-color: var(--border-strong); }
 #theme .on-dark { display: none; }
@@ -302,7 +303,7 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 /* CAT-37i: the recipe finder above the list. */
 .recipe-find { display: grid; gap: .5rem; margin: 1.5rem 0 1rem; }
 .recipe-find label { font-weight: 600; }
-#recipe-search::placeholder { color: var(--text-muted); opacity: 1; } /* CAT-54: Chrome's default grey has 3.71:1 on the dark field */
+#recipe-search::placeholder, #pg-search::placeholder { color: var(--text-muted); opacity: 1; } /* CAT-54: Chrome's default grey has 3.71:1 on the dark field */
 .guide-list { list-style: none; padding: 0; display: grid; gap: 1rem; }
 .guide-list li { padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .guide-list a { font-weight: 700; font-size: 1.1rem; }
@@ -361,9 +362,14 @@ details.version:target { border-color: var(--accent); }
 .playground .lead p { margin: 0; }
 .pg-bar { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem 1rem; margin: 1rem 0 .5rem; }
 .pg-bar label, .pg-editor-label { display: grid; gap: .2rem; font-size: .875rem; color: var(--text-muted); }
+/* PG-28: the progress bar and the status line up with the middle of the 44px controls. */
+#pg-progress { align-self: end; margin-bottom: calc(22px - .5em); accent-color: var(--accent); }
+#pg-status { display: inline-flex; align-items: center; min-height: 44px; }
 .pg-bar select { min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; }
 .pg-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; }
-@media (max-width: 60rem) { .pg-grid { grid-template-columns: minmax(0, 1fr); } }
+/* PG-29: below 60rem the output is under the editor, so a link beside the status leads to it. */
+.pg-jump { display: none; }
+@media (max-width: 60rem) { .pg-grid { grid-template-columns: minmax(0, 1fr); } .pg-jump { display: inline-flex; } }
 .pg-files { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .5rem; }
 .pg-file { padding: .25rem .6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: .8125rem var(--mono); cursor: pointer; }
 .pg-file[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }

@@ -1,10 +1,14 @@
-// The playground page (PG-4, PG-9, PG-11, PG-15 to PG-19). Nothing loads until
+// The playground page (PG-4, PG-9, PG-11, PG-15 to PG-19, PG-26 to PG-28, PG-30). Nothing loads until
 // the visitor starts it; then a module worker compiles with Kapitan in Pyodide.
 const $ = (id) => document.getElementById(id);
 const app = $("pg-app");
-let worker, examples, current, files = {}, path = "", runs = 0, prov = null, syntax;
+let worker, examples, current, files = {}, path = "", runs = 0, prov = null, syntax, ready = false;
 
-const status = (text) => { $("pg-status").textContent = text; };
+// PG-30: a failed compile or start is shown as a warning.
+const status = (text, failed = false) => {
+  $("pg-status").textContent = text;
+  $("pg-status").classList.toggle("warning", failed);
+};
 // lib/ holds fetched generators: compiled, not edited.
 const editable = (p) => !p.startsWith("lib/") && /\.(ya?ml|py|j2|md|txt|json)$/.test(p) && !/(^|\/)(README\.md|LICENSE)$/.test(p);
 
@@ -45,6 +49,7 @@ function load(name) {
 }
 
 function compile() {
+  if (!ready) return; // PG-27: the worker compiles once it is ready, with what is selected then
   if (path) files[path] = $("pg-editor").value;
   const project = { ...files };
   for (const l of current.libs) {
@@ -58,7 +63,7 @@ function compile() {
 function result(data) {
   $("pg-compile").disabled = false;
   const names = Object.keys(data.out);
-  status(data.code === 0 ? `Compiled ${names.length} files.` : "The compile failed; Kapitan's log is below.");
+  status(data.code === 0 ? `Compiled ${names.length} files.` : "The compile failed; Kapitan's log is below.", data.code !== 0);
   $("pg-log").textContent = data.log.trim();
   $("pg-log").hidden = !data.log.trim();
   $("pg-outputs").replaceChildren(...names.map((name, i) => {
@@ -175,16 +180,20 @@ function showParams() {
 async function start() {
   $("pg-start").disabled = true;
   syntax = import("./syntax.js");
-  status(`Loading Python and Kapitan (${$("pg-start").dataset.size})...`);
   examples = await (await fetch(new URL("./examples.json", import.meta.url))).json();
   $("pg-example").replaceChildren(...examples.examples.map((e) => new Option(e.title, e.name)));
   $("pg-intro").hidden = true;
   app.hidden = false;
+  $("pg-progress").hidden = false;
+  status(`Loading Python and Kapitan (${$("pg-start").dataset.size})...`);
+  $("pg-example").focus(); // PG-26: the start button that had focus is gone
   load(examples.examples[0].name);
   worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
   worker.onmessage = ({ data }) => {
-    if (data.type === "error") return status(`The playground failed to start: ${data.message}`);
+    $("pg-progress").hidden = true; // PG-28: the worker's first message, ready or error, ends the load
+    if (data.type === "error") return status(`The playground failed to start: ${data.message}`, true);
     if (data.type === "ready") {
+      ready = true;
       document.body.dataset.pgReady = "true";
       return compile();
     }
