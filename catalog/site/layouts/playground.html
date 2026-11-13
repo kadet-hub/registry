@@ -55,7 +55,7 @@
 <p class="warning">The playground is not part of this build of the site.</p>
 {{ end }}
 <h2>What runs here</h2>
-<p>Kapitan compiles in a Web Worker of this page, with the omegaconf or the reclass inventory backend and the kadet and Jinja2 inputs. Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs, fetching dependencies, and refs. The Terraform example writes Terraform JSON; terraform init, plan and apply do not run here.</p>
+<p>Kapitan compiles in a Web Worker of this page, with the omegaconf or the reclass <a href="{{ "/glossary/#inventory-backend" | relURL }}">inventory backend</a> and the kadet and Jinja2 inputs. Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs, fetching dependencies, and refs. The Terraform example writes Terraform JSON; terraform init, plan and apply do not run here.</p>
 </section>
 {{ with $pg }}<script type="module" src="{{ "playground/playground.js" | relURL }}"></script>{{ end }}
 {{ end }}
