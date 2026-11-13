@@ -49,25 +49,29 @@ try {
   await page.waitForTimeout(1000);
   if (requests.some((u) => /\/playground\/(pyodide|prism)\/|\/(worker|syntax)\.js$/.test(u))) fail("PG-9, PG-24: Pyodide or Prism loaded before the start");
   if ((await fetch(`${origin}/playground/prism/LICENSE`)).status !== 200) fail("PG-24: Prism's licence is not served");
+  // PG-27, PG-28: Pyodide's WebAssembly is held back until the page has been read, so the worker cannot be ready before.
+  let release;
+  const held = new Promise((r) => { release = r; });
+  await page.context().route((u) => u.pathname === "/playground/pyodide/pyodide.asm.wasm", async (route) => {
+    await held;
+    await route.continue();
+  });
   const t0 = Date.now();
   await page.click("#pg-start");
   await page.waitForSelector("#pg-app:not([hidden])");
   if (await page.evaluate(() => document.activeElement.id) !== "pg-example") fail("PG-26: focus is not on the example selector after the start");
-  // PG-27, PG-28: read in one task, so the worker's ready message cannot come in between.
   const early = await page.evaluate(() => {
-    if (document.body.dataset.pgReady) return null;
     const $ = (id) => document.getElementById(id);
-    const seen = { disabled: $("pg-compile").disabled, progress: $("pg-progress")?.checkVisibility() ?? false };
+    const seen = { ready: !!document.body.dataset.pgReady, disabled: $("pg-compile").disabled, progress: $("pg-progress")?.checkVisibility() ?? false };
     $("pg-editor").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true }));
     return { ...seen, status: $("pg-status").textContent };
   });
-  if (!early) console.log("PG-27, PG-28 not checked: the worker was ready first");
-  else {
-    if (!early.disabled) fail("PG-27: Compile is enabled before the worker is ready");
-    if (!early.progress) fail("PG-28: no progress bar while the worker loads");
-    // An extra compile would shift every run number the steps below wait for.
-    if (early.status.startsWith("Compiling")) throw new Error("PG-27: Ctrl+Enter compiled before the worker was ready");
-  }
+  release();
+  if (early.ready) fail("PG-27, PG-28: the worker was ready although Pyodide was held back");
+  if (!early.disabled) fail("PG-27: Compile is enabled before the worker is ready");
+  if (!early.progress) fail("PG-28: no progress bar while the worker loads");
+  // An extra compile would shift every run number the steps below wait for.
+  if (early.status.startsWith("Compiling")) throw new Error("PG-27: Ctrl+Enter compiled before the worker was ready");
   const options = await page.$$eval("#pg-example option", (os) => os.map((o) => o.value));
   let runs = 1;
   let r = await step(runs, options[0]);
