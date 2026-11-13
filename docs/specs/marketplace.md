@@ -235,7 +235,9 @@ cover none of the changed files.
 
   - Test: manual: on the pull request that introduced this, the second
     commit cancelled the runs of the first
-  - Since: this change
+  - Since: this change; `sandbox-advisories.yml`: not implemented. A change
+    to that file runs the job, which fails on `main` since 2026-11-13 on
+    CVE-2026-97054 in the Go binaries of the sandbox image (SEC-18)
 
 - AC-1 (SEC-1 to SEC-6): planted samples, one per rule, fail the gate:
   hardcoded token, also with `# gitleaks:allow`, base64-decoded `exec`,
