@@ -2290,10 +2290,17 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         self.assertRegex(css, r"\n@media \(max-width: 60rem\) \{ \.pg-grid \{[^}]*\} \.pg-jump \{ display: inline-flex; \} \}")
 
     def test_placeholders_reach_aa(self):  # CAT-54: Chrome's default placeholder grey has 3.71:1 on the dark field
-        ids = re.findall(r'<input [^>]*id="([^"]+)"[^>]*placeholder=', self.page("playground"))
-        self.assertEqual(ids, ["pg-search"])
-        for i in ids:
-            self.assertRegex(self.css(), rf"#{i}::placeholder[^{{]*\{{ color: var\(--text-muted\); opacity: 1; \}}")
+        # Site-wide, here because this fixture build is the only one with the playground's page too.
+        rules = re.findall(r"^([^{}\n]*::placeholder[^{}\n]*) \{ color: var\(--text-muted\); opacity: 1; \}", self.css(), re.MULTILINE)
+        muted = {s.strip() for r in rules for s in r.split(",")}
+        fields = {}
+        for path in glob.glob(os.path.join(self.out, "**", "*.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                for tag in re.findall(r"<(?:input|textarea)\b[^>]*>", f.read()):
+                    if "placeholder=" in tag:
+                        fields.setdefault(re.search(r'\bid="([^"]+)"', tag).group(1), os.path.relpath(path, self.out))
+        self.assertLessEqual({"search", "recipe-search", "match-version", "mastodon-server", "pg-search"}, set(fields))
+        self.assertEqual(sorted(f"#{i} on {p}" for i, p in fields.items() if not {"::placeholder", f"#{i}::placeholder"} & muted), [])
 
     def test_start_button_names_the_download(self):  # PG-9
         page = self.page("playground")

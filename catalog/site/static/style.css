@@ -35,6 +35,7 @@ body { margin: 0; font: 16px/1.55 var(--sans); color: var(--text); background: v
 a { color: var(--accent); text-underline-offset: .15em; }
 a:hover { color: var(--accent-strong); }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+::placeholder { color: var(--text-muted); opacity: 1; } /* CAT-54: Chrome's default grey has 3.71:1 on the dark field */
 code, pre { font-family: var(--mono); font-size: .875em; }
 :not(pre) > code { padding: .1em .35em; border-radius: 6px; background: var(--bg-subtle); border: 1px solid var(--border); }
 h1, h2, h3 { line-height: 1.2; letter-spacing: -.01em; }
@@ -303,7 +304,6 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 /* CAT-37i: the recipe finder above the list. */
 .recipe-find { display: grid; gap: .5rem; margin: 1.5rem 0 1rem; }
 .recipe-find label { font-weight: 600; }
-#recipe-search::placeholder, #pg-search::placeholder { color: var(--text-muted); opacity: 1; } /* CAT-54: Chrome's default grey has 3.71:1 on the dark field */
 .guide-list { list-style: none; padding: 0; display: grid; gap: 1rem; }
 .guide-list li { padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .guide-list a { font-weight: 700; font-size: 1.1rem; }
