@@ -3395,3 +3395,5 @@ class Schedule(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# evidence for #689, first commit
