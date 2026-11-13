@@ -26,6 +26,10 @@ permissions:
   contents: read
   attestations: read # gh attestation verify in the recipe samples (REC-6)
 
+concurrency: # CI-4
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   gate-selftest:
     runs-on: ubuntu-24.04

@@ -2,18 +2,31 @@ name: playground
 
 # PG-6, AC-40, AC-41, AC-44: compile every playground example in Pyodide and
 # in the gate's sandbox image, test the provenance replay, and run the page in
-# Chrome, on pull requests that change the playground or the versions it takes
-# from sandbox/. PG-14: daily against the index published that day; a failed
-# scheduled run opens or updates one issue.
+# Chrome, on pull requests that change the playground, the page around it in
+# Chrome, its tests or the versions it takes from sandbox/ (CI-1). PG-14: daily
+# against the index published that day; a failed scheduled run opens or
+# updates one issue.
 on:
   pull_request:
     paths:
       - catalog/playground/**
       - catalog/site/static/playground/**
       - catalog/site/layouts/playground.html
+      - catalog/site/layouts/baseof.html
+      - catalog/site/layouts/_partials/seo.html
+      - catalog/site/layouts/_partials/icons.html
+      - catalog/site/content/playground.md
+      - catalog/site/static/style.css
+      - catalog/site/static/site.js
+      - catalog/site/static/theme.js
+      - catalog/site/hugo.toml
+      - catalog/test_catalog.py
       - catalog/build
       - sandbox/Dockerfile
+      - sandbox/requirements.in
       - sandbox/requirements.txt
+      - .github/actions/setup-hugo/**
+      - .github/actions/setup-oras/**
       - .github/workflows/playground.yml
   schedule:
     - cron: "37 5 * * *"
@@ -21,6 +34,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency: # CI-4
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   playground:

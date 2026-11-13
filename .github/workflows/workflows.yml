@@ -14,6 +14,10 @@ permissions:
   contents: read
   actions: read # GI-15: the deployment branch policies of the environments
 
+concurrency: # CI-4
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   workflow-lint:
     runs-on: ubuntu-24.04
