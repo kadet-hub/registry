@@ -119,16 +119,19 @@ try {
   if (r.exit === "0" || !/while parsing|expected|found/.test(log)) fail(`PG-3: the YAML error is not shown: ${log.slice(-200)}`);
   if (!(await page.$eval("#pg-status", (s) => s.classList.contains("warning")))) fail("PG-30: the failed compile is not shown as a warning");
   if (await page.isVisible("#pg-prov")) fail("PG-15: provenance shown for an inventory that did not render");
-  // PG-30: a start that fails in the worker is a warning that says to reload.
-  const broken = await browser.newContext();
-  await broken.route(/\/playground\/packages\.json$/, (route) => route.abort());
-  const failing = await broken.newPage();
-  await failing.goto(`${origin}/playground/`);
-  await failing.click("#pg-start");
-  await failing.waitForSelector("#pg-status.warning", { timeout: 120000 }).catch(() => {});
-  const said = await failing.textContent("#pg-status");
-  if (!said.includes("failed to start; reload the page")) fail(`PG-30: a failed start says "${said}"`);
-  await broken.close();
+  // PG-30: a start that fails in the worker (packages.json) or before it runs (its import of
+  // pyodide.mjs) is a warning that says to reload.
+  for (const file of ["packages.json", "pyodide/pyodide.mjs"]) {
+    const broken = await browser.newContext();
+    await broken.route((u) => u.pathname === `/playground/${file}`, (route) => route.abort());
+    const failing = await broken.newPage();
+    await failing.goto(`${origin}/playground/`);
+    await failing.click("#pg-start");
+    await failing.waitForSelector("#pg-status.warning", { timeout: 120000 }).catch(() => {});
+    const said = await failing.textContent("#pg-status");
+    if (!said.includes("failed to start; reload the page") || await failing.isVisible("#pg-progress")) fail(`PG-30: without ${file} the start says "${said}"`);
+    await broken.close();
+  }
   const foreign = requests.filter((u) => !u.startsWith(origin) && !u.startsWith("data:"));
   if (foreign.length) fail(`PG-8: requests to another origin: ${foreign.join(", ")}`);
 } catch (e) {

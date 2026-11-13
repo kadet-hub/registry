@@ -200,6 +200,8 @@ async function start() {
     }
     result(data);
   };
+  // PG-30: a worker whose script or Pyodide's module does not load posts nothing; the browser reports it here.
+  worker.onerror = (e) => worker.onmessage({ data: { type: "error", message: e.message || "the worker did not load" } });
 }
 
 $("pg-start").addEventListener("click", start);
