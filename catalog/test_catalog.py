@@ -438,7 +438,7 @@ NEW_RECIPES = tuple(
                                               "ghost", "home-assistant", "homepage", "litellm", "matrix-synapse", "mattermost",
                                               "qdrant", "rocketchat", "stirling-pdf", "zulip", "langfuse", "librechat", "mlflow", "stalwart")),
         ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden", "umami",
-                                            "actual", "ejabberd", "memos", "navidrome", "jitsi-meet")))
+                                            "actual", "ejabberd", "memos", "navidrome", "jitsi-meet", "ntfy", "linkding", "gotify")))
     for name in names)
 
 
@@ -956,7 +956,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes in KRaft mode under Strimzi](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 55)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 58)
         self.assertIn("\n- [cert-manager on Kubernetes, matched to its chart object by object](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
