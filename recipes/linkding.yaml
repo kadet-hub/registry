@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: linkding
+  tag: linkding-v1.0.0
+  sha: 7342f78cb17a52c27b4eb25bddf6989254c98de6
+owners: [3042152]
+exceptions: []
