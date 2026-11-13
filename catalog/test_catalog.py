@@ -7,6 +7,7 @@ import posixpath
 import re
 import shlex
 import shutil
+import struct
 import subprocess
 import sys
 import tarfile
@@ -15,6 +16,7 @@ import unittest
 import unittest.mock
 import urllib.parse
 import xml.etree.ElementTree as ET
+import zlib
 from html import unescape as _unescape
 from typing import ClassVar
 
@@ -44,6 +46,41 @@ def contrast(a, b):
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
     la, lb = luminance(a), luminance(b)
     return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+def png_rows(path):
+    """CAT-58: width, height, bytes per pixel and the unfiltered rows of an 8-bit RGB or RGBA PNG without interlacing."""
+    with open(path, "rb") as f:
+        data = f.read()
+    pos, idat = 8, b""
+    while pos < len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        if kind == b"IHDR":
+            width, height, depth, colour, _, _, interlace = struct.unpack(">IIBBBBB", data[pos + 8:pos + 21])
+            if (depth, colour in (2, 6), interlace) != (8, True, 0):
+                raise ValueError(f"{path}: depth {depth}, colour type {colour}, interlace {interlace}")
+        elif kind == b"IDAT":
+            idat += data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+    bpp = 3 if colour == 2 else 4
+    raw, stride, prev, rows = zlib.decompress(idat), width * bpp, bytearray(width * bpp), []
+    for y in range(height):  # PNG filter types 1 to 4: Sub, Up, Average, Paeth
+        kind, line = raw[y * (stride + 1)], bytearray(raw[y * (stride + 1) + 1:(y + 1) * (stride + 1)])
+        for i in range(stride) if kind else ():
+            a = line[i - bpp] if i >= bpp else 0
+            if kind == 1:
+                line[i] = (line[i] + a) & 255
+            elif kind == 2:
+                line[i] = (line[i] + prev[i]) & 255
+            elif kind == 3:
+                line[i] = (line[i] + (a + prev[i]) // 2) & 255
+            else:
+                b, c = prev[i], prev[i - bpp] if i >= bpp else 0
+                p = a + b - c
+                line[i] = (line[i] + (a if abs(p - a) <= min(abs(p - b), abs(p - c)) else b if abs(p - b) <= abs(p - c) else c)) & 255
+        rows.append(bytes(line))
+        prev = line
+    return width, height, bpp, rows
 
 
 def record(d, yanked=None, description="Renders a ConfigMap", tags=("helm",), advisories=()):
@@ -401,7 +438,7 @@ NEW_RECIPES = tuple(
                                               "ghost", "home-assistant", "homepage", "litellm", "matrix-synapse", "mattermost",
                                               "qdrant", "rocketchat", "stirling-pdf", "zulip", "langfuse", "librechat", "mlflow", "stalwart")),
         ("miniflux", COMPOSE_RECIPE_FILES, ("paperless-ngx", "pihole", "searxng", "uptime-kuma", "vaultwarden", "umami",
-                                            "actual", "ejabberd", "memos", "navidrome", "jitsi-meet")))
+                                            "actual", "ejabberd", "memos", "navidrome", "jitsi-meet", "ntfy", "linkding", "gotify")))
     for name in names)
 
 
@@ -919,7 +956,7 @@ class Site(unittest.TestCase):
             self.assertIn(link, text)
         self.assertEqual(re.findall(r"(?m)^## (.+)$", text)[-4:], ["Generators", "Guides", "Recipes", "Optional"])
         self.assertIn("\n- [Kafka on Kubernetes in KRaft mode under Strimzi](https://kadet-hub.org/recipes/kafka/index.md): Bitnami kafka Helm chart alternative: Kapitan", text)  # CAT-37b
-        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 55)
+        self.assertEqual(text.count("](https://kadet-hub.org/recipes/"), 58)
         self.assertIn("\n- [cert-manager on Kubernetes, matched to its chart object by object](https://kadet-hub.org/recipes/cert-manager/index.md): cert-manager Helm chart alternative:", text)  # CAT-37c
         self.assertIn("\n- [demo](https://kadet-hub.org/generators/demo/index.md): <script>alert(1)</script>\n", text)  # text, as typed
         self.assertIn("\n- [plain](https://kadet-hub.org/generators/plain/index.md): Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n", text)
@@ -1391,6 +1428,63 @@ class Site(unittest.TestCase):
             self.assertEqual([c.get("term") for c in entry.findall(f"{atom}category")], tools.get(name, []), name)  # a release post has none
             published += name in tools
         self.assertGreater(published, 0)
+
+    def og_card(self, html, out):
+        """CAT-58: checks the card a post page names and returns its URL."""
+        meta = dict(re.findall(r'<meta (?:property|name)="((?:og|twitter):image[^"]*)" content="([^"]*)">', html))
+        ld = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)]
+        post = next(b for b in ld if b["@type"] == "BlogPosting")
+        url = meta["og:image"]
+        self.assertRegex(url, r"^https://kadet-hub\.org/og/[\w-]+\.png$")
+        self.assertEqual([meta["og:image:width"], meta["og:image:height"], meta["twitter:image"], post["image"]], ["1200", "630", url, url])
+        self.assertIn(post["headline"], _unescape(meta["og:image:alt"]))
+        path = os.path.join(out, url.removeprefix("https://kadet-hub.org/"))
+        self.assertLess(os.path.getsize(path), 300_000, url)
+        width, height, bpp, rows = png_rows(path)
+        self.assertEqual((width, height, rows[0][:3]), (1200, 630, bytes.fromhex("0d1117")), url)
+        blank = rows[0][:bpp]
+        for y, row in enumerate(rows):  # the outer 80 px, and below the third title line, above the tags
+            edge = row if y < 80 or y >= 550 or 430 <= y < 510 else row[:80 * bpp] + row[1120 * bpp:]
+            self.assertTrue(edge == blank * (len(edge) // bpp), f"{url}: text in row {y}")
+        return url
+
+    def test_post_cards(self):  # CAT-58
+        urls = []
+        for path in sorted(glob.glob(os.path.join(self.out, "blog", "*", "index.html"))):
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+            if '<meta property="og:type" content="article">' in html:  # not the alias of a moved post
+                urls.append(self.og_card(html, self.out))
+        self.assertGreater(len(urls), 1)
+        self.assertEqual(len(set(urls)), len(urls))  # each post its own
+        for html in (*self.pages(), self.page("blog"), self.page("guides", "writing-a-kapitan-generator")):
+            self.assertIn('<meta property="og:image" content="https://kadet-hub.org/og.png">', html)
+            self.assertNotIn("twitter:image", html)
+        with open(os.path.join(HERE, "site", "layouts", "_partials", "og-card.html"), encoding="utf-8") as f:
+            for colour in re.findall(r'"color" "(#[0-9a-f]{6})"', f.read()):
+                self.assertGreaterEqual(contrast(colour, "#0d1117"), 4.5, colour)
+        long = ("title: A very long post title that keeps going well past the three lines the social card has room for, so it ends in an ellipsis\n"
+                "date: 2000-01-02\ndescription: A post whose title and tools are longer than the card has room for, for the test of CAT-58.\n"
+                "tools: [CloudNativePGOperatorForPostgreSQLClusters, ExternalSecretsOperatorWithVaultBackend, KubePrometheusStack]")
+        with tempfile.TemporaryDirectory() as tmp:
+            out, built = stack_build(tmp, {**dict.fromkeys(stack_posts()), "long": long})
+            self.assertEqual(built.returncode, 0, built.stderr)
+            with open(os.path.join(out, "blog", "long", "index.html"), encoding="utf-8") as f:
+                self.og_card(f.read(), out)
+
+    def test_card_lines_keep_a_long_last_word(self):  # CAT-58a
+        adv = {"a": 500, " ": 250, "…": 1000, "wide": 500}  # at size 100 a line holds 10300 units
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "layouts", "_partials"))
+            shutil.copy(os.path.join(HERE, "site", "layouts", "_partials", "og-lines.html"), os.path.join(tmp, "layouts", "_partials"))
+            with open(os.path.join(tmp, "hugo.toml"), "w", encoding="utf-8") as f:
+                f.write('disableKinds = ["page", "section", "taxonomy", "term", "rss", "sitemap", "404", "robotstxt"]\n')
+            with open(os.path.join(tmp, "layouts", "home.html"), "w", encoding="utf-8") as f:
+                f.write('{{ partial "og-lines.html" (dict "text" "aa ' + "a" * 20 + ' aa" "size" 100 "max" 2 "adv" ('
+                        + json.dumps(json.dumps(adv)) + " | transform.Unmarshal)) }}")
+            subprocess.run(["hugo", "--quiet", "--source", tmp, "--destination", os.path.join(tmp, "out")], check=True)
+            with open(os.path.join(tmp, "out", "index.html"), encoding="utf-8") as f:
+                self.assertEqual(f.read().strip(), "aa\n" + "a" * 20 + "…")  # the word stays, not a bare ellipsis
 
     def test_guides_and_recipes_dated(self):  # CAT-11g
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
@@ -3153,6 +3247,8 @@ class ReleaseDigest(unittest.TestCase):  # CAT-36b
         self.assertIn("<title>Kapitan generator releases, 26 October to 1 November 2026", html)
         self.assertIn('<time datetime="2026-11-02">', html)
         self.assertIn("plain</a> (new)", html)
+        self.assertRegex(html, r'<meta property="og:image" content="https://kadet-hub\.org/og/[\w-]+\.png">')  # CAT-58: no tools, the title alone
+        self.assertIn('<meta property="og:image:alt" content="kadet-hub.org: Kapitan generator releases, 26 October to 1 November 2026">', html)
         with tempfile.TemporaryDirectory() as tmp:
             out = build(self.INDEX, tmp)
             self.assertFalse(os.path.exists(os.path.join(out, "blog", "releases-2099-01-05")))  # future-dated: left out

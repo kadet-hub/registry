@@ -1,0 +1,7 @@
+source:
+  repo: https://github.com/kadet-hub/recipes.git
+  path: ntfy
+  tag: ntfy-v1.0.0
+  sha: 2b44000b33c1268c050ff7d97023c7de41c55704
+owners: [3042152]
+exceptions: []
