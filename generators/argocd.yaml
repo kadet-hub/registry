@@ -1,6 +1,6 @@
 source:
   repo: https://github.com/kadet-hub/generators.git
   path: argocd
-  tag: argocd-v1.1.0
-  sha: 177cbc09e6281275efe5aeaf49d22cd7f513bb66
+  tag: argocd-v1.2.0
+  sha: e86d61aaf646dbc6b5401dce2247a0053eaa9b35
 owners: [3042152]
