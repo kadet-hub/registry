@@ -54,7 +54,8 @@ spec records how that build works today.
   limited to authors that are trusted anyway.
 
 - DEC-27: The fork pushes `next` with a token of a GitHub App installed on
-  kadet-hub/kapitan only, with `contents` and `workflows` write.
+  kadet-hub/kapitan, and since DEC-50 on kadet-hub/krab, with `contents`
+  and `workflows` write.
 
   `GITHUB_TOKEN` cannot hold the `workflows` permission, and GitHub rejects
   a push of commits that change workflow files unless those commits already
@@ -175,10 +176,10 @@ with a warning in the run.
   `GITHUB_TOKEN`.
 
   The App has `contents` and `workflows` write and `metadata` read, no
-  events, and is installed on kadet-hub/kapitan only. Its client ID is the
-  variable `NEXT_APP_CLIENT_ID`, its private key the secret
-  `NEXT_APP_PRIVATE_KEY`. Without the variable the workflow falls back to
-  `GITHUB_TOKEN`, which is the upstream case (DEC-27).
+  events, and is installed on kadet-hub/kapitan and kadet-hub/krab
+  (DEC-50). Its client ID is the variable `NEXT_APP_CLIENT_ID`, its private
+  key the secret `NEXT_APP_PRIVATE_KEY`. Without the variable the workflow
+  falls back to `GITHUB_TOKEN`, which is the upstream case (DEC-27).
 
   - Test: manual: `assemble` of the latest run passes and `next` moved
   - Since: kapicorp/kapitan#1637 (6b4302f), App installed 2026-10-23
@@ -300,7 +301,7 @@ reaches the recipes report at the next schedule window plus a merge (OQ-14).
 | `NEXT_GREEN_AUTHORS` | `dependabot[bot]` |
 | `NEXT_APP_CLIENT_ID` | client ID of the App `kadet-hub-kapitan-next` |
 | Secret | `NEXT_APP_PRIVATE_KEY` |
-| GitHub App | `kadet-hub-kapitan-next`: contents write, workflows write, metadata read; installed on kadet-hub/kapitan only |
+| GitHub App | `kadet-hub-kapitan-next`: contents write, workflows write, metadata read; installed on kadet-hub/kapitan and kadet-hub/krab (DEC-50) |
 | Image | `ghcr.io/kadet-hub/kapitan:next`, `:next-<sha>`, public, `linux/amd64` |
 | Wheel | run artifact `kapitan-next-wheel`, 14 days |
 | Status issue | kadet-hub/kapitan#1, "next: integration status" |
