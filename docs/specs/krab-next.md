@@ -2,7 +2,7 @@
 
 Status: Draft
 Code: kadet-hub/krab `.github/workflows/next.yml`, `Dockerfile` and `.dockerignore`, its repository variables and secret, the installation of the GitHub App `kadet-hub-kapitan-next` on kadet-hub/krab, `ghcr.io/kadet-hub/krab`
-Verified against: kadet-hub/krab next @ tbd
+Verified against: kadet-hub/krab next @ 44b345c, before its first rebuild
 
 Related: [kapitan-next.md](kapitan-next.md), whose workflow this build
 ports; kapicorp/krab#319, the closed pull request the Dockerfile comes from.
@@ -63,7 +63,7 @@ names the tag `next`, for the reasons of NXT-14.
 
   - Test: manual: the `Merged:` and `Conflicting:` lines of the latest
     `next` commit list every open kapicorp/krab PR of `NEXT_AUTHOR`
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 ## Assembly and the fork's own files
 
@@ -76,7 +76,7 @@ names the tag `next`, for the reasons of NXT-14.
 
   - Test: manual: `git log -1 origin/next` names the `main` commit and the
     merged and left-out PRs
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 - KNX-3: The rebuild MUST take `.github/workflows/next.yml`, `Dockerfile`
   and `.dockerignore` from the commit the run started on, replacing any
@@ -90,7 +90,7 @@ names the tag `next`, for the reasons of NXT-14.
 
   - Test: manual: `git diff <start commit of the run> origin/next --
     .github/workflows/next.yml Dockerfile .dockerignore` prints nothing
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 A change to one of the three files is a signed commit pushed on top of
 `next`, followed by a dispatch of the workflow. The commit has no
@@ -107,7 +107,7 @@ before and force-pushes over the change, so push only while no run of
 
   - Test: manual: a dispatched run right after a rebuild ends with
     "Nothing changed since next was last built."
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 ## Rebuilds and push
 
@@ -119,7 +119,7 @@ before and force-pushes over the change, so push only while no run of
   whoever needs a fresh build runs `gh workflow run next -R kadet-hub/krab`.
 
   - Test: none; `gh run list -R kadet-hub/krab -w next` shows the runs
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 - KNX-6: `assemble` MUST check out and push with a token of the App
   `kadet-hub-kapitan-next`, created per run for the repository `krab` with
@@ -133,7 +133,7 @@ before and force-pushes over the change, so push only while no run of
   merged PR changes a workflow file (DEC-50).
 
   - Test: manual: `assemble` of the latest run passes and `next` moved
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 ## Tests and image
 
@@ -149,7 +149,7 @@ before and force-pushes over the change, so push only while no run of
 
   - Test: manual: the line "cargo test" in the status issue, and a failed
     run whose `image` job is skipped
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 - KNX-8: Every rebuild whose tests passed MUST push a `linux/amd64` image
   of the `next` commit as `ghcr.io/kadet-hub/krab:next` and
@@ -159,7 +159,7 @@ before and force-pushes over the change, so push only while no run of
 
   - Test: manual: anonymous `docker pull ghcr.io/kadet-hub/krab:next`, and
     `gh attestation verify oci://ghcr.io/kadet-hub/krab@<digest> --owner kadet-hub`
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 The `image` job compiles krab with `cargo build --release --locked -p krab`
 on the ubuntu-24.04 runner and copies the binary to `bin/amd64/krab`, where
@@ -194,7 +194,7 @@ Nothing updates these pins. A bump is a commit on `next` as KNX-3 describes
 
   - Test: manual: `docker inspect` of the image, the issue body and
     `gh repo view kadet-hub/krab`
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 ## Status issue
 
@@ -205,7 +205,7 @@ Nothing updates these pins. A bump is a commit on `next` as KNX-3 describes
   Issues are disabled in a new fork, so they are enabled on kadet-hub/krab.
 
   - Test: manual: the status issue names the current `next` commit
-  - Since: not implemented
+  - Since: kadet-hub/krab 44b345c
 
 ## Verification
 
