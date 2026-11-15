@@ -36,7 +36,7 @@ names the tag `next`, for the reasons of NXT-14.
 
 - DEC-50: The fork pushes `next` with the GitHub App
   `kadet-hub-kapitan-next`, installed on kadet-hub/krab in addition to
-  kadet-hub/kapitan.
+  kadet-hub/kapitan, and with a private key of its own.
 
   The reasons of DEC-27 apply to krab as well. Of the open kapicorp/krab
   pull requests on 2026-11-15, the Dependabot bumps #252, #254, #255, #314
@@ -44,12 +44,17 @@ names the tag `next`, for the reasons of NXT-14.
   under `.github/workflows/`, and GitHub rejects those commits from
   `GITHUB_TOKEN`.
 
-  The cost of one App for both forks is that a private key leaked from the
-  secret of either repository can push to the `next` of both. Each run asks
-  for a token of its own repository only, which does not limit a leaked key.
-  A second App would keep the forks apart, but has to be created in the
-  browser and adds a second App to maintain. Both forks select code by the
-  same rule (DEC-26) and serve the same purpose, so one App is used.
+  The secret of kadet-hub/krab holds a key generated for it, not a copy of
+  the key in kadet-hub/kapitan. Either key can be revoked in the App's
+  settings without breaking the other fork.
+
+  A key still creates tokens for every repository of the installation, so a
+  key leaked from either secret can push to the `next` of both forks until
+  it is revoked. Each run asks for a token of its own repository only, which
+  does not limit a leaked key. A second App would keep the forks apart, but
+  has to be created in the browser and adds a second App to maintain. Both
+  forks select code by the same rule (DEC-26) and serve the same purpose.
+  The owner chose the shared App with one key per fork on #695.
 
 ## Selection
 
@@ -237,7 +242,7 @@ Nothing updates these pins. A bump is a commit on `next` as KNX-3 describes
 | `NEXT_AUTHOR` | the maintainer's GitHub login, as in kadet-hub/kapitan |
 | `NEXT_GREEN_AUTHORS` | `dependabot[bot]` |
 | `NEXT_APP_CLIENT_ID` | client ID of the App `kadet-hub-kapitan-next` |
-| Secret | `NEXT_APP_PRIVATE_KEY`, a private key of that App |
-| GitHub App | `kadet-hub-kapitan-next`, installed on kadet-hub/kapitan and kadet-hub/krab (DEC-50) |
+| Secret | `NEXT_APP_PRIVATE_KEY`, a private key of that App generated for kadet-hub/krab (DEC-50) |
+| GitHub App | `kadet-hub-kapitan-next`, installed on kadet-hub/kapitan and kadet-hub/krab, one private key per fork (DEC-50) |
 | Image | `ghcr.io/kadet-hub/krab:next`, `:next-<sha>`, public, `linux/amd64` |
 | Status issue | kadet-hub/krab, "next: integration status", number tbd |
