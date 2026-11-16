@@ -19,8 +19,10 @@ workflow rebuilds from upstream `main` plus open upstream pull requests, and
 publishes as the image `ghcr.io/kadet-hub/krab:next`. The build works like
 the `next` of kadet-hub/kapitan. This spec states where it differs and cites
 the NXT requirements of [kapitan-next.md](kapitan-next.md) for the rest. No
-kadet-hub repository uses the image yet. A consumer pins it by digest and
-names the tag `next`, for the reasons of NXT-14.
+kadet-hub repository uses the image yet. The gate keeps compiling with the
+krab release that `sandbox/Dockerfile` pins (CMP-4), and this image does not
+replace it. A consumer pins it by digest and names the tag `next`, for the
+reasons of NXT-14.
 
 ## Decisions
 
