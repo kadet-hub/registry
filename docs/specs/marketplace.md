@@ -120,6 +120,9 @@ the build job (RISK-10).
 - DEC-24 to DEC-27: kadet-hub/kapitan builds `next` from open upstream
   PRs with the workflow of kapicorp/kapitan#1637
   ([kapitan-next.md](kapitan-next.md)).
+- DEC-49 and DEC-50: kadet-hub/krab builds `next` the same way, with a
+  workflow and Dockerfile of its own and the App of kadet-hub/kapitan
+  ([krab-next.md](krab-next.md)).
 - DEC-31 to DEC-36: two composite actions compile a consumer pull
   request's base and merge commit through the consumer flow and post the
   diff of `compiled/` as one comment, from a `workflow_run` job that runs
@@ -142,6 +145,7 @@ Requirements live in the spec of their area; IDs are unchanged by the split.
 | [legal.md](legal.md) | Legal | LEG |
 | [recipes.md](recipes.md) | Recipes: registration, gate, artifact and index | REC |
 | [kapitan-next.md](kapitan-next.md) | The kadet-hub/kapitan `next` build and its image | NXT |
+| [krab-next.md](krab-next.md) | The kadet-hub/krab `next` build and its image | KNX |
 | [compile-diff.md](compile-diff.md) | Compile diff of consumer pull requests | CD |
 | [playground.md](playground.md) | The Kapitan playground in the browser | PG |
 
