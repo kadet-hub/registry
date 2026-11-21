@@ -18,8 +18,8 @@ its own, so a later platform with ratings can read the same index instead
 of migrating site data.
 
 Each generator has a card (CAT-22) and a page at `/generators/<name>/`
-with the latest version's README and every version. The home page's
-introduction spans the width of the card grid below it. Search and tag filter run in the browser over the rendered cards.
+with the latest version's README and every version. The cards are listed
+at `/generators/` (CAT-67a). Search and tag filter run in the browser over the rendered cards.
 Owner logins and stars come from the GitHub API at build time; they are
 display data only, and a failed lookup shows the user ID or no stars.
 
@@ -58,7 +58,7 @@ remembered in the browser's `localStorage`.
   Tags are multiply assigned (a generator can be `helm`, `operators` and
   `kubernetes` at once), so OR would widen the result with every click.
   The result line names the selected tags. Without
-  JavaScript the home page lists every generator.
+  JavaScript `/generators/` lists every generator.
 
   - Test: `catalog/test_catalog.py` (partial: the links and the markup; the
     filter itself runs in the browser)
@@ -70,7 +70,7 @@ remembered in the browser's `localStorage`.
   Until this change the links went to the filtered home page. Audit tools
   flag internal links with query parameters, and the tag page (CAT-18)
   lists the same generators with the tag's definition; the filter chips
-  on the home page still combine tags.
+  on `/generators/` still combine tags.
 
   - Test: `catalog/test_catalog.py`
   - Since: #221
@@ -84,7 +84,7 @@ remembered in the browser's `localStorage`.
 - CAT-9a: Below 48rem the site header MUST be one row with a menu button
   that opens the nav as a list below it, the tag chips MUST be collapsed
   behind a "Filter by tag" button that counts the selected tags, and the
-  home page filters MUST NOT stay fixed while the visitor scrolls.
+  filters of `/generators/` MUST NOT stay fixed while the visitor scrolls.
 
   At 393 px, an iPhone 15, the ten nav links wrapped into four
   right-aligned rows and the header was 150 px tall; the eleven tag chips
@@ -145,7 +145,8 @@ remembered in the browser's `localStorage`.
   server field under a post and the playground's parameter filter. Only
   the recipe finder's placeholder took `--text-muted`. The stylesheet now
   gives every placeholder `--text-muted`, which has 7.42:1 in light and
-  7.13:1 in dark on `--surface`, the background of all five fields.
+  7.13:1 in dark on `--surface`, the background of all six fields, the
+  start page's search of CAT-67b included.
 
   - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`,
     partial: the token pairs and the `opacity` rules of the stylesheet,
@@ -171,7 +172,7 @@ remembered in the browser's `localStorage`.
     link or control outside text below 24 px that overlaps another target
   - Since: #680
 
-- CAT-10: The home page MUST let visitors sort the cards by name, by the
+- CAT-10: `/generators/` MUST let visitors sort the cards by name, by the
   time of the latest version and by popularity score (CAT-23).
 
   Sorting by stars or 👍 alone was replaced by the score, which combines
@@ -188,8 +189,8 @@ remembered in the browser's `localStorage`.
 
   The length limits are the ones kapicorp/kapitan enforces for its
   documentation (`tests/test_docs_rendering.py`); here they are checked on
-  the built HTML. Filtered views (`?tags=`) are the home page and share
-  its canonical URL. Generator pages carry schema.org
+  the built HTML. Filtered views (`?tags=`, `?q=`) are `/generators/` and
+  share its canonical URL. Generator pages carry schema.org
   `SoftwareSourceCode` as JSON-LD, which the CSP does not block because a
   data block is never executed. A generator description that leaves the
   title or description outside the limits is padded or cut by the
@@ -961,8 +962,9 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #73, #81, #92, #230
 
-- CAT-26: A generator without a listed version MUST NOT have a card on the
-  home page or a tag page, and MUST NOT be counted there.
+- CAT-26: A generator without a listed version MUST NOT have a card on
+  `/generators/` or a tag page, and MUST NOT be counted there or on the
+  start page (CAT-67).
 
   Every version of a removed entry is yanked with the reason `entry
   removed`, and the index keeps them. Their card read "no listed version,
@@ -1478,7 +1480,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py`
   - Since: #235, #247
 
-- CAT-29a: The home page search MUST match the kind names (CAT-29) of
+- CAT-29a: The search of `/generators/` MUST match the kind names (CAT-29) of
   each card's latest listed version, from either source.
 
   Search compares in lower case, so "HTTPRoute" finds the generators of
@@ -1489,7 +1491,7 @@ Related: CAT-15, CAT-30, CON-2.
     markup; the matching runs in the browser)
   - Since: #235
 
-- CAT-29e: The home page search MUST match the software names the card
+- CAT-29e: The search of `/generators/` MUST match the software names the card
   shows under "Built for", from the latest listed version's
   `compatibility` (CAT-15).
 
@@ -2543,7 +2545,7 @@ narrow them.
   from an `@`. A recipe pins one chart version, and a reader who pastes a
   chart reference usually runs another.
 
-  The query is kept in the URL as `?q=`, as on the home page (CAT-8), so
+  The query is kept in the URL as `?q=`, as on `/generators/` (CAT-8), so
   going back from a recipe page restores the list. The canonical URL stays
   `/recipes/` (CAT-11). When no entry matches, the page says so and links
   the Bitnami guide, the open recipe requests on `/wanted/` and the
@@ -2643,9 +2645,10 @@ narrow them.
   and `generators`, and `docs/consumers.md` MUST document these fields as
   CAT-34d does.
 
-  Listed recipes are not cards on the home page and do not count in the
+  Listed recipes are not cards on `/generators/` and do not count in its
   tag filter, `/kinds/` or `/compatibility/`. Those pages describe
-  generators, and a recipe has no tags.
+  generators, and a recipe has no tags. The start page counts them under
+  Recipes (CAT-67).
 
   Each pin in `generators` also carries `yanked`, the reason the index
   gives for that generator version, or `null`. A tool can then skip a
@@ -3017,12 +3020,13 @@ index is refused (CON-2).
     kadet-hub/recipes: #371; inventory backend, dependency, fetch
     inventory, sandbox and consumer workflow: #687
 
-- CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
+- CAT-5: URLs `/`, `/generators/` and `/generators/<name>/` MUST stay
+  stable.
   - Test: none
-  - Since: #16
+  - Since: #16; `/generators/`: this change
 
-- CAT-6: The home page MUST link to `docs/consumers.md` and
-  `docs/authors.md`, and MUST say so when no generator is listed.
+- CAT-6: `/` MUST link to `docs/consumers.md` and `docs/authors.md`, and
+  `/generators/` MUST say so when no generator is listed.
 
   `docs/authors.md` describes registration for authors: manifest, fixture
   project, entry and what the gate and the review check, and when a
@@ -3280,21 +3284,21 @@ CAT-55, CAT-58b.
     "official kapitan" that finds nothing
   - Since: this change
 
-- CAT-62: The section "How a version gets listed" of the home page MUST
-  stand between the introduction and the search, with its approved
-  copy.
+- CAT-62: The section "How a version gets listed" MUST close the start
+  page, after the destinations of CAT-67, with its approved copy.
 
   The steps are what sets a listed generator apart from a chart found
-  elsewhere, and today a visitor reads them only after scrolling past
-  every card. The section keeps its `h2` with an `h3` per step and its
-  links, so CAT-11b holds, and it is drawn as the route of the chart:
-  the steps as waypoints on a dashed line. On a phone the open steps
-  would push the search a screen down for the visitor who came back for
-  a digest, so CAT-62a collapses them there.
+  elsewhere. When the cards were on the home page, a visitor read them
+  only after scrolling past every card, so they moved between the
+  introduction and the search. With the cards on `/generators/` they
+  follow the short list of destinations instead. The section keeps its
+  `h2` with an `h3` per step and its links, so CAT-11b holds, and it is
+  drawn as the route of the chart: the steps as waypoints on a dashed
+  line.
 
   - Test: `catalog/test_catalog.py`
-    (`Site.test_listing_steps_before_the_search`: `<h2 id="listing">`
-    before the search in the home page's HTML; the checks of CAT-11b and
+    (`Site.test_listing_steps_on_the_start_page`: `<h2 id="listing">`
+    after the destinations in the HTML of `/`; the checks of CAT-11b and
     CAT-35 in `Site.test_headings_skip_no_level` and
     `Site.test_how_kadet_hub_works` unchanged)
   - Since: this change
@@ -3303,28 +3307,34 @@ CAT-55, CAT-58b.
   its `h2`.
 
   They sit in a `details` element that `site.js` closes on narrow
-  screens, the CAT-9a pattern, so without JavaScript they stay open.
+  screens, the CAT-9a pattern, so without JavaScript they stay open. In
+  the fixture build at 393 px the open steps take 704 px and the
+  collapsed heading 44 px, at the end of a page the stacked figure of
+  CAT-67d already makes long.
 
   - Test: `catalog/test_catalog.py`
-    (`Site.test_listing_steps_before_the_search`: the `details` around
+    (`Site.test_listing_steps_on_the_start_page`: the `details` around
     the steps and the line of `site.js` that closes it); manual: 393 px,
-    the search follows the collapsed steps
+    the steps collapsed under their heading
   - Since: this change
 
 - CAT-62b: Below 48rem the hero MUST show "Use a generator" as its only
   full-width button and its other actions as one wrapping row of links,
   each at least 24 by 24 px (CAT-55).
 
-  The notice of CAT-65 made the hero taller, and the search of the home
-  page started at 864 px in Chrome at 393 by 852 px, below the first
-  screen. With the secondary actions as one compact row it starts at
-  816 px; the links are 24 px high and wrap into two lines there. For the
-  hero this replaces the shared button rows of CAT-9a.
+  The notice of CAT-65 made the hero taller. When the search still
+  followed the hero, it started at 864 px in Chrome at 393 by 852 px
+  with the buttons and at 816 px with the compact row. The search now
+  follows the compile figure (CAT-67), and the row keeps the hero short
+  for the figure instead. The figure starts at 698 px, so the first lines
+  of the inventory are on the first screen. The links are 24 px high and wrap
+  into two lines there. For the hero this replaces the shared button rows
+  of CAT-9a.
 
   - Test: `catalog/test_catalog.py`
     (`Site.test_hero_actions_compact_on_phones`, partial: the rules of
-    the stylesheet below 48rem); manual: 393 by 852 px, the search starts
-    on the first screen
+    the stylesheet below 48rem); manual: 393 by 852 px, the compile
+    figure starts on the first screen
   - Since: this change
 
 - CAT-63: The site navigation MUST link Tags, Kinds, Compatibility and
@@ -3344,11 +3354,11 @@ CAT-55, CAT-58b.
   nested disclosure that opens on a tap, with or without JavaScript, one
   tap from its links.
   CAT-9a's check of the nav then finds all 13 links, four of them inside
-  the disclosure.
+  the disclosure; since CAT-67c added "Generators" it finds 14.
 
   - Test: `catalog/test_catalog.py` (`Site.test_reference_disclosure`:
     the header links and the disclosure;
-    `Site.test_mobile_header_and_filters`: the 13 links of the nav, four
+    `Site.test_mobile_header_and_filters`: the 14 links of the nav, four
     inside the disclosure)
   - Since: this change
 
@@ -3436,7 +3446,8 @@ nobody reads it as a live result.
   after load and on its replay button.
 
   The animation runs about five seconds, shows the tracing once on the
-  image line and moves nothing afterwards.
+  image line and moves nothing afterwards. Below 48rem it plays on its
+  replay button only (CAT-67d).
   Its styles live in `style.css` and its timing in `site.js`, as the CSP
   allows no inline styles or scripts (CAT-3).
 
@@ -3448,11 +3459,131 @@ nobody reads it as a live result.
   inventory value MUST mark that inventory line.
 
   The pairs are fixed in the markup: each traced output line names the
-  key of its inventory line. Below 48rem the figure is left out, since
-  its panes need the width and the search stays on the first screen
-  (CAT-62b); the figure, its animation and the tracing apply from 48rem.
+  key of its inventory line. Below 48rem the panes stack (CAT-67d).
 
   - Test: `catalog/test_catalog.py` (`Site.test_compile_figure`, partial:
     the pairs and the rules, not the rendered highlight); manual: pointing
     at `containerPort` marks `container_port`
+  - Since: this change
+
+## Start page and catalog
+
+The home page held the hero, the compile figure, the steps of how a
+version gets listed and the catalog: search, tag filter, sort, result
+line and card grid. Every element added above the catalog pushed its
+search further down. To keep the search on a phone's first screen, the
+hero's secondary actions became a row of links (CAT-62b) and the compile
+figure was left out below 48rem (CAT-66b), so a phone visitor never saw
+the site's one signature element.
+
+The operator decided on 2026-11-21 to split the page. `/` becomes a
+start page that shows what a generator does and where to go next, and
+the catalog moves to `/generators/` with its behaviour unchanged. The
+search on the start page is a plain form that opens the catalog with
+the query, so it works without JavaScript. The destinations form one index, a row per section
+with a line on what it holds and a count, drawn like the index of a
+chart folio: name, line and count on ruled rows. They are not cards,
+which stay what a generator looks like on the site.
+
+Related: CAT-5, CAT-6, CAT-8, CAT-11, CAT-26, CAT-38b, CAT-62, CAT-62b,
+CAT-63, CAT-66a, CAT-66b.
+
+- CAT-67: `/` MUST be a start page with, in this order:
+
+  1. the hero (CAT-11f, CAT-6, CAT-65);
+  2. the compile figure (CAT-66);
+  3. a search field that opens `/generators/` with the query (CAT-67b);
+  4. the destinations Generators, Recipes, Stacks, Playground,
+     Quickstart and Guides, each with one line on what it holds and,
+     where the index or the content gives one, its count;
+  5. the section "How a version gets listed" (CAT-62).
+
+  The counts come from the build. Generators counts the generators with
+  a listed version (CAT-26), Recipes the recipes of the index with a
+  listed version (CAT-38b), Stacks the published stack posts that
+  `/stacks/` lists, and Guides the pages of `/guides/`. Playground and
+  Quickstart have no count. A count of 0 is left out: `/recipes/` also
+  lists the recipes the index does not list yet, built from `main`
+  (CAT-37, CAT-38), so "0 listed" there would read as an empty page.
+  The destination names are no headings, since CAT-11b keeps headings
+  for the page and its sections, not for the items of a list.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_start_page`: the order,
+    the destinations and their counts against `/generators/`, `/stacks/`
+    and `/guides/`; `ListedRecipe.test_not_counted_with_generators`: the
+    recipe count; `Site.test_empty_index_says_so`: no count of 0)
+  - Since: this change
+
+- CAT-67a: The catalog of CAT-8, CAT-10, CAT-22, CAT-26, CAT-29a and
+  CAT-29e MUST be at `/generators/`, with its own title and description
+  (CAT-11).
+
+  `content/generators.md` gives the page its title, "Kapitan generator
+  catalog", and its description; `layouts/generators.html` holds the
+  markup that was on the home page, with the ids and data attributes
+  `site.js` reads. The generator pages stay at `/generators/<name>/`
+  (CAT-5). Links that mean the catalog point there: the "Catalog" line of
+  `/llms.txt` and the three guides that linked it as `/`. The
+  `/generators/*` cascade of `hugo.toml` does not reach the page itself,
+  so it has no Markdown variant and no badge.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_catalog_page`; the
+    catalog checks of CAT-8 to CAT-29e read `/generators/`;
+    `Site.test_stacks_linked`: the line of `/llms.txt`)
+  - Since: this change
+
+- CAT-67b: The start page's search MUST submit with GET to
+  `/generators/`, `/generators/` MUST put a `q` parameter into its search
+  field and filter by it, and the CSP MUST allow the form with
+  `form-action 'self'`.
+
+  Under the former `form-action 'none'` Chrome blocks the submit with a
+  CSP violation and the page stays on `/` (checked with the fixture
+  build on 2026-11-21). `'self'` admits forms that send to the site's own
+  origin. The site's other forms, the version selector of CAT-34 and the
+  Mastodon share of CAT-36d, cancel their submit in `site.js`. `site.js`
+  already restored `?q=` into the catalog's field, since it writes the
+  query into the URL while a visitor types (CAT-8). Without JavaScript
+  the form still lands on `/generators/?q=…`, which then shows every
+  card.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_start_page_search`: the
+    form, the line of `site.js` and the CSP of every page;
+    `Site.test_badge`, `Site.test_goatcounter_counts_from_the_own_origin`:
+    the whole CSP); manual: "HTTPRoute" submitted on `/` with and without
+    JavaScript
+  - Since: this change
+
+- CAT-67c: The site navigation MUST link `/generators/` as "Generators",
+  right after Quickstart.
+
+  The brand links `/`, which no longer lists generators, so the catalog
+  needs an entry of its own. CAT-40a keeps Quickstart first and CAT-47
+  Stacks after Recipes. At 1440 px the 14 links still fit one row.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_reference_disclosure`,
+    `Site.test_quickstart_linked`, `Site.test_mobile_header_and_filters`)
+  - Since: this change
+
+- CAT-67d: Below 48rem the compile figure MUST stack its panes,
+  inventory, generator and files, instead of being left out.
+
+  The panes stand in one column in the markup's order; the connectors
+  stay hidden below 72rem as before. Measured in Chrome at 393 by 852 px
+  on the fixture build, the figure starts at 698 px and is 1416 px high,
+  and the search follows at 2187 px. The longest line, 43 characters,
+  fits the pane, so no pane scrolls sideways.
+
+  Below 48rem the figure shows its final state at load and plays on its
+  replay button only. Its panes start at the bottom of the first screen,
+  and most of the five seconds of CAT-66a would run where nobody sees
+  them. The tracing of CAT-66b still marks the inventory line, but in
+  one column that line can be off the screen: pointing at `containerPort`
+  at 393 px marks `container_port` 280 px above the top of the screen.
+  This replaces the phone sentence of CAT-66b.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_compile_figure_motion`:
+    the rules below 48rem, the panes' order and the line of `site.js`
+    that plays from 48rem); manual: 393 px, the three panes one below
+    the other
   - Since: this change
