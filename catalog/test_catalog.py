@@ -806,7 +806,7 @@ class Site(unittest.TestCase):
         self.assertEqual({n: colours.get(n) for n in TOKENS}, TOKENS)
         grounds = ("bg", "bg-subtle", "surface", "accent-bg")
         pairs = [(fg, bg) for fg in ("text", "text-muted", "accent", "accent-strong", "signal-text", "warn", "ok") for bg in grounds]
-        pairs += [("on-accent", "accent"), ("on-signal", "signal"), ("warn", "warn-bg"), ("ok", "ok-bg")]
+        pairs += [("on-accent", "accent"), ("on-signal", "signal"), ("warn", "warn-bg"), ("ok", "ok-bg"), ("text", "trace")]
         for fg, bg in pairs:
             for theme in (0, 1):
                 self.assertGreaterEqual(contrast(colours[fg][theme], colours[bg][theme]), 4.5, (fg, bg, ("light", "dark")[theme]))
@@ -866,6 +866,43 @@ class Site(unittest.TestCase):
             self.assertIn("; font-src 'self';", csp)
             self.assertNotIn("data:", csp)
             self.assertNotIn("unsafe-", csp)
+
+    def test_compile_figure(self):  # CAT-66, CAT-66b
+        home = self.page()
+        hero = home[home.index('<section class="hero">'):home.index('<section class="steps"')]
+        fig = hero[hero.index('<figure class="compile"'):hero.index("</figure>")]
+        self.assertIn("ghcr.io/kadet-hub/kubernetes:1.16.0@sha256:" + "7c6a790b21c8c378022a894f16850665092684326598f6974de65a3a4c4e44b7", fig)
+        self.assertIn("gh attestation verify", fig)
+        # The excerpts: visible lines plus the lines each fold names add up to the rendered files.
+        panes = re.findall(r'<section class="pane pane-out".*?<code>(.*?)</code>', fig, re.DOTALL)
+        counts = [len(re.findall(r'<span class="ln"', c)) + sum(int(n) for n in re.findall(r'<span class="fold">⋯ (\d+) lines?</span>', c)) for c in panes]
+        self.assertEqual(counts, [49, 18])
+        # Every traced output line names an inventory line that exists, and is reachable by keyboard.
+        keys = set(re.findall(r'data-key="([a-z]+)"', fig))
+        traced = re.findall(r'<span class="ln" data-from="([a-z]+)" tabindex="0">', fig)
+        self.assertTrue(traced)
+        self.assertLessEqual(set(traced), keys)
+        self.assertEqual(len(traced), len(re.findall(r"data-from=", fig)))
+        for k in keys:
+            self.assertIn(f'.compile:has([data-from="{k}"]:is(:hover, :focus-visible)) [data-key="{k}"]', self.css())
+
+    def test_compile_figure_motion(self):  # CAT-66a
+        css = self.css()
+        motion = css[css.index("@media (prefers-reduced-motion: no-preference) {"):]
+        motion = motion[:motion.index("\n}\n")]
+        # Every animation of the figure applies only to .play, inside no-preference; outside it nothing animates.
+        rules = re.findall(r"^\s*([^{}@]+)\{[^}]*animation:", motion, re.MULTILINE)
+        self.assertTrue(rules)
+        for sel in rules:
+            self.assertTrue(all(".compile.play" in part for part in sel.split(",")), sel)
+        outside = css.replace(motion, "")
+        self.assertNotRegex(outside, r"\.compile[^{]*\{[^}]*animation:")
+        with open(os.path.join(self.out, "site.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn('if (compile && !matchMedia("(prefers-reduced-motion: reduce)").matches) {', js)
+        self.assertIn('compile.classList.add("play");', js)
+        # Below 48rem the figure is left out (CAT-62b).
+        self.assertIn(".compile { display: none; margin: 1.5rem 0 0; }", css)
 
     def test_listing_steps_before_the_search(self):  # CAT-62, CAT-62a
         home = self.page()

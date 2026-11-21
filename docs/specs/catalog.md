@@ -3132,6 +3132,7 @@ and digests keep the system monospace stack of `--mono`.
 | `--on-signal` | `#0e1b2c` | `#0e1b2c` | text on the primary button |
 | `--signal-text` | `#b43d16` | `#ff8a5c` | signal colour as text |
 | `--focus` | `#b43d16` | `#ff8a5c` | focus ring |
+| `--trace` | `#d3e2e1` | `#2b5266` | a traced line of the compile figure (CAT-66b), text on it 12.99:1 and 7.32:1 |
 | `--border` | `#c9bfa8` | `#2a3b52` | decorative rules and the graticule |
 | `--border-strong` | `#8a7f68` | `#6b829b` | field and control borders |
 
@@ -3427,31 +3428,31 @@ nobody reads it as a live result.
   When a new version of the generator changes this output, the figure is
   rendered again from the fixture and its version and digest follow.
 
-  - Test: none (`catalog/test_catalog.py`: the figure in the hero, its
-    version and digest, and the line counts of the excerpts)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_compile_figure`)
+  - Since: this change
 
 - CAT-66a: The figure MUST show its final state without JavaScript and
   under `prefers-reduced-motion: reduce`, and MUST animate only once
   after load and on its replay button.
 
-  The animation runs about seven seconds and moves nothing afterwards.
+  The animation runs about five seconds, shows the tracing once on the
+  image line and moves nothing afterwards.
   Its styles live in `style.css` and its timing in `site.js`, as the CSP
   allows no inline styles or scripts (CAT-3).
 
-  - Test: none (`catalog/test_catalog.py`: the animation rules sit inside
-    `prefers-reduced-motion: no-preference` and apply only to the class
-    `site.js` sets)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_compile_figure_motion`);
+    manual: the animation at 1440 px, the final state with reduced motion
+  - Since: this change
 
 - CAT-66b: Pointing at or focusing an output line that comes from an
   inventory value MUST mark that inventory line.
 
   The pairs are fixed in the markup: each traced output line names the
-  key of its inventory line. Below 48rem the figure is reduced to the
-  chain of file names, so the search stays on the first screen
-  (CAT-62b), and the tracing applies from 48rem.
+  key of its inventory line. Below 48rem the figure is left out, since
+  its panes need the width and the search stays on the first screen
+  (CAT-62b); the figure, its animation and the tracing apply from 48rem.
 
-  - Test: none (`catalog/test_catalog.py`: every traced output line names
-    an inventory line that exists)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_compile_figure`, partial:
+    the pairs and the rules, not the rendered highlight); manual: pointing
+    at `containerPort` marks `container_port`
+  - Since: this change

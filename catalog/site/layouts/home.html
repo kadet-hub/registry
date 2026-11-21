@@ -9,6 +9,7 @@
   <p class="lead">Every listed version of these Kapitan generators is gate-checked: it passed secret, malware and code scans, a fixture compile in a gVisor sandbox without network and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.</p>
   <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a><a class="button" href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request a generator</a><a class="button" href="{{ "/wanted/" | relURL }}">Wanted generators</a></p>
   <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk. <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
+{{ partial "compile.html" . }}
 </section>
 <section class="steps" aria-labelledby="listing">
 <details class="route" open>

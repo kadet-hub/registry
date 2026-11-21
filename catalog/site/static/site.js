@@ -55,6 +55,29 @@ if (route) {
   wide.addEventListener("change", follow);
 }
 
+// CAT-66a: the compile figure plays once after load and on Replay; without JavaScript or with reduced motion it stays in its final state.
+const compile = document.querySelector(".compile");
+if (compile && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const replay = compile.querySelector(".replay");
+  const timers = [];
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const play = () => {
+    timers.splice(0).forEach(clearTimeout);
+    compile.classList.remove("play");
+    delete compile.dataset.trace;
+    void compile.offsetWidth; // restart the CSS animations
+    compile.classList.add("play");
+    for (const a of compile.querySelectorAll(".wire-in animateMotion")) at(1400, () => a.beginElement());
+    for (const a of compile.querySelectorAll(".wire-out animateMotion")) at(3000, () => a.beginElement());
+    // CAT-66b: show the tracing once, on the image, before handing it to the visitor.
+    at(5200, () => { compile.dataset.trace = "image"; });
+    at(7000, () => { delete compile.dataset.trace; });
+  };
+  replay.hidden = false;
+  replay.addEventListener("click", play);
+  if (matchMedia("(min-width: 48rem)").matches) play();
+}
+
 // CAT-19: the table of contents is collapsed on narrow screens and marks the section in view.
 const toc = document.querySelector(".toc details");
 if (toc) {

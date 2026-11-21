@@ -21,6 +21,7 @@
   --ok: light-dark(#166534, #86efac);
   --ok-bg: light-dark(#e8f7ee, #12301e);
   --focus: light-dark(#b43d16, #ff8a5c);
+  --trace: light-dark(#d3e2e1, #2b5266); /* CAT-66b: a traced line of the compile figure */
   /* CAT-39: Artifact Hub's grade colours, the same in both themes, each with the text colour that contrasts with it. */
   --grade-a: light-dark(#47a319, #47a319);
   --grade-b: light-dark(#f4bd0c, #f4bd0c);
@@ -283,6 +284,148 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .built thead th { background: var(--bg-subtle); }
 .built th:first-child { width: 40%; }
 
+/* CAT-66 to CAT-66b: the compile figure. Its final state is the default; the animation applies only to .play, which site.js sets. */
+.compile { display: none; margin: 1.5rem 0 0; }
+.home-band .hero { padding-bottom: 0; }
+/* From 72rem the hero's text takes two rows, the heading and then the lead beside the actions, so the compile figure sits on the first screen. */
+@media (min-width: 72rem) {
+  .home-band .hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 2.5rem; align-items: start; }
+  .home-band .hero h1 { grid-column: 1 / -1; font-size: 2.05rem; }
+  .home-band .hero .lead { grid-row: 2 / 4; font-size: 1rem; margin: 0; }
+  .home-band .hero .actions { grid-column: 2; }
+  .home-band .hero .disclaimer { grid-column: 2; margin-top: .6rem; }
+  .home-band .hero .actions .button { min-height: 40px; padding: 0 .9rem; font-size: .92rem; }
+  .home-band .hero .compile { grid-column: 1 / -1; }
+}
+.compile-stage { display: none; }
+.compile figcaption { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; margin-top: 1rem; color: var(--text-muted); font-size: .9rem; }
+.compile figcaption > span { max-width: 46rem; }
+.compile .replay { min-height: 36px; font-size: .9rem; }
+.pane { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lift); }
+.pane-title { display: flex; align-items: center; gap: .4rem; margin: 0; padding: .5rem .8rem; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: .72rem; color: var(--text); white-space: nowrap; overflow: hidden; }
+.pane-title span { margin-right: -.4rem; color: var(--text-muted); }
+.pane pre { margin: 0; padding: .5rem 0; overflow-x: auto; font-size: .72rem; line-height: 1.5; }
+.pane code { display: block; }
+.pane .ln, .pane .fold { display: block; padding-inline: .8rem; white-space: pre; }
+.pane .fold { color: var(--text-muted); font-family: var(--sans); font-size: .7rem; letter-spacing: .02em; }
+.pane-out [data-from] { box-shadow: inset 2px 0 var(--border-strong); cursor: default; }
+.pane-out [data-from]:is(:hover, :focus-visible),
+.compile:has([data-from="ns"]:is(:hover, :focus-visible)) [data-key="ns"], .compile[data-trace="ns"] :is([data-key="ns"], [data-from="ns"]),
+.compile:has([data-from="name"]:is(:hover, :focus-visible)) [data-key="name"], .compile[data-trace="name"] :is([data-key="name"], [data-from="name"]),
+.compile:has([data-from="image"]:is(:hover, :focus-visible)) [data-key="image"], .compile[data-trace="image"] :is([data-key="image"], [data-from="image"]),
+.compile:has([data-from="cport"]:is(:hover, :focus-visible)) [data-key="cport"], .compile[data-trace="cport"] :is([data-key="cport"], [data-from="cport"]),
+.compile:has([data-from="sport"]:is(:hover, :focus-visible)) [data-key="sport"], .compile[data-trace="sport"] :is([data-key="sport"], [data-from="sport"]),
+.compile:has([data-from="path"]:is(:hover, :focus-visible)) [data-key="path"], .compile[data-trace="path"] :is([data-key="path"], [data-from="path"]),
+.compile:has([data-from="cpu"]:is(:hover, :focus-visible)) [data-key="cpu"], .compile[data-trace="cpu"] :is([data-key="cpu"], [data-from="cpu"]),
+.compile:has([data-from="memreq"]:is(:hover, :focus-visible)) [data-key="memreq"], .compile[data-trace="memreq"] :is([data-key="memreq"], [data-from="memreq"]),
+.compile:has([data-from="memlim"]:is(:hover, :focus-visible)) [data-key="memlim"], .compile[data-trace="memlim"] :is([data-key="memlim"], [data-from="memlim"]),
+.compile:has([data-from="type"]:is(:hover, :focus-visible)) [data-key="type"], .compile[data-trace="type"] :is([data-key="type"], [data-from="type"]) { background: var(--trace); box-shadow: inset 3px 0 var(--accent); color: var(--text); }
+.pane-out [data-from]:focus-visible { outline-offset: -2px; }
+.core { display: grid; justify-items: center; gap: .45rem; padding: 1.1rem 1rem; text-align: center; border-color: var(--signal); }
+.core-mark { width: 56px; height: 56px; }
+.core-mark rect { fill: var(--bg); }
+.core-mark .stem { stroke: var(--text); stroke-width: 7; stroke-linecap: round; fill: none; }
+.core-mark .arms { stroke: var(--signal); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.core-mark circle { fill: var(--accent); }
+.core-name { margin: 0; font-weight: 800; font-stretch: 112%; font-size: 1.15rem; }
+.core-name span { font-family: var(--mono); font-weight: 400; font-size: .85rem; color: var(--text-muted); }
+.core-ref { margin: 0; font-family: var(--mono); font-size: .68rem; line-height: 1.45; color: var(--text-muted); overflow-wrap: anywhere; }
+.core-verify { display: grid; gap: .2rem; margin: .2rem 0 0; font-size: .78rem; }
+.core-verify .cmd { font-family: var(--mono); color: var(--text-muted); }
+.core-verify .ok { color: var(--ok); }
+.core-verify .ok .icon { vertical-align: -.15em; }
+.wire { display: none; overflow: visible; }
+.wire path { fill: none; stroke: var(--border-strong); stroke-width: 2; stroke-dasharray: 6 6; vector-effect: non-scaling-stroke; }
+.wire circle { fill: var(--signal-text); opacity: 0; }
+.outs { display: grid; gap: .75rem; min-width: 0; }
+@media (min-width: 48rem) {
+  .compile { display: block; }
+  .compile-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "core core" "in outs"; gap: 1rem; align-items: start; }
+  .pane-in { grid-area: in; } .core { grid-area: core; } .outs { grid-area: outs; } .wire-in { grid-area: wi; } .wire-out { grid-area: wo; }
+}
+@media (min-width: 72rem) {
+  .compile-stage { grid-template-columns: minmax(0, 1fr) 64px minmax(0, .75fr) 64px minmax(0, 1.15fr); grid-template-areas: "in wi core wo outs"; gap: 0; align-items: center; }
+  .wire { display: block; width: 100%; height: 300px; }
+}
+@keyframes cf-in { from { opacity: 0; transform: translateX(-8px); } }
+@keyframes cf-pop { from { opacity: 0; transform: scale(.9); } 60% { box-shadow: 0 0 0 10px var(--accent-bg); } }
+@keyframes cf-rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes cf-march { to { stroke-dashoffset: -48; } }
+@keyframes cf-dot { 0% { opacity: 0; } 15%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .compile.play .pane .ln, .compile.play .pane .fold { animation: cf-in .35s cubic-bezier(.2, .7, .2, 1) both; }
+  .compile.play .pane-in .ln:nth-of-type(1), .compile.play .pane-in .fold:nth-of-type(1) { animation-delay: 0.15s; }
+  .compile.play .pane-in .ln:nth-of-type(2), .compile.play .pane-in .fold:nth-of-type(2) { animation-delay: 0.20s; }
+  .compile.play .pane-in .ln:nth-of-type(3), .compile.play .pane-in .fold:nth-of-type(3) { animation-delay: 0.25s; }
+  .compile.play .pane-in .ln:nth-of-type(4), .compile.play .pane-in .fold:nth-of-type(4) { animation-delay: 0.30s; }
+  .compile.play .pane-in .ln:nth-of-type(5), .compile.play .pane-in .fold:nth-of-type(5) { animation-delay: 0.35s; }
+  .compile.play .pane-in .ln:nth-of-type(6), .compile.play .pane-in .fold:nth-of-type(6) { animation-delay: 0.40s; }
+  .compile.play .pane-in .ln:nth-of-type(7), .compile.play .pane-in .fold:nth-of-type(7) { animation-delay: 0.45s; }
+  .compile.play .pane-in .ln:nth-of-type(8), .compile.play .pane-in .fold:nth-of-type(8) { animation-delay: 0.50s; }
+  .compile.play .pane-in .ln:nth-of-type(9), .compile.play .pane-in .fold:nth-of-type(9) { animation-delay: 0.55s; }
+  .compile.play .pane-in .ln:nth-of-type(10), .compile.play .pane-in .fold:nth-of-type(10) { animation-delay: 0.60s; }
+  .compile.play .pane-in .ln:nth-of-type(11), .compile.play .pane-in .fold:nth-of-type(11) { animation-delay: 0.65s; }
+  .compile.play .pane-in .ln:nth-of-type(12), .compile.play .pane-in .fold:nth-of-type(12) { animation-delay: 0.70s; }
+  .compile.play .pane-in .ln:nth-of-type(13), .compile.play .pane-in .fold:nth-of-type(13) { animation-delay: 0.75s; }
+  .compile.play .pane-in .ln:nth-of-type(14), .compile.play .pane-in .fold:nth-of-type(14) { animation-delay: 0.80s; }
+  .compile.play .pane-in .ln:nth-of-type(15), .compile.play .pane-in .fold:nth-of-type(15) { animation-delay: 0.85s; }
+  .compile.play .pane-in .ln:nth-of-type(16), .compile.play .pane-in .fold:nth-of-type(16) { animation-delay: 0.90s; }
+  .compile.play .pane-in .ln:nth-of-type(17), .compile.play .pane-in .fold:nth-of-type(17) { animation-delay: 0.95s; }
+  .compile.play .pane-in .ln:nth-of-type(18), .compile.play .pane-in .fold:nth-of-type(18) { animation-delay: 1.00s; }
+  .compile.play .pane-in .ln:nth-of-type(19), .compile.play .pane-in .fold:nth-of-type(19) { animation-delay: 1.05s; }
+  .compile.play .pane-in .ln:nth-of-type(20), .compile.play .pane-in .fold:nth-of-type(20) { animation-delay: 1.10s; }
+  .compile.play .pane-in .ln:nth-of-type(21), .compile.play .pane-in .fold:nth-of-type(21) { animation-delay: 1.15s; }
+  .compile.play .pane-in .ln:nth-of-type(22), .compile.play .pane-in .fold:nth-of-type(22) { animation-delay: 1.20s; }
+  .compile.play .pane-in .ln:nth-of-type(23), .compile.play .pane-in .fold:nth-of-type(23) { animation-delay: 1.25s; }
+  .compile.play .pane-in .ln:nth-of-type(24), .compile.play .pane-in .fold:nth-of-type(24) { animation-delay: 1.30s; }
+  .compile.play .wire-in path { animation: cf-march .9s linear 1.3s 2; }
+  .compile.play .wire-in circle { animation: cf-dot .9s linear 1.4s both; }
+  .compile.play .core { animation: cf-pop .6s cubic-bezier(.2, .7, .2, 1) 1.9s both; }
+  .compile.play .core-verify .ok { animation: cf-rise .4s ease-out 2.6s both; }
+  .compile.play .wire-out path { animation: cf-march .8s linear 3s 2; }
+  .compile.play .wire-out circle { animation: cf-dot .8s linear 3s both; }
+  .compile.play .pane-out { animation: cf-rise .4s ease-out 3.3s both; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(1) { animation-delay: 3.50s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(2) { animation-delay: 3.54s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(3) { animation-delay: 3.58s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(4) { animation-delay: 3.62s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(5) { animation-delay: 3.66s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(6) { animation-delay: 3.70s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(7) { animation-delay: 3.74s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(8) { animation-delay: 3.78s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(9) { animation-delay: 3.82s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(10) { animation-delay: 3.86s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(11) { animation-delay: 3.90s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(12) { animation-delay: 3.94s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(13) { animation-delay: 3.98s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(14) { animation-delay: 4.02s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(15) { animation-delay: 4.06s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(16) { animation-delay: 4.10s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(17) { animation-delay: 4.14s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(18) { animation-delay: 4.18s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(19) { animation-delay: 4.22s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(20) { animation-delay: 4.26s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(21) { animation-delay: 4.30s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(22) { animation-delay: 4.34s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(23) { animation-delay: 4.38s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(24) { animation-delay: 4.42s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(25) { animation-delay: 4.46s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(26) { animation-delay: 4.50s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(27) { animation-delay: 4.54s; }
+  .compile.play .pane-out:first-child code > span:nth-of-type(28) { animation-delay: 4.58s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(1) { animation-delay: 4.10s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(2) { animation-delay: 4.14s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(3) { animation-delay: 4.18s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(4) { animation-delay: 4.22s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(5) { animation-delay: 4.26s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(6) { animation-delay: 4.30s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(7) { animation-delay: 4.34s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(8) { animation-delay: 4.38s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(9) { animation-delay: 4.42s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(10) { animation-delay: 4.46s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(11) { animation-delay: 4.50s; }
+  .compile.play .pane-out:last-child code > span:nth-of-type(12) { animation-delay: 4.54s; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 /* Syntax highlighting (Chroma classes; markup.highlight.noClasses = false), in the tokens of the playground's Prism classes (PG-25). */
