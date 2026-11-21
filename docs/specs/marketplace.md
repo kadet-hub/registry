@@ -530,10 +530,13 @@ coverage is named at each:
 ## Open questions
 
 - OQ-2: The operator supplies the name for the imprint and the privacy
-  notice, and the serviceable postal address of an address service that
-  holds a written power to accept service (Zustellungsvollmacht) for the
-  imprint; a mail-forwarding address or PO box does not suffice, and the
-  operator's private address is not published. § 18(1) MStV requires the
+  notice, and the address of a coworking space where the operator holds
+  a membership and can be reached, as the imprint's serviceable address;
+  a mail-forwarding address or PO box does not suffice, and the
+  operator's private address is not published. The address services
+  with an explicit power to accept service (Zustellungsvollmacht) that
+  were checked on 2026-11-21 accept businesses only, so the operator
+  chose the coworking space that day. § 18(1) MStV requires the
   real full name; a pseudonym or group name does not satisfy it. Until then
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and
