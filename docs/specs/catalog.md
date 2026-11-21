@@ -3209,10 +3209,11 @@ CAT-55, CAT-58b.
   `default-src 'none'`, which blocks fonts from the site too. Headings at
   125 % width need the `wdth` axis: a static instance renders them at
   normal width without an error, so the `@font-face` declares
-  `font-stretch: 62.5% 125%`. The file is cut from a tagged release of
-  the Archivo repository, subset to Latin with fonttools' `pyftsubset`
-  keeping both axes; the release tag, the SHA-256 of the WOFF2 and the
-  command go into the implementation inventory of
+  `font-stretch: 62.5% 125%`. The file is cut from a pinned commit of
+  the Archivo repository, which publishes no tags or releases (checked
+  2026-11-21), subset to Latin with fonttools' `pyftsubset` keeping both
+  axes; the commit, the SHA-256 of the WOFF2 and the command go into the
+  implementation inventory of
   [marketplace.md](marketplace.md), as CAT-58b records its font.
   Archivo is licensed under the SIL Open Font License 1.1 and declares no
   Reserved Font Name (its `OFL.txt`, checked 2026-11-21), so a subset
@@ -3328,8 +3329,13 @@ CAT-55, CAT-58b.
     at 1440 px
   - Since: not implemented
 
-- CAT-64: A digest MUST be shown in full and in one colour wherever the
-  site shows it.
+- CAT-64: A digest the site renders from the index MUST be shown in full
+  and in one colour.
+
+  This covers the inventory entries and verify commands of generator,
+  recipe and stack pages. A post or guide may shorten a digest it
+  explains in its prose, such as `sha256:7cc4b5ae…`, since the reader
+  copies nothing from it.
 
   - Test: none (`catalog/test_catalog.py`: no element inside a digest
     in the built pages)
