@@ -1,5 +1,5 @@
-// Theme toggle, the menu (CAT-9a) and the "Reference" disclosure (CAT-63a), the listing steps (CAT-62a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), the recipe finder (CAT-37i), and the home page's
-// search, tag filter and sort (CAT-8 to CAT-10, CAT-9a). No markup is built from data.
+// Theme toggle, the menu (CAT-9a) and the "Reference" disclosure (CAT-63a), the listing steps (CAT-62a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), the recipe finder (CAT-37i), and the catalog's
+// search, tag filter and sort at /generators/ (CAT-8 to CAT-10, CAT-9a, CAT-67b). No markup is built from data.
 const root = document.documentElement;
 const announce = (text) => { document.getElementById("announce").textContent = text; };
 
@@ -45,7 +45,7 @@ function openVersion() {
 addEventListener("hashchange", openVersion);
 openVersion();
 
-// CAT-62a: below 48rem the home page's listing steps are collapsed under their heading, so the search follows them.
+// CAT-62a: below 48rem the start page's listing steps are collapsed under their heading.
 // It follows the breakpoint when a phone rotates or a window resizes, as the stylesheet does.
 const route = document.querySelector(".route");
 if (route) {
@@ -56,6 +56,7 @@ if (route) {
 }
 
 // CAT-66a: the compile figure plays once after load and on Replay; without JavaScript or with reduced motion it stays in its final state.
+// CAT-67d: below 48rem, where its panes are stacked, it plays on Replay only.
 const compile = document.querySelector(".compile");
 if (compile && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
   const replay = compile.querySelector(".replay");
@@ -224,7 +225,7 @@ if (recipeSearch) {
   apply();
 }
 
-// Home page
+// The catalog at /generators/; the start page's search sends ?q= here (CAT-67b).
 const search = document.getElementById("search");
 if (search) {
   const list = document.querySelector(".cards");

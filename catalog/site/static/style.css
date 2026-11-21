@@ -116,7 +116,6 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .home-band { margin-top: .5rem; padding: 0 clamp(1rem, 4vw, 2.5rem) 2rem; border: 1px solid var(--border); border-radius: var(--radius); }
 /* CAT-62, CAT-62a: how a version gets listed, as the route of the chart, the steps as waypoints on a dashed line.
    site.js closes the details below 48rem; above, the steps stay open. */
-.route { padding-top: 1.5rem; border-top: 1px solid var(--border); }
 .route > summary { display: flex; align-items: center; gap: .5rem; min-height: 44px; cursor: pointer; list-style: none; }
 .route > summary::-webkit-details-marker { display: none; }
 .route > summary::after { content: "›"; font-size: 1.4rem; line-height: 1; color: var(--text-muted); transition: rotate .15s; }
@@ -137,12 +136,30 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
   .waypoints li { padding: 3rem 0 0; }
 }
 
+/* CAT-67: the start page's search into the catalog, then the site's sections as the index of a chart folio. */
+.find { display: grid; gap: .5rem; max-width: 46rem; margin: 2.5rem 0 0; }
+.find label { font-weight: 700; font-size: 1.05rem; }
+.find-row { display: flex; gap: .5rem; }
+.find-row .search { flex: 1; }
+.find-row .button { min-height: 48px; }
+.doors { margin-top: 3rem; }
+.doors h2 { margin: 0 0 .75rem; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.site-index { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--text); }
+.site-index a { display: grid; grid-template-columns: 14rem minmax(0, 1fr) 8rem; align-items: baseline; gap: .25rem 1.5rem; padding: 1.1rem .5rem; border-bottom: 1px solid var(--border-strong); color: var(--text); text-decoration: none; }
+.site-index a:hover { background: var(--surface); }
+.site-index a:hover .door { color: var(--accent); }
+.door { font-stretch: 125%; font-weight: 800; font-size: 1.45rem; line-height: 1.2; }
+.door-line { color: var(--text-muted); }
+.door-count { grid-column: 3; justify-self: end; font-weight: 800; font-size: 1.45rem; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--accent); white-space: nowrap; }
+.door-count span { font-size: .8rem; font-weight: 600; color: var(--text-muted); }
+.steps { margin-top: 3rem; }
+
 /* Filters */
 .filters { position: sticky; top: 0; z-index: 2; display: grid; gap: .75rem; padding: 1rem 0; margin-bottom: .5rem; background: var(--bg); }
 .search { position: relative; display: block; }
 .search .icon { position: absolute; left: 1rem; top: 50%; translate: 0 -50%; color: var(--text-muted); font-size: 1.1rem; }
-#search, #recipe-search { width: 100%; min-height: 48px; padding: .7rem 1rem .7rem 2.8rem; font: inherit; font-size: 1.05rem; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-#search:focus, #recipe-search:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+#search, #recipe-search, #q { width: 100%; min-height: 48px; padding: .7rem 1rem .7rem 2.8rem; font: inherit; font-size: 1.05rem; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+#search:focus, #recipe-search:focus, #q:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
 .tag-filter { display: flex; flex-wrap: wrap; gap: .5rem; }
 .chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 36px; padding: 0 .8rem; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-size: .9rem; cursor: pointer; }
 .chip:hover:not(:disabled) { border-color: var(--accent); }
@@ -285,7 +302,7 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .built th:first-child { width: 40%; }
 
 /* CAT-66 to CAT-66b: the compile figure. Its final state is the default; the animation applies only to .play, which site.js sets. */
-.compile { display: none; margin: 1.5rem 0 0; }
+.compile { margin: 1.5rem 0 0; }
 .home-band .hero { padding-bottom: 0; }
 /* From 72rem the hero's text takes two rows, the heading and then the lead beside the actions, so the compile figure sits on the first screen. */
 @media (min-width: 72rem) {
@@ -297,7 +314,8 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
   .home-band .hero .actions .button { min-height: 40px; padding: 0 .9rem; font-size: .92rem; }
   .home-band .hero .compile { grid-column: 1 / -1; }
 }
-.compile-stage { display: none; }
+/* CAT-67d: below 48rem the panes stand in one column in the markup's order: inventory, generator, files. */
+.compile-stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; }
 .compile figcaption { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; margin-top: 1rem; color: var(--text-muted); font-size: .9rem; }
 .compile figcaption > span { max-width: 46rem; }
 .compile .replay { min-height: 36px; font-size: .9rem; }
@@ -339,7 +357,6 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .wire circle { fill: var(--signal-text); opacity: 0; }
 .outs { display: grid; gap: .75rem; min-width: 0; }
 @media (min-width: 48rem) {
-  .compile { display: block; }
   .compile-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "core core" "in outs"; gap: 1rem; align-items: start; }
   .pane-in { grid-area: in; } .core { grid-area: core; } .outs { grid-area: outs; } .wire-in { grid-area: wi; } .wire-out { grid-area: wo; }
 }
@@ -553,6 +570,11 @@ details.version:target { border-color: var(--accent); }
   .hero .actions { gap: .5rem 1.25rem; }
   .hero .actions .button.primary { flex-basis: 100%; }
   .hero .actions .button:not(.primary) { flex: none; min-height: 24px; padding: 0; border: 0; background: none; color: var(--accent); font-size: .9rem; text-decoration: underline; }
+  /* CAT-67: each row of the site index puts the count beside the name and its line below. */
+  .site-index a { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 0; }
+  .door, .door-count { font-size: 1.25rem; }
+  .door-line { grid-column: 1 / -1; grid-row: 2; }
+  .door-count { grid-column: 2; grid-row: 1; }
 }
 
 /* Playground (PG-4) */

@@ -1,0 +1,44 @@
+{{ define "main" }}
+{{ $docs := printf "https://github.com/%s/registry/blob/main/docs/" site.Data.catalog.owner }}
+{{/* CAT-67a: the catalog. CAT-26: only generators with a listed version get a card. */}}
+{{ $gens := where site.Data.catalog.generators "latest" "!=" nil }}
+<section class="prose-page">
+<h1>{{ .Title }}</h1>
+<p class="lead">{{ .Description }}</p>
+</section>
+{{ with $gens }}
+{{ $all := slice }}{{ range . }}{{ $all = $all | append .tags }}{{ end }}
+<section class="browse" aria-label="Generators">
+  <div class="filters">
+    <label class="search">
+      <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+      <span class="visually-hidden">Search generators</span>
+      <input id="search" type="search" placeholder="Search {{ len . }} generators or kinds" autocomplete="off">
+    </label>
+    <button type="button" id="tag-toggle" class="chip" aria-expanded="false" aria-controls="tags" hidden>Filter by tag <span class="count"></span></button>
+    <div id="tags" class="tag-filter" role="group" aria-label="Filter by tag; a generator must have every selected tag">
+      {{ range ($all | uniq | sort) }}{{ $n := len (where $gens "tags" "intersect" (slice .)) }}<button type="button" class="chip" data-tag="{{ . }}" aria-pressed="false"{{ with index site.Data.tags . }} title="{{ .means }}"{{ end }}><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }} <span class="count">({{ $n }})</span></button>{{ end }}
+      <button type="button" id="clear" class="chip clear" hidden><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>Clear</button>
+      <a class="tags-help" href="{{ "/tags/" | relURL }}">What the tags mean</a>
+    </div>
+    <div class="toolbar">
+      <p id="result" class="result" aria-live="polite"></p>
+      <label class="sort">Sort <select id="sort">
+        <option value="name">Name</option>
+        <option value="published">Recently published</option>
+        <option value="popularity">Popularity</option>
+      </select></label>
+    </div>
+  </div>
+  <h2 class="visually-hidden">Generators</h2>
+  <ul class="cards">
+  {{ range . }}
+    {{ partial "card.html" . }}
+  {{ end }}
+  </ul>
+  <p id="empty" class="empty" hidden>No generator matches. <button type="button" id="reset" class="link">Show all</button> or <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">request one</a>.</p>
+</section>
+{{ else }}
+<p class="empty">No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>
+{{ end }}
+{{ end }}

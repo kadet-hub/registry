@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {{- $gc := "" }}{{ with site.Params.goatcounter }}{{ $gc = strings.TrimSuffix "/" . }}{{ end }}
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'{{ with $gc }} {{ . }}{{ end }}; connect-src 'self'{{ with $gc }} {{ . }}{{ end }}; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'{{ with $gc }} {{ . }}{{ end }}; connect-src 'self'{{ with $gc }} {{ . }}{{ end }}; base-uri 'none'; form-action 'self'">
 <meta name="color-scheme" content="light dark">
 {{ partial "seo.html" . }}
 <script src="{{ "theme.js" | relURL }}"></script>
@@ -19,6 +19,7 @@
   <a class="brand" href="{{ "/" | relURL }}"><img src="{{ "favicon.svg" | relURL }}" alt="kadet-hub logo" width="28" height="28">{{ site.Title }}</a>
   <nav id="site-nav">
     <a href="{{ "/quickstart/" | relURL }}">Quickstart</a>
+    <a href="{{ "/generators/" | relURL }}">Generators</a>
     <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/docs/consumers.md">Use</a>
     <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/docs/authors.md">Publish</a>
     <a href="{{ "/recipes/" | relURL }}">Recipes</a>

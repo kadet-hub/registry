@@ -1,8 +1,11 @@
 {{ define "main" }}
 {{ $docs := printf "https://github.com/%s/registry/blob/main/docs/" site.Data.catalog.owner }}
-{{/* CAT-26: only generators with a listed version get a card. */}}
+{{/* CAT-67: the start page. CAT-26: only generators with a listed version count. */}}
 {{ $gens := where site.Data.catalog.generators "latest" "!=" nil }}
-{{/* An ink band (CAT-59): the introduction, then how a version gets listed before the search (CAT-62, CAT-62a). */}}
+{{ $recipes := where site.Data.catalog.recipes "latest" "!=" nil }}
+{{ $stacks := where (where site.RegularPages "Section" "blog") "Params.stack" "!=" nil }}
+{{ $guides := where site.RegularPages "Section" "guides" }}
+{{/* An ink band (CAT-59): the introduction and the compile figure. */}}
 <div class="band home-band">
 <section class="hero">
   <h1>Kapitan generators for Kubernetes and Terraform: a signed, gate-checked Helm alternative</h1>
@@ -10,6 +13,27 @@
   <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a><a class="button" href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request a generator</a><a class="button" href="{{ "/wanted/" | relURL }}">Wanted generators</a></p>
   <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk. <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
 {{ partial "compile.html" . }}
+</section>
+</div>
+{{/* CAT-67b: the search opens the catalog with ?q=; without JavaScript it lists every card there. */}}
+<form class="find" action="{{ "/generators/" | relURL }}" method="get" role="search">
+  <label for="q">Find a generator by name, kind or the software it is built for</label>
+  <div class="find-row">
+    <span class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="q" name="q" type="search" placeholder="e.g. HTTPRoute" autocomplete="off"></span>
+    <button type="submit" class="button">Search</button>
+  </div>
+</form>
+{{/* CAT-67: the sections as one index; a count only where the index or the content gives one, and not when it is 0. */}}
+<section class="doors" aria-labelledby="doors">
+<h2 id="doors">Site index</h2>
+<ul class="site-index">
+  <li><a href="{{ "/generators/" | relURL }}"><span class="door">Generators</span><span class="door-line">Kadet modules that turn your inventory into Kubernetes manifests and Terraform.</span>{{ with len $gens }}<span class="door-count">{{ . }} <span>listed</span></span>{{ end }}</a></li>
+  <li><a href="{{ "/recipes/" | relURL }}"><span class="door">Recipes</span><span class="door-line">Inventory classes that replace a Helm chart, a Bitnami chart or a Compose file.</span>{{ with len $recipes }}<span class="door-count">{{ . }} <span>listed</span></span>{{ end }}</a></li>
+  <li><a href="{{ "/stacks/" | relURL }}"><span class="door">Stacks</span><span class="door-line">Self-hosted apps and cluster add-ons, each built from several recipes and generators.</span>{{ with len $stacks }}<span class="door-count">{{ . }} <span>stacks</span></span>{{ end }}</a></li>
+  <li><a href="{{ "/playground/" | relURL }}"><span class="door">Playground</span><span class="door-line">Kapitan in your browser: edit an inventory and see the compiled YAML.</span></a></li>
+  <li><a href="{{ "/quickstart/" | relURL }}"><span class="door">Quickstart</span><span class="door-line">From an empty directory to Uptime Kuma on a kind cluster in about five minutes.</span></a></li>
+  <li><a href="{{ "/guides/" | relURL }}"><span class="door">Guides</span><span class="door-line">Helm alternatives, writing a generator, consuming one safely and leaving Bitnami.</span>{{ with len $guides }}<span class="door-count">{{ . }} <span>guides</span></span>{{ end }}</a></li>
+</ul>
 </section>
 <section class="steps" aria-labelledby="listing">
 <details class="route" open>
@@ -25,40 +49,4 @@
   </ol>
 </details>
 </section>
-</div>
-{{ with $gens }}
-{{ $all := slice }}{{ range . }}{{ $all = $all | append .tags }}{{ end }}
-<section class="browse" aria-label="Generators">
-  <div class="filters">
-    <label class="search">
-      <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-      <span class="visually-hidden">Search generators</span>
-      <input id="search" type="search" placeholder="Search {{ len . }} generators or kinds" autocomplete="off">
-    </label>
-    <button type="button" id="tag-toggle" class="chip" aria-expanded="false" aria-controls="tags" hidden>Filter by tag <span class="count"></span></button>
-    <div id="tags" class="tag-filter" role="group" aria-label="Filter by tag; a generator must have every selected tag">
-      {{ range ($all | uniq | sort) }}{{ $n := len (where $gens "tags" "intersect" (slice .)) }}<button type="button" class="chip" data-tag="{{ . }}" aria-pressed="false"{{ with index site.Data.tags . }} title="{{ .means }}"{{ end }}><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }} <span class="count">({{ $n }})</span></button>{{ end }}
-      <button type="button" id="clear" class="chip clear" hidden><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>Clear</button>
-      <a class="tags-help" href="{{ "/tags/" | relURL }}">What the tags mean</a>
-    </div>
-    <div class="toolbar">
-      <p id="result" class="result" aria-live="polite"></p>
-      <label class="sort">Sort <select id="sort">
-        <option value="name">Name</option>
-        <option value="published">Recently published</option>
-        <option value="popularity">Popularity</option>
-      </select></label>
-    </div>
-  </div>
-  <h2 class="visually-hidden">Generators</h2>
-  <ul class="cards">
-  {{ range . }}
-    {{ partial "card.html" . }}
-  {{ end }}
-  </ul>
-  <p id="empty" class="empty" hidden>No generator matches. <button type="button" id="reset" class="link">Show all</button> or <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">request one</a>.</p>
-</section>
-{{ else }}
-<p class="empty">No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>
-{{ end }}
 {{ end }}

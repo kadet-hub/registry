@@ -147,7 +147,7 @@ last 12 months and its latest release, v0.6.0, dates from August 2024.
 cdk8s uses npm or the package manager of its other languages, and
 [Construct Hub](https://constructs.dev/) indexes published constructs.
 
-The kadet-hub [catalog](/) lists 36 Kapitan generators, each an [OCI artifact](/glossary/#oci-artifact)
+The kadet-hub [catalog](/generators/) lists 36 Kapitan generators, each an [OCI artifact](/glossary/#oci-artifact)
 with a [build attestation](/glossary/#attestation). The registry is young: created on 2026-10-08, one
 human committer so far.
 
