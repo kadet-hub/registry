@@ -3308,10 +3308,17 @@ CAT-55, CAT-58b.
   48rem. The four pages are reference material, so they share an entry;
   each keeps its URL (CAT-5). The disclosure is a `details` element, so
   it opens without JavaScript; `site.js` adds the closing, which its
-  Escape handler today does only for the open mobile menu; CAT-63a
-  and CAT-63b state its behaviour. CAT-40a and CAT-47 keep their order: Quickstart first,
-  Stacks after Recipes. The operator decided this on 2026-11-21, and
+  Escape handler today does only for the open mobile menu; CAT-63a and
+  CAT-63b state its behaviour. CAT-40a and CAT-47 keep their order:
+  Quickstart first, Stacks after Recipes. The operator decided this on 2026-11-21, and
   kept the generator page's order of CAT-19 the same day.
+
+  The disclosure is named "Reference" at every width. Below 48rem it
+  sits in the menu of CAT-9a like the other links, so the menu holds a
+  nested disclosure that opens on a tap, with or without JavaScript, one
+  tap from its links.
+  CAT-9a's check of the nav then finds all 13 links, four of them inside
+  the disclosure.
 
   - Test: none (`catalog/test_catalog.py`: the header links and the
     disclosure)
@@ -3336,10 +3343,11 @@ CAT-55, CAT-58b.
 - CAT-64: A digest the site renders from the index MUST be shown in full
   and in one colour.
 
-  This covers the inventory entries and verify commands of generator,
-  recipe and stack pages. A post or guide may shorten a digest it
-  explains in its prose, such as `sha256:7cc4b5ae…`, since the reader
-  copies nothing from it.
+  This covers every inventory entry and verify command a template builds
+  from the index, on generator and recipe pages and in the quickstart. A
+  digest written by hand into the prose of a post or guide, stack posts
+  included, may be shortened, such as `sha256:7cc4b5ae…`, since the
+  reader copies nothing from it.
 
   - Test: none (`catalog/test_catalog.py`: no element inside a digest
     in the built pages)
