@@ -876,7 +876,11 @@ class Site(unittest.TestCase):
         self.assertEqual(re.findall(r"<h3>([^<]+)</h3>", route), ["Scanned", "Compiled in a sandbox", "Reviewed, signed and pinned"])
         self.assertIn('<a href="./guides/how-kadet-hub-works/">How kadet-hub works</a>', route)
         with open(os.path.join(self.out, "site.js"), encoding="utf-8") as f:
-            self.assertIn('if (route && !matchMedia("(min-width: 48rem)").matches) route.open = false;', f.read())
+            js = f.read()
+        # Collapsed below 48rem at load and on every crossing of the breakpoint (rotation, resize).
+        self.assertIn('const wide = matchMedia("(min-width: 48rem)");', js)
+        self.assertIn('route.open = wide.matches;', js)
+        self.assertIn('wide.addEventListener("change", follow);', js)
         # Both on an ink band, whose tokens resolve to the dark values (CAT-59).
         self.assertLess(home.index('<div class="band home-band">'), home.index('<section class="hero">'))
         self.assertIn("\n.band { color-scheme: dark; color: var(--text); background: var(--bg); }", self.css())

@@ -46,8 +46,14 @@ addEventListener("hashchange", openVersion);
 openVersion();
 
 // CAT-62a: below 48rem the home page's listing steps are collapsed under their heading, so the search follows them.
+// It follows the breakpoint when a phone rotates or a window resizes, as the stylesheet does.
 const route = document.querySelector(".route");
-if (route && !matchMedia("(min-width: 48rem)").matches) route.open = false;
+if (route) {
+  const wide = matchMedia("(min-width: 48rem)");
+  const follow = () => { route.open = wide.matches; };
+  follow();
+  wide.addEventListener("change", follow);
+}
 
 // CAT-19: the table of contents is collapsed on narrow screens and marks the section in view.
 const toc = document.querySelector(".toc details");
