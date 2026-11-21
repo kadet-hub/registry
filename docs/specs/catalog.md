@@ -3322,19 +3322,19 @@ CAT-55, CAT-58b.
   full-width button and its other actions as one wrapping row of links,
   each at least 24 by 24 px (CAT-55).
 
-  The notice of CAT-65 made the hero taller. When the search still
-  followed the hero, it started at 864 px in Chrome at 393 by 852 px
-  with the buttons and at 816 px with the compact row. The search now
-  follows the compile figure (CAT-67), and the row keeps the hero short
-  for the figure instead. The figure starts at 698 px, so the first lines
-  of the inventory are on the first screen. The links are 24 px high and wrap
-  into two lines there. For the hero this replaces the shared button rows
-  of CAT-9a.
+  The notice of CAT-65 made the hero taller. While the collapsed steps of
+  CAT-62a stood between the hero and the search, the search started at
+  864 px in Chrome at 393 by 852 px with the buttons and at 816 px with
+  the compact row. Below 48rem the search now follows the hero directly
+  (CAT-67e) and starts at 698 px with the compact row; its field ends at
+  808 px, on the first screen. The links are 24 px high and wrap into two
+  lines there. For the hero this replaces the shared button rows of
+  CAT-9a.
 
   - Test: `catalog/test_catalog.py`
     (`Site.test_hero_actions_compact_on_phones`, partial: the rules of
-    the stylesheet below 48rem); manual: 393 by 852 px, the compile
-    figure starts on the first screen
+    the stylesheet below 48rem); manual: 393 by 852 px, the search field
+    on the first screen
   - Since: this change
 
 - CAT-63: The site navigation MUST link Tags, Kinds, Compatibility and
@@ -3488,7 +3488,8 @@ which stay what a generator looks like on the site.
 Related: CAT-5, CAT-6, CAT-8, CAT-11, CAT-26, CAT-38b, CAT-62, CAT-62b,
 CAT-63, CAT-66a, CAT-66b.
 
-- CAT-67: `/` MUST be a start page with, in this order:
+- CAT-67: `/` MUST be a start page with, in this order (below 48rem with
+  the search before the figure, CAT-67e):
 
   1. the hero (CAT-11f, CAT-6, CAT-65);
   2. the compile figure (CAT-66);
@@ -3505,13 +3506,16 @@ CAT-63, CAT-66a, CAT-66b.
   Quickstart have no count. A count of 0 is left out: `/recipes/` also
   lists the recipes the index does not list yet, built from `main`
   (CAT-37, CAT-38), so "0 listed" there would read as an empty page.
-  The destination names are no headings, since CAT-11b keeps headings
-  for the page and its sections, not for the items of a list.
+  The list sits under the `h2` "Where to go next", in sentence case like
+  every other heading of the site. The destination names are no
+  headings, since CAT-11b keeps headings for the page and its sections,
+  not for the items of a list.
 
   - Test: `catalog/test_catalog.py` (`Site.test_start_page`: the order,
-    the destinations and their counts against `/generators/`, `/stacks/`
-    and `/guides/`; `ListedRecipe.test_not_counted_with_generators`: the
-    recipe count; `Site.test_empty_index_says_so`: no count of 0)
+    the heading, the destinations and their counts against
+    `/generators/`, `/stacks/` and `/guides/`;
+    `ListedRecipe.test_not_counted_with_generators`: the recipe count;
+    `Site.test_empty_index_says_so`: no count of 0)
   - Since: this change
 
 - CAT-67a: The catalog of CAT-8, CAT-10, CAT-22, CAT-26, CAT-29a and
@@ -3570,8 +3574,8 @@ CAT-63, CAT-66a, CAT-66b.
 
   The panes stand in one column in the markup's order; the connectors
   stay hidden below 72rem as before. Measured in Chrome at 393 by 852 px
-  on the fixture build, the figure starts at 698 px and is 1416 px high,
-  and the search follows at 2187 px. The longest line, 43 characters,
+  on the fixture build, the figure starts at 832 px, below the search of
+  CAT-67e, and is 1416 px high. The longest line, 43 characters,
   fits the pane, so no pane scrolls sideways.
 
   Below 48rem the figure shows its final state at load and plays on its
@@ -3586,4 +3590,32 @@ CAT-63, CAT-66a, CAT-66b.
     the rules below 48rem, the panes' order and the line of `site.js`
     that plays from 48rem); manual: 393 px, the three panes one below
     the other
+  - Since: this change
+
+- CAT-67e: Below 48rem the start page's search MUST follow the hero,
+  before the compile figure. From 48rem it MUST follow the figure.
+
+  Stacked (CAT-67d), the figure pushed the search to 2187 px in Chrome
+  at 393 by 852 px, more than two screens down. The operator decided on
+  2026-11-21 to put it back under the hero on phones. There it starts at
+  698 px, its field ends at 808 px on the first screen, and the figure
+  follows at 832 px.
+
+  The page carries the form twice, once in the band after the hero's
+  notice and once after the band, both from `_partials/find.html`, and
+  the stylesheet shows one per width. A form under `display: none` is
+  out of the tab order and the accessibility tree, so the reading and
+  focus order follow the screen at every width: tabbing on from the
+  hero's notice reaches the search before the figure's lines at 393 px
+  and after its Replay button at 1440 px. The two fields have their own
+  ids, `q-narrow` and `q`, and both send `q` (CAT-67b).
+
+  | Placement considered | Why not |
+  |---|---|
+  | One form, placed first or last in the markup and moved with CSS `order` or grid areas at the other width | At that width the focus would jump between the search and the figure's traced lines and Replay button against the visual order, which WCAG 2.2 criterion 2.4.3 asks to keep |
+
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_search_after_the_hero_on_phones`: both forms, their
+    places in the markup and the rules that show one per width); manual:
+    393 by 852 px, the search directly under the hero's notice
   - Since: this change
