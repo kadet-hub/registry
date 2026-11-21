@@ -12,20 +12,14 @@
   <p class="lead">Every listed version of these Kapitan generators is gate-checked: it passed secret, malware and code scans, a fixture compile in a gVisor sandbox without network and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.</p>
   <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a><a class="button" href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request a generator</a><a class="button" href="{{ "/wanted/" | relURL }}">Wanted generators</a></p>
   <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk. <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
+{{ partial "find.html" (dict "width" "narrow" "id" "q-narrow") }}
 {{ partial "compile.html" . }}
 </section>
 </div>
-{{/* CAT-67b: the search opens the catalog with ?q=; without JavaScript it lists every card there. */}}
-<form class="find" action="{{ "/generators/" | relURL }}" method="get" role="search">
-  <label for="q">Find a generator by name, kind or the software it is built for</label>
-  <div class="find-row">
-    <span class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="q" name="q" type="search" placeholder="e.g. HTTPRoute" autocomplete="off"></span>
-    <button type="submit" class="button">Search</button>
-  </div>
-</form>
+{{ partial "find.html" (dict "width" "wide" "id" "q") }}
 {{/* CAT-67: the sections as one index; a count only where the index or the content gives one, and not when it is 0. */}}
 <section class="doors" aria-labelledby="doors">
-<h2 id="doors">Site index</h2>
+<h2 id="doors">Where to go next</h2>
 <ul class="site-index">
   <li><a href="{{ "/generators/" | relURL }}"><span class="door">Generators</span><span class="door-line">Kadet modules that turn your inventory into Kubernetes manifests and Terraform.</span>{{ with len $gens }}<span class="door-count">{{ . }} <span>listed</span></span>{{ end }}</a></li>
   <li><a href="{{ "/recipes/" | relURL }}"><span class="door">Recipes</span><span class="door-line">Inventory classes that replace a Helm chart, a Bitnami chart or a Compose file.</span>{{ with len $recipes }}<span class="door-count">{{ . }} <span>listed</span></span>{{ end }}</a></li>

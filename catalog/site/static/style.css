@@ -142,8 +142,12 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .find-row { display: flex; gap: .5rem; }
 .find-row .search { flex: 1; }
 .find-row .button { min-height: 48px; }
+/* CAT-67e: one form per width, so the focus order is the order on screen: under the hero below 48rem, under the figure from 48rem. */
+.find-narrow { margin-top: 1.5rem; }
+.find-wide { display: none; }
+@media (min-width: 48rem) { .find-narrow { display: none; } .find-wide { display: grid; } }
 .doors { margin-top: 3rem; }
-.doors h2 { margin: 0 0 .75rem; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.doors h2 { margin: 0 0 1rem; font-size: 1.25rem; }
 .site-index { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--text); }
 .site-index a { display: grid; grid-template-columns: 14rem minmax(0, 1fr) 8rem; align-items: baseline; gap: .25rem 1.5rem; padding: 1.1rem .5rem; border-bottom: 1px solid var(--border-strong); color: var(--text); text-decoration: none; }
 .site-index a:hover { background: var(--surface); }
@@ -158,8 +162,8 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .filters { position: sticky; top: 0; z-index: 2; display: grid; gap: .75rem; padding: 1rem 0; margin-bottom: .5rem; background: var(--bg); }
 .search { position: relative; display: block; }
 .search .icon { position: absolute; left: 1rem; top: 50%; translate: 0 -50%; color: var(--text-muted); font-size: 1.1rem; }
-#search, #recipe-search, #q { width: 100%; min-height: 48px; padding: .7rem 1rem .7rem 2.8rem; font: inherit; font-size: 1.05rem; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-#search:focus, #recipe-search:focus, #q:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+#search, #recipe-search, .find input { width: 100%; min-height: 48px; padding: .7rem 1rem .7rem 2.8rem; font: inherit; font-size: 1.05rem; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+#search:focus, #recipe-search:focus, .find input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
 .tag-filter { display: flex; flex-wrap: wrap; gap: .5rem; }
 .chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 36px; padding: 0 .8rem; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-size: .9rem; cursor: pointer; }
 .chip:hover:not(:disabled) { border-color: var(--accent); }

@@ -1,0 +1,8 @@
+{{/* CAT-67b: the start page's search into the catalog. CAT-67e renders it twice, below the hero for phones and below the figure from 48rem; the stylesheet shows one. */}}
+<form class="find find-{{ .width }}" action="{{ "/generators/" | relURL }}" method="get" role="search">
+  <label for="{{ .id }}">Find a generator by name, kind or the software it is built for</label>
+  <div class="find-row">
+    <span class="search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="{{ .id }}" name="q" type="search" placeholder="e.g. HTTPRoute" autocomplete="off"></span>
+    <button type="submit" class="button">Search</button>
+  </div>
+</form>

@@ -947,7 +947,7 @@ class Site(unittest.TestCase):
 
     def test_start_page(self):  # CAT-67
         home = self.page()
-        order = ['<section class="hero">', '<figure class="compile"', '<form class="find"', '<section class="doors"', '<h2 id="listing">']
+        order = ['<section class="hero">', '<figure class="compile"', '<form class="find find-wide"', '<section class="doors"', '<h2 id="listing">']
         self.assertEqual([home.index(m) for m in order], sorted(home.index(m) for m in order))
         doors = re.findall(r'<li><a href="\./([a-z]+)/"><span class="door">([^<]+)</span><span class="door-line">[^<]+</span>'
                            r'(?:<span class="door-count">(\d+) <span>([a-z]+)</span></span>)?</a></li>', home)
@@ -961,6 +961,9 @@ class Site(unittest.TestCase):
                                   "Guides": (str(entries("guides")), "guides")})
         self.assertEqual(counts["Generators"][0], "2")  # CAT-26: old has no listed version
         self.assertNotIn('<ul class="cards', home)  # the catalog is on /generators/ (CAT-67a)
+        # A sentence-case h2 that names the list, not a tracked all-caps label.
+        self.assertIn('<section class="doors" aria-labelledby="doors">\n<h2 id="doors">Where to go next</h2>\n<ul class="site-index">', home)
+        self.assertNotIn("uppercase", re.search(r"\n\.doors h2 \{([^}]*)\}", self.css()).group(1))
 
     def test_catalog_page(self):  # CAT-67a, CAT-8, CAT-10, CAT-11
         catalog, home = self.page("generators"), self.page()
@@ -982,11 +985,12 @@ class Site(unittest.TestCase):
 
     def test_start_page_search(self):  # CAT-67b
         home = self.page()
-        form = re.search(r'<form class="find" (.*?)</form>', home, re.DOTALL).group(0)
-        self.assertIn('<form class="find" action="./generators/" method="get" role="search">', form)
-        self.assertIn('<label for="q">', form)
-        self.assertRegex(form, r'<input id="q" name="q" type="search"[^>]*>')
-        self.assertIn('<button type="submit" class="button">Search</button>', form)
+        for width, field in (("narrow", "q-narrow"), ("wide", "q")):  # one per width (CAT-67e)
+            form = re.search(rf'<form class="find find-{width}" (.*?)</form>', home, re.DOTALL).group(0)
+            self.assertIn(f'<form class="find find-{width}" action="./generators/" method="get" role="search">', form)
+            self.assertIn(f'<label for="{field}">', form)
+            self.assertRegex(form, rf'<input id="{field}" name="q" type="search"[^>]*>')
+            self.assertIn('<button type="submit" class="button">Search</button>', form)
         with open(os.path.join(self.out, "site.js"), encoding="utf-8") as f:
             js = f.read()
         self.assertIn('search.value = params.get("q") || "";', js)  # /generators/ filters by ?q= on load
@@ -994,6 +998,21 @@ class Site(unittest.TestCase):
         for html in self.pages():
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
             self.assertTrue(csp.endswith("; form-action 'self'"), csp)
+
+    def test_search_after_the_hero_on_phones(self):  # CAT-67e
+        home = self.page()
+        hero = home[home.index('<section class="hero">'):home.index('<form class="find find-wide"')]
+        # Below 48rem: in the band, between the hero's notice and the figure; from 48rem: after the band, before the destinations.
+        self.assertRegex(hero, r'(?s)<p class="disclaimer">.*?</p>\s*<form class="find find-narrow" .*?</form>\s*<figure class="compile"')
+        self.assertRegex(home, r'(?s)</figure>\s*</section>\s*</div>\s*<form class="find find-wide" .*?</form>\s*<section class="doors"')
+        forms = re.findall(r'<form class="find find-(narrow|wide)"', home)
+        self.assertEqual(forms, ["narrow", "wide"])
+        same = [re.sub(r'find-(narrow|wide)|"q-narrow"|"q"', "", f) for f in re.findall(r'<form class="find find-.*?</form>', home, re.DOTALL)]
+        self.assertEqual(same[0], same[1])  # the same form, only the width and the field's id differ
+        # One form per width: hidden with display: none, the other is out of the tab order and the accessibility tree.
+        css = self.css()
+        self.assertIn("\n.find-wide { display: none; }\n@media (min-width: 48rem) { .find-narrow { display: none; } .find-wide { display: grid; } }", css)
+        self.assertLess(css.index("\n.find { display: grid;"), css.index("\n.find-wide { display: none; }"))  # later, so it wins
 
     def test_reference_disclosure(self):  # CAT-63, CAT-40a, CAT-47
         nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.DOTALL).group(1)
