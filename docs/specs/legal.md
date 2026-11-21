@@ -16,8 +16,9 @@ law a provider who checks content and presents it as part of its own
 offering can be held to have adopted it (BGH I ZR 166/07). The texts below
 describe the generators as third-party work, offer a takedown route and
 state what the review does not promise. No lawyer reviews them
-(DEC-51), so they carry no "draft pending legal review" marker;
-the operator's name and address are `tbd` (OQ-2).
+(DEC-51), so they carry no "draft pending legal review" marker. The
+operator's name is `tbd` and the postal address follows from the c/o
+address service of OQ-2.
 
 - LEG-1: The site MUST have a privacy notice at `/privacy/` and an imprint at
   `/imprint/`, both linked from every page's footer.
