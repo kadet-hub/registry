@@ -2051,8 +2051,8 @@ Related: CAT-15, CAT-30, CON-2.
   License 1.1, which allows redistribution with the license text, and
   `OFL.txt` next to the font holds that text. The font declares no
   Reserved Font Name. Hugo reads it at build time and does not publish
-  it. The stylesheet uses the system font stack, so the site ships no
-  other font.
+  it. The site's own font is Archivo (CAT-60), which the card does not
+  use.
 
   - Test: manual: review of `base.png` and `og-card.html` in the merge
     request
@@ -3088,144 +3088,224 @@ index is refused (CON-2).
 ## Visual identity
 
 The site still wears the look it started with: the system font stack, an
-indigo accent (`--accent`, `#3346d3` in light), tiles coloured by a hash
-of the generator's name and a white K on a blue square as its mark
+indigo accent (`--accent`, `#3346d3` in light), card tiles coloured by a
+hash of the generator's name and a white K on a blue square as its mark
 (`static/favicon.svg`). Nothing in it refers to Kapitan or to kadet, and
-the gate, the reason to take a generator from here, is explained in three
-paragraphs below the card grid.
+the section on how a version gets listed, the reason to take a generator
+from here, sits below the card grid.
 
-The redesign takes its motif from Kapitan's own wording. Kapitan is
-Russian for captain, and kapitan.dev titles its start page "Kapitan: Keep
-your ship together". A kadet module is then the cadet, and kadet-hub the
-harbour where cadets are checked, signed and handed out. The mark is a K
-whose stem stands for the inventory and whose arms form a cadet's rank
-chevron, with the rendered outputs as two dots at the ends.
+The redesign takes its motif from Kapitan's own wording. Kapitan is the
+word for captain in several Slavic languages, and kapitan.dev names its
+site "Kapitan: Keep your ship together" (`og:site_name`, checked
+2026-11-21). A kadet module is then the cadet, and kadet-hub the harbour
+where cadets are checked, signed and handed out. The mark is a K whose
+stem stands for the inventory and whose arms form a cadet's rank chevron,
+with the rendered outputs as two dots at the ends, on an ink tile of its
+own.
 
 The operator chose the direction "Chart Room" on 2026-11-21: a nautical
-chart and a cargo manifest. The ground is paper with a fine graticule, the
-text navy ink, and one signal colour marks what a visitor acts on: the
-primary button, the selected step, the first eight characters of a
-digest. Headings are Archivo expanded to 125 % at weight 800, body text
-Archivo at normal width, and versions, digests and inventory JetBrains
-Mono. Both families are SIL Open Font License 1.1.
+chart and a cargo manifest. The light theme has a paper ground with a
+fine graticule, drawn as a CSS gradient, navy ink text and one signal
+colour for what a visitor acts on: the primary button and the focus
+ring. The dark theme is the same chart at night, ink ground and paper
+text. An ink band inside the light theme, such as the hero, sets
+`color-scheme: dark`, so its `light-dark()` tokens resolve to the dark
+values and every text on it has a measured pair. Headings use Archivo
+expanded to 125 % at weight 800, body text Archivo at normal width; code
+and digests keep the system monospace stack of `--mono`.
 
-| Token | Light | Use | Contrast |
+| Token | Light | Dark | Use |
 |---|---|---|---|
-| Ink | `#0E1B2C` | text, dark bands | 15.1:1 on paper |
-| Paper | `#F4EFE4` | ground | |
-| Surface | `#FFFDF8` | cards, fields | |
-| Muted | `#4A5566` | secondary text | 6.6:1 on paper |
-| Sea | `#0B6876` | links, data | 5.6:1 on paper |
-| Signal | `#E2562B` | primary button, marks | ink on it 4.6:1 |
-| Signal text | `#B43D16` | signal colour as text | 5.1:1 on paper |
-| Shallows | `#6FD6E6` | accents on ink | 10.3:1 on ink |
-| Chart line | `#C9BFA8` | decorative rules only | 1.6:1 |
-| Field border | `#8A7F68` | input borders | 3.4:1 |
+| `--bg` | `#f4efe4` paper | `#0e1b2c` ink | ground |
+| `--bg-subtle` | `#eae3d3` | `#13233a` | inline code, tag pills |
+| `--surface` | `#fffdf8` | `#16283d` | cards, fields |
+| `--text` | `#0e1b2c` | `#f4efe4` | text |
+| `--text-muted` | `#4a5566` | `#a9b4c4` | secondary text, placeholders |
+| `--accent` | `#0b6876` sea | `#6fd6e6` shallows | links, data |
+| `--accent-strong` | `#0e1b2c` | `#f4efe4` | link hover |
+| `--accent-bg` | `#e5f2f3` | `#163a46` | highlighted facts |
+| `--on-accent` | `#ffffff` | `#0e1b2c` | text on an accent fill |
+| `--signal` | `#e2562b` | `#e2562b` | primary button, focus ring |
+| `--on-signal` | `#0e1b2c` | `#0e1b2c` | text on the primary button |
+| `--signal-text` | `#b43d16` | `#ff8a5c` | signal colour as text |
+| `--border` | `#c9bfa8` | `#2a3b52` | decorative rules and the graticule |
+| `--border-strong` | `#8a7f68` | `#6b829b` | field and control borders |
 
-The contrasts are computed with the WCAG formula from the hex values. The
-dark theme is derived in the merge request that implements CAT-59 and is
-checked the same way.
+`--warn`, `--warn-bg`, `--ok` and `--ok-bg` keep their current values.
+The lowest text pairs, computed with the WCAG formula from these hex
+values, are `--on-signal` on `--signal` at 4.62:1, `--accent` on
+`--bg-subtle` at 5.05:1 in light and `--text-muted` on `--accent-bg` at
+5.80:1 in dark. `--border-strong` reaches 3.44:1 on `--bg` in light and
+3.77:1 on `--surface` in dark, and `--signal` as focus ring 3.27:1 on
+`--bg` in light and 3.99:1 on `--surface` in dark, above the 3:1 WCAG
+2.2 asks of non-text contrast. `--border` stays below it at 1.59:1 and
+marks nothing a visitor must see. The card tiles lose their hash hues:
+each tile is `--bg-subtle` with its tag icon in `--text`, so the signal
+colour stays the only colour that asks for an action.
+
+A digest is shown whole in one colour. A highlighted prefix would teach
+visitors to compare the first characters, and eight hex characters are
+32 bits, which a forged artifact can match by brute force. Verification
+is the command of CAT-2, not the eye.
 
 | Direction considered | Why not |
 |---|---|
-| Bridge: dark first, values as cyan and amber instrument readouts, IBM Plex | The site follows the system colour scheme (see Catalog above); a dark-first design would need a second, derived light theme of equal weight |
+| Bridge: dark first, values as cyan and amber instrument readouts, IBM Plex | The operator preferred Chart Room when comparing the mockups |
 | Kilo: the yellow and blue signal flag K as the mark, flat colour blocks, Space Grotesk | Flag yellow `#FFC20E` reaches 1.6:1 on white, so it can carry no text and only grounds ink; the flag stands for the letter K, not for Kapitan |
 
-The redesign changes the look and the home page hero. It keeps every
-requirement above, among them the ones a redesign is likely to break: the
-`h1` names Helm (CAT-11f), the quickstart is the first nav entry
-(CAT-40a) and Stacks follows Recipes (CAT-47), the header collapses below
-48rem (CAT-9a), every card shows the same fields (CAT-22), the generator
-page keeps README before Versions (CAT-19), text reaches 4.5:1 (CAT-54)
-and targets 24 px (CAT-55), and nothing loads from another origin
-(CAT-3).
+The redesign lands in one merge request, because `release.yml` deploys
+every push to `main` and a split would show new tokens next to the old
+mark. The merge request attaches screenshots of the home page, a
+generator page, a recipe page and a guide at 375 and 1440 px in both
+themes, since the mockups are not in the repository, and lists the tests
+it changes: the CSP strings in `test_badge` and
+`test_goatcounter_counts_from_the_own_origin`, the token pairs of
+`Site.test_text_reaches_aa` and `Playground.test_highlight_colours_reach_aa`.
+A revert of that one commit restores the old look. Four weeks before and
+after the release the operator compares the weekly CAT-42 events
+(`copy-fetch-inventory`, `copy-verify`) on `/stats/`; a drop is a reason
+to revisit the design, at this traffic not a measurement of it.
 
-Related: CAT-3, CAT-5, CAT-9a, CAT-11f, CAT-19, CAT-22, CAT-40a, CAT-47, CAT-54,
+Related: CAT-2, CAT-3, CAT-9a, CAT-11b, CAT-11f, CAT-22, CAT-42, CAT-54,
 CAT-55, CAT-58b.
 
-- CAT-59: Every colour, font family, radius and shadow in
-  `static/style.css` MUST be a custom property, defined for the light and
-  the dark theme, and every other declaration MUST reference it with
-  `var()`.
+- CAT-59: Every colour in `static/style.css` MUST come from a custom
+  property defined on `:root` with a light and a dark value; rules
+  outside `:root` MUST NOT set a colour literal or a named colour other
+  than `transparent` and `currentColor`.
 
-  The theme is then one token block, and CAT-54's check works on the
-  tokens alone. The stylesheet already holds most values
-  this way; the grade colours of the scan report (`.grade-a` and its
-  siblings) are hex values in the rules.
+  The theme is then one token block. Today the grade colours
+  (`.grade-a` and its siblings), the `.chroma` highlight rules and the
+  `.hue-*` tiles set colours in their rules. A shadow takes its colour
+  from a token (`0 1px 2px var(--shadow-c)`): `light-dark()` accepts
+  colours only, so the current `--shadow: light-dark(<shadow>, <shadow>)`
+  is invalid and Chrome renders no card shadow in either theme (checked
+  on the live site on 2026-11-21). CAT-54 still applies to the rendered
+  page, and the merge request measures the text of each page type of its
+  screenshots in both themes.
 
-  - Test: none (a stylesheet check in `catalog/test_catalog.py` that
-    finds no colour literal outside a custom property declaration)
+  - Test: none (a stylesheet check in `catalog/test_catalog.py`: no hex,
+    `rgb()`, `hsl()` or named colour outside `:root`; the token pairs of
+    the table in `Site.test_text_reaches_aa`)
   - Since: not implemented
 
-- CAT-60: The site MUST serve its fonts as WOFF2 files from
-  `static/fonts/`, each with its licence text beside it, declared with
-  `font-display: swap`, and the CSP MUST allow them with
-  `font-src 'self'`.
+- CAT-60: The site MUST serve Archivo as one variable WOFF2 file with
+  its `wdth` and `wght` axes from `static/fonts/`, beside the font's
+  `OFL.txt`.
 
-  CAT-3 rules out a font host, and the current CSP's `default-src 'none'`
-  blocks fonts from the site too. `swap` shows the text in the fallback
-  stack until the font arrives, so no text stays invisible. The
-  families are SIL Open Font License 1.1 fonts, which allow
-  redistribution with the licence text. The files are subset to Latin;
-  their size is measured in the merge request that adds them. CAT-58b's
-  statement that the site ships no other font than the card's ends with
-  this requirement.
+  CAT-3 rules out a font host, and `font-src` falls back to
+  `default-src 'none'`, which blocks fonts from the site too. Headings at
+  125 % width need the `wdth` axis: a static instance renders them at
+  normal width without an error, so the `@font-face` declares
+  `font-stretch: 62.5% 125%`. The file is cut from a tagged release of
+  the Archivo repository, subset to Latin with fonttools' `pyftsubset`
+  keeping both axes; the release tag, the SHA-256 of the WOFF2 and the
+  command go into the implementation inventory of
+  [marketplace.md](marketplace.md), as CAT-58b records its font.
+  Archivo is licensed under the SIL Open Font License 1.1 and declares no
+  Reserved Font Name (its `OFL.txt`, checked 2026-11-21), so a subset
+  keeps the name. `font-display: swap` shows text in the fallback stack
+  until the file arrives; a fallback `@font-face` with `size-adjust`
+  keeps the `h1` from rewrapping when Archivo replaces it. The merge
+  request states the file size.
 
-  - Test: none (a check that every `@font-face` source is under
-    `static/fonts/` with a licence file, and the CSP of `baseof.html`)
+  - Test: none (`catalog/test_catalog.py`: every `@font-face` source is
+    under `static/fonts/` with an `OFL.txt` beside it)
   - Since: not implemented
 
-- CAT-61: The mark MUST be one SVG, `static/favicon.svg`, used by the site
-  header, the favicon and the Open Graph base image of CAT-58b, and MUST
-  NOT use or imitate the Kapitan logo or another project's mark.
+- CAT-60a: The CSP MUST allow fonts with `font-src 'self'` and no other
+  source.
 
-  CAT-58b found that Kapitan's repository has no logo policy and that
-  section 6 of its Apache 2.0 license grants no trademark rights, and the
-  footer states that kadet-hub is not affiliated with the Kapitan
-  project. The motif borrows the wording, not the artwork. `base.png` is
-  rasterised again from the new SVG, the way CAT-58b describes.
+  The graticule is a CSS gradient and the font a file, so neither needs
+  `data:`; the CSP gains no `data:` and no `unsafe-` source either.
 
-  - Test: manual: review of `favicon.svg` and `base.png` in the merge
+  - Test: none (`catalog/test_catalog.py`: the CSP of `baseof.html` has
+    `font-src 'self'`, no `data:` and no `unsafe-`)
+  - Since: not implemented
+
+- CAT-61: The mark MUST be `static/favicon.svg`, drawn on its own ink
+  tile, and `static/apple-touch-icon.png`, `static/og.png` and the
+  Open Graph base image of CAT-58b MUST be rasterised from it.
+
+  The header shows the mark as an `img`, which neither the page's
+  tokens nor its theme toggle reach, so the tile keeps it legible on
+  both grounds. The card text of `og-card.html` takes the dark values of
+  the token table on that tile's ink. CAT-58b found that Kapitan's
+  repository has no logo policy and that section 6 of its Apache 2.0
+  license grants no trademark rights; the Kapitan logo is a figure, not
+  a letter, so a K does not imitate it. The motif borrows the wording
+  for the spec, not for the site.
+
+  - Test: manual: review of the SVG and the three PNGs in the merge
     request
   - Since: not implemented
 
-- CAT-62: The home page hero MUST show the listing steps (pull request,
-  scanned, compiled in a sandbox, reviewed, signed and pinned) as one
-  figure with each step's text in the HTML, and the section "How a
-  version gets listed" below the cards MUST go.
+- CAT-61a: The mark and the site's copy MUST NOT use Kapitan's
+  artwork or its tagline, or call kadet-hub official.
+
+  The footer keeps saying that kadet-hub is not affiliated with the
+  Kapitan project.
+
+  - Test: manual: review of the mark in the merge request, and a
+    case-insensitive search of `catalog/site/` for "keep your ship" and
+    "official kapitan" that finds nothing
+  - Since: not implemented
+
+- CAT-62: The section "How a version gets listed" of the home page MUST
+  stand between the introduction and the search, with its approved
+  copy.
 
   The steps are what sets a listed generator apart from a chart found
   elsewhere, and today a visitor reads them only after scrolling past
-  every card. With JavaScript a visitor may select a step to show its
-  text; without it every text is shown, so nothing depends on the script.
-  The link to "How kadet-hub works" (CAT-35) moves into the figure.
+  every card. The section keeps its `h2` with an `h3` per step and its
+  links, so CAT-11b holds, and it is drawn as the route of the chart:
+  the steps as waypoints on a dashed line. On a phone the open steps
+  would push the search a screen down for the visitor who came back for
+  a digest, so CAT-62a collapses them there.
 
-  - Test: none (`catalog/test_catalog.py`: the five step texts in the
-    home page's HTML, the old section absent)
+  - Test: none (`catalog/test_catalog.py`: `<h2 id="listing">` before
+    the search in the home page's HTML, the existing checks of CAT-11b
+    and CAT-35 unchanged)
   - Since: not implemented
 
-- CAT-63: A transition MUST last at most 200 ms and only follow a
-  visitor's action, and no transition or animation MUST run under
-  `prefers-reduced-motion: reduce`.
+- CAT-62a: Below 48rem the steps of that section MUST be collapsed under
+  its `h2`.
 
-  The site is a catalog people come back to for a digest, so motion
-  serves feedback only: a selected step, an opened menu, a copied
-  command.
+  They sit in a `details` element that `site.js` closes on narrow
+  screens, the CAT-9a pattern, so without JavaScript they stay open.
 
-  - Test: none (a stylesheet check for the durations and the
-    `prefers-reduced-motion` block)
+  - Test: none (`catalog/test_catalog.py`: the `details` around the
+    steps; manual: 393 px, the search follows the collapsed steps)
   - Since: not implemented
 
-- CAT-64: The site navigation MUST link Tags, Kinds, Compatibility and
-  Glossary under one entry "Reference" instead of one link each.
+- CAT-63: The site navigation MUST link Tags, Kinds, Compatibility and
+  Glossary under one disclosure "Reference" instead of one link each.
 
   The header has 13 links today, which CAT-9a folds into a menu below
-  48rem. The four pages are looked up, not browsed, so they share an
-  entry; each keeps its URL (CAT-5). The entry is a `details` disclosure,
-  so it opens without JavaScript. CAT-40a and CAT-47 keep their order: Quickstart first, Stacks
-  after Recipes. The operator decided this on 2026-11-21, and kept the
-  generator page's order of CAT-19 the same day.
+  48rem. The four pages are reference material, so they share an entry;
+  each keeps its URL (CAT-5). The disclosure is a `details` element, so
+  it opens without JavaScript; `site.js` adds the closing, which its
+  Escape handler today does only for the open mobile menu; CAT-63a
+  states the closing. CAT-40a and CAT-47 keep their order: Quickstart first,
+  Stacks after Recipes. The operator decided this on 2026-11-21, and
+  kept the generator page's order of CAT-19 the same day.
 
   - Test: none (`catalog/test_catalog.py`: the header links and the
-    "Reference" disclosure)
+    disclosure)
+  - Since: not implemented
+
+- CAT-63a: The "Reference" disclosure MUST close on Escape and when focus
+  leaves it, and MUST NOT cover the element that has focus.
+
+  WCAG 2.2 criterion 2.4.11 rules out a dropdown that hides the focused
+  link below it.
+
+  - Test: manual: Escape and Tab out of the open disclosure at 1440 px
+  - Since: not implemented
+
+- CAT-64: A digest MUST be shown in full and in one colour wherever the
+  site shows it.
+
+  - Test: none (`catalog/test_catalog.py`: no element inside a digest
+    in the built pages)
   - Since: not implemented
