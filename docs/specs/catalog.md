@@ -3128,8 +3128,8 @@ checked the same way.
 
 | Direction considered | Why not |
 |---|---|
-| Bridge: dark first, values as cyan and amber instrument readouts, IBM Plex | Dark by default suits a dashboard more than a catalog read in daylight; the readout look leans on mono text the site already uses sparingly |
-| Kilo: the yellow and blue signal flag K as the mark, flat colour blocks, Space Grotesk | Yellow carries no text on white (1.6:1), so most of the page would run on two colours; the flag ties to the letter K rather than to Kapitan |
+| Bridge: dark first, values as cyan and amber instrument readouts, IBM Plex | The site follows the system colour scheme (see Catalog above); a dark-first design would need a second, derived light theme of equal weight |
+| Kilo: the yellow and blue signal flag K as the mark, flat colour blocks, Space Grotesk | Flag yellow `#FFC20E` reaches 1.6:1 on white, so it can carry no text and only grounds ink; the flag stands for the letter K, not for Kapitan |
 
 The redesign changes the look and the home page hero. It keeps every
 requirement above, among them the ones a redesign is likely to break: the
