@@ -3084,3 +3084,148 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py` (`Quickstart.test_readme`, partial:
     the guide exists; whether it backs the row is a review question)
   - Since: #682
+
+## Visual identity
+
+The site still wears the look it started with: the system font stack, an
+indigo accent (`--accent`, `#3346d3` in light), tiles coloured by a hash
+of the generator's name and a white K on a blue square as its mark
+(`static/favicon.svg`). Nothing in it refers to Kapitan or to kadet, and
+the gate, the reason to take a generator from here, is explained in three
+paragraphs below the card grid.
+
+The redesign takes its motif from Kapitan's own wording. Kapitan is
+Russian for captain, and kapitan.dev titles its start page "Kapitan: Keep
+your ship together". A kadet module is then the cadet, and kadet-hub the
+harbour where cadets are checked, signed and handed out. The mark is a K
+whose stem stands for the inventory and whose arms form a cadet's rank
+chevron, with the rendered outputs as two dots at the ends.
+
+The operator chose the direction "Chart Room" on 2026-11-21: a nautical
+chart and a cargo manifest. The ground is paper with a fine graticule, the
+text navy ink, and one signal colour marks what a visitor acts on: the
+primary button, the selected step, the first eight characters of a
+digest. Headings are Archivo expanded to 125 % at weight 800, body text
+Archivo at normal width, and versions, digests and inventory JetBrains
+Mono. Both families are SIL Open Font License 1.1.
+
+| Token | Light | Use | Contrast |
+|---|---|---|---|
+| Ink | `#0E1B2C` | text, dark bands | 15.1:1 on paper |
+| Paper | `#F4EFE4` | ground | |
+| Surface | `#FFFDF8` | cards, fields | |
+| Muted | `#4A5566` | secondary text | 6.6:1 on paper |
+| Sea | `#0B6876` | links, data | 5.6:1 on paper |
+| Signal | `#E2562B` | primary button, marks | ink on it 4.6:1 |
+| Signal text | `#B43D16` | signal colour as text | 5.1:1 on paper |
+| Shallows | `#6FD6E6` | accents on ink | 10.3:1 on ink |
+| Chart line | `#C9BFA8` | decorative rules only | 1.6:1 |
+| Field border | `#8A7F68` | input borders | 3.4:1 |
+
+The contrasts are computed with the WCAG formula from the hex values. The
+dark theme is derived in the merge request that implements CAT-59 and is
+checked the same way.
+
+| Direction considered | Why not |
+|---|---|
+| Bridge: dark first, values as cyan and amber instrument readouts, IBM Plex | Dark by default suits a dashboard more than a catalog read in daylight; the readout look leans on mono text the site already uses sparingly |
+| Kilo: the yellow and blue signal flag K as the mark, flat colour blocks, Space Grotesk | Yellow carries no text on white (1.6:1), so most of the page would run on two colours; the flag ties to the letter K rather than to Kapitan |
+
+The redesign changes the look and the home page hero. It keeps every
+requirement above, among them the ones a redesign is likely to break: the
+`h1` names Helm (CAT-11f), the quickstart is the first nav entry
+(CAT-40a) and Stacks follows Recipes (CAT-47), the header collapses below
+48rem (CAT-9a), every card shows the same fields (CAT-22), the generator
+page keeps README before Versions (CAT-19), text reaches 4.5:1 (CAT-54)
+and targets 24 px (CAT-55), and nothing loads from another origin
+(CAT-3).
+
+Related: CAT-3, CAT-5, CAT-9a, CAT-11f, CAT-19, CAT-22, CAT-40a, CAT-47, CAT-54,
+CAT-55, CAT-58b.
+
+- CAT-59: Every colour, font family, radius and shadow in
+  `static/style.css` MUST be a custom property, defined for the light and
+  the dark theme, and every other declaration MUST reference it with
+  `var()`.
+
+  The theme is then one token block, and CAT-54's check works on the
+  tokens alone. The stylesheet already holds most values
+  this way; the grade colours of the scan report (`.grade-a` and its
+  siblings) are hex values in the rules.
+
+  - Test: none (a stylesheet check in `catalog/test_catalog.py` that
+    finds no colour literal outside a custom property declaration)
+  - Since: not implemented
+
+- CAT-60: The site MUST serve its fonts as WOFF2 files from
+  `static/fonts/`, each with its licence text beside it, declared with
+  `font-display: swap`, and the CSP MUST allow them with
+  `font-src 'self'`.
+
+  CAT-3 rules out a font host, and the current CSP's `default-src 'none'`
+  blocks fonts from the site too. `swap` shows the text in the fallback
+  stack until the font arrives, so no text stays invisible. The
+  families are SIL Open Font License 1.1 fonts, which allow
+  redistribution with the licence text. The files are subset to Latin;
+  their size is measured in the merge request that adds them. CAT-58b's
+  statement that the site ships no other font than the card's ends with
+  this requirement.
+
+  - Test: none (a check that every `@font-face` source is under
+    `static/fonts/` with a licence file, and the CSP of `baseof.html`)
+  - Since: not implemented
+
+- CAT-61: The mark MUST be one SVG, `static/favicon.svg`, used by the site
+  header, the favicon and the Open Graph base image of CAT-58b, and MUST
+  NOT use or imitate the Kapitan logo or another project's mark.
+
+  CAT-58b found that Kapitan's repository has no logo policy and that
+  section 6 of its Apache 2.0 license grants no trademark rights, and the
+  footer states that kadet-hub is not affiliated with the Kapitan
+  project. The motif borrows the wording, not the artwork. `base.png` is
+  rasterised again from the new SVG, the way CAT-58b describes.
+
+  - Test: manual: review of `favicon.svg` and `base.png` in the merge
+    request
+  - Since: not implemented
+
+- CAT-62: The home page hero MUST show the listing steps (pull request,
+  scanned, compiled in a sandbox, reviewed, signed and pinned) as one
+  figure with each step's text in the HTML, and the section "How a
+  version gets listed" below the cards MUST go.
+
+  The steps are what sets a listed generator apart from a chart found
+  elsewhere, and today a visitor reads them only after scrolling past
+  every card. With JavaScript a visitor may select a step to show its
+  text; without it every text is shown, so nothing depends on the script.
+  The link to "How kadet-hub works" (CAT-35) moves into the figure.
+
+  - Test: none (`catalog/test_catalog.py`: the five step texts in the
+    home page's HTML, the old section absent)
+  - Since: not implemented
+
+- CAT-63: A transition MUST last at most 200 ms and only follow a
+  visitor's action, and no transition or animation MUST run under
+  `prefers-reduced-motion: reduce`.
+
+  The site is a catalog people come back to for a digest, so motion
+  serves feedback only: a selected step, an opened menu, a copied
+  command.
+
+  - Test: none (a stylesheet check for the durations and the
+    `prefers-reduced-motion` block)
+  - Since: not implemented
+
+- CAT-64: The site navigation MUST link Tags, Kinds, Compatibility and
+  Glossary under one entry "Reference" instead of one link each.
+
+  The header has 13 links today, which CAT-9a folds into a menu below
+  48rem. The four pages are looked up, not browsed, so they share an
+  entry; each keeps its URL (CAT-5). The entry is a `details` disclosure,
+  so it opens without JavaScript. CAT-40a and CAT-47 keep their order: Quickstart first, Stacks
+  after Recipes. The operator decided this on 2026-11-21, and kept the
+  generator page's order of CAT-19 the same day.
+
+  - Test: none (`catalog/test_catalog.py`: the header links and the
+    "Reference" disclosure)
+  - Since: not implemented
