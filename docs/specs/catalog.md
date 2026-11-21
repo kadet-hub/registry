@@ -3173,7 +3173,7 @@ after the release the operator compares the weekly CAT-42 events
 CAT-25, since `/stats/` shows no visitor numbers (CAT-33); a drop is a
 reason to revisit the design, at this traffic not a measurement of it.
 
-Related: CAT-2, CAT-3, CAT-9a, CAT-11b, CAT-11f, CAT-22, CAT-42, CAT-54,
+Related: LEG-5, CAT-2, CAT-3, CAT-9a, CAT-11b, CAT-11f, CAT-22, CAT-42, CAT-54,
 CAT-55, CAT-58b.
 
 - CAT-59: Every colour in `static/style.css` MUST come from a custom
@@ -3339,4 +3339,17 @@ CAT-55, CAT-58b.
 
   - Test: none (`catalog/test_catalog.py`: no element inside a digest
     in the built pages)
+  - Since: not implemented
+
+- CAT-65: The home page hero MUST state the notice of LEG-5 in one line
+  below its buttons, linking `TERMS.md`.
+
+  The footer carries the notice on every page, but a visitor who decides
+  from the hero whether to pin a generator does not scroll to it. The
+  line repeats LEG-5's words (free of charge, as is, best effort, at the
+  user's own risk) and adds no promise; TERMS.md holds the liability
+  clause German law allows.
+
+  - Test: none (`catalog/test_catalog.py`: the line and its link inside
+    the hero of the home page)
   - Since: not implemented
