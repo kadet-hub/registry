@@ -1,4 +1,4 @@
-// Theme toggle, the menu (CAT-9a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), the recipe finder (CAT-37i), and the home page's
+// Theme toggle, the menu (CAT-9a) and the "Reference" disclosure (CAT-63a), the listing steps (CAT-62a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), the recipe finder (CAT-37i), and the home page's
 // search, tag filter and sort (CAT-8 to CAT-10, CAT-9a). No markup is built from data.
 const root = document.documentElement;
 const announce = (text) => { document.getElementById("announce").textContent = text; };
@@ -25,9 +25,14 @@ const setMenu = (open) => {
 menuButton.hidden = false;
 setMenu(false);
 menuButton.addEventListener("click", () => setMenu(header.dataset.menu === "closed"));
+// CAT-63a: the open "Reference" disclosure closes on Escape, before the menu around it, and when focus leaves it.
+const reference = header.querySelector(".reference");
 header.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && header.dataset.menu === "open") { setMenu(false); menuButton.focus(); }
+  if (e.key !== "Escape") return;
+  if (reference.open) { reference.open = false; reference.querySelector("summary").focus(); }
+  else if (header.dataset.menu === "open") { setMenu(false); menuButton.focus(); }
 });
+reference.addEventListener("focusout", (e) => { if (!reference.contains(e.relatedTarget)) reference.open = false; });
 
 // Version permalinks (CAT-17): open the version a #v<version> link points to.
 function openVersion() {
@@ -39,6 +44,10 @@ function openVersion() {
 }
 addEventListener("hashchange", openVersion);
 openVersion();
+
+// CAT-62a: below 48rem the home page's listing steps are collapsed under their heading, so the search follows them.
+const route = document.querySelector(".route");
+if (route && !matchMedia("(min-width: 48rem)").matches) route.open = false;
 
 // CAT-19: the table of contents is collapsed on narrow screens and marks the section in view.
 const toc = document.querySelector(".toc details");

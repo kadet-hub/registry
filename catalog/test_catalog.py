@@ -48,6 +48,46 @@ def contrast(a, b):
     return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
 
 
+# CAT-59: the token table of "Visual identity" in docs/specs/catalog.md, light and dark.
+TOKENS = {"bg": ("#f4efe4", "#0e1b2c"), "bg-subtle": ("#eae3d3", "#13233a"), "surface": ("#fffdf8", "#16283d"),
+          "text": ("#0e1b2c", "#f4efe4"), "text-muted": ("#4a5566", "#a9b4c4"), "accent": ("#0b6876", "#6fd6e6"),
+          "accent-strong": ("#0e1b2c", "#f4efe4"), "accent-bg": ("#e5f2f3", "#163a46"), "on-accent": ("#ffffff", "#0e1b2c"),
+          "signal": ("#e2562b", "#e2562b"), "on-signal": ("#0e1b2c", "#0e1b2c"), "signal-text": ("#b43d16", "#ff8a5c"),
+          "focus": ("#b43d16", "#ff8a5c"), "border": ("#c9bfa8", "#2a3b52"), "border-strong": ("#8a7f68", "#6b829b")}
+# CAT-59a: the CSS named colours, besides transparent and currentColor.
+NAMED_COLOURS = {
+    "aliceblue", "antiquewhite", "aqua", "aquamarine", "azure", "beige", "bisque", "black", "blanchedalmond", "blue", "blueviolet",
+    "brown", "burlywood", "cadetblue", "chartreuse", "chocolate", "coral", "cornflowerblue", "cornsilk", "crimson", "cyan", "darkblue",
+    "darkcyan", "darkgoldenrod", "darkgray", "darkgreen", "darkgrey", "darkkhaki", "darkmagenta", "darkolivegreen", "darkorange",
+    "darkorchid", "darkred", "darksalmon", "darkseagreen", "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise",
+    "darkviolet", "deeppink", "deepskyblue", "dimgray", "dimgrey", "dodgerblue", "firebrick", "floralwhite", "forestgreen", "fuchsia",
+    "gainsboro", "ghostwhite", "gold", "goldenrod", "gray", "green", "greenyellow", "grey", "honeydew", "hotpink", "indianred", "indigo",
+    "ivory", "khaki", "lavender", "lavenderblush", "lawngreen", "lemonchiffon", "lightblue", "lightcoral", "lightcyan",
+    "lightgoldenrodyellow", "lightgray", "lightgreen", "lightgrey", "lightpink", "lightsalmon", "lightseagreen", "lightskyblue",
+    "lightslategray", "lightslategrey", "lightsteelblue", "lightyellow", "lime", "limegreen", "linen", "magenta", "maroon",
+    "mediumaquamarine", "mediumblue", "mediumorchid", "mediumpurple", "mediumseagreen", "mediumslateblue", "mediumspringgreen",
+    "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream", "mistyrose", "moccasin", "navajowhite", "navy", "oldlace", "olive",
+    "olivedrab", "orange", "orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise", "palevioletred", "papayawhip",
+    "peachpuff", "peru", "pink", "plum", "powderblue", "purple", "rebeccapurple", "red", "rosybrown", "royalblue", "saddlebrown", "salmon",
+    "sandybrown", "seagreen", "seashell", "sienna", "silver", "skyblue", "slateblue", "slategray", "slategrey", "snow", "springgreen",
+    "steelblue", "tan", "teal", "thistle", "tomato", "turquoise", "violet", "wheat", "white", "whitesmoke", "yellow", "yellowgreen"
+}
+
+
+def index_digests(test, out, section):
+    """CAT-64: every digest in the inventory entries and verify commands that templates build from the index, on the pages
+    under <section>, is whole and has no element inside; hand-written digests in prose are out of scope. Returns the count."""
+    count = 0
+    for path in glob.glob(os.path.join(out, section, "**", "index.html"), recursive=True):
+        with open(path, encoding="utf-8") as f:
+            for block in re.findall(r'<pre id="(?:entry-\d+|verify(?:-\d+)?|fetch|pull)"><code>(.*?)</code></pre>', f.read(), re.DOTALL):
+                test.assertNotIn("<", block, path)  # plain text, one colour
+                digests = re.findall(r"sha256:([0-9a-f]*)", block)
+                test.assertEqual([d for d in digests if len(d) != 64], [], path)
+                count += len(digests)
+    return count
+
+
 def png_rows(path):
     """CAT-58: width, height, bytes per pixel and the unfiltered rows of an 8-bit RGB or RGBA PNG without interlacing."""
     with open(path, "rb") as f:
@@ -738,6 +778,9 @@ class Site(unittest.TestCase):
                                r'<button type="button" id="menu" class="icon-button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav" hidden>')
         self.assertRegex(html, r'<button type="button" id="tag-toggle" class="chip" aria-expanded="false" aria-controls="tags" hidden>Filter by tag')
         self.assertIn('<symbol id="i-menu"', html)
+        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', html, re.DOTALL).group(1)  # CAT-63: the menu holds the "Reference" disclosure
+        self.assertEqual(nav.count("<a "), 13)
+        self.assertEqual(re.search(r'<details class="reference">(.*?)</details>', nav, re.DOTALL).group(1).count("<a "), 4)
         with open(os.path.join(self.out, "style.css"), encoding="utf-8") as f:
             css = f.read()
         self.assertIn("#menu, #tag-toggle { display: none; }", css)
@@ -757,14 +800,20 @@ class Site(unittest.TestCase):
         narrow = re.search(r"@media \(max-width: 60rem\) \{(.*?)\n\}", css, re.DOTALL).group(1)
         self.assertIn(".compat th:first-child { width: auto; }", narrow)
 
-    def test_text_reaches_aa(self):  # CAT-54
+    def test_text_reaches_aa(self):  # CAT-54, CAT-59
         css = self.css()
         colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
-        pairs = [(fg, bg) for fg in ("text", "text-muted", "accent", "accent-strong", "warn", "ok") for bg in ("bg", "bg-subtle", "surface")]
-        pairs += [("accent-strong", "accent-bg"), ("text-muted", "accent-bg"), ("on-accent", "accent"), ("warn", "warn-bg"), ("ok", "ok-bg")]
+        self.assertEqual({n: colours.get(n) for n in TOKENS}, TOKENS)
+        grounds = ("bg", "bg-subtle", "surface", "accent-bg")
+        pairs = [(fg, bg) for fg in ("text", "text-muted", "accent", "accent-strong", "signal-text", "warn", "ok") for bg in grounds]
+        pairs += [("on-accent", "accent"), ("on-signal", "signal"), ("warn", "warn-bg"), ("ok", "ok-bg")]
         for fg, bg in pairs:
             for theme in (0, 1):
                 self.assertGreaterEqual(contrast(colours[fg][theme], colours[bg][theme]), 4.5, (fg, bg, ("light", "dark")[theme]))
+        # WCAG 2.2 1.4.11 asks 3:1 of the focus ring on every ground and of field and control borders on theirs.
+        for fg, bg in [("focus", g) for g in grounds] + [("border-strong", "bg"), ("border-strong", "surface")]:
+            for theme in (0, 1):
+                self.assertGreaterEqual(contrast(colours[fg][theme], colours[bg][theme]), 3, (fg, bg, ("light", "dark")[theme]))
         # Opacity between 0 and 1 fades text below what its tokens reach; only a disabled control may.
         faded = {sel.strip() for sel, value in re.findall(r"([^{}]+)\{[^}]*opacity: ([.\d]+)", css) if 0 < float(value) < 1}
         self.assertEqual(faded, {".chip:disabled", ".button:disabled"})
@@ -775,6 +824,91 @@ class Site(unittest.TestCase):
             rule = re.search(rf"^{re.escape(selector)} \{{([^}}]*)\}}", css, re.MULTILINE).group(1)
             self.assertIn("min-width: 24px;", rule, selector)
             self.assertIn("min-height: 24px;", rule, selector)
+
+    def test_colours_only_in_tokens(self):  # CAT-59a
+        css = re.sub(r"/\*.*?\*/", "", self.css(), flags=re.DOTALL)
+        rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)  # the innermost rules, also inside @media
+        self.assertIn(":root", [s.strip() for s, _ in rules])
+        for selector, body in rules:
+            if selector.strip() == ":root":  # CAT-59: a colour there is a token with a light and a dark value
+                for name, value in re.findall(r"(--[\w-]+): ([^;]+);", body):
+                    if re.search(r"#[0-9a-f]|rgb\(", value):
+                        self.assertRegex(value, r"^light-dark\([^,]+, [^,]+\)$", name)
+                continue
+            for prop, value in re.findall(r"([\w-]+)\s*:\s*([^;]+)", body):
+                value = re.sub(r'"[^"]*"|var\(--[\w-]+\)', "", value)
+                where = f"{selector.strip()} {{ {prop}: {value} }}"
+                self.assertNotRegex(value, r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix|light-dark)\(", where)
+                self.assertFalse(set(re.findall(r"[a-z]+", value.lower())) & NAMED_COLOURS, where)
+
+    def test_font_from_the_site(self):  # CAT-60
+        faces = re.findall(r"@font-face \{([^}]*)\}", self.css())
+        archivo = [f for f in faces if "url(" in f]
+        self.assertEqual(len(archivo), 1)
+        self.assertIn("font-family: Archivo;", archivo[0])
+        self.assertIn("font-stretch: 62.5% 125%;", archivo[0])
+        self.assertIn("font-display: swap;", archivo[0])
+        for url in re.findall(r"url\(([^)]*)\)", archivo[0]):
+            path = url.strip("\"'")
+            self.assertTrue(path.startswith("fonts/") and path.endswith(".woff2"), path)
+            self.assertTrue(os.path.isfile(os.path.join(HERE, "site", "static", path)), path)
+            self.assertTrue(os.path.isfile(os.path.join(self.out, path)), path)
+            self.assertTrue(os.path.isfile(os.path.join(self.out, os.path.dirname(path), "OFL.txt")), path)
+        for face in faces:
+            if face not in archivo:  # the fallback with size-adjust: fonts of the visitor's system only
+                self.assertRegex(re.search(r"src: ([^;]*);", face).group(1), r'^local\("[^"]+"\)(, local\("[^"]+"\))*$')
+                self.assertIn("size-adjust:", face)
+        self.assertRegex(self.css(), r'--sans: Archivo, "Archivo fallback", ')
+
+    def test_csp_allows_fonts_from_the_site_only(self):  # CAT-60a
+        for html in self.pages():
+            csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
+            self.assertIn("; font-src 'self';", csp)
+            self.assertNotIn("data:", csp)
+            self.assertNotIn("unsafe-", csp)
+
+    def test_listing_steps_before_the_search(self):  # CAT-62, CAT-62a
+        home = self.page()
+        self.assertLess(home.index('<section class="hero">'), home.index('<h2 id="listing">'))
+        self.assertLess(home.index('<h2 id="listing">'), home.index('id="search"'))
+        route = re.search(r'<details class="route" open>\s*<summary><h2 id="listing">How a version gets listed</h2></summary>(.*?)</details>',
+                          home, re.DOTALL).group(1)  # open without JavaScript
+        self.assertEqual(re.findall(r"<h3>([^<]+)</h3>", route), ["Scanned", "Compiled in a sandbox", "Reviewed, signed and pinned"])
+        self.assertIn('<a href="./guides/how-kadet-hub-works/">How kadet-hub works</a>', route)
+        with open(os.path.join(self.out, "site.js"), encoding="utf-8") as f:
+            self.assertIn('if (route && !matchMedia("(min-width: 48rem)").matches) route.open = false;', f.read())
+        # Both on an ink band, whose tokens resolve to the dark values (CAT-59).
+        self.assertLess(home.index('<div class="band home-band">'), home.index('<section class="hero">'))
+        self.assertIn("\n.band { color-scheme: dark; color: var(--text); background: var(--bg); }", self.css())
+
+    def test_hero_actions_compact_on_phones(self):  # CAT-62b, CAT-55
+        narrow = re.search(r"@media \(max-width: 48rem\) \{(.*?)\n\}", self.css(), re.DOTALL).group(1)
+        self.assertIn("\n  .hero .actions .button.primary { flex-basis: 100%; }", narrow)
+        links = re.search(r"\n  \.hero \.actions \.button:not\(\.primary\) \{([^}]*)\}", narrow).group(1)
+        for decl in ("min-height: 24px;", "padding: 0;", "border: 0;", "background: none;", "text-decoration: underline;"):
+            self.assertIn(decl, links)
+        self.assertEqual(re.findall(r'<a class="button( primary)?"', self.page().split('<p class="actions">')[1].split("</p>")[0]),
+                         [" primary", "", "", ""])  # "Use a generator" first, then the three others
+
+    def test_hero_states_the_notice(self):  # CAT-65, LEG-5
+        home = self.page()
+        start = home.index('<section class="hero">')
+        below = home[home.index('<p class="actions">', start):home.index("</section>", start)]  # below the buttons, inside the hero
+        self.assertIn('</p>\n  <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk. '
+                      f'<a href="https://github.com/{OWNER}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>', below)
+        with open(os.path.join(HERE, "..", "TERMS.md"), encoding="utf-8") as f:
+            self.assertIn("\n## No warranty\n", f.read())
+
+    def test_reference_disclosure(self):  # CAT-63, CAT-40a, CAT-47
+        nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.DOTALL).group(1)
+        entries = [a or s for a, s in re.findall(r'<a href="[^"]*">([^<]+)</a>|<summary>([^<]+)</summary>', nav)]
+        self.assertEqual(entries, ["Quickstart", "Use", "Publish", "Recipes", "Stacks", "Playground", "Guides", "Blog",
+                                   "Reference", "Tags", "Kinds", "Compatibility", "Glossary", "GitHub"])
+        reference = re.search(r'<details class="reference">\s*<summary>Reference</summary>\s*<div>(.*?)</div>\s*</details>', nav, re.DOTALL).group(1)
+        self.assertEqual(re.findall(r'href="\./([a-z]+)/"', reference), ["tags", "kinds", "compatibility", "glossary"])
+
+    def test_digests_shown_whole(self):  # CAT-64: the inventory entries and verify commands of the generator pages
+        self.assertGreater(index_digests(self, self.out, "generators"), 2)
 
     def test_issue_forms_are_linked(self):
         links = [__import__("html").unescape(h) for h in re.findall(r'href="([^"]*issues/new[^"]*)"', self.page("generators", "demo"))]
@@ -1441,7 +1575,7 @@ class Site(unittest.TestCase):
         path = os.path.join(out, url.removeprefix("https://kadet-hub.org/"))
         self.assertLess(os.path.getsize(path), 300_000, url)
         width, height, bpp, rows = png_rows(path)
-        self.assertEqual((width, height, rows[0][:3]), (1200, 630, bytes.fromhex("0d1117")), url)
+        self.assertEqual((width, height, rows[0][:3]), (1200, 630, bytes.fromhex("0e1b2c")), url)
         blank = rows[0][:bpp]
         for y, row in enumerate(rows):  # the outer 80 px, and below the third title line, above the tags
             edge = row if y < 80 or y >= 550 or 430 <= y < 510 else row[:80 * bpp] + row[1120 * bpp:]
@@ -1462,7 +1596,8 @@ class Site(unittest.TestCase):
             self.assertNotIn("twitter:image", html)
         with open(os.path.join(HERE, "site", "layouts", "_partials", "og-card.html"), encoding="utf-8") as f:
             for colour in re.findall(r'"color" "(#[0-9a-f]{6})"', f.read()):
-                self.assertGreaterEqual(contrast(colour, "#0d1117"), 4.5, colour)
+                self.assertGreaterEqual(contrast(colour, "#0e1b2c"), 4.5, colour)
+                self.assertIn(colour, {dark for _, dark in TOKENS.values()})  # CAT-61: the dark values of the token table
         long = ("title: A very long post title that keeps going well past the three lines the social card has room for, so it ends in an ellipsis\n"
                 "date: 2000-01-02\ndescription: A post whose title and tools are longer than the card has room for, for the test of CAT-58.\n"
                 "tools: [CloudNativePGOperatorForPostgreSQLClusters, ExternalSecretsOperatorWithVaultBackend, KubePrometheusStack]")
@@ -1816,7 +1951,7 @@ class Site(unittest.TestCase):
         for page in (html, self.page("generators", "old")):
             self.assertNotRegex(page, r"<img\b[^>]*shields")
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', page).group(1)
-            self.assertEqual(csp, "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://stats.kadet-hub.org; "
+            self.assertEqual(csp, "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' https://stats.kadet-hub.org; "
                                   "connect-src 'self' https://stats.kadet-hub.org; base-uri 'none'; form-action 'none'")  # CAT-3a
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertNotIn("badge.json", f.read())
@@ -2024,6 +2159,7 @@ class Site(unittest.TestCase):
             self.assertIn('<script data-goatcounter="https://stats.example.org/count" async src="./count.js"></script>', html)
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
             self.assertIn("script-src 'self';", csp)
+            self.assertIn("font-src 'self';", csp)  # CAT-60a
             self.assertIn("img-src 'self' https://stats.example.org;", csp)
             self.assertIn("connect-src 'self' https://stats.example.org;", csp)
             self.assertIn("licenses/goatcounter.txt", html)
@@ -2332,11 +2468,14 @@ class Playground(unittest.TestCase):  # PG-4, PG-7, PG-9, PG-13
         self.assertIn("helm template output, rendered when this site was built", page)
         self.assertIn("Not compiled in your browser and not affected by your edits", page)
 
-    def test_highlight_colours_reach_aa(self):  # PG-25: every token colour on pre's background, light and dark
+    def test_highlight_colours_reach_aa(self):  # PG-25, CAT-59: every Prism and Chroma colour on pre's background, light and dark
         with open(os.path.join(HERE, "site", "static", "style.css"), encoding="utf-8") as f:
             css = f.read()
         colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
-        used = set(re.findall(r"\.token\.[^{]*\{[^}]*color: var\(--([\w-]+)\)", css))
+        rules = re.findall(r"^(\.token\.|\.chroma )[^{]*\{([^}]*)\}", css, re.MULTILINE)
+        self.assertEqual({kind for kind, _ in rules}, {".token.", ".chroma "})
+        self.assertEqual([body for _, body in rules if re.search(r"\bcolor: (?!var\(--)", body)], [])
+        used ={name for _, body in rules for name in re.findall(r"color: var\(--([\w-]+)\)", body)}
         self.assertEqual(re.search(r"^pre \{[^}]*background: var\(--([\w-]+)\)", css, re.MULTILINE).group(1), "bg-subtle")
         self.assertEqual(used, {"text-muted", "accent", "ok", "warn"})
         for name in used:
@@ -2599,6 +2738,9 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertNotIn("Inventory backends", self.page("recipes", "valkey"))
         self.assertNotIn("Inventory backends", self.page("recipes", "valkey", name="index.md"))
 
+    def test_digests_shown_whole(self):  # CAT-64: the fetch inventories, verify and pull commands of the recipe pages
+        self.assertGreater(index_digests(self, self.out, "recipes"), 2)
+
     def test_fetch_inventory_and_verification(self):  # CAT-38, CON-4, CON-5
         page = self.page("recipes", "cert-manager")
         self.assertEqual(self.snippet(page, "fetch"), "parameters:\n  kapitan:\n    dependencies:\n      - type: oci\n"
@@ -2791,6 +2933,9 @@ class Quickstart(unittest.TestCase):  # CAT-40
     @staticmethod
     def snippets(page):
         return [(i, _unescape(t)) for i, t in re.findall(r'<pre id="([^"]+)"><code>(.*?)</code></pre>', page, re.DOTALL)]
+
+    def test_digests_shown_whole(self):  # CAT-64: the fetch inventory and verify command of the quickstart
+        self.assertGreater(index_digests(self, self.out, "quickstart"), 1)
 
     def test_commands(self):  # every command in order; the manual run on kind is redone when this list changes
         page = self.page("quickstart")

@@ -6,7 +6,7 @@
 {{ $stacks := (where (where site.RegularPages "Section" "blog") "Params.stack.generators" "intersect" (slice .name)).ByDate.Reverse }}
 <article class="generator">
 <header class="generator-head">
-  <span class="monogram large hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
+  <span class="monogram large" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
   <div>
     <h1>{{ .name }}</h1>
     <p class="lead">{{ .description }}</p>

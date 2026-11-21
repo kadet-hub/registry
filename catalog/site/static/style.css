@@ -1,37 +1,60 @@
-/* kadet-hub catalog. Tokens follow the system colour scheme; data-theme on
-   <html> overrides it (CAT-9 for wrapping). */
+/* kadet-hub catalog, "Chart Room" (CAT-59 to CAT-64). Tokens follow the system colour scheme; data-theme on
+   <html> overrides it (CAT-9 for wrapping). Every colour is a token here (CAT-59, CAT-59a). */
 :root {
   color-scheme: light dark;
-  --bg: light-dark(#f6f7fb, #0d1117);
-  --bg-subtle: light-dark(#eef1f7, #131922);
-  --surface: light-dark(#ffffff, #161c26);
-  --border: light-dark(#dfe3ec, #262f3d);
-  --border-strong: light-dark(#c4cad8, #364154);
-  --text: light-dark(#141a26, #e7ebf3);
-  --text-muted: light-dark(#566075, #9aa4b8);
-  --accent: light-dark(#3346d3, #8c9bff);
-  --accent-strong: light-dark(#2433a8, #b3bdff);
-  --accent-bg: light-dark(#e9ecff, #1d2350);
-  --on-accent: light-dark(#ffffff, #0d1117);
+  --bg: light-dark(#f4efe4, #0e1b2c);
+  --bg-subtle: light-dark(#eae3d3, #13233a);
+  --surface: light-dark(#fffdf8, #16283d);
+  --border: light-dark(#c9bfa8, #2a3b52);
+  --border-strong: light-dark(#8a7f68, #6b829b);
+  --text: light-dark(#0e1b2c, #f4efe4);
+  --text-muted: light-dark(#4a5566, #a9b4c4);
+  --accent: light-dark(#0b6876, #6fd6e6);
+  --accent-strong: light-dark(#0e1b2c, #f4efe4);
+  --accent-bg: light-dark(#e5f2f3, #163a46);
+  --on-accent: light-dark(#ffffff, #0e1b2c);
+  --signal: light-dark(#e2562b, #e2562b);
+  --on-signal: light-dark(#0e1b2c, #0e1b2c);
+  --signal-text: light-dark(#b43d16, #ff8a5c);
   --warn: light-dark(#9a3412, #fdba74);
   --warn-bg: light-dark(#fff1e7, #3a2112);
   --ok: light-dark(#166534, #86efac);
   --ok-bg: light-dark(#e8f7ee, #12301e);
-  --focus: light-dark(#3346d3, #b3bdff);
-  --shadow: light-dark(0 1px 2px rgb(20 26 38 / 6%), 0 1px 2px rgb(0 0 0 / 40%));
-  --shadow-lift: light-dark(0 8px 24px rgb(20 26 38 / 10%), 0 8px 24px rgb(0 0 0 / 50%));
+  --focus: light-dark(#b43d16, #ff8a5c);
+  /* CAT-39: Artifact Hub's grade colours, the same in both themes, each with the text colour that contrasts with it. */
+  --grade-a: light-dark(#47a319, #47a319);
+  --grade-b: light-dark(#f4bd0c, #f4bd0c);
+  --grade-c: light-dark(#f7860f, #f7860f);
+  --grade-d: light-dark(#df2a19, #df2a19);
+  --grade-f: light-dark(#960003, #960003);
+  --grade-u: light-dark(#b2b2b2, #b2b2b2);
+  --on-grade: light-dark(#000000, #000000);
+  --on-grade-red: light-dark(#ffffff, #ffffff);
+  /* light-dark() takes colours only, so a shadow takes its colour from a token. */
+  --shadow-c: light-dark(rgb(14 27 44 / 6%), rgb(0 0 0 / 40%));
+  --shadow-lift-c: light-dark(rgb(14 27 44 / 10%), rgb(0 0 0 / 50%));
+  --shadow: 0 1px 2px var(--shadow-c);
+  --shadow-lift: 0 8px 24px var(--shadow-lift-c);
   --radius: 12px;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sans: Archivo, "Archivo fallback", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
+
+/* CAT-60: Archivo 2.001 cut to Latin with both axes; the fallback face is Arial at Archivo's width at 400, so the swap shifts less. */
+@font-face { font-family: Archivo; src: url("fonts/Archivo.woff2") format("woff2"); font-weight: 100 900; font-stretch: 62.5% 125%; font-display: swap; }
+@font-face { font-family: "Archivo fallback"; src: local("Arial"), local("Liberation Sans"); size-adjust: 98.31%; ascent-override: 89.31%; descent-override: 21.36%; line-gap-override: 0%; }
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 svg[hidden] { display: block !important; position: absolute; width: 0; height: 0; overflow: hidden; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; font: 16px/1.55 var(--sans); color: var(--text); background: var(--bg); overflow-wrap: anywhere; }
+/* An ink band: its tokens resolve to the dark values; color and background are declared again, since an inherited color keeps body's light value. */
+.band { color-scheme: dark; color: var(--text); background: var(--bg); }
+/* The graticule of the chart, on the page and on a band. */
+body, .band { background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 96px 96px; }
 a { color: var(--accent); text-underline-offset: .15em; }
 a:hover { color: var(--accent-strong); }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
@@ -39,6 +62,7 @@ a:hover { color: var(--accent-strong); }
 code, pre { font-family: var(--mono); font-size: .875em; }
 :not(pre) > code { padding: .1em .35em; border-radius: 6px; background: var(--bg-subtle); border: 1px solid var(--border); }
 h1, h2, h3 { line-height: 1.2; letter-spacing: -.01em; }
+h1, h2, h3, h4, h5, h6 { font-stretch: 125%; font-weight: 800; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .skip { position: absolute; left: 1rem; top: -3rem; padding: .5rem 1rem; background: var(--surface); border-radius: 8px; z-index: 10; }
 .skip:focus { top: 1rem; }
@@ -51,19 +75,28 @@ header.site { display: flex; align-items: center; justify-content: space-between
 .brand { white-space: nowrap; display: inline-flex; align-items: center; gap: .55rem; font-weight: 750; font-size: 1.2rem; color: var(--text); text-decoration: none; }
 .brand img { border-radius: 7px; }
 header.site nav { display: flex; align-items: center; gap: .25rem .9rem; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
-header.site nav a { color: var(--text-muted); text-decoration: none; font-weight: 550; font-size: .95rem; }
-header.site nav a:hover { color: var(--text); }
+header.site nav a, .reference > summary { color: var(--text-muted); text-decoration: none; font-weight: 550; font-size: .95rem; }
+header.site nav a:hover, .reference > summary:hover { color: var(--text); }
+/* CAT-63: the reference pages under one disclosure; site.js closes it on Escape and when focus leaves (CAT-63a). */
+.reference { position: relative; }
+.reference > summary { display: flex; align-items: center; gap: .3rem; cursor: pointer; list-style: none; }
+.reference > summary::-webkit-details-marker { display: none; }
+.reference > summary::after { content: "›"; transition: rotate .15s; }
+.reference[open] > summary::after { rotate: 90deg; }
+.reference > div { position: absolute; right: 0; top: calc(100% + .5rem); z-index: 5; display: grid; min-width: 11rem; padding: .4rem; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: var(--shadow-lift); }
+.reference > div a { padding: .35rem .6rem; }
 footer.site { margin-top: 4rem; padding-block: 2rem 3rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: .9rem; }
 footer.site p { margin: .25rem 0; }
 
 /* Buttons and chips */
 .button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1.1rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-weight: 600; text-decoration: none; }
 .button:hover { color: var(--text); border-color: var(--accent); }
-.button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.button.primary:hover { background: var(--accent-strong); color: var(--on-accent); }
+/* The signal colour marks what a visitor acts on (CAT-59). */
+.button.primary { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
+.button.primary:hover { color: var(--on-signal); border-color: var(--text); }
 .button:disabled { opacity: .45; cursor: default; }
-.icon-button { display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; font-size: 1.05rem; }
-.icon-button:hover { color: var(--text); border-color: var(--border-strong); }
+.icon-button { display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-muted); cursor: pointer; font-size: 1.05rem; }
+.icon-button:hover { color: var(--text); border-color: var(--text); }
 #theme .on-dark { display: none; }
 #theme[aria-pressed="true"] .on-dark { display: block; }
 #theme[aria-pressed="true"] .on-light { display: none; }
@@ -73,11 +106,35 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .hero { padding: 2.5rem 0 1.5rem; }
 .hero h1 { text-wrap: balance; }
 .hero .lead { max-width: none; font-size: 1.2rem; text-wrap: pretty; }
-.hero h1 { font-size: clamp(1.9rem, 1.2rem + 3vw, 3rem); margin: 0 0 .75rem; letter-spacing: -.025em; }
+.hero h1 { font-size: clamp(1.6rem, 1rem + 2.6vw, 2.6rem); margin: 0 0 .75rem; letter-spacing: -.025em; }
 .lead { font-size: 1.1rem; color: var(--text-muted); margin: 0 0 1.25rem; max-width: 46rem; }
 .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0; }
 .actions.small { margin-top: 1rem; }
 .actions.small .button { min-height: 36px; font-size: .9rem; }
+.hero .disclaimer { margin: 1rem 0 0; } /* CAT-65: the notice of LEG-5 below the buttons */
+.home-band { margin-top: .5rem; padding: 0 clamp(1rem, 4vw, 2.5rem) 2rem; border: 1px solid var(--border); border-radius: var(--radius); }
+/* CAT-62, CAT-62a: how a version gets listed, as the route of the chart, the steps as waypoints on a dashed line.
+   site.js closes the details below 48rem; above, the steps stay open. */
+.route { padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.route > summary { display: flex; align-items: center; gap: .5rem; min-height: 44px; cursor: pointer; list-style: none; }
+.route > summary::-webkit-details-marker { display: none; }
+.route > summary::after { content: "›"; font-size: 1.4rem; line-height: 1; color: var(--text-muted); transition: rotate .15s; }
+.route[open] > summary::after { rotate: 90deg; }
+.route h2 { margin: 0; font-size: 1.25rem; }
+.route > p { margin: .25rem 0 0; color: var(--text-muted); }
+.waypoints { position: relative; display: grid; gap: 1.25rem; margin: 1.5rem 0 0; padding: 0; list-style: none; counter-reset: waypoint; }
+.waypoints::before { content: ""; position: absolute; top: 1rem; bottom: 1rem; left: calc(1rem - 1px); border-left: 2px dashed var(--border-strong); }
+.waypoints li { position: relative; padding-left: 3rem; counter-increment: waypoint; }
+.waypoints li::before { content: counter(waypoint); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 2rem; height: 2rem; border: 2px solid var(--accent); border-radius: 50%; background: var(--bg); color: var(--accent); font-weight: 800; }
+.waypoints h3 { margin: .35rem 0 .4rem; font-size: 1.05rem; }
+.waypoints p { margin: 0; color: var(--text-muted); }
+@media (min-width: 48rem) {
+  .route > summary { pointer-events: none; }
+  .route > summary::after { content: none; }
+  .waypoints { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+  .waypoints::before { top: calc(1rem - 1px); bottom: auto; left: 1rem; right: 1rem; border-left: 0; border-top: 2px dashed var(--border-strong); }
+  .waypoints li { padding: 3rem 0 0; }
+}
 
 /* Filters */
 .filters { position: sticky; top: 0; z-index: 2; display: grid; gap: .75rem; padding: 1rem 0; margin-bottom: .5rem; background: var(--bg); }
@@ -86,7 +143,7 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 #search, #recipe-search { width: 100%; min-height: 48px; padding: .7rem 1rem .7rem 2.8rem; font: inherit; font-size: 1.05rem; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
 #search:focus, #recipe-search:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
 .tag-filter { display: flex; flex-wrap: wrap; gap: .5rem; }
-.chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 36px; padding: 0 .8rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: .9rem; cursor: pointer; }
+.chip { display: inline-flex; align-items: center; gap: .4rem; min-height: 36px; padding: 0 .8rem; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-size: .9rem; cursor: pointer; }
 .chip:hover:not(:disabled) { border-color: var(--accent); }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .chip:disabled { opacity: .45; cursor: default; }
@@ -105,7 +162,7 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .card[hidden] { display: none; }
 .card-head { display: flex; align-items: center; gap: .85rem; }
 .card .card-name { margin: 0; font-weight: 700; font-size: 1.15rem; line-height: 1.3; overflow-wrap: anywhere; }
-.tile { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; font-weight: 750; font-size: 1.1rem; background: var(--m-bg); color: var(--m-fg); }
+.tile { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; font-weight: 750; font-size: 1.1rem; background: var(--bg-subtle); color: var(--text); }
 .tile .icon { width: 22px; height: 22px; }
 .card .card-name a { color: var(--text); text-decoration: none; }
 .stretched::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
@@ -114,8 +171,8 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .meta-line { margin: .1rem 0 0; color: var(--text-muted); font-size: .875rem; font-variant-numeric: tabular-nums; }
 .description { margin: 0; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; }
-.tag { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .3rem; min-height: 26px; padding: 0 .6rem; border-radius: 999px; background: var(--accent-bg); color: var(--accent-strong); font-size: .8rem; font-weight: 600; text-decoration: none; }
-.tag:hover { color: var(--accent-strong); outline: 1px solid var(--accent); }
+.tag { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .3rem; min-height: 26px; padding: 0 .6rem; border-radius: 999px; background: var(--bg-subtle); color: var(--text); font-size: .8rem; font-weight: 600; text-decoration: none; }
+.tag:hover { color: var(--text); outline: 1px solid var(--accent); }
 .facts { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: auto 0 0; padding-top: .75rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: .875rem; }
 .facts div { display: flex; align-items: baseline; gap: .35rem; }
 /* CAT-9b: labels keep their width; overflow-wrap: anywhere would let them shrink to one letter. */
@@ -129,18 +186,10 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); fon
 .empty { padding: 3rem 1rem; text-align: center; color: var(--text-muted); }
 
 /* Monogram */
-.monogram { position: relative; display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 12px; font-weight: 750; font-size: 1.35rem; background: var(--m-bg); color: var(--m-fg); }
+.monogram { position: relative; display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 12px; font-weight: 750; font-size: 1.35rem; background: var(--bg-subtle); color: var(--text); }
 .monogram.large { width: 72px; height: 72px; border-radius: 18px; font-size: 2rem; }
-.monogram .badge { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; padding: 3px; border-radius: 7px; background: var(--surface); border: 1px solid var(--border); color: var(--m-fg); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.monogram .badge { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; padding: 3px; border-radius: 7px; background: var(--surface); border: 1px solid var(--border); color: var(--text); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .monogram.large .badge { width: 28px; height: 28px; padding: 4px; border-radius: 9px; }
-.hue-0 { --m-bg: light-dark(#e0e7ff, #232a5c); --m-fg: light-dark(#2c37a3, #c7d0ff); }
-.hue-1 { --m-bg: light-dark(#ede4ff, #31215a); --m-fg: light-dark(#5b2bb5, #ddd0ff); }
-.hue-2 { --m-bg: light-dark(#d9f4ef, #0f3b36); --m-fg: light-dark(#0b5e55, #a6eadf); }
-.hue-3 { --m-bg: light-dark(#fdeccc, #43300c); --m-fg: light-dark(#7a4a05, #fbd78d); }
-.hue-4 { --m-bg: light-dark(#fde2e7, #4a1a26); --m-fg: light-dark(#9f1239, #fecdd6); }
-.hue-5 { --m-bg: light-dark(#dcf5e3, #133a22); --m-fg: light-dark(#166534, #b0ecc4); }
-.hue-6 { --m-bg: light-dark(#dbeefe, #0f3350); --m-fg: light-dark(#0b4f86, #b5dcfb); }
-.hue-7 { --m-bg: light-dark(#ffe6d5, #4a2410); --m-fg: light-dark(#9a3412, #fed2b5); }
 
 /* Generator page */
 .generator-head { display: flex; gap: 1.25rem; align-items: flex-start; padding: 2rem 0 1.5rem; }
@@ -216,14 +265,14 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
 .pill.warn { background: var(--warn-bg); color: var(--warn); }
 .warning { color: var(--warn); font-weight: 600; }
-/* CAT-39: Artifact Hub's grade colours, each with the text colour that contrasts with it. */
-.grade { display: inline-block; min-width: 1.6em; padding: 0 .35em; border-radius: 6px; font-weight: 700; text-align: center; color: #000; }
-.grade-a { background: #47a319; }
-.grade-b { background: #f4bd0c; }
-.grade-c { background: #f7860f; }
-.grade-d { background: #df2a19; color: #fff; }
-.grade-f { background: #960003; color: #fff; }
-.grade-u { background: #b2b2b2; }
+/* CAT-39: the grade colours of the token block. */
+.grade { display: inline-block; min-width: 1.6em; padding: 0 .35em; border-radius: 6px; font-weight: 700; text-align: center; color: var(--on-grade); }
+.grade-a { background: var(--grade-a); }
+.grade-b { background: var(--grade-b); }
+.grade-c { background: var(--grade-c); }
+.grade-d { background: var(--grade-d); color: var(--on-grade-red); }
+.grade-f { background: var(--grade-f); color: var(--on-grade-red); }
+.grade-u { background: var(--grade-u); }
 /* CAT-34: listed versions with what they are built for, and the selector over them. */
 .match-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1.25rem 0 .5rem; }
 .match-form select, .match-form input { min-height: 44px; max-width: 100%; padding: 0 .7rem; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }
@@ -236,12 +285,12 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
-/* Syntax highlighting (Chroma classes; markup.highlight.noClasses = false) */
+/* Syntax highlighting (Chroma classes; markup.highlight.noClasses = false), in the tokens of the playground's Prism classes (PG-25). */
 .chroma .c, .chroma .c1, .chroma .cm, .chroma .ch, .chroma .cs { color: var(--text-muted); font-style: italic; }
-.chroma .nt, .chroma .na, .chroma .nf, .chroma .py { color: light-dark(#2433a8, #a5b4fc); }
-.chroma .s, .chroma .s1, .chroma .s2, .chroma .sb, .chroma .sd, .chroma .se { color: light-dark(#0b5e55, #7dd3c0); }
-.chroma .k, .chroma .kc, .chroma .kd, .chroma .kn, .chroma .kr, .chroma .kt, .chroma .ow { color: light-dark(#7a1fa2, #e0a8ff); }
-.chroma .m, .chroma .mi, .chroma .mf, .chroma .il { color: light-dark(#9a3412, #fdba74); }
+.chroma .nt, .chroma .na, .chroma .nf, .chroma .py { color: var(--accent); }
+.chroma .s, .chroma .s1, .chroma .s2, .chroma .sb, .chroma .sd, .chroma .se { color: var(--ok); }
+.chroma .k, .chroma .kc, .chroma .kd, .chroma .kn, .chroma .kr, .chroma .kt, .chroma .ow { color: var(--warn); }
+.chroma .m, .chroma .mi, .chroma .mf, .chroma .il { color: var(--warn); }
 .chroma .p, .chroma .o { color: var(--text-muted); }
 
 /* Tags and glossary pages */
@@ -348,7 +397,8 @@ details.version:target { border-color: var(--accent); }
   .brand { margin-right: auto; }
   #menu:not([hidden]) { display: inline-grid; }
   header.site nav { order: 1; flex: 1 0 100%; flex-direction: column; align-items: stretch; gap: 0; margin: 0; }
-  header.site nav a { padding: .7rem 0; border-top: 1px solid var(--border); }
+  header.site nav a, .reference > summary { padding: .7rem 0; border-top: 1px solid var(--border); }
+  .reference > div { position: static; padding: 0 0 0 1rem; border: 0; background: none; box-shadow: none; }
   header.site[data-menu="closed"] nav { display: none; }
   .filters { position: static; }
   #tag-toggle:not([hidden]) { display: inline-flex; justify-self: start; }
@@ -356,6 +406,10 @@ details.version:target { border-color: var(--accent); }
   #tag-toggle[aria-expanded="true"]::after { rotate: 90deg; }
   .filters[data-tags="closed"] .tag-filter { display: none; }
   .actions .button { flex: 1 1 auto; justify-content: center; }
+  /* CAT-62b: the primary action keeps its button on a row of its own; the others become one wrapping row of links. */
+  .hero .actions { gap: .5rem 1.25rem; }
+  .hero .actions .button.primary { flex-basis: 100%; }
+  .hero .actions .button:not(.primary) { flex: none; min-height: 24px; padding: 0; border: 0; background: none; color: var(--accent); font-size: .9rem; text-decoration: underline; }
 }
 
 /* Playground (PG-4) */

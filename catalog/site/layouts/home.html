@@ -2,11 +2,29 @@
 {{ $docs := printf "https://github.com/%s/registry/blob/main/docs/" site.Data.catalog.owner }}
 {{/* CAT-26: only generators with a listed version get a card. */}}
 {{ $gens := where site.Data.catalog.generators "latest" "!=" nil }}
+{{/* An ink band (CAT-59): the introduction, then how a version gets listed before the search (CAT-62, CAT-62a). */}}
+<div class="band home-band">
 <section class="hero">
   <h1>Kapitan generators for Kubernetes and Terraform: a signed, gate-checked Helm alternative</h1>
   <p class="lead">Every listed version of these Kapitan generators is gate-checked: it passed secret, malware and code scans, a fixture compile in a gVisor sandbox without network and a maintainer's review. It is published as an attested OCI artifact that you pin by digest.</p>
   <p class="actions"><a class="button primary" href="{{ $docs }}consumers.md">Use a generator</a><a class="button" href="{{ $docs }}authors.md">Add a generator</a><a class="button" href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request a generator</a><a class="button" href="{{ "/wanted/" | relURL }}">Wanted generators</a></p>
+  <p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk. <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>
 </section>
+<section class="steps" aria-labelledby="listing">
+<details class="route" open>
+  <summary><h2 id="listing">How a version gets listed</h2></summary>
+  <p><a href="{{ "/guides/how-kadet-hub-works/" | relURL }}">How kadet-hub works</a> follows the whole process with diagrams, from the pull request to your compile.</p>
+  <ol class="waypoints">
+    <li><h3>Scanned</h3>
+    <p>The gate scans the generator's source for leaked secrets, malware patterns and risky code before anything runs. A finding fails the pull request that registers the version.</p></li>
+    <li><h3>Compiled in a sandbox</h3>
+    <p>Its fixture targets compile in a gVisor sandbox without network, on every inventory backend it declares and again with Kapitan's cache. The output is validated against the shipped JSON Schemas and dry-run against a throwaway kube-apiserver with the operators' own CRDs.</p></li>
+    <li><h3>Reviewed, signed and pinned</h3>
+    <p>A maintainer reviews the gate report. The version is published as an OCI artifact with a Sigstore signature, an SBOM and a transparency log entry, and you pin it by digest in your inventory. <a href="{{ $docs }}consumers.md">How to consume a generator</a>.</p></li>
+  </ol>
+</details>
+</section>
+</div>
 {{ with $gens }}
 {{ $all := slice }}{{ range . }}{{ $all = $all | append .tags }}{{ end }}
 <section class="browse" aria-label="Generators">
@@ -42,14 +60,4 @@
 {{ else }}
 <p class="empty">No generators listed yet. <a href="{{ $docs }}authors.md">Add the first one</a>.</p>
 {{ end }}
-<section class="steps prose" aria-labelledby="listing">
-  <h2 id="listing">How a version gets listed</h2>
-  <p><a href="{{ "/guides/how-kadet-hub-works/" | relURL }}">How kadet-hub works</a> follows the whole process with diagrams, from the pull request to your compile.</p>
-  <h3>Scanned</h3>
-  <p>The gate scans the generator's source for leaked secrets, malware patterns and risky code before anything runs. A finding fails the pull request that registers the version.</p>
-  <h3>Compiled in a sandbox</h3>
-  <p>Its fixture targets compile in a gVisor sandbox without network, on every inventory backend it declares and again with Kapitan's cache. The output is validated against the shipped JSON Schemas and dry-run against a throwaway kube-apiserver with the operators' own CRDs.</p>
-  <h3>Reviewed, signed and pinned</h3>
-  <p>A maintainer reviews the gate report. The version is published as an OCI artifact with a Sigstore signature, an SBOM and a transparency log entry, and you pin it by digest in your inventory. <a href="{{ $docs }}consumers.md">How to consume a generator</a>.</p>
-</section>
 {{ end }}

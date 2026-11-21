@@ -24,7 +24,7 @@ Owner logins and stars come from the GitHub API at build time; they are
 display data only, and a failed lookup shows the user ID or no stars.
 
 A generator has no logo of its own: the card shows the icon of its first
-tag on a tile coloured from a fixed palette by a hash of the name; the
+tag on a tile in `--bg-subtle` (CAT-59); the
 generator page keeps the monogram of its name. Submitters supply no images, so none needs to be checked. The
 icons are Lucide's (ISC), inlined into every page as an SVG sprite. The
 site follows the system colour scheme; a toggle overrides it and is
@@ -92,8 +92,9 @@ remembered in the browser's `localStorage`.
   viewport, more than half of every scrolled screen. The menu follows
   GitHub's mobile header: brand, theme button, menu button; Escape closes
   the open menu. The filters scroll with the page; the search is at the top
-  of the list, one scroll up. The hero buttons share each row's width
-  instead of leaving ragged gaps.
+  of the list, one scroll up. Since CAT-62b only the hero's primary
+  button keeps a full-width row; its secondary actions form one compact
+  row of links.
 
   Both buttons are added by `site.js`. Without JavaScript the nav and the
   chips stay open, so every link and tag remains reachable.
@@ -128,9 +129,8 @@ remembered in the browser's `localStorage`.
   background in the light and the dark theme.
 
   4.5:1 is the WCAG 2.2 AA level for text below 24 px. It applies to all
-  text here, since every pair of colour tokens reaches it: the lowest,
-  `--text-muted` on `--accent-bg` in the light theme, has 5.38:1 by the
-  WCAG formula on the hex values in `style.css`. The failures came from
+  text here, since every pair of colour tokens reaches it; "Visual
+  identity" lists the lowest pairs. The failures came from
   text faded with `opacity`. Measured in Chrome on the live site on
   2026-11-12, the version permalink "#" had 2.64:1 in light and 3.31:1 in
   dark, and the date of a yanked version 4.47:1 in light. The count in a
@@ -144,8 +144,8 @@ remembered in the browser's `localStorage`.
   search, the version field of the compatibility selector, the Mastodon
   server field under a post and the playground's parameter filter. Only
   the recipe finder's placeholder took `--text-muted`. The stylesheet now
-  gives every placeholder `--text-muted`, which has 6.31:1 in light and
-  6.82:1 in dark on `--surface`, the background of all five fields.
+  gives every placeholder `--text-muted`, which has 7.42:1 in light and
+  7.13:1 in dark on `--surface`, the background of all five fields.
 
   - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`,
     partial: the token pairs and the `opacity` rules of the stylesheet,
@@ -1964,7 +1964,7 @@ Related: CAT-15, CAT-30, CON-2.
   no other tool. The file name carries a hash that changes with the
   drawn text. A corrected title therefore gets a new URL, which a
   platform that caches previews by URL fetches again. The size budget is
-  near the 244,751 bytes of `og.png` and far below LinkedIn's 5 MB, the
+  above the 77,689 bytes of `og.png` and far below LinkedIn's 5 MB, the
   smallest documented limit of the platforms in use. The cards of the 23
   posts on 2026-11-12 have 41,880 to 68,853 bytes.
 
@@ -2007,9 +2007,9 @@ Related: CAT-15, CAT-30, CON-2.
   The title is drawn at 64 px and keeps about 34 px there. The domain is
   drawn at 36 px and the tags at 32 px.
 
-  The colours are tokens of the dark theme on its `--bg` `#0d1117`: the
-  title in `--text` at 15.84:1, the tags in `--accent` at 7.43:1 and the
-  domain in `--text-muted` at 7.55:1, by the WCAG formula. The tags carry
+  The colours are tokens of the dark theme on its `--bg` `#0e1b2c`: the
+  title in `--text` at 15.11:1, the tags in `--accent` at 10.26:1 and the
+  domain in `--text-muted` at 8.26:1, by the WCAG formula. The tags carry
   the accent because a reader looks for a tool, and the domain is the
   same on every card. The mark keeps the favicon's colours, which the
   WCAG exception for logos covers.
@@ -3193,17 +3193,19 @@ CAT-55, CAT-58b.
   page, and the merge request measures the text of each page type of its
   screenshots in both themes.
 
-  - Test: none (`Site.test_text_reaches_aa` in `catalog/test_catalog.py`:
-    every token of the table with a light and a dark value, and its
-    pairs)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`: every
+    token of the table with its light and dark value, and its pairs;
+    `Site.test_colours_only_in_tokens`: every colour on `:root` is a
+    `light-dark()` pair; `Playground.test_highlight_colours_reach_aa`);
+    manual: the text of each page type in both themes
+  - Since: this change
 
 - CAT-59a: Rules outside `:root` MUST NOT set a colour literal or a named
   colour other than `transparent` and `currentColor`.
 
-  - Test: none (a stylesheet check in `catalog/test_catalog.py`: no hex,
-    `rgb()`, `hsl()` or named colour outside `:root`)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_colours_only_in_tokens`:
+    no hex, `rgb()`, `hsl()` or named colour outside `:root`)
+  - Since: this change
 
 - CAT-60: The site MUST serve Archivo as one variable WOFF2 file with
   its `wdth` and `wght` axes from `static/fonts/`, beside the font's
@@ -3227,10 +3229,12 @@ CAT-55, CAT-58b.
   request checks the swap of the `h1` at 375 and 1440 px. The merge
   request states the file size.
 
-  - Test: none (`catalog/test_catalog.py`: every `url()` source of an
-    `@font-face` is under `static/fonts/` with an `OFL.txt` beside it;
-    the fallback face uses `local()` only)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_font_from_the_site`:
+    every `url()` source of an `@font-face` is under `static/fonts/` with
+    an `OFL.txt` beside it; the fallback face uses `local()` only;
+    partial: the axes of the file are not read); manual: the swap of the
+    `h1` at 375 and 1440 px
+  - Since: this change
 
 - CAT-60a: The CSP MUST allow fonts with `font-src 'self'` and no other
   source.
@@ -3238,9 +3242,10 @@ CAT-55, CAT-58b.
   The graticule is a CSS gradient and the font a file, so neither needs
   `data:`; the CSP gains no `data:` and no `unsafe-` source either.
 
-  - Test: none (`catalog/test_catalog.py`: the CSP of `baseof.html` has
-    `font-src 'self'`, no `data:` and no `unsafe-`)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_csp_allows_fonts_from_the_site_only`: the CSP has
+    `font-src 'self'`, no `data:` and no `unsafe-`; `Site.test_badge`)
+  - Since: this change
 
 - CAT-61: The mark MUST be `static/favicon.svg`, drawn on its own ink
   tile.
@@ -3255,13 +3260,13 @@ CAT-55, CAT-58b.
   for the spec, not for the site.
 
   - Test: manual: review of the SVG in the merge request
-  - Since: not implemented
+  - Since: this change
 
 - CAT-61b: `static/apple-touch-icon.png`, `static/og.png` and the Open
   Graph base image of CAT-58b MUST be rasterised from the mark of CAT-61.
 
   - Test: manual: review of the three PNGs in the merge request
-  - Since: not implemented
+  - Since: this change
 
 - CAT-61a: The mark and the site's copy MUST NOT use Kapitan's
   artwork or its tagline, or call kadet-hub official.
@@ -3272,7 +3277,7 @@ CAT-55, CAT-58b.
   - Test: manual: review of the mark in the merge request, and a
     case-insensitive search of `catalog/site/` for "keep your ship" and
     "official kapitan" that finds nothing
-  - Since: not implemented
+  - Since: this change
 
 - CAT-62: The section "How a version gets listed" of the home page MUST
   stand between the introduction and the search, with its approved
@@ -3286,10 +3291,12 @@ CAT-55, CAT-58b.
   would push the search a screen down for the visitor who came back for
   a digest, so CAT-62a collapses them there.
 
-  - Test: none (`catalog/test_catalog.py`: `<h2 id="listing">` before
-    the search in the home page's HTML, the existing checks of CAT-11b
-    and CAT-35 unchanged)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_listing_steps_before_the_search`: `<h2 id="listing">`
+    before the search in the home page's HTML; the checks of CAT-11b and
+    CAT-35 in `Site.test_headings_skip_no_level` and
+    `Site.test_how_kadet_hub_works` unchanged)
+  - Since: this change
 
 - CAT-62a: Below 48rem the steps of that section MUST be collapsed under
   its `h2`.
@@ -3297,9 +3304,27 @@ CAT-55, CAT-58b.
   They sit in a `details` element that `site.js` closes on narrow
   screens, the CAT-9a pattern, so without JavaScript they stay open.
 
-  - Test: none (`catalog/test_catalog.py`: the `details` around the
-    steps; manual: 393 px, the search follows the collapsed steps)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_listing_steps_before_the_search`: the `details` around
+    the steps and the line of `site.js` that closes it); manual: 393 px,
+    the search follows the collapsed steps
+  - Since: this change
+
+- CAT-62b: Below 48rem the hero MUST show "Use a generator" as its only
+  full-width button and its other actions as one wrapping row of links,
+  each at least 24 by 24 px (CAT-55).
+
+  The notice of CAT-65 made the hero taller, and the search of the home
+  page started at 864 px in Chrome at 393 by 852 px, below the first
+  screen. With the secondary actions as one compact row it starts at
+  816 px; the links are 24 px high and wrap into two lines there. For the
+  hero this replaces the shared button rows of CAT-9a.
+
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_hero_actions_compact_on_phones`, partial: the rules of
+    the stylesheet below 48rem); manual: 393 by 852 px, the search starts
+    on the first screen
+  - Since: this change
 
 - CAT-63: The site navigation MUST link Tags, Kinds, Compatibility and
   Glossary under one disclosure "Reference" instead of one link each.
@@ -3320,15 +3345,17 @@ CAT-55, CAT-58b.
   CAT-9a's check of the nav then finds all 13 links, four of them inside
   the disclosure.
 
-  - Test: none (`catalog/test_catalog.py`: the header links and the
-    disclosure)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_reference_disclosure`:
+    the header links and the disclosure;
+    `Site.test_mobile_header_and_filters`: the 13 links of the nav, four
+    inside the disclosure)
+  - Since: this change
 
 - CAT-63a: The "Reference" disclosure MUST close on Escape and when focus
   leaves it.
 
   - Test: manual: Escape and Tab out of the open disclosure at 1440 px
-  - Since: not implemented
+  - Since: this change
 
 - CAT-63b: The open "Reference" disclosure MUST NOT cover the element
   that has focus.
@@ -3338,7 +3365,7 @@ CAT-55, CAT-58b.
 
   - Test: manual: Tab through the open disclosure and the page below it
     at 1440 px
-  - Since: not implemented
+  - Since: this change
 
 - CAT-64: A digest the site renders from the index MUST be shown in full
   and in one colour.
@@ -3349,9 +3376,12 @@ CAT-55, CAT-58b.
   included, may be shortened, such as `sha256:7cc4b5ae…`, since the
   reader copies nothing from it.
 
-  - Test: none (`catalog/test_catalog.py`: no element inside a digest
-    in the built pages)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`test_digests_shown_whole` of
+    `Site`, `ListedRecipe` and `Quickstart`: every digest whole and no
+    element inside the inventory entries, fetch inventories, verify and
+    pull commands of the generator and recipe pages and the quickstart
+    of the fixture builds)
+  - Since: this change
 
 - CAT-65: The home page hero MUST state the notice of LEG-5 in one line
   below its buttons, linking `TERMS.md`.
@@ -3362,6 +3392,6 @@ CAT-55, CAT-58b.
   user's own risk) and adds no promise; TERMS.md holds the liability
   clause German law allows.
 
-  - Test: none (`catalog/test_catalog.py`: the line and its link inside
-    the hero of the home page)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_hero_states_the_notice`:
+    the line and its link inside the hero of the home page)
+  - Since: this change
