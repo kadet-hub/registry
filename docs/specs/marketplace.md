@@ -130,6 +130,13 @@ the build job (RISK-10).
 - DEC-45: the consumer workflow takes the recipes a pinned recipe
   includes from the index, and accepts a pin of an included recipe only
   at the digest the including record lists ([consumers.md](consumers.md)).
+- DEC-51: No lawyer reviews the legal texts. The operator accepts the
+  questions the specs leave open as residual risk: whether listing
+  reviewed code counts as adopting it, whether the DSA applies to an
+  unpaid service, whether the operator controls GitHub Pages' access
+  logs, whether § 5 DDG requires an imprint, and whether a reference to
+  sources hosted elsewhere satisfies GPLv2 for a mirrored image.
+  Decided 2026-11-21, formerly OQ-1.
 
 ## Area specs
 
@@ -522,11 +529,6 @@ coverage is named at each:
 
 ## Open questions
 
-- OQ-1: A lawyer reviews LEG-1 to LEG-4: whether republishing reviewed code
-  under the marketplace's namespace counts as adopting it, whether the DSA
-  applies to an unpaid service, whether the operator is a controller of
-  GitHub Pages' access logs, whether an imprint is required, and whether
-  referencing upstream sources suffices for the mirrored image (DEC-16).
 - OQ-2: The operator supplies the name for the imprint and the privacy
   notice, and the serviceable postal address of an address service that
   holds a written power to accept service (Zustellungsvollmacht) for the
