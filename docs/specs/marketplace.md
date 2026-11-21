@@ -130,6 +130,13 @@ the build job (RISK-10).
 - DEC-45: the consumer workflow takes the recipes a pinned recipe
   includes from the index, and accepts a pin of an included recipe only
   at the digest the including record lists ([consumers.md](consumers.md)).
+- DEC-51: No lawyer reviews the legal texts. The operator accepts the
+  questions the specs leave open as residual risk: whether listing
+  reviewed code counts as adopting it, whether the DSA applies to an
+  unpaid service, whether the operator controls GitHub Pages' access
+  logs, whether § 5 DDG requires an imprint, whether a c/o address
+  suffices for it (OQ-2), and whether a reference to sources hosted
+  elsewhere satisfies GPLv2 for a mirrored image (RISK-15). Decided 2026-11-21, formerly OQ-1.
 
 ## Area specs
 
@@ -490,6 +497,16 @@ cover none of the changed files.
   crashed, `apiserver_check.py` would end with an error and the check
   would fail.
 
+- RISK-15 (accepted, DEC-51): no lawyer has reviewed the legal texts.
+  Whether listing reviewed code counts as adopting it, whether the DSA
+  applies to an unpaid service, whether the operator controls GitHub
+  Pages' access logs, whether § 5 DDG requires an imprint, whether a c/o
+  address suffices for it, and whether a reference to sources hosted
+  elsewhere satisfies GPLv2 for a mirrored image (DEC-16 in
+  [publishing.md](publishing.md)) stay open. The texts follow German law as
+  [legal.md](legal.md) describes, and a takedown route answers a
+  complaint before it becomes a dispute.
+
 ## Out of scope
 
 - Ratings, download counts and install telemetry.
@@ -522,16 +539,15 @@ coverage is named at each:
 
 ## Open questions
 
-- OQ-1: A lawyer reviews LEG-1 to LEG-4: whether republishing reviewed code
-  under the marketplace's namespace counts as adopting it, whether the DSA
-  applies to an unpaid service, whether the operator is a controller of
-  GitHub Pages' access logs, whether an imprint is required, and whether
-  referencing upstream sources suffices for the mirrored image (DEC-16).
 - OQ-2: The operator supplies the name for the imprint and the privacy
-  notice, and the serviceable postal address of an address service that
-  holds a written power to accept service (Zustellungsvollmacht) for the
-  imprint; a mail-forwarding address or PO box does not suffice, and the
-  operator's private address is not published. § 18(1) MStV requires the
+  notice, and the address of an address service for private persons
+  whose staffed reception accepts court and authority letters for the
+  operator, as the imprint's serviceable address (c/o); a
+  mail-forwarding address or PO box does not suffice, and the operator's
+  private address is not published. The services with an explicit power
+  to accept service (Zustellungsvollmacht) checked on 2026-11-21 accept
+  businesses only, so the operator asks the chosen service to confirm the
+  acceptance of service in writing before booking. § 18(1) MStV requires the
   real full name; a pseudonym or group name does not satisfy it. Until then
   the name reads `tbd` and the imprint says the address follows. The e-mail
   addresses are decided: `contact@`, `privacy@`, `abuse@` and

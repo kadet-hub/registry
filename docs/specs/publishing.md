@@ -594,7 +594,7 @@ fixtures and the end-to-end runs can pull it without credentials.
   Whether a reference to sources someone else hosts satisfies GPLv2
   section 3 for a redistributor is not settled. CentOS can remove older
   source RPMs from the mirror while a mirrored tag still exists. The
-  maintainer accepted this risk. A lawyer's answer on it belongs to OQ-1.
+  maintainer accepted this risk (DEC-51).
   Hosting the sources next to the image was the alternative, and it would
   need the source RPMs fetched and pushed for every mirrored tag.
 

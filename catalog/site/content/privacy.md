@@ -4,7 +4,7 @@ layout: prose
 description: How kadet-hub.org handles personal data. The site sets no cookies and loads nothing from other origins; GitHub Pages hosts it.
 ---
 
-*Draft pending legal review.*
+*The operator's name and postal address will be added here; until then they read as placeholders.*
 
 ## Who is responsible
 

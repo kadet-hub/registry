@@ -15,8 +15,11 @@ own registry namespace, which is the main legal exposure: under German case
 law a provider who checks content and presents it as part of its own
 offering can be held to have adopted it (BGH I ZR 166/07). The texts below
 describe the generators as third-party work, offer a takedown route and
-state what the review does not promise. They are drafts for a lawyer's
-review (OQ-1); the operator's name and address are `tbd` (OQ-2).
+state what the review does not promise. No lawyer reviews them
+(DEC-51), so they carry no "draft pending legal review" marker. The
+operator's name is `tbd` and the postal address follows from the c/o
+address service of OQ-2; until both are filled in, the imprint and the
+privacy notice say so in a line at their top.
 
 - LEG-1: The site MUST have a privacy notice at `/privacy/` and an imprint at
   `/imprint/`, both linked from every page's footer.
@@ -71,8 +74,8 @@ review (OQ-1); the operator's name and address are `tbd` (OQ-2).
   ("License, copyright or trademark concern") or, for anything that must
   not be public, privately to the contact in OQ-2. The maintainers answer
   with the decision and its reason, as DSA Articles 16 and 17 ask of
-  hosting services; whether the DSA applies to an unpaid service is part
-  of OQ-1.
+  hosting services; whether the DSA applies to an unpaid service is not
+  settled, and the maintainers follow it either way (DEC-51).
 
   - Test: `catalog/test_catalog.py` (the links)
   - Since: #48
