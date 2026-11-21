@@ -4,8 +4,6 @@ layout: prose
 description: Imprint (Impressum) of kadet-hub, a community catalog of Kapitan generators run without payment by a private person in Germany.
 ---
 
-*Draft pending legal review.*
-
 ## Angaben gemäß § 5 DDG und § 18 MStV
 
 tbd (name)<br>

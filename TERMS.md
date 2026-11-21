@@ -1,7 +1,5 @@
 # Terms of listing
 
-*Draft pending legal review (LEG-2).*
-
 These terms apply to everyone who registers or updates a generator in this
 repository, by opening a pull request that adds or changes a file under
 `generators/`.
