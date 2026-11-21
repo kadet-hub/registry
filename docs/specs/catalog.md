@@ -3106,11 +3106,14 @@ own.
 The operator chose the direction "Chart Room" on 2026-11-21: a nautical
 chart and a cargo manifest. The light theme has a paper ground with a
 fine graticule, drawn as a CSS gradient, navy ink text and one signal
-colour for what a visitor acts on: the primary button and the focus
-ring. The dark theme is the same chart at night, ink ground and paper
+colour for what a visitor acts on: the primary button, and in its
+darker text shade the focus ring. The dark theme is the same chart at night, ink ground and paper
 text. An ink band inside the light theme, such as the hero, sets
-`color-scheme: dark`, so its `light-dark()` tokens resolve to the dark
-values and every text on it has a measured pair. Headings use Archivo
+`color-scheme: dark` and declares `color: var(--text)` and
+`background: var(--bg)` again. A custom property is substituted where it
+is used, so the tokens resolve to the dark values inside the band, while
+an inherited `color` would keep the light value computed on `body`.
+Every text on a band then has a measured pair. Headings use Archivo
 expanded to 125 % at weight 800, body text Archivo at normal width; code
 and digests keep the system monospace stack of `--mono`.
 
@@ -3125,9 +3128,10 @@ and digests keep the system monospace stack of `--mono`.
 | `--accent-strong` | `#0e1b2c` | `#f4efe4` | link hover |
 | `--accent-bg` | `#e5f2f3` | `#163a46` | highlighted facts |
 | `--on-accent` | `#ffffff` | `#0e1b2c` | text on an accent fill |
-| `--signal` | `#e2562b` | `#e2562b` | primary button, focus ring |
+| `--signal` | `#e2562b` | `#e2562b` | primary button |
 | `--on-signal` | `#0e1b2c` | `#0e1b2c` | text on the primary button |
 | `--signal-text` | `#b43d16` | `#ff8a5c` | signal colour as text |
+| `--focus` | `#b43d16` | `#ff8a5c` | focus ring |
 | `--border` | `#c9bfa8` | `#2a3b52` | decorative rules and the graticule |
 | `--border-strong` | `#8a7f68` | `#6b829b` | field and control borders |
 
@@ -3136,9 +3140,11 @@ The lowest text pairs, computed with the WCAG formula from these hex
 values, are `--on-signal` on `--signal` at 4.62:1, `--accent` on
 `--bg-subtle` at 5.05:1 in light and `--text-muted` on `--accent-bg` at
 5.80:1 in dark. `--border-strong` reaches 3.44:1 on `--bg` in light and
-3.77:1 on `--surface` in dark, and `--signal` as focus ring 3.27:1 on
-`--bg` in light and 3.99:1 on `--surface` in dark, above the 3:1 WCAG
-2.2 asks of non-text contrast. `--border` stays below it at 1.59:1 and
+3.77:1 on `--surface` in dark. `--focus` reaches at least 4.54:1 on
+every ground of the table in light (lowest on `--bg-subtle`) and 5.23:1
+in dark (lowest on `--accent-bg`); `--signal` itself would reach only
+2.93:1 on `--bg-subtle`. Both are above the 3:1 WCAG 2.2 asks of
+non-text contrast. `--border` stays below it at 1.59:1 and
 marks nothing a visitor must see. The card tiles lose their hash hues:
 each tile is `--bg-subtle` with its tag icon in `--text`, so the signal
 colour stays the only colour that asks for an action.
@@ -3163,16 +3169,15 @@ it changes: the CSP strings in `test_badge` and
 `Site.test_text_reaches_aa` and `Playground.test_highlight_colours_reach_aa`.
 A revert of that one commit restores the old look. Four weeks before and
 after the release the operator compares the weekly CAT-42 events
-(`copy-fetch-inventory`, `copy-verify`) on `/stats/`; a drop is a reason
-to revisit the design, at this traffic not a measurement of it.
+(`copy-fetch-inventory`, `copy-verify`) on the GoatCounter instance of
+CAT-25, since `/stats/` shows no visitor numbers (CAT-33); a drop is a
+reason to revisit the design, at this traffic not a measurement of it.
 
 Related: CAT-2, CAT-3, CAT-9a, CAT-11b, CAT-11f, CAT-22, CAT-42, CAT-54,
 CAT-55, CAT-58b.
 
 - CAT-59: Every colour in `static/style.css` MUST come from a custom
-  property defined on `:root` with a light and a dark value; rules
-  outside `:root` MUST NOT set a colour literal or a named colour other
-  than `transparent` and `currentColor`.
+  property defined on `:root` with a light and a dark value.
 
   The theme is then one token block. Today the grade colours
   (`.grade-a` and its siblings), the `.chroma` highlight rules and the
@@ -3184,9 +3189,16 @@ CAT-55, CAT-58b.
   page, and the merge request measures the text of each page type of its
   screenshots in both themes.
 
+  - Test: none (`Site.test_text_reaches_aa` in `catalog/test_catalog.py`:
+    every token of the table with a light and a dark value, and its
+    pairs)
+  - Since: not implemented
+
+- CAT-59a: Rules outside `:root` MUST NOT set a colour literal or a named
+  colour other than `transparent` and `currentColor`.
+
   - Test: none (a stylesheet check in `catalog/test_catalog.py`: no hex,
-    `rgb()`, `hsl()` or named colour outside `:root`; the token pairs of
-    the table in `Site.test_text_reaches_aa`)
+    `rgb()`, `hsl()` or named colour outside `:root`)
   - Since: not implemented
 
 - CAT-60: The site MUST serve Archivo as one variable WOFF2 file with
@@ -3206,11 +3218,13 @@ CAT-55, CAT-58b.
   Reserved Font Name (its `OFL.txt`, checked 2026-11-21), so a subset
   keeps the name. `font-display: swap` shows text in the fallback stack
   until the file arrives; a fallback `@font-face` with `size-adjust`
-  keeps the `h1` from rewrapping when Archivo replaces it. The merge
+  reduces the layout shift when Archivo replaces it, and the merge
+  request checks the swap of the `h1` at 375 and 1440 px. The merge
   request states the file size.
 
-  - Test: none (`catalog/test_catalog.py`: every `@font-face` source is
-    under `static/fonts/` with an `OFL.txt` beside it)
+  - Test: none (`catalog/test_catalog.py`: every `url()` source of an
+    `@font-face` is under `static/fonts/` with an `OFL.txt` beside it;
+    the fallback face uses `local()` only)
   - Since: not implemented
 
 - CAT-60a: The CSP MUST allow fonts with `font-src 'self'` and no other
@@ -3224,8 +3238,7 @@ CAT-55, CAT-58b.
   - Since: not implemented
 
 - CAT-61: The mark MUST be `static/favicon.svg`, drawn on its own ink
-  tile, and `static/apple-touch-icon.png`, `static/og.png` and the
-  Open Graph base image of CAT-58b MUST be rasterised from it.
+  tile.
 
   The header shows the mark as an `img`, which neither the page's
   tokens nor its theme toggle reach, so the tile keeps it legible on
@@ -3236,8 +3249,13 @@ CAT-55, CAT-58b.
   a letter, so a K does not imitate it. The motif borrows the wording
   for the spec, not for the site.
 
-  - Test: manual: review of the SVG and the three PNGs in the merge
-    request
+  - Test: manual: review of the SVG in the merge request
+  - Since: not implemented
+
+- CAT-61b: `static/apple-touch-icon.png`, `static/og.png` and the Open
+  Graph base image of CAT-58b MUST be rasterised from the mark of CAT-61.
+
+  - Test: manual: review of the three PNGs in the merge request
   - Since: not implemented
 
 - CAT-61a: The mark and the site's copy MUST NOT use Kapitan's
@@ -3286,7 +3304,7 @@ CAT-55, CAT-58b.
   each keeps its URL (CAT-5). The disclosure is a `details` element, so
   it opens without JavaScript; `site.js` adds the closing, which its
   Escape handler today does only for the open mobile menu; CAT-63a
-  states the closing. CAT-40a and CAT-47 keep their order: Quickstart first,
+  and CAT-63b state its behaviour. CAT-40a and CAT-47 keep their order: Quickstart first,
   Stacks after Recipes. The operator decided this on 2026-11-21, and
   kept the generator page's order of CAT-19 the same day.
 
@@ -3295,12 +3313,19 @@ CAT-55, CAT-58b.
   - Since: not implemented
 
 - CAT-63a: The "Reference" disclosure MUST close on Escape and when focus
-  leaves it, and MUST NOT cover the element that has focus.
+  leaves it.
+
+  - Test: manual: Escape and Tab out of the open disclosure at 1440 px
+  - Since: not implemented
+
+- CAT-63b: The open "Reference" disclosure MUST NOT cover the element
+  that has focus.
 
   WCAG 2.2 criterion 2.4.11 rules out a dropdown that hides the focused
   link below it.
 
-  - Test: manual: Escape and Tab out of the open disclosure at 1440 px
+  - Test: manual: Tab through the open disclosure and the page below it
+    at 1440 px
   - Since: not implemented
 
 - CAT-64: A digest MUST be shown in full and in one colour wherever the
