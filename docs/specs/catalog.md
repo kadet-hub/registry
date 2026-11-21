@@ -3395,3 +3395,63 @@ CAT-55, CAT-58b.
   - Test: `catalog/test_catalog.py` (`Site.test_hero_states_the_notice`:
     the line and its link inside the hero of the home page)
   - Since: this change
+
+## The compile figure
+
+The hero explains what a listed version passed, but not what a generator
+does for the visitor: turn one block of inventory into finished
+manifests. The home page shows that as a figure, the site's one
+signature element, with real input and real output instead of a
+diagram of boxes. The input is the inventory of the `minimal` fixture of
+the `kubernetes` generator, the output what Kapitan 0.36.3 renders from
+it with that generator's version 1.16.0: `echo-server-deploy.yaml` (49
+lines) and `echo-server-svc.yaml` (18 lines). Between them stands the
+generator as a visitor pins it, `ghcr.io/kadet-hub/kubernetes:1.16.0`
+with its digest, and the command that verifies it.
+
+On load the figure plays once: the inventory appears, its values travel
+along the connectors into the generator, the verification completes and
+the two files unfold. Afterwards it stays as a tool: pointing at or
+focusing a line of the output marks the inventory line it comes from.
+The figure is labelled as an illustration of that fixture's compile, so
+nobody reads it as a live result.
+
+- CAT-66: The home page hero MUST show the compile figure: the
+  inventory of the `kubernetes` generator's `minimal` fixture, the pinned
+  generator with its full digest and verify command, and excerpts of the
+  two files Kapitan renders from it, each line copied from the real
+  input or output.
+
+  The excerpts leave out lines and mark each gap with the number of
+  lines left out, so the visible lines and the gaps add up to 49 and 18.
+  When a new version of the generator changes this output, the figure is
+  rendered again from the fixture and its version and digest follow.
+
+  - Test: none (`catalog/test_catalog.py`: the figure in the hero, its
+    version and digest, and the line counts of the excerpts)
+  - Since: not implemented
+
+- CAT-66a: The figure MUST show its final state without JavaScript and
+  under `prefers-reduced-motion: reduce`, and MUST animate only once
+  after load and on its replay button.
+
+  The animation runs about seven seconds and moves nothing afterwards.
+  Its styles live in `style.css` and its timing in `site.js`, as the CSP
+  allows no inline styles or scripts (CAT-3).
+
+  - Test: none (`catalog/test_catalog.py`: the animation rules sit inside
+    `prefers-reduced-motion: no-preference` and apply only to the class
+    `site.js` sets)
+  - Since: not implemented
+
+- CAT-66b: Pointing at or focusing an output line that comes from an
+  inventory value MUST mark that inventory line.
+
+  The pairs are fixed in the markup: each traced output line names the
+  key of its inventory line. Below 48rem the figure is reduced to the
+  chain of file names, so the search stays on the first screen
+  (CAT-62b), and the tracing applies from 48rem.
+
+  - Test: none (`catalog/test_catalog.py`: every traced output line names
+    an inventory line that exists)
+  - Since: not implemented
