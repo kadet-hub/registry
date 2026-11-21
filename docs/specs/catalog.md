@@ -3165,8 +3165,12 @@ mark. The merge request attaches screenshots of the home page, a
 generator page, a recipe page and a guide at 375 and 1440 px in both
 themes, since the mockups are not in the repository, and lists the tests
 it changes: the CSP strings in `test_badge` and
-`test_goatcounter_counts_from_the_own_origin`, the token pairs of
-`Site.test_text_reaches_aa` and `Playground.test_highlight_colours_reach_aa`.
+`test_goatcounter_counts_from_the_own_origin`, and
+`Playground.test_highlight_colours_reach_aa`. `Site.test_text_reaches_aa`
+reads its pairs from a fixed list, so it gains the new tokens: every text
+token, `--signal-text` included, on every ground of the table,
+`--on-signal` on `--signal`, and at 3:1 `--focus` on every ground and
+`--border-strong` on `--bg` and `--surface`.
 A revert of that one commit restores the old look. Four weeks before and
 after the release the operator compares the weekly CAT-42 events
 (`copy-fetch-inventory`, `copy-verify`) on the GoatCounter instance of
