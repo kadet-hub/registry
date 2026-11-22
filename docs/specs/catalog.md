@@ -4567,7 +4567,7 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   - Since: #710
 
 - CAT-66f: The catalog build MUST fail when the index lists a version the
-  recording pins as yanked or with advisories.
+  recording pins as yanked or with advisories, or does not list it.
 
   A recording stays valid while its versions are only old (CAT-66g). It
   is recorded again when one of its pins becomes unsafe to show, and the
@@ -4575,12 +4575,16 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   compares the two pins of `run/inventory/classes/generators.yml` with
   the index it builds from, so a yank or a non-empty `advisories` stops
   the deploy and the previous site stays live, as for the findings of
-  CAT-11d. A version bump alone needs no new recording.
+  CAT-11d. A pin the index no longer names, after a rename or a removal,
+  stops it too; offline builds skip that part, because their fixture
+  indexes do not carry the recorded pins. A version bump alone needs no
+  new recording.
 
   - Test: `catalog/test_catalog.py`
     (`Site.test_unsafe_recorded_pin_stops_the_build`: a fixture index
     that yanks a recorded pin, and one that lists an advisory for it,
-    fail the build)
+    fail the build; `Site.test_missing_recorded_pin_stops_the_build`: an
+    online build from an index without the pins fails before any request)
   - Since: #710
 
 - CAT-66h: Station 2 MUST state what the check proves and what it does
