@@ -2,7 +2,7 @@
 title: Helm vs Terraform for Kubernetes, and Kapitan for both
 layout: prose
 description: "Helm vs Terraform for Kubernetes manifests: what the helm and kubernetes providers plan without a cluster, and one Kapitan inventory feeding both."
-lastmod: 2026-10-19
+lastmod: 2026-11-22
 ---
 
 Helm and Terraform can both put objects into a Kubernetes cluster; Helm
@@ -12,9 +12,11 @@ bucket name and region have to match in the Terraform resource and in the
 app's ConfigMap. The example is
 [`helm-vs-terraform`](https://github.com/kadet-hub/examples/tree/main/helm-vs-terraform)
 in kadet-hub/examples; its `check` runs in CI weekly and fails when a
-result quoted below no longer holds. It runs OpenTofu 1.13.1 with
-hashicorp/aws 6.69.1, hashicorp/kubernetes 3.3.0 and hashicorp/helm 3.3.0,
-with dummy AWS keys and no kubeconfig.
+result quoted below no longer holds. It runs OpenTofu 1.13.9 with dummy
+AWS keys and no kubeconfig. The `terraform-only` module pins
+hashicorp/aws 6.72.0, hashicorp/kubernetes 3.5.0 and hashicorp/helm 3.3.0.
+The module Kapitan compiles uses hashicorp/aws 6.71.0, the version the
+terraform-aws generator 0.1.4 pins.
 
 ## What each tool covers
 
@@ -48,7 +50,7 @@ cluster:
 | `kubernetes_manifest` | fails: "cannot create REST client: no client config" | |
 
 The `kubernetes_manifest` failure is
-[documented](https://registry.terraform.io/providers/hashicorp/kubernetes/3.3.0/docs/resources/manifest):
+[documented](https://registry.terraform.io/providers/hashicorp/kubernetes/3.5.0/docs/resources/manifest):
 the resource "requires API access during planning time", so the cluster
 cannot be created in the same apply. The helm provider's `manifest`
 [experiment](https://registry.terraform.io/providers/hashicorp/helm/3.3.0/docs#experiments)
@@ -57,7 +59,7 @@ example it then fails to plan without the cluster, like
 `kubernetes_manifest`.
 
 The kubernetes provider's
-[documentation](https://registry.terraform.io/providers/hashicorp/kubernetes/3.3.0/docs)
+[documentation](https://registry.terraform.io/providers/hashicorp/kubernetes/3.5.0/docs)
 also warns against configuring it from resources created in the same
 module, such as the cluster itself, and recommends separate applies for
 the cluster and the resources in it. Every Kubernetes object Terraform
