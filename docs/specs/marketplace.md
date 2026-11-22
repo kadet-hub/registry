@@ -185,7 +185,7 @@ cover none of the changed files.
   |---|---|---|
   | `gate-selftest` | `selftest.yml` | `sandbox/`, `scan/`, `gate/`, `policy/`, `consumer/unpack.py`, `tests/selftest`, `tests/samples/`, actions `setup-gate`, `setup-check`, `setup-gvisor`, `setup-kind` |
   | `consumer-selftest` | `consumer-selftest.yml` | `consumer/`, `sandbox/`, `gate/fetch_tree.py`, `policy/output/`, `policy/binaries.txt`, `tests/consumer-selftest`, `tests/consumers/`, actions `setup-gvisor`, `compile-diff` (CD-2) |
-  | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, `docs/consumers.md` (CAT-34d), `README.md` (LEG-4, CAT-56), `docs/specs/harbour/` (CAT-69g), action `setup-hugo` |
+  | `catalog-tests` | `catalog-tests.yml` | `catalog/`, `policy/tags.yaml`, `docs/consumers.md` (CAT-34d), `README.md` (LEG-4, CAT-56), `NOTICE` (CAT-78), `docs/specs/harbour/` (CAT-69g), action `setup-hugo` |
   | `release-tests` | `release-tests.yml` | `release/` |
   | `workflow-lint` | `workflows.yml` | `.github/`, `sandbox/Dockerfile`, `tests/workflow-policy` |
   | `checksum-pins` | `checksum-pins.yml` | `sandbox/Dockerfile`, `sandbox/gitlab-ci.yml`, `tests/checksum-pins`, actions `setup-gvisor`, `setup-kind`; pull requests from `renovate/` branches only (REG-7) |
@@ -609,8 +609,12 @@ coverage is named at each:
 | `release/scan-record`, `release/sbom.py` | PUB-7, PUB-8 |
 | `catalog/` | CAT-1 to CAT-35: Hugo site, `build` script, `test_catalog.py`, Graphviz diagrams in `site/assets/diagrams/`; icons from lucide-static 1.55.0 (ISC), share icons from simple-icons 16.35.0 (CC0, CAT-36c); `static/count.js` from GoatCounter (ISC, CAT-25); Noto Sans Bold 2.015 for the post cards in `site/assets/og/` (OFL 1.1, CAT-58b) |
 | `docs/authors.md`, `README.md` | CAT-6; README.md also REV-6, CAT-56 |
+| `catalog/site/static/fonts/sora/` | CAT-60: `Sora.woff2`, 30,136 bytes, SHA-256 `60244f096fccf4baf178fa1c8b84131af7142efed000d5dfd4517a00857873d3`, cut from `fonts/variable/Sora[wght].ttf` of sora-xor/sora-font at `7f9a9c5d0ccd1c099cfac420aa27133df1c5fdc4` (111,400 bytes, SHA-256 `84ff7096ae3ec6c8be47d906d1a0ba4de7f2ce78c615275c77301964a316e16c`), and that commit's `OFL.txt` |
+| `catalog/site/static/fonts/manrope/` | CAT-60: `Manrope.woff2`, 22,820 bytes, SHA-256 `b871bca0d6e38f67d4b572da4c189bb902041b34fe5b99b4935bc6499af9e605`, cut from `fonts/variable/Manrope[wght].ttf` of googlefonts/manrope at `468c0dbe38efa331b80bfe9448256abe27be44c3` (164,700 bytes, SHA-256 `3ae11c49db0455a3cc33e37d380f20fdb8c7f8b41dc07625c177e3d87a9d6ae6`), and that commit's `OFL.txt`. Both files: `pyftsubset <ttf> --unicodes="U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD" --layout-features=calt,kern,liga,locl,mark,mkmk,tnum --flavor=woff2 --output-file=<family>.woff2` with fonttools 4.68.0 and brotli 1.2.1 |
 | `catalog/harbour_scene.py` | CAT-69 to CAT-69j, CAT-73 to CAT-73j: the scene's partials, the phone's windows, the spot drawings and the keyframes between the markers of `style.css` |
 | `catalog/harbour_figure.py`, `catalog/site/assets/harbour/run/` | CAT-66, CAT-68: the figure and the live edit, written from the recorded run |
+| `catalog/site/static/apple-touch-icon.png`, `catalog/site/static/og.png`, `catalog/site/assets/og/base.png` | CAT-61b, CAT-61c: rasterised from `static/favicon.svg` with rsvg-convert 2.63.4, `og.png` with its text in Sora and Manrope |
+| `NOTICE` | DEC-52, CAT-78 |
 | `docs/specs/harbour/` | CAT-69g: the reference drawings of the first implementation |
 | `docs/incident.md` | INC-1 |
 | `.github/CODEOWNERS`, `.github/ruleset.json` | REV-1; the ruleset is applied with `gh api` |
