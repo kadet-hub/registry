@@ -1,0 +1,36 @@
+{{/* Written by catalog/harbour_figure.py (CAT-68). site.js puts the two values into excerpts of the recorded run's files, as text. Without JavaScript the run's values stand as text and the fields stay hidden. */}}
+<section class="live-edit band" id="live-edit" aria-labelledby="live-edit-title">
+<div class="wrap">
+  <div>
+    <h2 id="live-edit-title">Change the target, watch both islands</h2>
+    <p class="lead">The target sets <code>bucket</code> and <code>region</code> once. Both generators read them, so the same values arrive in a ConfigMap and in Terraform JSON.</p>
+  </div>
+  <div class="le-grid">
+    <div class="le-target dark-panel">
+      <p class="term-title">inventory/targets/prod.yml</p>
+      <pre><code><span class="ln cl"><span class="tk">classes:</span> <span class="tk">[generators,</span> <span class="tk">uploads]</span></span><span class="ln cl">parameters:</span><span class="ln le-static cl i2">  <span class="tk">bucket:</span> <span class="tk">example-shop-uploads-prod</span></span><span class="ln le-static cl i2">  region: eu-central-1</span></code></pre>
+      <div class="le-fields" hidden>
+        <label class="le-row" for="le-bucket"><span>bucket:</span><input id="le-bucket" type="text" value="example-shop-uploads-prod" minlength="3" maxlength="63" pattern="(?!(?:y|n|yes|no|on|off|true|false|null)$)[a-z][a-z0-9\-]{1,61}[a-z0-9]" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" aria-describedby="le-hint"></label>
+        <p class="le-hint" id="le-hint">3 to 63 characters: a letter first, then lowercase letters, digits and hyphens, no hyphen last, and no YAML keyword such as <code>true</code> or <code>null</code>. The excerpts keep the last value that fits.</p>
+        <label class="le-row" for="le-region"><span>region:</span><select id="le-region"><option>eu-central-1</option><option>eu-west-1</option><option>us-east-1</option></select></label>
+      </div>
+      <p class="le-foot">The class <code>generators</code> pins both generators by version and digest, as station 1 lists them. kadet-hub's consumer workflow verifies both before it fetches them.</p>
+    </div>
+    <div class="le-outs">
+      <div class="le-out">
+        <h3><svg viewBox="0 -3 80 86" aria-hidden="true"><path class="h-kub-t" d="M0 20 40-3 80 20 40 43Z"/><path class="h-kub-l" d="M0 20 40 43v40L0 60Z"/><path class="h-kub-r" d="M40 43 80 20v40L40 83Z"/></svg>Kubernetes manifests</h3>
+        <p class="path">compiled/prod/manifests/shop/web-cm.yml</p>
+        <pre><code><span class="ln cl">apiVersion: v1</span><span class="ln cl">data:</span><span class="ln cl i2">  <span class="tk">bucket:</span> <span class="tk"><mark data-le="bucket">example-shop-uploads-prod</mark></span></span><span class="ln cl i2">  region: <mark data-le="region">eu-central-1</mark></span><span class="ln cl">kind: ConfigMap</span><span class="fold">⋯ 5 lines</span></code></pre>
+      </div>
+      <div class="le-out">
+        <h3><svg viewBox="0 -3 80 86" aria-hidden="true"><path class="h-teal-t" d="M0 20 40-3 80 20 40 43Z"/><path class="h-teal-l" d="M0 20 40 43v40L0 60Z"/><path class="h-teal-r" d="M40 43 80 20v40L40 83Z"/></svg>Terraform JSON</h3>
+        <p class="path">compiled/prod/terraform/bucket-uploads.tf.json</p>
+        <pre><code><span class="fold">⋯ 10 lines</span><span class="ln cl i4">    "aws_s3_bucket": {</span><span class="ln cl i6">      "uploads": {</span><span class="ln cl i8">        <span class="tk">"bucket":</span> <span class="tk">"<mark data-le="bucket">example-shop-uploads-prod</mark>",</span></span><span class="fold">⋯ 50 lines</span></code></pre>
+        <p class="path">compiled/prod/terraform/providers.tf.json</p>
+        <pre><code><span class="fold">⋯ 1 line</span><span class="ln cl i2">  "provider": {</span><span class="ln cl i4">    "aws": {</span><span class="ln cl i6">      <span class="tk">"region":</span> <span class="tk">"<mark data-le="region">eu-central-1</mark>"</span></span><span class="fold">⋯ 12 lines</span></code></pre>
+      </div>
+    </div>
+  </div>
+  <p class="note">Nothing is compiled on this page. Your browser only substitutes the two values into excerpts of what Kapitan 0.36.3 rendered for the helm-vs-terraform example. For a real compile of an inventory, open the <a href="{{ "/playground/" | relURL }}">Playground</a>.</p>
+</div>
+</section>
