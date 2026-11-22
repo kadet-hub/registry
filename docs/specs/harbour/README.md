@@ -13,7 +13,8 @@ every page its head band. Once the implementation is merged, the
 generator is the source, and these files stay as the record of what was
 approved (CAT-69g).
 
-- `mark.svg`: the mark of CAT-61; `static/favicon.svg` is this file.
+- `mark.svg`: the mark of CAT-61, which the implementation will put in
+  `static/favicon.svg`.
 - `scene-wide.svg`: the start page's scene from 48rem (CAT-66, CAT-69).
 - `scene-narrow.svg`: the vertical scene below 48rem, whose windows the
   phone shows above each station (CAT-67d).
