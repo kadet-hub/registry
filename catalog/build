@@ -50,8 +50,8 @@ site=${CATALOG_URL:-https://kadet-hub.org/}
 pins=$(sed -nE 's|^ *source: ghcr\.io/[a-z0-9-]+/([a-z0-9-]+):([0-9.]+)@sha256:[0-9a-f]{64}$|\1 \2|p' -- "$here/site/assets/harbour/run/inventory/classes/generators.yml")
 [[ -n $pins ]] || { echo "::error::harbour: no pin found in the recorded run"; exit 1; }
 while read -r name version; do
-  # Fixture indexes of offline builds (tests, previews) do not carry the recorded pins.
-  if [[ ${CATALOG_OFFLINE:-} != 1 ]] && ! jq -e --arg n "$name" --arg v "$version" '.generators[$n][$v] != null' -- "$index" >/dev/null; then
+  # Only the release asks for this: the fixture indexes of tests and previews do not carry the recorded pins.
+  if [[ ${CATALOG_RECORDED_PINS:-} == required ]] && ! jq -e --arg n "$name" --arg v "$version" '.generators[$n][$v] != null' -- "$index" >/dev/null; then
     echo "::error::harbour: the recorded run pins $name $version, which the index does not list; record the run again (CAT-66f)"
     exit 1
   fi

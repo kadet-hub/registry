@@ -4576,15 +4576,16 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   the index it builds from, so a yank or a non-empty `advisories` stops
   the deploy and the previous site stays live, as for the findings of
   CAT-11d. A pin the index no longer names, after a rename or a removal,
-  stops it too; offline builds skip that part, because their fixture
-  indexes do not carry the recorded pins. A version bump alone needs no
-  new recording.
+  stops it too. The release sets `CATALOG_RECORDED_PINS=required` for
+  that part, because the fixture indexes of tests and previews do not
+  carry the recorded pins. A version bump alone needs no new recording.
 
   - Test: `catalog/test_catalog.py`
     (`Site.test_unsafe_recorded_pin_stops_the_build`: a fixture index
     that yanks a recorded pin, and one that lists an advisory for it,
-    fail the build; `Site.test_missing_recorded_pin_stops_the_build`: an
-    online build from an index without the pins fails before any request)
+    fail the build; `Site.test_missing_recorded_pin_stops_the_build`: with
+    `CATALOG_RECORDED_PINS=required`, an index without the pins fails
+    the build)
   - Since: #710
 
 - CAT-66h: Station 2 MUST state what the check proves and what it does

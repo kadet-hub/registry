@@ -1221,13 +1221,13 @@ class Site(unittest.TestCase):
             build({"serial": 1, "generators": {"kubernetes": {"1.16.0": record("7"), "1.17.0": record("8", yanked="broken")}}}, tmp)
 
     def test_missing_recorded_pin_stops_the_build(self):  # CAT-66f
-        with tempfile.TemporaryDirectory() as tmp:  # online, so the check runs; it fails before any request
+        with tempfile.TemporaryDirectory() as tmp:  # the release's setting; the check runs before anything is fetched
             path = os.path.join(tmp, "index.json")
             with open(path, "w", encoding="utf-8") as f:
                 json.dump({"serial": 1, "generators": {"kubernetes": {"1.15.0": record("7")}}}, f)
-            env = {k: v for k, v in os.environ.items() if k != "CATALOG_OFFLINE"}
-            failed = subprocess.run([os.path.join(HERE, "build"), path, os.path.join(tmp, "out")], env=dict(env, OWNER=OWNER),
-                                    capture_output=True, text=True, timeout=120)
+            failed = subprocess.run([os.path.join(HERE, "build"), path, os.path.join(tmp, "out")],
+                                    env=dict(os.environ, OWNER=OWNER, CATALOG_OFFLINE="1", CATALOG_RECORDED_PINS="required"),
+                                    capture_output=True, text=True, timeout=120, check=False)
             self.assertNotEqual(failed.returncode, 0)
             self.assertIn("the recorded run pins kubernetes 1.16.0, which the index does not list", failed.stdout)
 
