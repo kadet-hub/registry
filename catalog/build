@@ -45,6 +45,16 @@ pages=${CATALOG_PAGES:-$work/pages}
 security=${CATALOG_SECURITY:-$work/image-report/security.json}
 recipes=$work/recipes
 site=${CATALOG_URL:-https://kadet-hub.org/}
+# CAT-66f: the start page shows a recorded run; a pin of it that the index lists as yanked or with an advisory stops the
+# deploy, so the run is recorded again before the site shows it.
+pins=$(sed -nE 's|^ *source: ghcr\.io/[a-z0-9-]+/([a-z0-9-]+):([0-9.]+)@sha256:[0-9a-f]{64}$|\1 \2|p' -- "$here/site/assets/harbour/run/inventory/classes/generators.yml")
+[[ -n $pins ]] || { echo "::error::harbour: no pin found in the recorded run"; exit 1; }
+while read -r name version; do
+  if jq -e --arg n "$name" --arg v "$version" '.generators[$n][$v] // empty | .yanked != null or ((.advisories // []) | length > 0)' -- "$index" >/dev/null; then
+    echo "::error::harbour: the recorded run pins $name $version, which the index lists as yanked or with an advisory; record the run again (CAT-66f)"
+    exit 1
+  fi
+done <<<"$pins"
 # CAT-38: the digest of the recipe's latest version that is not yanked, nothing when the index lists none.
 listed() {
   jq -r --arg n "$1" '.recipes[$n] // {} | [to_entries[] | select(.value.yanked == null)]

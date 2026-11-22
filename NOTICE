@@ -1,0 +1,34 @@
+kadet-hub
+
+The code in this repository is licensed under the Apache License 2.0
+(LICENSE). The name "kadet-hub", its mark and the drawings of the site at
+kadet-hub.org are excluded from that licence. All rights to them are
+reserved. You may use them only to refer to kadet-hub.
+
+The mark and the drawings are in these files:
+
+- catalog/site/static/favicon.svg, the mark
+- catalog/site/static/apple-touch-icon.png
+- catalog/site/static/og.png
+- catalog/site/assets/og/base.png, the base image of the post cards
+- catalog/site/layouts/_partials/harbour-wide.html, the start page's scene
+- catalog/site/layouts/_partials/harbour-narrow.html, the scene on phones
+- catalog/site/layouts/_partials/harbour-crop.html, its windows
+- catalog/site/layouts/_partials/spot.html, the inner pages' drawings
+- docs/specs/harbour/mark.svg
+- docs/specs/harbour/scene-narrow.svg
+- docs/specs/harbour/scene-wide.svg
+- docs/specs/harbour/spot-barge.svg
+- docs/specs/harbour/spot-basin.svg
+- docs/specs/harbour/spot-bollard.svg
+- docs/specs/harbour/spot-catalog.svg
+- docs/specs/harbour/spot-gauge.svg
+- docs/specs/harbour/spot-generator.svg
+- docs/specs/harbour/spot-guide.svg
+- docs/specs/harbour/spot-mast.svg
+- docs/specs/harbour/spot-pilot.svg
+- docs/specs/harbour/spot-recipe.svg
+
+A copy of the site can look like kadet-hub. The genuine site is
+kadet-hub.org, and the genuine artifacts are under ghcr.io/kadet-hub,
+checked by their attestation (docs/consumers.md, "Verifying by hand").

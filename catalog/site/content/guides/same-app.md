@@ -238,4 +238,4 @@ Kustomize are the better fit. Kapitan pays off once values start depending
 on each other across apps, or the same facts need to reach Kubernetes,
 Terraform and docs. To start, see [Generator, Helm chart or
 jinja2?](/guides/generator-helm-or-jinja2/) and the
-[catalog](/).
+[catalog](/generators/).

@@ -38,10 +38,18 @@ from view import (
 OWNER = "kadet-hub"
 
 
+def code(html):
+    """The text of a code panel: its lines and words are spans (CAT-9g) and a digest's middle is one (CAT-64)."""
+    return _unescape(re.sub(r"<[^>]+>", "", html))
+
+
 SITE = os.path.join(HERE, "site")
 PARTIALS = os.path.join(SITE, "layouts", "_partials")
 RUN = os.path.join(SITE, "assets", "harbour", "run")
 SCENE = ("harbour-wide.html", "harbour-narrow.html", "harbour-crop.html", "spot.html")  # what catalog/harbour_scene.py writes
+# Classes the generator gives every part of a kind, for the motion rules of those that move; these parts take no rule of their own.
+HOOKS = {"sc", "h-arm", "h-gantry", "h-n-gantry", "h-trolley", "h-tc", "h-n-tca-1", "h-n-tca-2", "h-n-tcb-1", "h-n-tcb-2", "h-glow-1", "h-puff-1",
+         "h-smoke-1", "h-tick-1"}
 SPOTS = ("catalog", "generator", "recipe", "barge", "basin", "guide", "mast", "pilot", "bollard", "gauge")  # "Page types"
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 
@@ -93,6 +101,24 @@ TOKENS = {
     "sc-hull-t": ("#c7c9fb", "#c7c9fb"), "sc-hull-r": ("#4347c4", "#4347c4"), "sc-hull-l": ("#34379f", "#34379f"),
     "sc-teal-t": ("#b9efe6", "#b9efe6"), "sc-teal-r": ("#18a999", "#18a999"), "sc-teal-l": ("#118a7b", "#118a7b"),
     "sc-or-t": ("#ffd2b3", "#ffd2b3"), "sc-or-r": ("#ff8a3d", "#ff8a3d"), "sc-or-l": ("#e26a1f", "#e26a1f"),
+}
+# CAT-59a: the CSS named colours besides transparent and currentColor.
+NAMED_COLOURS = {
+    "aliceblue", "antiquewhite", "aqua", "aquamarine", "azure", "beige", "bisque", "black", "blanchedalmond", "blue", "blueviolet", "brown",
+    "burlywood", "cadetblue", "chartreuse", "chocolate", "coral", "cornflowerblue", "cornsilk", "crimson", "cyan", "darkblue", "darkcyan",
+    "darkgoldenrod", "darkgray", "darkgreen", "darkgrey", "darkkhaki", "darkmagenta", "darkolivegreen", "darkorange", "darkorchid", "darkred",
+    "darksalmon", "darkseagreen", "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", "darkviolet", "deeppink", "deepskyblue",
+    "dimgray", "dimgrey", "dodgerblue", "firebrick", "floralwhite", "forestgreen", "fuchsia", "gainsboro", "ghostwhite", "gold", "goldenrod",
+    "gray", "green", "greenyellow", "grey", "honeydew", "hotpink", "indianred", "indigo", "ivory", "khaki", "lavender", "lavenderblush",
+    "lawngreen", "lemonchiffon", "lightblue", "lightcoral", "lightcyan", "lightgoldenrodyellow", "lightgray", "lightgreen", "lightgrey",
+    "lightpink", "lightsalmon", "lightseagreen", "lightskyblue", "lightslategray", "lightslategrey", "lightsteelblue", "lightyellow", "lime",
+    "limegreen", "linen", "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid", "mediumpurple", "mediumseagreen",
+    "mediumslateblue", "mediumspringgreen", "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream", "mistyrose", "moccasin",
+    "navajowhite", "navy", "oldlace", "olive", "olivedrab", "orange", "orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise",
+    "palevioletred", "papayawhip", "peachpuff", "peru", "pink", "plum", "powderblue", "purple", "rebeccapurple", "red", "rosybrown",
+    "royalblue", "saddlebrown", "salmon", "sandybrown", "seagreen", "seashell", "sienna", "silver", "skyblue", "slateblue", "slategray",
+    "slategrey", "snow", "springgreen", "steelblue", "tan", "teal", "thistle", "tomato", "turquoise", "violet", "wheat", "white", "whitesmoke",
+    "yellow", "yellowgreen",
 }
 
 
@@ -714,9 +740,10 @@ class Site(unittest.TestCase):
 
     def test_version_page_shows_pinned_entry_and_verification(self):
         html = self.page("generators", "demo")
-        self.assertIn(f"source: ghcr.io/{OWNER}/demo:1.10.0@sha256:{'b' * 64}", html)
-        self.assertIn(f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", html)
-        self.assertIn(f"https://github.com/{OWNER}/registry/.github/workflows/release.yml@refs/heads/main", html)
+        text = code(html)
+        self.assertIn(f"source: ghcr.io/{OWNER}/demo:1.10.0@sha256:{'b' * 64}", text)
+        self.assertIn(f"gh attestation verify \\\n  oci://ghcr.io/{OWNER}/demo@sha256:{'b' * 64}", text)
+        self.assertIn(f"https://github.com/{OWNER}/registry/.github/workflows/release.yml@refs/heads/main", text)
         self.assertLess(html.index(">1.10.0"), html.index(">1.2.0"))
 
     def test_yanked_version_shows_reason_and_no_entry(self):
@@ -725,17 +752,17 @@ class Site(unittest.TestCase):
         self.assertIn(f"https://github.com/{OWNER}/registry/security/advisories/GHSA-2345-6789-cfgh", html)
         self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
         self.assertNotIn(f"sha256:{'a' * 64}\n        output_path", html)
-        self.assertNotIn('data-name="old"', self.page())  # CAT-26
+        self.assertNotIn('data-name="old"', self.page("generators"))  # CAT-26
 
     def test_pages_without_image_report_say_not_scanned(self):  # CAT-39, CAT-39c
         self.assertIn("<dt>Image security</dt><dd>Not scanned: no image scan was available when this page was built.</dd>", self.page("generators", "demo"))
         self.assertFalse(os.path.exists(os.path.join(self.out, "security")))
 
     def test_owner_without_login_shows_the_user_id(self):
-        self.assertIn("<dt>Maintainer</dt><dd>331675722</dd>", self.page())
+        self.assertIn('<p class="card-by">by 331675722</p>', self.page("generators"))
 
     def test_values_are_escaped(self):
-        for html in (self.page(), self.page("generators", "demo")):
+        for html in (self.page("generators"), self.page("generators", "demo")):
             self.assertNotIn("<script>alert", html)
             self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
 
@@ -767,9 +794,9 @@ class Site(unittest.TestCase):
 
     def test_tags_link_to_the_tag_page(self):
         self.assertIn('href="../../tags/helm/"', self.page("generators", "demo"))
-        home = self.page()
-        self.assertIn('href="./tags/helm/"', home)
-        self.assertIn('data-tag="helm" aria-pressed="false"', home)
+        catalog = self.page("generators")
+        self.assertIn('href="../tags/helm/"', catalog)
+        self.assertIn('data-tag="helm" aria-pressed="false"', catalog)
         for html in [*self.pages(), self.page("tags"), self.page("tags", "helm")]:
             self.assertNotRegex(html, r'href="[^"]*\?tags=')
 
@@ -790,8 +817,8 @@ class Site(unittest.TestCase):
         self.assertRegex(css, r"pre \{[^}]*white-space: pre-wrap")
         self.assertRegex(css, r"pre \{[^}]*overflow-x: hidden")
 
-    def test_mobile_header_and_filters(self):  # CAT-9a
-        html = self.page()
+    def test_mobile_header_and_filters(self):  # CAT-9a, CAT-9d, CAT-9e
+        html = self.page("generators")
         self.assertRegex(html, r'(?s)<nav id="site-nav">.*</nav>\s*<button type="button" id="theme"[^>]*hidden>.*?</button>\s*'
                                r'<button type="button" id="menu" class="icon-button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav" hidden>')
         self.assertRegex(html, r'<button type="button" id="tag-toggle" class="chip" aria-expanded="false" aria-controls="tags" hidden>Filter by tag')
@@ -815,17 +842,387 @@ class Site(unittest.TestCase):
         narrow = re.search(r"@media \(max-width: 60rem\) \{(.*?)\n\}", css, re.DOTALL).group(1)
         self.assertIn(".compat th:first-child { width: auto; }", narrow)
 
-    def test_text_reaches_aa(self):  # CAT-54
+    def test_text_reaches_aa(self):  # CAT-54, CAT-59, CAT-69e
         css = self.css()
         colours = {n: (light, dark) for n, light, dark in re.findall(r"--([\w-]+): light-dark\((#[0-9a-f]{6}), (#[0-9a-f]{6})\);", css)}
-        pairs = [(fg, bg) for fg in ("text", "text-muted", "accent", "accent-strong", "warn", "ok") for bg in ("bg", "bg-subtle", "surface")]
-        pairs += [("accent-strong", "accent-bg"), ("text-muted", "accent-bg"), ("on-accent", "accent"), ("warn", "warn-bg"), ("ok", "ok-bg")]
+        self.assertEqual({n: colours.get(n) for n in TOKENS}, TOKENS)  # both tables of "Visual identity"
+        self.assertIn("--shadow-c: light-dark(rgb(28 27 58 / 6%), rgb(0 0 0 / 40%));", css)
+        self.assertIn("--shadow-lift-c: light-dark(rgb(59 63 196 / 45%), rgb(0 0 0 / 50%));", css)
+        grounds = ("bg", "bg-subtle", "surface", "accent-bg", "signal-bg")
+        pairs = [(fg, bg) for fg in ("text", "text-muted", "accent", "accent-strong", "signal-text", "warn", "ok") for bg in grounds]
+        pairs += [("on-signal", "signal"), ("on-accent", "accent"), ("on-teal", "teal"), ("text", "teal-bg"), ("warn", "warn-bg"), ("ok", "ok-bg"),
+                  ("sc-light", "sc-hull-r"), ("sc-hull-r", "sc-light"), ("sc-teal-t", "on-teal"),  # the Generators and Recipes tiles
+                  ("sc-ink", "sc-light"), ("text", "surface"), ("text-muted", "surface"), ("accent", "accent-bg"), ("on-accent", "accent"),
+                  ("accent", "surface"), ("signal-text", "surface"), ("signal-text", "signal-bg")]  # the scene's labels and pills, a diagram's labels
         for fg, bg in pairs:
             for theme in (0, 1):
                 self.assertGreaterEqual(contrast(colours[fg][theme], colours[bg][theme]), 4.5, (fg, bg, ("light", "dark")[theme]))
-        # Opacity between 0 and 1 fades text below what its tokens reach; only a disabled control may.
-        faded = {sel.strip() for sel, value in re.findall(r"([^{}]+)\{[^}]*opacity: ([.\d]+)", css) if 0 < float(value) < 1}
+        # WCAG 2.2 1.4.11: 3:1 for the focus ring on every ground, field borders, a diagram's lines and the search button.
+        for fg, bg in [("focus", g) for g in (*grounds, "sc-water")] + [("border-strong", g) for g in ("bg", "bg-subtle", "surface")] \
+                + [("signal", "surface"), ("accent", "surface"), ("teal-line", "surface")]:
+            for theme in (0, 1):
+                self.assertGreaterEqual(contrast(colours[fg][theme], colours[bg][theme]), 3, (fg, bg, ("light", "dark")[theme]))
+        # Opacity between 0 and 1 fades text below what its tokens reach; only a disabled control may. A step of an animation is no
+        # resting state (CAT-69f), and the scene has no filter (CAT-69e).
+        resting = re.sub(r"@keyframes [\w-]+ \{(?:[^{}]*\{[^}]*\})*[^{}]*\}", "", css)
+        faded = {sel.strip() for sel, value in re.findall(r"([^{}]+)\{[^}]*opacity: ([.\d]+)", resting) if 0 < float(value) < 1}
         self.assertEqual(faded, {".chip:disabled", ".button:disabled"})
+        self.assertNotRegex(css, r"[{;]\s*filter:")
+
+    def test_colours_only_in_tokens(self):  # CAT-59, CAT-59a
+        css = re.sub(r"/\*.*?\*/", "", self.css(), flags=re.DOTALL)
+        rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)  # the innermost rules, also inside @media and @keyframes
+        root = [body for sel, body in rules if sel.strip() == ":root"]
+        self.assertEqual(len(root), 1)
+        for name, value in re.findall(r"(--[\w-]+): ([^;]+);", root[0]):
+            if re.search(r"#[0-9a-f]|rgb\(", value):  # a colour is a token with a light and a dark value
+                self.assertRegex(value, r"^light-dark\((#[0-9a-f]{6}|rgb\([^)]*\)), (#[0-9a-f]{6}|rgb\([^)]*\))\)$", name)
+        for selector, body in rules:
+            if selector.strip() == ":root":
+                continue
+            for prop, value in re.findall(r"([\w-]+)\s*:\s*([^;]+)", body):
+                value = re.sub(r'"[^"]*"|var\(--[\w-]+\)', "", value)
+                where = f"{selector.strip()} {{ {prop}: {value} }}"
+                self.assertNotRegex(value, r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix|light-dark)\(", where)
+                self.assertFalse(set(re.findall(r"[a-z]+", value.lower())) & NAMED_COLOURS, where)
+
+    def test_focus_ring_stands_off(self):  # CAT-59b
+        css = self.css()
+        self.assertRegex(css, r"\n:focus-visible \{[^}]*outline-offset: 2px;")
+        for offset in re.findall(r"outline-offset: (-?[.\d]+)px", css):
+            self.assertGreaterEqual(float(offset), 2)
+
+    def test_fonts(self):  # CAT-60, CAT-71a
+        css = self.css()
+        faces = re.findall(r"@font-face \{([^}]*)\}", css)
+        files = [f for f in faces if "url(" in f]
+        self.assertEqual(sorted(re.search(r"font-family: (\w+);", f).group(1) for f in files), ["Manrope", "Sora"])
+        for face in files:
+            family = re.search(r"font-family: (\w+);", face).group(1)
+            self.assertIn({"Sora": "font-weight: 100 800;", "Manrope": "font-weight: 200 800;"}[family], face)
+            self.assertIn("font-display: swap;", face)
+            for url in re.findall(r"url\(\"?([^)\"]*)\"?\)", face):
+                self.assertEqual(os.path.dirname(url), f"fonts/{family.lower()}")
+                for name in (url, f"fonts/{family.lower()}/OFL.txt"):
+                    self.assertTrue(os.path.isfile(os.path.join(self.out, name)), name)
+        for face in faces:
+            if face not in files:  # the fallbacks: a face of the visitor's system, scaled
+                self.assertRegex(re.search(r"src: ([^;]*);", face).group(1), r'^local\("[^"]+"\)(, local\("[^"]+"\))*$')
+                self.assertIn("size-adjust:", face)
+        self.assertNotIn("font-stretch", css)
+        self.assertRegex(css, r'\n  --sans: Manrope, "Manrope fallback", ')
+        self.assertRegex(css, r"\nbody \{[^}]*font: 500 16px/1.55 var\(--sans\);")
+        self.assertRegex(css, r'\n  --display: Sora, "Sora fallback", ')
+        self.assertIn("h1, h2, h3 { font-family: var(--display); font-weight: 600;", css)
+        self.assertIn("\nbody { font-variant-ligatures: no-common-ligatures; }", css)  # "With --cache" keeps its two hyphens
+        for gone in ("Archivo", "linear-gradient", ".hue-"):  # Chart Room and the look before (CAT-71a)
+            self.assertNotIn(gone, css)
+
+    def test_csp(self):  # CAT-60a, CAT-67g
+        for path in glob.glob(os.path.join(self.out, "**", "index.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+            if "Content-Security-Policy" not in html:  # an alias of a moved post
+                continue
+            csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
+            self.assertIn("; font-src 'self';", csp, path)
+            self.assertTrue(csp.endswith("; form-action 'self'"), path)
+            self.assertNotIn("data:", csp, path)
+            self.assertNotIn("unsafe-", csp, path)
+
+    def test_touch_icon_and_og_image_are_opaque(self):  # CAT-61c
+        for name in ("apple-touch-icon.png", "og.png"):
+            with open(os.path.join(self.out, name), "rb") as f:
+                header = f.read(33)
+            self.assertEqual(header[25], 2, name)  # colour type 2: RGB, no alpha channel
+        self.assertEqual(png_rows(os.path.join(self.out, "apple-touch-icon.png"))[3][0][:3], bytes.fromhex("f4f5fb"))  # the light --bg
+        self.assertEqual(png_rows(os.path.join(self.out, "og.png"))[3][0][:3], bytes.fromhex("1c1b3a"))  # the dark --bg
+
+    def test_notice(self):  # CAT-78, CAT-78a, CAT-78b, CAT-78c
+        with open(os.path.join(HERE, "..", "NOTICE"), encoding="utf-8") as f:
+            notice = f.read()
+        for name in ('"kadet-hub"', "mark", "drawings", "Apache License 2.0", "All rights to them are", "only to refer to kadet-hub"):
+            self.assertIn(name, notice.replace("\n", " "))
+        for name in (*SCENE, "favicon.svg", "apple-touch-icon.png", "og.png", "base.png"):
+            self.assertRegex(notice, rf"\n- catalog/site/\S*/{re.escape(name)}\b", name)
+        for name in os.listdir(os.path.join(HERE, "..", "docs", "specs", "harbour")):
+            if name.endswith(".svg"):
+                self.assertIn(f"\n- docs/specs/harbour/{name}\n", notice)
+        link = f'<a href="https://github.com/{OWNER}/registry/blob/main/NOTICE">NOTICE</a>'
+        for path in glob.glob(os.path.join(self.out, "**", "index.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+            if "<footer" in html:
+                self.assertIn(f"<p>The name kadet-hub, the mark and the drawings are not under the code's Apache-2.0 licence, as {link} states.</p>",
+                              html.split('<footer class="site">')[1], path)
+        with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
+            by_hand = f.read().split("\n## Verifying by hand\n")[1].split("\n## ")[0]
+        self.assertIn("The genuine site is kadet-hub.org and the genuine artifacts are under\n`ghcr.io/kadet-hub`. Check them by their attestation, not by the look of a\npage", by_hand)
+        imprint = self.page("imprint")
+        self.assertIn(f'The name kadet-hub, the mark and the drawings are excluded from it, as <a href="https://github.com/{OWNER}/registry/blob/main/NOTICE" '
+                      'rel="nofollow noopener">NOTICE</a> states.', imprint)
+
+    def test_listing_steps_close_the_start_page(self):  # CAT-62, CAT-62a, CAT-11b
+        home = self.page()
+        self.assertLess(home.index('<h2 id="doors">Where to go next</h2>'), home.index('<h2 id="listing">'))
+        route = re.search(r'<details class="route" open>\s*<summary><h2 id="listing">How a version gets listed</h2></summary>(.*?)</details>', home, re.DOTALL).group(1)
+        self.assertEqual(re.findall(r"<h3>([^<]+)</h3>", route), ["Scanned", "Compiled in a sandbox", "Reviewed, signed and pinned"])
+        self.assertIn('<a href="./guides/how-kadet-hub-works/">How kadet-hub works</a>', route)
+        self.assertNotIn("<section", home[home.index('<h2 id="listing">'):home.index("</main>")])  # nothing after it
+        js = self.js()
+        self.assertIn('const route = document.querySelector(".route");', js)
+        self.assertIn('route.open = wide.matches;', js)  # closed below 48rem, open from it; without JavaScript open
+
+    def test_reference_disclosure(self):  # CAT-63, CAT-63a, CAT-67c, CAT-40a, CAT-47
+        for parts in ((), ("generators",), ("guides", "how-kadet-hub-works")):
+            nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(*parts), re.DOTALL).group(1)
+            entries = [a or s for a, s in re.findall(r'<a href="[^"]*">([^<]+)</a>|<summary>([^<]+)</summary>', nav)]
+            self.assertEqual(entries, ["Quickstart", "Generators", "Use", "Publish", "Recipes", "Stacks", "Playground", "Guides", "Blog",
+                                       "Reference", "Tags", "Kinds", "Compatibility", "Glossary", "GitHub"], parts)
+            self.assertEqual(nav.count("<a "), 14)
+            reference = re.search(r'<details class="reference">\s*<summary>Reference</summary>\s*<div>(.*?)</div>\s*</details>', nav, re.DOTALL).group(1)
+            self.assertEqual(re.findall(r'href="[./]*([a-z]+)/"', reference), ["tags", "kinds", "compatibility", "glossary"])
+        js = self.js()
+        self.assertIn('if (reference.open) { reference.open = false; reference.querySelector("summary").focus(); }', js)  # Escape
+        self.assertIn('reference.addEventListener("focusout", (e) => { if (!reference.contains(e.relatedTarget)) reference.open = false; });', js)
+
+    def test_hero_states_the_notice(self):  # CAT-65, LEG-5
+        home = self.page()
+        hero = home[home.index('<section class="home-hero wrap">'):home.index("</section>", home.index('<section class="home-hero wrap">'))]
+        self.assertRegex(hero, r'</form>\s*<p class="disclaimer">Free of charge, as is and on a best-effort basis: use at your own risk\. '
+                               rf'<a href="https://github.com/{OWNER}/registry/blob/main/TERMS.md#no-warranty">Terms</a></p>')
+        with open(os.path.join(HERE, "..", "TERMS.md"), encoding="utf-8") as f:
+            self.assertIn("\n## No warranty\n", f.read())
+
+    def test_one_stylesheet(self):  # CAT-71, CAT-72
+        for path in glob.glob(os.path.join(self.out, "**", "index.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+            if "<footer" not in html:  # an alias of a moved post
+                continue
+            sheets = [os.path.normpath(os.path.join(os.path.dirname(path), h)) for h in re.findall(r'<link rel="stylesheet" href="([^"]*)"', html)]
+            self.assertEqual(sheets, [os.path.join(self.out, "style.css")], path)
+            self.assertEqual('class="sc scene' in html, path == os.path.join(self.out, "index.html"), path)  # the scene on the start page only
+        layouts = os.path.join(HERE, "site", "layouts")
+        for name in ("harbour.html", "harbour-wide.html", "harbour-narrow.html", "harbour-crop.html", "live-edit.html"):
+            users = [p for p in glob.glob(os.path.join(layouts, "**", "*.html"), recursive=True) if f'partial "{name}"' in read(p)]
+            self.assertEqual([os.path.relpath(p, layouts) for p in users], {"harbour-wide.html": ["_partials/harbour.html"], "harbour-narrow.html": ["_partials/harbour.html"],
+                                                                           "harbour-crop.html": ["_partials/harbour.html"]}.get(name, ["home.html"]), name)
+
+    def test_start_page(self):  # CAT-67, CAT-26a, CAT-67e
+        home = self.page()
+        order = ['<section class="home-hero wrap">', '<section class="harbour wrap"', '<section class="live-edit band"', '<h2 id="doors">Where to go next</h2>',
+                 '<h2 id="listing">']
+        self.assertEqual([home.index(m) for m in order], sorted(home.index(m) for m in order))
+        hero = home[home.index(order[0]):home.index(order[1])]
+        self.assertIn("<h1>", hero)
+        self.assertIn('<p class="lead">', hero)
+        self.assertEqual(home.count("<form"), 1)  # one search, in the hero (CAT-67e)
+        self.assertIn('<form class="find"', hero)
+        tiles = re.findall(r'<a class="dest" href="\./([a-z]+)/">.*?<span class="dest-name">(\w+)(?: <span class="dest-count">(\d+)(?: listed)?</span>)?</span>', home)
+        guides = len(glob.glob(os.path.join(self.out, "guides", "*", "index.html")))
+        stacks = self.page("stacks").count('<li><a href="../blog/')
+        self.assertEqual(tiles, [("generators", "Generators", str(self.page("generators").count('<li class="card"'))), ("recipes", "Recipes", ""),
+                                 ("stacks", "Stacks", str(stacks)), ("playground", "Playground", ""), ("quickstart", "Quickstart", ""),
+                                 ("guides", "Guides", str(len([p for p in glob.glob(os.path.join(self.out, "guides", "*", "index.html")) if "<footer" in read(p)])))])
+        self.assertGreater(guides, 10)
+        self.assertEqual(tiles[0][2], "2")  # CAT-26a: old has no listed version; Recipes lists none of this index, so no count of 0
+        self.assertNotIn(">0 listed<", home)
+        self.assertNotIn('<ul class="cards', home)  # the catalog is on /generators/ (CAT-67a)
+        self.assertLess(home.index('<ul class="dests">'), home.index(">Request a generator</a>"))
+        self.assertLess(home.index(">Request a generator</a>"), home.index(">wanted generators</a>"))
+
+    def test_catalog_page(self):  # CAT-67a, CAT-8, CAT-10, CAT-11, CAT-16, CAT-5, CAT-6
+        catalog, home = self.page("generators"), self.page()
+        for marker in ('<input id="search" type="search" placeholder="Search 2 generators or kinds"', '<div id="tags" class="tag-filter"',
+                       '<select id="sort">', '<p id="result" class="result" aria-live="polite">', '<p id="empty" class="empty" hidden>'):
+            self.assertIn(marker, catalog)
+            self.assertNotIn(marker, home)
+        self.assertEqual(re.findall(r'data-name="([^"]+)"', catalog), ["demo", "plain"])
+        self.assertIn('<link rel="canonical" href="https://kadet-hub.org/generators/">', catalog)
+        self.assertIn("<h1>Kapitan generator catalog</h1>", catalog)
+        meta = lambda html: re.search(r'<title>([^<]*)</title>.*?<meta name="description" content="([^"]*)"', html, re.DOTALL).groups()
+        self.assertNotEqual(meta(catalog), meta(home))
+        self.assertFalse(os.path.exists(os.path.join(self.out, "generators", "index.md")))  # the /generators/* cascade misses the page itself
+        self.assertFalse(os.path.exists(os.path.join(self.out, "generators", "badge.json")))
+        for guide in ("apiserver-dry-run", "same-app", "config-tools"):  # guides that link the catalog
+            self.assertIn('href="../../generators/">', self.page("guides", guide), guide)
+        with open(os.path.join(self.out, "llms.txt"), encoding="utf-8") as f:
+            self.assertIn("\n- [Catalog](https://kadet-hub.org/generators/): all generators", f.read())
+
+    def test_start_page_search(self):  # CAT-67b, CAT-67f, CAT-67e
+        home = self.page()
+        form = re.search(r'<form class="find" (.*?)</form>', home, re.DOTALL).group(0)
+        self.assertIn('<form class="find" action="./generators/" method="get" role="search">', form)
+        self.assertRegex(form, r'<input id="q" name="q" type="search" placeholder="Search 2 generators"')
+        self.assertRegex(form, r'<label class="visually-hidden" for="q">Find a generator by name, kind or the software it is built for</label>')
+        self.assertIn('<button type="submit" class="button primary">Search</button>', form)
+        self.assertNotIn("q-narrow", home)
+        self.assertIn('search.value = params.get("q") || "";', self.js())
+
+    def test_phone_windows(self):  # CAT-67d, CAT-67h, CAT-67j
+        home = self.page()
+        stations = re.findall(r'<li class="station" id="station-(\d)"[^>]*>\s*<svg class="sc crop" viewBox="0 (\d+) 380 316" aria-hidden="true"><use href="#hn"/></svg>', home)
+        self.assertEqual([n for n, _ in stations], ["1", "2", "3", "4", "5"])
+        css = self.css()
+        self.assertIn("@media (width >= 48rem) { .scene-narrow { display: none; } }", css)
+        self.assertRegex(css, r"@media \(width < 48rem\) \{\n  \.scene-wide \{ display: none; \}")
+        self.assertNotRegex(css, r"@media \((max|min)-width: 48rem\) \{[^@]*\.scene-(wide|narrow)")
+        names = re.findall(r'<svg class="sc scene scene-(wide|narrow)"[^>]* role="img" aria-label="([^"]+)"', home)
+        self.assertEqual([w for w, _ in names], ["wide", "narrow"])
+        self.assertEqual(names[0][1], names[1][1])
+        self.assertIn('<button type="button" class="button scene-whole" aria-expanded="false" hidden>Show whole harbour</button>', home)
+        js = self.js()
+        self.assertIn('whole.textContent = open ? "Show one station" : "Show whole harbour";', js)
+        self.assertIn('whole.setAttribute("aria-expanded", String(open));', js)
+        self.assertIn(".harbour.live .scene-frame.whole .scene-bar { position: sticky; bottom: 0; }", css)  # open, it stays at the drawing's foot
+
+    def test_figure_texts(self):  # CAT-66, CAT-66g, CAT-66h, CAT-66o, CAT-69
+        home = self.page()
+        with open(os.path.join(RUN, "README.md"), encoding="utf-8") as f:
+            date = re.search(r"Recorded on (\d{4}-\d\d-\d\d)\.", f.read()).group(1)
+        self.assertIn(f"<p>Recorded on {date}, not necessarily the latest version</p>", home)
+        station = home[home.index('id="station-2"'):home.index('id="station-3"')]
+        self.assertIn("A pass proves that the release workflow of kadet-hub/registry built the artifact with this digest.", station)
+        self.assertIn("It does not prove that a generator is harmless in your project, so review the compiled output before you apply it.", station)
+        self.assertIn(f'<a href="https://github.com/{OWNER}/registry/blob/main/docs/consumers.md#what-a-listing-covers">What a listing covers</a>', station)
+        with open(os.path.join(HERE, "..", "docs", "consumers.md"), encoding="utf-8") as f:
+            self.assertIn("\n## What a listing covers\n", f.read())
+        figure = home[home.index('<section class="harbour wrap"'):home.index("</section>", home.index('<section class="harbour wrap"'))]
+        self.assertNotRegex(figure, r"Kapitan (verifies|checks)(?! nothing)")
+        note = re.search(r'<p class="note station-note">(.*?)</p>', home, re.DOTALL).group(1)
+        for words in (f"recorded on {date} with Kapitan 0.36.3", "helm-vs-terraform</a> example", "temporary paths shortened to <code>&lt;tmp&gt;</code>",
+                      "⋯ marks lines left out", "a digest is shortened to its first and last eight characters", "a long command is folded at its flags",
+                      "Each whole digest stands in station 1", "a long line continues indented on the next one"):
+            self.assertIn(words, note)
+        self.assertIn('<h2 id="harbour-title" class="visually-hidden">One compile in five stations</h2>', home)
+        self.assertEqual(len(re.findall(r'<svg class="sc scene scene-(?:wide|narrow)"', home)), 2)  # inline SVG (CAT-69)
+        self.assertNotIn('class="copy', figure)  # CAT-9c: nothing in the figure is meant to be copied
+        self.assertNotIn('class="copy', home[home.index('<section class="live-edit'):home.index("</section>", home.index('<section class="live-edit'))])
+
+    def test_figure_plays_once_with_tabs(self):  # CAT-66a, CAT-66c, CAT-66d, CAT-66e, CAT-66i, CAT-66j, CAT-66k, CAT-66q
+        home, js, css = self.page(), self.js(), self.css()
+        self.assertEqual(re.findall(r'<li class="station" id="station-\d" data-n="\d" data-ms="(\d+)">', home), ["2500", "2800", "3900", "2400", "2400"])
+        self.assertIn('<ol class="stations">', home)  # the static list, in order
+        self.assertIn('<button type="button" class="button scene-play" hidden>Play</button>', home)
+        self.assertIn('if (harbour && !matchMedia("(prefers-reduced-motion: reduce)").matches) {', js)
+        self.assertIn('if (e.intersectionRatio >= 0.9 || e.intersectionRect.height >= innerHeight * 0.9)', js)
+        self.assertIn("Number(panels[at - 1].dataset.ms)", js)
+        for role in ('tablist.setAttribute("role", "tablist");', 't.setAttribute("role", "tab");', 'panels[i].setAttribute("role", "tabpanel");',
+                     't.setAttribute("aria-selected", String(i + 1 === n));'):
+            self.assertIn(role, js)
+        self.assertIn('tablist.addEventListener("focusin"', js)
+        self.assertIn('harbour.addEventListener("pointermove", (e) => { if (timer && (e.movementX || e.movementY)', js)
+        self.assertIn('harbour.classList.add("live", "idle");', js)
+        self.assertNotIn("harbour", re.sub(r"//.*", "", read(HERE, "site", "static", "theme.js")))  # CAT-66j: only site.js sets the playing layout
+        figure_js = js[js.index("const harbour = "):js.index("// The live edit")]
+        for live in ("aria-live", '"status"', '"alert"', '"log"'):  # CAT-66k
+            self.assertNotIn(live, figure_js)
+        figure = home[home.index('<section class="harbour wrap"'):home.index("</section>", home.index('<section class="harbour wrap"'))]
+        self.assertNotRegex(figure, r'aria-live|role="(status|alert|log)"')
+        for rule in (".harbour.live .station { grid-area: 1 / 1; }", ".harbour.live .station:not(.on) { visibility: hidden; }",
+                     ".harbour.live .h-st:not(.on, .done) :is(.h-row, .h-tick, .h-load, .h-cable, .h-puff, .h-parcel) { opacity: 0; }",
+                     ".harbour.idle .scene * { animation: none !important; }"):
+            self.assertIn(rule, css)
+        self.assertNotRegex(css, r"(^|\n)\.(station|stations|station-text|station-out|term)( |,)[^{]*\{[^}]*(display: none|visibility: hidden)")  # without .live the list stands
+        self.assertIn("@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }", css)
+
+    def test_selected_station_marked_by_more_than_colour(self):  # CAT-66l
+        css = self.css()
+        tab = re.search(r'\n\.station-tab\[aria-selected="true"\] \{([^}]*)\}', css).group(1)
+        self.assertIn("border-bottom-width: 4px;", tab)
+        self.assertNotIn("inset", tab)  # forced colours drop a shadow
+        self.assertIn(".h-pin.on .h-pin-ring { display: block; }", css)
+        self.assertIn(".h-pin-ring { display: none; fill: none; stroke: var(--accent); stroke-width: 2; }", css)
+        self.assertIn(".h-pin.on .h-pin-dot { fill: var(--accent); transform: scale(1.7); }", css)
+
+    def test_figure_in_print(self):  # CAT-66m
+        block = re.search(r"@media print \{(.*?)\n\}", self.css(), re.DOTALL).group(1)
+        for rule in (":root, :root[data-theme], .dark-panel { color-scheme: light; }", ".harbour.live .station-tabs, .scene-bar, .term-more { display: none; }",
+                     ".harbour.live .station:not(.on) { visibility: visible; }", ".harbour.live .station { grid-area: auto; }",
+                     ".harbour.live .term pre { max-height: none; overflow: visible; }"):
+            self.assertIn(rule, block)
+
+    def test_live_edit(self):  # CAT-68 to CAT-68h
+        home = self.page()
+        live = home[home.index('<section class="live-edit band"'):home.index("</section>", home.index('<section class="live-edit band"'))]
+        self.assertNotRegex(home[:home.index('<section class="live-edit band"')].rsplit("</form>", 1)[-1], r"<form\b")  # CAT-68g
+        self.assertNotIn("<form", live)
+        self.assertNotIn("data-goatcounter-click", live)  # CAT-68e
+        field = re.search(r"<input id=\"le-bucket\"[^>]*>", live).group(0)
+        pattern = "(?!(?:y|n|yes|no|on|off|true|false|null)$)[a-z][a-z0-9\\-]{1,61}[a-z0-9]"
+        for attr in ('type="text"', 'value="example-shop-uploads-prod"', 'minlength="3"', 'maxlength="63"', f'pattern="{pattern}"',
+                     'autocapitalize="none"', 'autocorrect="off"', 'spellcheck="false"'):
+            self.assertIn(attr, field)
+        self.assertRegex(live, r'<div class="le-fields" hidden>')  # CAT-68f: no JavaScript, no fields
+        self.assertEqual(re.findall(r"<option>([^<]+)</option>", live), ["eu-central-1", "eu-west-1", "us-east-1"])
+        self.assertEqual(re.findall(r'<mark data-le="(\w+)">([^<]+)</mark>', live),
+                         [("bucket", "example-shop-uploads-prod"), ("region", "eu-central-1"), ("bucket", "example-shop-uploads-prod"), ("region", "eu-central-1")])
+        self.assertEqual(len(re.findall(r'class="ln le-static cl i2"', live)), 2)  # the run's values as text
+        self.assertIn("Your browser only substitutes the two values into excerpts of what Kapitan 0.36.3 rendered for the helm-vs-terraform example.", live)  # CAT-68a
+        self.assertIn('open the <a href="./playground/">Playground</a>', live)  # CAT-68b
+        js = self.js()
+        edit = js[js.index("const liveEdit = "):js.index("// CAT-19")]
+        self.assertIn("m.textContent = value", edit)  # CAT-68c
+        self.assertIn('new RegExp(`^(?:${bucket.pattern})$`, "v")', edit)  # CAT-68d: the field's own pattern
+        self.assertIn("if (regions.includes(region.value))", edit)
+        for gone in ("innerHTML", "outerHTML", "insertAdjacentHTML", "DOMParser", "createContextualFragment", "localStorage", "sessionStorage",
+                     "cookie", "history", "location", "URLSearchParams", "fetch(", "sendBeacon", "XMLHttpRequest", "Image(", "WebSocket"):
+            self.assertNotIn(gone, edit)  # CAT-68c, CAT-68e, CAT-68h
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node not installed")
+        accept, refuse = ["abc", "example-shop-uploads-prod", "yes1", "a" * 63], ["ab", "yes", "off", "123", "2026-11-21", "1.5", "abc-", "Abc", "a.b", "a" * 64]
+        script = f"const p = new RegExp({json.dumps('^(?:' + pattern + ')$')}, 'v'); console.log(JSON.stringify({json.dumps(accept + refuse)}.map((v) => p.test(v))));"
+        result = json.loads(subprocess.run([node, "-e", script], check=True, capture_output=True, text=True).stdout)
+        self.assertEqual(result, [True] * len(accept) + [False] * len(refuse))
+
+    def test_counter_sees_no_query(self):  # CAT-25a
+        for path in glob.glob(os.path.join(self.out, "**", "index.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+            if "<footer" in html:
+                self.assertIn('<meta name="referrer" content="strict-origin">', html, path)
+        for parts, settings in (((), False), (("generators",), True), (("recipes",), True), (("generators", "demo"), False)):
+            self.assertEqual("""data-goatcounter-settings='{"no_onload": true}'""" in self.page(*parts) or
+                             'data-goatcounter-settings="{&quot;no_onload&quot;: true}"' in self.page(*parts), settings, parts)
+        js = self.js()
+        self.assertIn('history.replaceState(history.state, "", location.pathname + location.hash);\n    window.goatcounter.count();', js)
+
+    def test_code_keeps_its_lines_from_48rem(self):  # CAT-9, CAT-9f, CAT-9g
+        css = self.css()
+        self.assertRegex(css, r"\npre \{[^}]*white-space: pre;")
+        narrow = re.search(r"@media \(width < 48rem\) \{\n  pre \{ white-space: pre-wrap;[^\n]*\n(.*?)\n\}", css, re.DOTALL)
+        self.assertIsNotNone(narrow)
+        self.assertEqual(len(re.findall(r"white-space: pre-wrap", css)), 1)  # below 48rem only
+        js = self.js()
+        self.assertIn('pre.classList.toggle("more-x", over && pre.scrollWidth - pre.clientWidth - pre.scrollLeft > 1);', js)
+        self.assertIn(':is(.snippet, .highlight, .term, .diff-wrap):has(> pre.more-x)::after { content: "scroll →";', css)
+        # CAT-9g: every word of a panel line is a span, and a span longer than 24 characters has no place left to cut.
+        for html in (self.page(), self.page("generators", "demo")):
+            for line in re.findall(r'<span class="(?:ln[^"]*|)cl[^"]*">(.*?)</span>(?=<span class="(?:ln|cl|fold)|\n|$)', html):
+                for token in re.findall(r'<span class="tk">(.*?)</span>(?=<span class="tk">| |$)', line):
+                    text = DIGEST.sub("sha256:" + "x" * 17, code(token))
+                    if len(text) > 24:
+                        self.assertNotRegex(text[:-1], r"/|@|,|\":", token)
+
+    def test_ids_are_unique(self):  # CAT-69h
+        for parts in ((), ("generators",), ("generators", "demo")):
+            ids = re.findall(r'\sid="([^"]+)"', self.page(*parts))
+            self.assertEqual(sorted({i for i in ids if ids.count(i) > 1}), [], parts)
+
+    def test_unsafe_recorded_pin_stops_the_build(self):  # CAT-66f
+        for change in ({"yanked": "renders a broken Service"}, {"advisories": ["GHSA-2345-6789-cfgh"]}):
+            index = {"serial": 1, "generators": {"kubernetes": {"1.16.0": dict(record("7"), **change)}}}
+            with tempfile.TemporaryDirectory() as tmp, self.assertRaises(subprocess.CalledProcessError) as failed:
+                build(index, tmp, capture=True)
+            self.assertIn("the recorded run pins kubernetes 1.16.0, which the index lists as yanked or with an advisory", failed.exception.stdout)
+        with tempfile.TemporaryDirectory() as tmp:  # a listed pin, or another version yanked: the site builds
+            build({"serial": 1, "generators": {"kubernetes": {"1.16.0": record("7"), "1.17.0": record("8", yanked="broken")}}}, tmp)
+
+    def js(self):
+        with open(os.path.join(self.out, "site.js"), encoding="utf-8") as f:
+            return f.read()
 
     def test_targets_reach_24px(self):  # CAT-55
         css = self.css()
@@ -837,13 +1234,14 @@ class Site(unittest.TestCase):
     def test_issue_forms_are_linked(self):
         links = [__import__("html").unescape(h) for h in re.findall(r'href="([^"]*issues/new[^"]*)"', self.page("generators", "demo"))]
         self.assertIn(f"https://github.com/{OWNER}/registry/issues/new?generator=demo&template=generator-report.yml&title=%5Breport%5D+demo%3A+&version=1.10.0", links)
-        self.assertIn(f"https://github.com/{OWNER}/registry/issues/new?template=generator-request.yml", self.page())
+        self.assertIn(f"https://github.com/{OWNER}/registry/issues/new?template=generator-request.yml", self.page())  # CAT-67
         for form in ("generator-report", "generator-request"):
             self.assertTrue(os.path.isfile(os.path.join(HERE, "..", ".github", "ISSUE_TEMPLATE", f"{form}.yml")))
 
     def test_quickstart_linked(self):  # CAT-40, CAT-40a, CAT-40b
         nav = re.search(r'<nav id="site-nav">(.*?)</nav>', self.page(), re.DOTALL).group(1)
-        self.assertRegex(nav, r'^\s*<a href="\./quickstart/">Quickstart</a>\s*<a href="[^"]*/docs/consumers\.md">Use</a>')
+        self.assertRegex(nav, r'^\s*<a href="\./quickstart/">Quickstart</a>\s*<a href="\./generators/">Generators</a>\s*'
+                              r'<a href="[^"]*/docs/consumers\.md">Use</a>')  # CAT-67c
         recipes = glob.glob(os.path.join(self.out, "recipes", "*", "index.html"))
         self.assertGreater(len(recipes), 30)
         for path in recipes:
@@ -907,9 +1305,9 @@ class Site(unittest.TestCase):
             self.assertIn(f'id="{tag}"', page)
         self.assertIn('href="../tags/helm/">1 generator tagged helm</a>', page)
         self.assertIn("No generator tagged ci yet.", page)
-        home = self.page()
-        self.assertIn('data-tag="helm" aria-pressed="false" title="Renders a Helm chart or builds on one."><svg class="icon" aria-hidden="true"><use href="#i-tag-helm"/></svg>helm <span class="count">(1)</span>', home)
-        self.assertIn('href="./tags/"', home)
+        catalog = self.page("generators")
+        self.assertIn('data-tag="helm" aria-pressed="false" title="Renders a Helm chart or builds on one."><svg class="icon" aria-hidden="true"><use href="#i-tag-helm"/></svg>helm <span class="count">(1)</span>', catalog)
+        self.assertIn('href="../tags/"', catalog)
         glossary = self.page("glossary")
         self.assertIn('href="https://kapitan.dev/"', glossary)
         self.assertIn('id="index"', glossary)
@@ -981,7 +1379,7 @@ class Site(unittest.TestCase):
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
         self.assertIn("No scan record", older)
         self.assertIn("No SBOM attestation for this version.", older)
-        self.assertIn("<dt>Scanned</dt><dd>2026-10-10</dd>", self.page())
+        self.assertIn("<span>Scanned 2026-10-10</span>", self.card("demo"))
 
     def test_output_diff(self):  # CAT-27
         html = self.page("generators", "demo")
@@ -1037,7 +1435,7 @@ class Site(unittest.TestCase):
         self.assertIn("\n- Built for (schema-checked): External Secrets Operator 2.11.0\n", demo)
         self.assertIn("\n- Page: https://kadet-hub.org/generators/demo/\n", demo)
         for block in ("entry-0", "verify-0"):  # the latest version's entry and command, as on the page
-            text = _unescape(re.search(rf'<pre id="{block}"><code>(.*?)</code></pre>', html, re.DOTALL).group(1))
+            text = code(re.search(rf'<pre id="{block}"><code>(.*?)</code></pre>', html, re.DOTALL).group(1))
             self.assertIn(f"\n```{'yaml' if block == 'entry-0' else 'sh'}\n{text}\n```\n", demo)
         self.assertIn(f"Relative links in the README resolve against https://github.com/example/demo/blob/{'c' * 40}/.\n\n" + README, demo)
         self.assertTrue(self.markdown("generators", "plain").startswith("# plain\n\n> Renders a [ConfigMap](x) ## Not a heading 31m*bold*\n"))
@@ -1052,7 +1450,7 @@ class Site(unittest.TestCase):
             self.assertNotIn(".md<", f.read())
 
     def test_built_for(self):
-        self.assertIn('<dt>Built for</dt><dd class="built-for"><span>External Secrets Operator 2.11.0</span></dd>', self.page())
+        self.assertIn('Built for <span class="built-chip">External Secrets Operator 2.11.0</span></p>', self.card("demo"))
         html = self.page("generators", "demo")
         self.assertIn('<a href="https://github.com/external-secrets/external-secrets/tree/v2.11.0/config/crds/bases">External Secrets Operator 2.11.0</a>', html)
         older = html[html.index('id="v1.2.0"'):html.index('id="v1.0.0"')]
@@ -1215,7 +1613,7 @@ class Site(unittest.TestCase):
         page = self.page("recipes", "external-dns-powerdns")
         self.assertIn(f"<li>Source chart: <code>{HTTP_CHART_SOURCE}</code></li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
+        fetch = code(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["external-dns-powerdns", "powerdns"])  # the recipe it includes, REC-16
         self.assertEqual(re.findall(r"output_path: inventory/classes/recipes/(\S+)", fetch), ["external-dns-powerdns", "powerdns"])
         self.assertEqual(fetch.count(f"ref: {CHART_RECIPE_SHA}\n"), 2)
@@ -1225,7 +1623,7 @@ class Site(unittest.TestCase):
         page = self.page("recipes", "kafka")
         self.assertIn('<li>Prerequisites, installed once per cluster before the recipe: <a href="../../recipes/strimzi/"><code>strimzi</code></a></li>', page)
         self.assertRegex(page, r"(?s)Proof level</a>: .*Prerequisites, .*<li>Generators: ")
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
+        fetch = code(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["kafka"])  # strimzi has its own target and page
         self.assertIn("\n- Prerequisites, installed once per cluster before the recipe: strimzi\n- Generators: ", self.markdown("recipes", "kafka"))
         self.assertIn('<li>Prerequisites, installed once per cluster before the recipe: <a href="../../recipes/cnpg/"><code>cnpg</code></a></li>',
@@ -1241,7 +1639,7 @@ class Site(unittest.TestCase):
         keycloak = self.page("recipes", "keycloak")  # cnpg is required by the included postgresql
         links = ", ".join(f'<a href="../../recipes/{n}/"><code>{n}</code></a>' for n in ("keycloak-operator", "cert-manager", "cnpg"))
         self.assertIn(f"<li>{both[0]}{links}</li>", keycloak)
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', keycloak, re.DOTALL).group(1))
+        fetch = code(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', keycloak, re.DOTALL).group(1))
         self.assertEqual(re.findall(r"        subdir: (\S+)\n", fetch), ["keycloak", "postgresql"])
         self.assertIn(f"\n- {both[0]}keycloak-operator, cert-manager, cnpg\n- Generators: ", self.markdown("recipes", "keycloak"))
         self.assertNotIn("Prerequisites", self.page("recipes", "keycloak-operator"))
@@ -1266,11 +1664,13 @@ class Site(unittest.TestCase):
         self.assertIn("<li><code>recipes.cert-manager.controller</code> (<code>controller.yml</code>): <code>cert-manager</code></li>", page)
         self.assertIn("<li><code>recipes.cert-manager.webhook</code> (<code>webhook.yml</code>): <code>cert-manager-webhook</code></li>", page)
         self.assertIn("<li><code>recipes.cert-manager.crds</code> (<code>crds.yml</code>), an option</li>", page)
-        self.assertIn('<pre id="include"><code>classes:\n  - recipes.cert-manager\n  - recipes.cert-manager.crds   # the chart&#39;s crds.enabled</code></pre>', page)
-        fetch = _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
+        self.assertEqual(code(re.search(r'<pre id="include"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)),
+                         "classes:\n  - recipes.cert-manager\n  - recipes.cert-manager.crds   # the chart's crds.enabled")
+        fetch = code(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
         self.assertIn(f"      - type: git\n        source: https://github.com/{OWNER}/recipes.git\n        ref: {CHART_RECIPE_SHA}\n"
                       "        subdir: cert-manager\n        output_path: inventory/classes/recipes/cert-manager", fetch)
-        self.assertIn('<pre id="commands"><code>kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch</code></pre>', page)
+        self.assertEqual(code(re.search(r'<pre id="commands"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)),
+                         "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch")
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes#using-a-recipe">Using a recipe</a>', page)
         self.assertEqual([h for h in re.findall(r"<h2>([^<]+)</h2>", page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
@@ -1313,9 +1713,9 @@ class Site(unittest.TestCase):
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Mapping", "Proof"])
         self.assertIn("<h2>Required parameters</h2>\n<p>The password must be set as a ref. Without it the compile stops with\n"
                       "<code>Interpolation key 'applications.miniflux.admin.password' not found</code>.</p>", page)
-        self.assertIn("        password: &lt;ref&gt;</code></pre>", page)
+        self.assertIn("        password: <ref>", code(re.search(r'<pre id="include"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
         self.assertIn("<td>service <code>db</code></td>", page)
-        self.assertIn("        subdir: miniflux\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
+        self.assertIn("        subdir: miniflux\n", code(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
         md = self.markdown("recipes", "miniflux")
         self.assertIn(f"\n- Source: Docker Compose file miniflux/v2@{'2' * 40} (contrib/docker-compose/basic.yml), sha256:{'f' * 64}: {COMPOSE_SOURCE}\n"
                       "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
@@ -1499,7 +1899,7 @@ class Site(unittest.TestCase):
         path = os.path.join(out, url.removeprefix("https://kadet-hub.org/"))
         self.assertLess(os.path.getsize(path), 300_000, url)
         width, height, bpp, rows = png_rows(path)
-        self.assertEqual((width, height, rows[0][:3]), (1200, 630, bytes.fromhex("0d1117")), url)
+        self.assertEqual((width, height, rows[0][:3]), (1200, 630, bytes.fromhex("1c1b3a")), url)
         blank = rows[0][:bpp]
         for y, row in enumerate(rows):  # the outer 80 px, and below the third title line, above the tags
             edge = row if y < 80 or y >= 550 or 430 <= y < 510 else row[:80 * bpp] + row[1120 * bpp:]
@@ -1519,8 +1919,10 @@ class Site(unittest.TestCase):
             self.assertIn('<meta property="og:image" content="https://kadet-hub.org/og.png">', html)
             self.assertNotIn("twitter:image", html)
         with open(os.path.join(HERE, "site", "layouts", "_partials", "og-card.html"), encoding="utf-8") as f:
-            for colour in re.findall(r'"color" "(#[0-9a-f]{6})"', f.read()):
-                self.assertGreaterEqual(contrast(colour, "#0d1117"), 4.5, colour)
+            colours = re.findall(r'"color" "(#[0-9a-f]{6})"', f.read())
+        self.assertEqual(colours, [TOKENS["text-muted"][1], TOKENS["text"][1], TOKENS["accent"][1]])  # CAT-58a: the dark theme's tokens
+        for colour in colours:
+            self.assertGreaterEqual(contrast(colour, TOKENS["bg"][1]), 4.5, colour)
         long = ("title: A very long post title that keeps going well past the three lines the social card has room for, so it ends in an ellipsis\n"
                 "date: 2000-01-02\ndescription: A post whose title and tools are longer than the card has room for, for the test of CAT-58.\n"
                 "tools: [CloudNativePGOperatorForPostgreSQLClusters, ExternalSecretsOperatorWithVaultBackend, KubePrometheusStack]")
@@ -1728,12 +2130,12 @@ class Site(unittest.TestCase):
         self.assertIn('href="https://search.sigstore.dev/?logIndex=3202022821">Rekor entry 3202022821</a>', html)
         self.assertIn('href="https://search.sigstore.dev/?logIndex=17">Rekor entry 17</a>', html)  # yanked keeps its entry
         self.assertNotIn("not-a-number", html)
-        newest = html[html.index('id="v1.10.0"'):html.index('id="v1.2.0"')]
+        newest = code(html[html.index('id="v1.10.0"'):html.index('id="v1.2.0"')])
         self.assertIn("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:", newest)
         self.assertIn("\n  --owner kadet-hub \\\n  --cert-identity https://", newest)
         for gone in ('id="install"', 'id="verify"', 'id="checks"', 'id="details"'):
             self.assertNotIn(gone, html)  # CAT-19: the newest version is shown once, under Versions
-        self.assertEqual(html.count("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:" + "b" * 64), 1)
+        self.assertEqual(code(html).count("gh attestation verify \\\n  oci://ghcr.io/kadet-hub/demo@sha256:" + "b" * 64), 1)
 
     def test_one_column_with_table_of_contents(self):
         html = self.page("generators", "demo")
@@ -1750,22 +2152,25 @@ class Site(unittest.TestCase):
         self.assertEqual(re.findall(r'href="#([a-z]+)"', old[old.index('id="toc"'):old.index("</nav>", old.index('id="toc"'))]), ["versions"])
 
     def card(self, name):
-        home = self.page()
+        home = self.page("generators")
         start = home.index(f'data-name="{name}"')
         return home[start:home.index("</li>", start)]
 
-    def test_cards_show_the_same_fields_in_the_same_order(self):
+    def test_cards_show_the_same_fields_in_the_same_order(self):  # CAT-22
         for name in ("demo", "plain"):
             card = self.card(name)
-            order = ['class="stretched"', 'class="meta-line"', 'class="description"',
-                     "<dt>Built for</dt>", "<dt>Maintainer</dt>", "<dt>Popularity</dt>", "<dt>Scanned</dt>"]
+            order = ['<svg class="cube', 'class="stretched"', 'class="card-by"', 'class="ver"', 'class="description"', 'class="card-built"',
+                     'class="card-foot"', "Published <time", "Scanned 2026-10-10" if name == "demo" else "Not scanned", 'class="fact-link"']
             positions = [card.index(marker) for marker in order]
             self.assertEqual(positions, sorted(positions), name)
-            self.assertNotIn("Apache-2.0", card)  # CAT-22: license only on the page
+            self.assertNotIn("Apache-2.0", card)  # license only on the page
             self.assertEqual(card.count("<a "), 1 + card.count('class="tag"') + card.count('class="fact-link"'))
-        self.assertIn("<dt>Built for</dt><dd>not recorded</dd>", self.card("plain"))
-        self.assertIn("<dt>Scanned</dt><dd>not scanned</dd>", self.card("plain"))
-        self.assertIn('<p class="meta-line">1.10.0 · <time datetime="2026-10-09T05:34:57Z">2026-10-09</time></p>', self.card("demo"))
+        self.assertIn('<span class="muted">Built for: not recorded</span>', self.card("plain"))
+        self.assertIn('<span class="ver">1.10.0</span>', self.card("demo"))
+        # The cube takes the colours of the start page's cargo: teal where the tags name Terraform, indigo otherwise.
+        self.assertIn('<svg class="cube h-fam-ind"', self.card("demo"))
+        with open(os.path.join(HERE, "site", "layouts", "_partials", "cube.html"), encoding="utf-8") as f:
+            self.assertIn('{{ if in . "terraform" }}h-fam-teal{{ else }}h-fam-ind{{ end }}', f.read())
 
     def test_maintainer_is_text_on_the_card_and_linked_on_the_page(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1777,11 +2182,11 @@ class Site(unittest.TestCase):
             with open(os.path.join(site, "data", "catalog.json"), "w", encoding="utf-8") as f:
                 json.dump(view(INDEX, OWNER, {"/user/331675722": {"login": "someone"}}.get), f)
             subprocess.run(["hugo", "--quiet", "--source", site, "--destination", os.path.join(tmp, "out")], check=True)
-            with open(os.path.join(tmp, "out", "index.html"), encoding="utf-8") as f:
+            with open(os.path.join(tmp, "out", "generators", "index.html"), encoding="utf-8") as f:
                 home = f.read()
             with open(os.path.join(tmp, "out", "generators", "demo", "index.html"), encoding="utf-8") as f:
                 page = f.read()
-        self.assertIn('<dt>Maintainer</dt><dd>someone</dd>', home)  # CAT-22: linked only on the page
+        self.assertIn('<p class="card-by">by someone</p>', home)  # CAT-22: linked only on the page
         self.assertIn('<dt>Owners</dt><dd><a href="https://github.com/someone">someone</a></dd>', page)
 
     def test_request_a_feature_goes_to_the_source_repository(self):
@@ -1806,8 +2211,8 @@ class Site(unittest.TestCase):
         self.assertTrue(link.startswith(f"https://github.com/{OWNER}/generators/issues/new?"))
         self.assertEqual((query["template"], query["generator"], query["version"]), (["feature-request.yml"], ["g"], ["1.0.0"]))
 
-    def test_sort_keys(self):
-        home = self.page()
+    def test_sort_keys(self):  # CAT-10
+        home = self.page("generators")
         self.assertIn('<select id="sort">', home)
         self.assertIn('data-name="demo" data-published="2026-10-09T05:34:57Z" data-popularity="40"', home)
         self.assertIn('<option value="popularity">Popularity</option>', home)
@@ -1855,7 +2260,7 @@ class Site(unittest.TestCase):
         self.assertIn("score = round( 10 · log2(1 + 👍)", page)
         self.assertIn('<tr id="demo"><th scope="row"><a href="../generators/demo/">demo</a></th><td>3</td><td>0 ÷ 1</td><td>1200</td><td>40</td></tr>', page)
         self.assertIn("<td>not read</td>", page)  # old: no package page
-        self.assertIn('<dt>Popularity</dt><dd><a class="fact-link" href="./popularity/#demo">40</a></dd>', self.page())
+        self.assertIn('<a class="fact-link" href="../popularity/#demo">Popularity 40</a>', self.card("demo"))
         self.assertIn("· 1200 pulls</dd>", self.page("generators", "demo"))
 
     def test_badge(self):  # CAT-32, CAT-32a
@@ -1866,16 +2271,16 @@ class Site(unittest.TestCase):
         html = self.page("generators", "demo")
         section = html[html.index('<details class="badge-snippet">'):html.index("</details>", html.index('<details class="badge-snippet">'))]
         self.assertLess(html.index('<details class="badge-snippet">'), html.index('class="toc"'))  # below the actions, not a section
-        code = _unescape(re.search(r'<pre id="badge-markdown"><code>(.*?)</code></pre>', section, re.DOTALL).group(1))
-        self.assertEqual(code, "[![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/demo/badge.json)]"
+        snippet = code(re.search(r'<pre id="badge-markdown"><code>(.*?)</code></pre>', section, re.DOTALL).group(1))
+        self.assertEqual(snippet, "[![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/demo/badge.json)]"
                                "(https://kadet-hub.org/generators/demo/)")
         self.assertIn('data-copy="badge-markdown"', section)
         self.assertNotIn("badge-snippet", self.page("generators", "old"))  # no listed version, no snippet
         for page in (html, self.page("generators", "old")):
             self.assertNotRegex(page, r"<img\b[^>]*shields")
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', page).group(1)
-            self.assertEqual(csp, "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://stats.kadet-hub.org; "
-                                  "connect-src 'self' https://stats.kadet-hub.org; base-uri 'none'; form-action 'none'")  # CAT-3a
+            self.assertEqual(csp, "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' https://stats.kadet-hub.org; "
+                                  "connect-src 'self' https://stats.kadet-hub.org; base-uri 'none'; form-action 'self'")  # CAT-3a, CAT-60a, CAT-67g
         with open(os.path.join(self.out, "sitemap.xml"), encoding="utf-8") as f:
             self.assertNotIn("badge.json", f.read())
 
@@ -1893,8 +2298,9 @@ class Site(unittest.TestCase):
         self.assertEqual(recipes, [("5", "Paperless-ngx"), ("3", "Immich &lt;b&gt;x&lt;/b&gt;")])
         self.assertLess(page.index('<h2 id="recipes">'), page.index(f"{OWNER}/recipes/issues/5"))
         self.assertRegex(page, rf'<a href="https://github.com/{OWNER}/recipes/issues/new\?template=recipe-request.yml"[^>]*>recipe request form</a>')
-        self.assertIn('<a class="button" href="https://github.com/kadet-hub/registry/issues/new?template=generator-request.yml">Request a generator</a>'
-                      '<a class="button" href="./wanted/">Wanted generators</a>', self.page())
+        # CAT-67: the request form and this page follow the start page's tiles, as links.
+        self.assertRegex(self.page(), r'(?s)<ul class="dests">.*</ul>\n<p class="more">Nothing fits\? <a href="https://github.com/kadet-hub/registry/issues/new\?'
+                                      r'template=generator-request.yml">Request a generator</a> or look at the <a href="\./wanted/">wanted generators</a>\.')
 
     def test_wanted_page_without_requests(self):  # CAT-31
         texts = []
@@ -2011,14 +2417,14 @@ class Site(unittest.TestCase):
         html = self.page()
         for doc in ("consumers.md", "authors.md"):
             self.assertIn(f"https://github.com/{OWNER}/registry/blob/main/docs/{doc}", html)
-        self.assertNotIn("No generators listed yet", html)
+        self.assertNotIn("No generators listed yet", self.page("generators"))
 
     def test_home_identity_schema_and_title(self):
         html = self.page()
         title = re.search(r"<title>([^<]*)</title>", html).group(1)
         self.assertTrue(50 <= len(title) <= 60, title)
         self.assertIn("Kubernetes", title)  # CAT-11a: "kapitan" alone is ambiguous in search
-        self.assertRegex(self.page(), r"<h1>Kapitan generators for Kubernetes and Terraform[^<]*Helm alternative</h1>")
+        self.assertIn('<h1>Kapitan generators for Kubernetes and Terraform: a signed, <span class="nb">gate-checked</span> Helm alternative</h1>', html)
         self.assertIn("Helm alternative", title)  # CAT-11f
         desc = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
         self.assertTrue("Helm" in desc and "Kustomize" in desc, desc)
@@ -2044,13 +2450,14 @@ class Site(unittest.TestCase):
             self.assertEqual(levels[0], 1, parts)
             for before, after in itertools.pairwise(levels):
                 self.assertLessEqual(after, before + 1, parts)
-        for parts in ((), ("tags", "helm")):
+        for parts in (("generators",), ("tags", "helm")):
             cards = self.page(*parts).split('<ul class="cards')[1]
             self.assertIn('<p class="card-name"><a class="stretched"', cards)
             self.assertNotRegex(cards.split("</ul>")[0], r"<h[1-6]\b")  # CAT-11b: card names are no headings
         home = self.page()
-        self.assertIn('<h2 id="listing">How a version gets listed</h2>', home)
-        self.assertLessEqual(len(re.findall(r"<h[1-6]\b", home)), 8)
+        self.assertIn('<summary><h2 id="listing">How a version gets listed</h2></summary>', home)
+        for name in ("Generators", "Recipes", "Stacks", "Playground", "Quickstart", "Guides"):  # CAT-11b, CAT-67: tiles, not headings
+            self.assertIn(f'<span class="dest-name">{name}', home)
 
     def test_no_counter_without_a_goatcounter_code(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -2081,6 +2488,8 @@ class Site(unittest.TestCase):
                 html = f.read()
             self.assertIn('<script data-goatcounter="https://stats.example.org/count" async src="./count.js"></script>', html)
             csp = re.search(r'Content-Security-Policy" content="([^"]*)"', html).group(1)
+            self.assertEqual(csp, "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' https://stats.example.org; "
+                                  "connect-src 'self' https://stats.example.org; base-uri 'none'; form-action 'self'")  # CAT-60a, CAT-67g
             self.assertIn("script-src 'self';", csp)
             self.assertIn("img-src 'self' https://stats.example.org;", csp)
             self.assertIn("connect-src 'self' https://stats.example.org;", csp)
@@ -2099,7 +2508,7 @@ class Site(unittest.TestCase):
         self.assertIn('<h4 id="readme-skipped-level">Skipped level</h4>', readme)
 
     def test_generators_without_a_listed_version_have_no_card(self):
-        home, tags = self.page(), self.page("tags")
+        home, tags = self.page("generators"), self.page("tags")  # CAT-26, CAT-26a
         self.assertNotIn('data-name="old"', home)
         self.assertIn('placeholder="Search 2 generators or kinds"', home)
         self.assertIn("Yanked: entry removed", self.page("generators", "old"))  # CAT-5: the page stays
@@ -2267,12 +2676,12 @@ class Site(unittest.TestCase):
         self.assertIn('href="../kinds/pool.kubevirt.io/virtualmachinepool/"', kinds)
 
     def test_search_matches_kind_names(self):  # CAT-29a
-        home = self.page()
+        home = self.page("generators")
         self.assertRegex(home, r'data-text="demo [^"]* configmap httproute[^"]*" data-tags="helm" data-name="demo"')
         self.assertRegex(home, r'data-text="plain [^"]* configmap httproute" data-tags="" data-name="plain"')
 
     def test_search_matches_built_for(self):  # CAT-29e
-        home = self.page()
+        home = self.page("generators")
         self.assertRegex(home, r'data-text="demo [^"]* configmap httproute external secrets operator" data-tags="helm" data-name="demo"')
         self.assertRegex(home, r'data-text="plain [^"]* httproute" data-tags="" data-name="plain"')  # no compatibility record
 
@@ -2287,8 +2696,8 @@ class Site(unittest.TestCase):
     def test_empty_index_says_so(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = build({"serial": 1, "generators": {}}, tmp)
-            with open(os.path.join(out, "index.html"), encoding="utf-8") as f:
-                self.assertIn("No generators listed yet", f.read())
+            with open(os.path.join(out, "generators", "index.html"), encoding="utf-8") as f:  # CAT-6a
+                self.assertIn(f'No generators listed yet. <a href="https://github.com/{OWNER}/registry/blob/main/docs/authors.md">Add the first one</a>', f.read())
 
 
 DIAGRAMS = os.path.join(HERE, "site", "assets", "diagrams")
@@ -2491,6 +2900,7 @@ class Diagrams(unittest.TestCase):
             self.assertNotEqual(svg_findings(svg), [], bad)
         self.assertEqual(svg_findings('<svg xmlns="http://www.w3.org/2000/svg"><use href="#i-x"/></svg>'), [])
 
+
 class Harbour(unittest.TestCase):  # CAT-66, CAT-68, CAT-69 to CAT-69j, CAT-73b to CAT-73j: the generators and what they write
     def copy_site(self, tmp):
         for part in ("assets/harbour", "layouts/_partials"):
@@ -2572,6 +2982,12 @@ class Harbour(unittest.TestCase):  # CAT-66, CAT-68, CAT-69 to CAT-69j, CAT-73b 
         self.assertEqual(re.findall(r'\sid="([^"]+)"', wide), ["hw-ck", "hw-ct"])
         self.assertEqual(re.findall(r'\sid="([^"]+)"', narrow), ["hn", "hn-ck", "hn-ct"])
 
+    def test_scene_classes_have_rules(self):  # CAT-69a, CAT-73g: every class of the drawings is bound in style.css
+        css = read(SITE, "static", "style.css")
+        for name in SCENE:
+            for cls in {c for attr in re.findall(r'class="([^"]+)"', read(PARTIALS, name)) for c in attr.split()} - HOOKS:
+                self.assertRegex(css, rf"\.{re.escape(cls)}(?![\w-])", (name, cls))
+
     def test_ship_carries_the_two_pinned_generators(self):  # CAT-69c
         pins = re.findall(r"ghcr\.io/kadet-hub/([a-z-]+):", read(RUN, "inventory", "classes", "generators.yml"))
         self.assertEqual(pins, ["kubernetes", "terraform-aws"])
@@ -2605,6 +3021,23 @@ class Harbour(unittest.TestCase):  # CAT-66, CAT-68, CAT-69 to CAT-69j, CAT-73b 
             self.assertEqual(set(re.findall(r'\sstyle="([^"]*)"', svg)) - {"mix-blend-mode:multiply"}, set(), name)
             if name != "mark.svg":  # the mark keeps the favicon's colours (CAT-61)
                 self.assertEqual({c.lower() for c in re.findall(r"#[0-9a-fA-F]{6}\b", svg)} - light, set(), name)
+
+    def test_motion_changes_transform_and_opacity_only(self):  # CAT-69f, CAT-73e
+        css = read(SITE, "static", "style.css")
+        for name, frames in re.findall(r"@keyframes ([\w-]+) \{(.*?\})\s*\}", css, re.DOTALL):
+            if name.startswith(("hb-", "hw-", "hn-", "sp-")):
+                props = set(re.findall(r"([\w-]+):", frames)) - {"animation-timing-function"}
+                self.assertLessEqual(props, {"transform", "opacity"}, name)
+        for sel, value in re.findall(r"([^{}]+)\{[^}]*transition: ([^;]+);", css):
+            if re.search(r"\.(h-|scene|station|harbour)", sel):
+                self.assertRegex(value, r"^(transform|opacity)\b", sel)
+        motion = re.search(r"@media \(prefers-reduced-motion: no-preference\) \{(.*?)\n\}", css, re.DOTALL).group(1)
+        for sel, decl in re.findall(r"\n\s*([^{}]+?) \{ animation: ([^;]+);", motion):
+            self.assertIn(".spot", sel)
+            name, duration, delay = re.match(r"([\w-]+) ([.\d]+)s ([.\d]+)s", decl).groups()
+            self.assertNotIn("infinite", decl, sel)
+            self.assertLessEqual(float(duration) + float(delay), 2.5, sel)  # at rest by 2.5 s
+        self.assertNotRegex(css.replace(motion, ""), r"\.spot [^{]*\{[^}]*animation:")
 
 
 def built_for(software, version):
@@ -2738,7 +3171,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
             return f.read()
 
     def snippet(self, page, id):
-        return _unescape(re.search(rf'<pre id="{id}"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
+        return code(re.search(rf'<pre id="{id}"><code>(.*?)</code></pre>', page, re.DOTALL).group(1))
 
     def test_page_from_the_artifact(self):  # CAT-38: README sections, chart, level and generators of the latest listed version
         page = self.page("recipes", "cert-manager")
@@ -2921,7 +3354,7 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertEqual(recipes["mysql"]["description"], "The mysql recipe 1.0.0.")  # every version yanked: the newest
 
     def test_not_counted_with_generators(self):  # CAT-38b
-        home = self.page()
+        home = self.page("generators")
         self.assertEqual(re.findall(r'data-name="([^"]+)"', home), ["kubernetes"])
         self.assertRegex(home, r'data-tag="helm"[^>]*>.*?helm <span class="count">\(1\)</span>')
         self.assertNotIn("Certificate", self.page("kinds"))
@@ -2964,7 +3397,7 @@ class Quickstart(unittest.TestCase):  # CAT-40
 
     @staticmethod
     def snippets(page):
-        return [(i, _unescape(t)) for i, t in re.findall(r'<pre id="([^"]+)"><code>(.*?)</code></pre>', page, re.DOTALL)]
+        return [(i, code(t)) for i, t in re.findall(r'<pre id="([^"]+)"><code>(.*?)</code></pre>', page, re.DOTALL)]
 
     def test_commands(self):  # every command in order; the manual run on kind is redone when this list changes
         page = self.page("quickstart")

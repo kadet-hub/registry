@@ -240,4 +240,4 @@ The kadet-hub [gate](/glossary/#gate) runs this check on every [generator](/glos
 listed: the same pinned kube-apiserver v1.37.1 and etcd v3.7.2, the
 generator's shipped CRDs, and every rendered document. [How kadet-hub
 works](/guides/how-kadet-hub-works/) describes the gate as a whole, and
-the [catalog](/) lists every generator that passed it.
+the [catalog](/generators/) lists every generator that passed it.
