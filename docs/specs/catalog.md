@@ -3958,7 +3958,7 @@ unused.
     (`Harbour.test_drawings_carry_no_colour_or_style`: no `text` element
     in a spot drawing); manual: the drawings beside the scene in the
     merge request
-  - Since: this change
+  - Since: #712
 
 - CAT-73c: A spot drawing MUST stand whole and vertically centred in its
   band, 184 px high.
@@ -4015,7 +4015,7 @@ unused.
   - Test: `catalog/test_catalog.py`
     (`Harbour.test_drawings_carry_no_colour_or_style`:
     `aria-hidden="true"` on every spot drawing)
-  - Since: this change
+  - Since: #712
 
 - CAT-73g: A spot drawing MUST meet CAT-69a, CAT-69b and CAT-69h.
 
@@ -4051,7 +4051,7 @@ unused.
     seal and no check mark in a spot drawing but `catalog` and
     `generator`); manual: the orange parts of each spot drawing, in the
     merge request
-  - Since: this change
+  - Since: #712
 
 - CAT-74: Each listed version on a generator page MUST show what a
   consumer does with it as three numbered steps, Inventory, Verify and
@@ -4794,7 +4794,7 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   - Test: `catalog/test_catalog.py`
     (`Harbour.test_drawings_carry_no_colour_or_style`: these constraints
     on the partials, as `test_diagram_svgs` checks the diagrams)
-  - Since: this change
+  - Since: #712
 
 - CAT-69h: Every `id` inside the drawings MUST be unique on the page.
 
@@ -4822,7 +4822,7 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
     (`Harbour.test_ship_carries_the_two_pinned_generators`: each name
     stands on its container and on the cargo list, no other generator
     name and no digit on a plate)
-  - Since: this change
+  - Since: #712
 
 - CAT-69i: An object of the drawings MUST NOT overlap another against
   the isometric depth order, in any frame of any motion.
@@ -4849,7 +4849,7 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   - Test: `catalog/test_catalog.py`
     (`Harbour.test_scene_is_drawn_by_its_generator`: `harbour_scene.py`
     runs without an assertion error); manual: the frames of station 2
-  - Since: this change
+  - Since: #712
 
 - CAT-69d: Every fact a label of the drawings shows MUST also stand in
   the text of its station.
@@ -4914,7 +4914,7 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
     no `href` and no style but the shadows' blend); manual: each drawing
     in the light theme beside its reference, in the first
     implementation's merge request
-  - Since: this change
+  - Since: #712
 
 ## The live edit
 
