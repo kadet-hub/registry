@@ -141,8 +141,8 @@ the build job (RISK-10).
   "kadet-hub", the mark and the drawings of the site, the start page's
   scene and the inner pages' drawings, are excluded from it: all
   rights reserved, their use allowed only to refer to kadet-hub. A file
-  `NOTICE` says so, and the site's footer points to it
-  ([catalog.md](catalog.md), CAT-78 to CAT-78b). Decided 2026-11-22
+  `NOTICE` says so, and the site's footer and imprint point to it
+  ([catalog.md](catalog.md), CAT-78 to CAT-78c). Decided 2026-11-22
   without legal review (DEC-51).
 
 ## Area specs

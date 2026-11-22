@@ -3693,6 +3693,18 @@ and checked by attestation.
   - Test: none (`catalog/test_catalog.py`: the sentence in the section)
   - Since: not implemented
 
+- CAT-78c: The imprint's sentence on the licence MUST say that the
+  name, the mark and the drawings are excluded from Apache-2.0, and link
+  `NOTICE`.
+
+  Today it says that the site's texts and code are published under the
+  Apache License 2.0, which without the exclusion says the opposite of
+  DEC-52.
+
+  - Test: none (`catalog/test_catalog.py`: the imprint page of the
+    fixture build names the exclusion and links `NOTICE`)
+  - Since: not implemented
+
 - CAT-62: The section "How a version gets listed" MUST close the start
   page, after "Where to go next" (CAT-67), with its approved copy.
 
