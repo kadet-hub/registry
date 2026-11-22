@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  bucket: example-shop-uploads-prod
+  region: eu-central-1
+kind: ConfigMap
+metadata:
+  labels:
+    name: web
+  name: web
+  namespace: shop

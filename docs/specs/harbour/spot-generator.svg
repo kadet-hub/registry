@@ -1,0 +1,53 @@
+<svg viewBox="10.4 34 239.6 202.5" xmlns="http://www.w3.org/2000/svg" width="239.6" height="202.5">
+<title>kadet-hub spot drawing for generator pages: reference, light theme, at rest</title>
+<rect x="10.4" y="34" width="239.6" height="202.5" fill="#cdd5fb">
+</rect>
+<path d="M22.4 182.5l135.1-78l72.7 42l-135.1 78z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M238 139l-135.1 78v-26l135.1-78z" fill="#b9bdf6">
+</path>
+<path d="M238 139l-135.1 78" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M102.9 217l-72.7-42v-26l72.7 42z" fill="#9ea3f2">
+</path>
+<path d="M102.9 217l-72.7-42" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M30.2 149l135.1-78l72.7 42l-135.1 78z" fill="#ffffff">
+</path>
+<path d="M50.9 159l19.1-11l38.1 22l-19 11z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M78.7 141l41.5 24v-4l-41.5-24z" fill="#34379f">
+</path>
+<path d="M120.2 165l7-4v-4l-7 4z" fill="#4347c4">
+</path>
+<path d="M78.7 137l6.9-4l41.6 24l-7 4z" fill="#c7c9fb">
+</path>
+<path d="M151.4 99l41.6 24v-4l-41.6-24z" fill="#34379f">
+</path>
+<path d="M193 123l6.9-4v-4l-6.9 4z" fill="#4347c4">
+</path>
+<path d="M151.4 95l6.9-4l41.6 24l-6.9 4z" fill="#c7c9fb">
+</path>
+<path d="M70 144l38.1 22v-40l-38.1-22z" fill="#8a8ef7">
+</path>
+<path d="M108.1 166l100.5-58v-40l-100.5 58z" fill="#a5a8fa">
+</path>
+<path d="M70 104l100.5-58l38.1 22l-100.5 58z" fill="#e3e4fd">
+</path>
+<path d="M108.1 166l100.5-58v-4l-100.5 58zM108.1 130l100.5-58v-4l-100.5 58z" fill="#8a8ef7">
+</path>
+<path d="M111.6 157v-26M205.1 103v-26M122 151v-26M132.4 145v-26M142.7 139v-26M153.1 133v-26M163.5 127v-26M173.9 121v-26M184.3 115v-26M194.7 109v-26" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M77.8 143.5v-30M89.1 150v-30M100.3 156.5v-30" fill="none" stroke="#e3e4fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M70 104l4.3-2.5l4.4 2.5l-4.4 2.5zM103.8 123.5l4.3-2.5l4.3 2.5l-4.3 2.5zM166.1 48.5l4.4-2.5l4.3 2.5l-4.3 2.5zM199.9 68l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#a5a8fa">
+</path>
+<g>
+<path d="M72.6 126.5l32.9 19" fill="none" stroke="#e26a1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle r="10" transform="matrix(0.866 0.5 0 1 89.1 136)" fill="#ff8a3d">
+</circle>
+<path d="M-4 0l3 3 5-6" transform="matrix(0.866 0.5 0 1 89.1 136)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+</svg>

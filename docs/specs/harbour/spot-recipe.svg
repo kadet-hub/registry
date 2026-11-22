@@ -1,0 +1,81 @@
+<svg viewBox="-51 -107.5 244.8 211" xmlns="http://www.w3.org/2000/svg" width="244.8" height="211">
+<title>kadet-hub spot drawing for recipe pages: reference, light theme, at rest</title>
+<rect x="-51" y="-107.5" width="244.8" height="211" fill="#cdd5fb">
+</rect>
+<path d="M-39 33.5l112.6-65l100.5 58l-112.6 65z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M181.9 19l-112.6 65v-26l112.6-65z" fill="#b9bdf6">
+</path>
+<path d="M181.9 19l-112.6 65" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M69.3 84l-100.5-58v-26l100.5 58z" fill="#9ea3f2">
+</path>
+<path d="M69.3 84l-100.5-58" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-31.2 0l112.6-65l100.5 58l-112.6 65z" fill="#ffffff">
+</path>
+<path d="M-13 7.5l13-7.5l31.2 18l-13 7.5z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M0 0l31.2 18v-30l-31.2-18z" fill="#8a8ef7">
+</path>
+<path d="M31.2 18l79.7-46v-30l-79.7 46z" fill="#a5a8fa">
+</path>
+<path d="M0 -30l79.7-46l31.2 18l-79.7 46z" fill="#e3e4fd">
+</path>
+<path d="M31.2 18l79.7-46v-4l-79.7 46zM31.2 -8l79.7-46v-4l-79.7 46z" fill="#8a8ef7">
+</path>
+<path d="M34.6 9v-16M107.4 -33v-16M45 3v-16M55.4 -3v-16M65.8 -9v-16M76.2 -15v-16M86.6 -21v-16M97 -27v-16" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-20M15.6 4v-20M23.4 8.5v-20" fill="none" stroke="#e3e4fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -30l4.3-2.5l4.4 2.5l-4.4 2.5zM26.8 -14.5l4.4-2.5l4.3 2.5l-4.3 2.5zM75.3 -73.5l4.4-2.5l4.3 2.5l-4.3 2.5zM102.2 -58l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#a5a8fa">
+</path>
+<path d="M23.4 28.5l13-7.5l31.1 18l-12.9 7.5z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M36.4 21l31.1 18v-30l-31.1-18z" fill="#8a8ef7">
+</path>
+<path d="M67.5 39l79.7-46v-30l-79.7 46z" fill="#a5a8fa">
+</path>
+<path d="M36.4 -9l79.6-46l31.2 18l-79.7 46z" fill="#e3e4fd">
+</path>
+<path d="M67.5 39l79.7-46v-4l-79.7 46zM67.5 13l79.7-46v-4l-79.7 46z" fill="#8a8ef7">
+</path>
+<path d="M71 30v-16M143.8 -12v-16M81.4 24v-16M91.8 18v-16M102.2 12v-16M112.6 6v-16M123 0v-16M133.4 -6v-16" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M44.2 20.5v-20M52 25v-20M59.8 29.5v-20" fill="none" stroke="#e3e4fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M36.4 -9l4.3-2.5l4.3 2.5l-4.3 2.5zM63.2 6.5l4.3-2.5l4.4 2.5l-4.4 2.5zM111.7 -52.5l4.3-2.5l4.4 2.5l-4.4 2.5zM138.6 -37l4.3-2.5l4.3 2.5l-4.3 2.5z" fill="#a5a8fa">
+</path>
+<g>
+<path d="M18.2 -19.5l31.2 18v-30l-31.2-18z" fill="#118a7b">
+</path>
+<path d="M49.4 -1.5l79.6-46v-30l-79.6 46z" fill="#18a999">
+</path>
+<path d="M18.2 -49.5l79.7-46l31.1 18l-79.6 46z" fill="#b9efe6">
+</path>
+<path d="M49.4 -1.5l79.6-46v-4l-79.6 46zM49.4 -27.5l79.6-46v-4l-79.6 46z" fill="#118a7b">
+</path>
+<path d="M52.8 -10.5v-16M125.6 -52.5v-16M63.2 -16.5v-16M73.6 -22.5v-16M84 -28.5v-16M94.4 -34.5v-16M104.8 -40.5v-16M115.2 -46.5v-16" fill="none" stroke="#118a7b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M26 -20v-20M33.8 -15.5v-20M41.6 -11v-20" fill="none" stroke="#b9efe6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M18.2 -49.5l4.3-2.5l4.3 2.5l-4.3 2.5zM45 -34l4.4-2.5l4.3 2.5l-4.3 2.5zM93.5 -93l4.4-2.5l4.3 2.5l-4.3 2.5zM120.4 -77.5l4.3-2.5l4.3 2.5l-4.3 2.5z" fill="#18a999">
+</path>
+</g>
+<g>
+<path d="M39 -61.5l31.1 18v30l18.2 10.5v30M77.1 -83.5l31.2 18v30l18.1 10.5v30" fill="none" stroke="#e26a1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+<path d="M84 27.5l5.2 3v-3l-5.2-3z" fill="#34379f">
+</path>
+<path d="M89.2 30.5l5.2-3v-3l-5.2 3z" fill="#4347c4">
+</path>
+<path d="M84 24.5l5.2-3l5.2 3l-5.2 3z" fill="#c7c9fb">
+</path>
+<path d="M122.1 5.5l5.2 3v-3l-5.2-3z" fill="#34379f">
+</path>
+<path d="M127.3 8.5l5.2-3v-3l-5.2 3z" fill="#4347c4">
+</path>
+<path d="M122.1 2.5l5.2-3l5.2 3l-5.2 3z" fill="#c7c9fb">
+</path>
+</svg>

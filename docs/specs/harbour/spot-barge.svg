@@ -1,0 +1,213 @@
+<svg viewBox="-18.9 -128.5 218 176.5" xmlns="http://www.w3.org/2000/svg" width="218" height="176.5">
+<title>kadet-hub spot drawing for stacks pages: reference, light theme, at rest</title>
+<rect x="-18.9" y="-128.5" width="218" height="176.5" fill="#cdd5fb">
+</rect>
+<g>
+<path d="M-6.9 8l48.5 28l140.3-81l-48.5-28z" fill="#b7c1f6">
+</path>
+<path d="M0 0l48.5 28v-8l-48.5-28z" fill="#34379f">
+</path>
+<path d="M48.5 28l138.6-80v-8l-138.6 80z" fill="#4347c4">
+</path>
+<path d="M0 -8l138.6-80l48.5 28l-138.6 80z" fill="#c7c9fb">
+</path>
+<path d="M0 0l48.5 28l138.6-80" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M11.3 -6.5l19 11v-16l-19-11z" fill="#cfd2fb">
+</path>
+<path d="M30.3 4.5l13.9-8v-16l-13.9 8z" fill="#e9eafd">
+</path>
+<path d="M11.3 -22.5l13.8-8l19.1 11l-13.9 8z" fill="#ffffff">
+</path>
+<path d="M14.7 -10.5l12.1 7v-6l-12.1-7z" fill="#34379f">
+</path>
+<path d="M32.9 -3l8.7-5v-6l-8.7 5z" fill="#4347c4">
+</path>
+<path d="M7.8 -22.5l22.5 13v-2l-22.5-13z" fill="#34379f">
+</path>
+<path d="M30.3 -9.5l17.3-10v-2l-17.3 10z" fill="#4347c4">
+</path>
+<path d="M7.8 -24.5l17.3-10l22.5 13l-17.3 10z" fill="#c7c9fb">
+</path>
+<g transform="matrix(1 0 0 1 106.5 -64.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#8a8ef7">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#a5a8fa">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#e3e4fd">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#8a8ef7">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#e3e4fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#a5a8fa">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 106.5 -80.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#118a7b">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#18a999">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#b9efe6">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#118a7b">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#118a7b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#b9efe6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#18a999">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 129 -51.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#cfd2fb">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#e9eafd">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#ffffff">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#cfd2fb">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#cfd2fb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#e9eafd">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 129 -67.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#454acf">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#5b61ea">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#b0b4ff">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#454acf">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#454acf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#b0b4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#5b61ea">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 68.4 -42.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#118a7b">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#18a999">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#b9efe6">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#118a7b">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#118a7b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#b9efe6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#18a999">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 90.9 -29.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#454acf">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#5b61ea">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#b0b4ff">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#454acf">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#454acf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#b0b4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#5b61ea">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 90.9 -45.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#8a8ef7">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#a5a8fa">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#e3e4fd">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#8a8ef7">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#e3e4fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#a5a8fa">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 30.3 -20.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#cfd2fb">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#e9eafd">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#ffffff">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#cfd2fb">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#cfd2fb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#e9eafd">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 30.3 -36.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#454acf">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#5b61ea">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#b0b4ff">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#454acf">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#454acf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#b0b4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#5b61ea">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 52.8 -7.5)">
+<g>
+<path d="M0 0l17.3 10v-16l-17.3-10z" fill="#8a8ef7">
+</path>
+<path d="M17.3 10l34.7-20v-16l-34.7 20z" fill="#a5a8fa">
+</path>
+<path d="M0 -16l34.6-20l17.4 10l-34.7 20z" fill="#e3e4fd">
+</path>
+<path d="M17.3 10l34.7-20v-4l-34.7 20zM17.3 -2l34.7-20v-4l-34.7 20z" fill="#8a8ef7">
+</path>
+<path d="M20.8 1v-2M48.5 -15v-2M30 -4.3v-2M39.3 -9.7v-2" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M7.8 -.5v-6M8.7 0v-6M9.5 .5v-6" fill="none" stroke="#e3e4fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -16l4.3-2.5l4.4 2.5l-4.4 2.5zM13 -8.5l4.3-2.5l4.4 2.5l-4.4 2.5zM30.3 -33.5l4.3-2.5l4.4 2.5l-4.4 2.5zM43.3 -26l4.3-2.5l4.4 2.5l-4.4 2.5z" fill="#a5a8fa">
+</path>
+</g>
+</g>
+</g>
+</svg>
