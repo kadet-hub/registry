@@ -1,5 +1,27 @@
-{{/* A code block with a copy button (CAT-9). dict: id, label, text, event (CAT-42, optional). */}}
-<div class="snippet">
-  <pre id="{{ .id }}"><code>{{ .text }}</code></pre>
+{{/* A code block with a copy button (CAT-9). dict: id, label, text, event (CAT-42, optional), title (optional: a dark panel with this title, as on the start page).
+     A sha256 digest shows its first and last eight characters; its middle stays in the text at no size, so the copy button and a selection take the whole digest.
+     Each line is a block with its indentation as a class and its words as spans: below 48rem the stylesheet wraps a line between these spans with a hanging indent.
+     A word of more than 24 characters is given as several spans, cut after a slash, an @, a comma or a JSON key. The line breaks stay in the text, which the copy button reads. */}}
+{{- $lines := split .text "\n" -}}
+{{- $digest := `sha256:([0-9a-f]{8})([0-9a-f]{48})([0-9a-f]{8})` -}}
+{{- $short := `<span class="dg" title="sha256:$1$2$3">sha256:$1<span class="dg-e"></span><span class="dg-m">$2</span>$3</span>` -}}
+<div class="snippet{{ with .title }} term dark-panel{{ end }}">
+  {{ with .title }}<p class="term-title">{{ . }}</p>{{ end }}
+  <pre id="{{ .id }}"><code>
+    {{- range $i, $l := $lines -}}
+      {{- $rest := strings.TrimLeft " " $l -}}{{- $n := sub (len $l) (len $rest) -}}
+      <span class="cl{{ if and $n (le $n 12) }} i{{ $n }}{{ end }}">{{ strings.Repeat $n " " }}
+        {{- range $j, $w := split $rest " " -}}
+          {{- if $j }} {{ end -}}
+          {{- with $w -}}
+            {{- $e := htmlEscape . -}}
+            {{- if gt (len (replaceRE $digest "sha256:................." .)) 24 }}{{ $e = replaceRE `(/+|@|,|&#34;:)` `$1</span><span class="tk">` $e }}{{ end -}}
+            <span class="tk">{{ replaceRE $digest $short $e | safeHTML }}</span>
+          {{- end -}}
+        {{- end -}}
+        {{- if lt (add $i 1) (len $lines) }}{{ "\n" }}{{ end -}}
+      </span>
+    {{- end -}}
+  </code></pre>
   <button type="button" class="copy icon-button" data-copy="{{ .id }}" aria-label="Copy {{ .label }}"{{ with .event }} data-goatcounter-click="{{ . }}" data-goatcounter-title="Copy {{ $.label }}"{{ end }} hidden><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button>
 </div>

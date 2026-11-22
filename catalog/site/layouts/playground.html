@@ -1,8 +1,13 @@
 {{ define "main" }}{{/* PG-4, PG-9, PG-11, PG-15 to PG-19, PG-22, PG-27 to PG-29, PG-31 */}}
 {{ $pg := site.Data.playground }}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    <div class="lead">{{ .Content }}</div>
+  </div>
+  {{ partial "spot.html" "basin" }}
+</header>
 <section class="prose-page wide playground">
-<h1>{{ .Title }}</h1>
-<div class="lead">{{ .Content }}</div>
 {{ with $pg }}
 {{ $mb := printf "%.1f MB" (div (float .download) 1000000) }}
 <div id="pg-intro">

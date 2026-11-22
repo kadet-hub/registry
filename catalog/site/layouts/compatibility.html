@@ -1,7 +1,13 @@
 {{ define "main" }}
 {{/* CAT-30: the compatibility facts of every generator's latest listed version. */}}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p class="lead">{{ . }}</p>{{ end }}
+  </div>
+  {{ partial "spot.html" "gauge" }}
+</header>
 <section class="prose-page prose wide">
-<h1>{{ .Title }}</h1>
 {{ .Content }}
 {{ with where site.Data.catalog.generators "latest" "!=" nil }}
 <table class="compat">

@@ -38,6 +38,9 @@ from view import (
 OWNER = "kadet-hub"
 
 
+WARNING = '<svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>'  # CAT-59c
+
+
 def code(html):
     """The text of a code panel: its lines and words are spans (CAT-9g) and a digest's middle is one (CAT-64)."""
     return _unescape(re.sub(r"<[^>]+>", "", html))
@@ -120,6 +123,34 @@ NAMED_COLOURS = {
     "slategrey", "snow", "springgreen", "steelblue", "tan", "teal", "thistle", "tomato", "turquoise", "violet", "wheat", "white", "whitesmoke",
     "yellow", "yellowgreen",
 }
+
+
+def digests_shown(test, out):
+    """CAT-64, CAT-64a: in every code panel the site writes, a sha256 digest shows its first and last eight characters and keeps all 64
+    in its text and its title, and its page shows it whole once, in two halves of 32. Returns how many digests were checked."""
+    short = r'<span class="dg" title="sha256:([0-9a-f]{64})">sha256:[0-9a-f]{8}<span class="dg-e"></span><span class="dg-m">[0-9a-f]{48}</span>[0-9a-f]{8}</span>'
+    count = 0
+    for path in glob.glob(os.path.join(out, "**", "index.html"), recursive=True):
+        html = read(path)
+        figure = "".join(re.findall(r'<section class="(?:harbour|live-edit)[^"]*".*?</section>', html, re.DOTALL))  # the figure and the live edit
+        for panel in re.findall(r'<pre id="[^"]+"><code>(.*?)</code></pre>', html, re.DOTALL) + re.findall(r"<pre><code>(.*?)</code></pre>", figure, re.DOTALL):
+            test.assertNotRegex(re.sub(short, "", panel), DIGEST, path)  # no digest at its whole length
+            for h in re.findall(short, panel):
+                test.assertIn(f"sha256:{h}", code(panel), path)
+                test.assertEqual(html.count(f'<code class="digest sha"><span>sha256:{h[:32]}</span><span>{h[32:]}</span></code>'), 1, (path, h))
+                count += 1
+    return count
+
+
+def warnings_open_with_the_icon(test, out):
+    """CAT-59c: every warning of the generator, recipe, quickstart and security pages opens with the warning icon."""
+    count = 0
+    for section in ("generators", "recipes", "quickstart", "security"):
+        for path in glob.glob(os.path.join(out, section, "**", "index.html"), recursive=True):
+            for warning in re.findall(r'class="warning">(.{0,80})', read(path)):
+                test.assertTrue(warning.startswith(WARNING), (path, warning))
+                count += 1
+    return count
 
 
 def contrast(a, b):
@@ -750,7 +781,7 @@ class Site(unittest.TestCase):
         html = self.page("generators", "demo")
         self.assertIn("Yanked: broken", html)
         self.assertIn(f"https://github.com/{OWNER}/registry/security/advisories/GHSA-2345-6789-cfgh", html)
-        self.assertIn(f"<code>sha256:{'a' * 64}</code>", html)
+        self.assertIn(f'<code class="digest sha"><span>sha256:{"a" * 32}</span><span>{"a" * 32}</span></code>', html)  # CAT-64a
         self.assertNotIn(f"sha256:{'a' * 64}\n        output_path", html)
         self.assertNotIn('data-name="old"', self.page("generators"))  # CAT-26
 
@@ -994,6 +1025,9 @@ class Site(unittest.TestCase):
         with open(os.path.join(HERE, "..", "TERMS.md"), encoding="utf-8") as f:
             self.assertIn("\n## No warranty\n", f.read())
 
+    def test_digests_in_code_panels(self):  # CAT-64, CAT-64a
+        self.assertGreaterEqual(digests_shown(self, self.out), 4)
+
     def test_one_stylesheet(self):  # CAT-71, CAT-72
         for path in glob.glob(os.path.join(self.out, "**", "index.html"), recursive=True):
             with open(path, encoding="utf-8") as f:
@@ -1008,6 +1042,70 @@ class Site(unittest.TestCase):
             users = [p for p in glob.glob(os.path.join(layouts, "**", "*.html"), recursive=True) if f'partial "{name}"' in read(p)]
             self.assertEqual([os.path.relpath(p, layouts) for p in users], {"harbour-wide.html": ["_partials/harbour.html"], "harbour-narrow.html": ["_partials/harbour.html"],
                                                                            "harbour-crop.html": ["_partials/harbour.html"]}.get(name, ["home.html"]), name)
+
+    def test_head_band(self):  # CAT-73, CAT-73a, CAT-73h, CAT-77
+        spots = {"generators": "catalog", "page": "generator", "recipes": "recipe", "chart-recipe": "recipe", "stacks": "barge", "playground": "basin",
+                 "guides": "guide", "blog": "mast", "post": "mast", "quickstart": "pilot", "popularity": "bollard", "wanted": "bollard",
+                 **dict.fromkeys(("tags", "tag", "kinds", "kind", "compatibility", "glossary", "stats", "security"), "gauge")}
+        layouts = os.path.join(HERE, "site", "layouts")
+        for name, drawing in spots.items():
+            self.assertIn(f'{{{{ partial "spot.html" "{drawing}" }}}}', read(layouts, f"{name}.html"), name)
+        prose = read(layouts, "prose.html")
+        self.assertIn('{{ if $guide }}{{ partial "spot.html" "guide" }}{{ end }}', prose)  # guides only; legal pages none
+        for path in glob.glob(os.path.join(self.out, "**", "index.html"), recursive=True):
+            with open(path, encoding="utf-8") as f:
+                html = f.read()
+            if "<main" not in html:
+                continue
+            main = html[html.index('<main id="main">'):html.index("</main>")]
+            if path == os.path.join(self.out, "index.html"):
+                self.assertNotIn("page-head", main)
+                continue
+            head = re.match(r'<main id="main">\s*(?:<article[^>]*>\s*)?<header class="page-head">(.*?)</header>', main, re.DOTALL)
+            self.assertIsNotNone(head, path)  # the band opens the page and holds its h1
+            self.assertEqual(len(re.findall(r"<h1\b", main)), 1, path)
+            self.assertIn("<h1", head.group(1), path)
+            legal = os.path.relpath(path, self.out).split(os.sep)[0] in ("imprint", "privacy")
+            self.assertEqual('<svg class="sc spot"' in head.group(1), not legal, path)
+        play = read(layouts, "playground.html")
+        self.assertLess(play.index('<header class="page-head">'), play.index('<div id="pg-app"'))  # above the editor
+        for path in glob.glob(os.path.join(self.out, "recipes", "*", "index.html")):
+            self.assertIn('<p class="term-line">A recipe is packed cargo for one app: inventory classes, ready to load.</p>', read(path), path)
+        self.assertIn('<span class="dest-sub">Packed cargo for one app</span>', self.page())
+
+    def test_spot_drawing_rules(self):  # CAT-73c, CAT-73d, CAT-73e
+        css = self.css()
+        self.assertIn(".spot { align-self: center; height: 11.5rem; width: auto; margin: -1rem 0; overflow: visible; }", css)  # 184 px, 1rem into the padding
+        self.assertRegex(css, r"\.page-head \{[^}]*align-items: center;[^}]*padding: 1\.75rem")
+        narrow = re.findall(r"@media \(width < 48rem\) \{(.*?)\n\}", css, re.DOTALL)
+        self.assertTrue(any("\n  .spot { display: none; }" in block for block in narrow))
+
+    def test_version_steps(self):  # CAT-74
+        html = self.page("generators", "demo")
+        for version in ("1.10.0", "1.2.0"):
+            block = html[html.index(f'id="v{version}"'):html.index("</details>", html.index(f'id="v{version}"'))]
+            steps = re.findall(r'<h3><span class="station-n">(\d)</span>(\w+) <span class="who ?(\w*)">([^<]+)</span></h3>', block)
+            self.assertEqual(steps, [("1", "Inventory", "", "Your project"), ("2", "Verify", "hub", "kadet-hub"), ("3", "Checks", "hub", "kadet-hub")], version)
+            self.assertLess(block.index(">Checks <"), block.index("<h3>Record</h3>"))
+            self.assertLess(block.index("<h3>Record</h3>"), block.index("<h3>Output diff</h3>"))
+
+    def test_rail(self):  # CAT-75, CAT-19
+        css = self.css()
+        wide = re.search(r"@media \(min-width: 78rem\) \{(.*?)\n\}", css, re.DOTALL).group(1)
+        self.assertIn(".with-rail:has(> .rail) { grid-template-columns: minmax(0, 1fr) 16.5rem; align-items: start; }", wide)
+        self.assertIn("position: sticky;", re.search(r"\.with-rail > \.rail \{([^}]*)\}", wide).group(1))
+        layouts = os.path.join(HERE, "site", "layouts")
+        for name in ("chart-recipe.html", "prose.html", "page.html"):
+            self.assertIn('<nav class="toc rail" aria-labelledby="toc">\n<details open>', read(layouts, name), name)
+        self.assertIn('<nav class="toc rail"', self.page("guides", "how-kadet-hub-works"))
+
+    def test_card_lists_span_the_column(self):  # CAT-79
+        css = self.css()
+        self.assertIn(".prose-page:has(> .columns) { max-width: none; }", css)
+        self.assertIn("@media (min-width: 64rem) { .columns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }", css)
+        self.assertNotRegex(css, r"\.(guide-list|columns)[^{]*\{[^}]*max-width: (?!none)")
+        for parts in (("guides",), ("blog",), ("stacks",), ("recipes",)):
+            self.assertIn('<ul class="guide-list columns">', self.page(*parts), parts)
 
     def test_start_page(self):  # CAT-67, CAT-26a, CAT-67e
         home = self.page()
@@ -1206,6 +1304,21 @@ class Site(unittest.TestCase):
                     if len(text) > 24:
                         self.assertNotRegex(text[:-1], r"/|@|,|\":", token)
 
+    def test_warnings_open_with_the_icon(self):  # CAT-59c
+        self.assertGreater(warnings_open_with_the_icon(self, self.out), 0)
+        self.assertIn('<symbol id="i-warning" viewBox="0 0 24 24">', self.page())
+
+    def test_verify_command_is_folded_at_its_flags(self):  # CAT-66n, CAT-2
+        html = self.page("generators", "demo")
+        rows = code(re.search(r'<pre id="verify-0"><code>(.*?)</code></pre>', html, re.DOTALL).group(1)).split("\n")
+        self.assertGreater(len(DIGEST.sub("sha256:" + "x" * 17, " ".join(r.removesuffix(" \\").strip() for r in rows))), 100)
+        self.assertEqual(rows[0], "gh attestation verify \\")
+        for row in rows[1:]:
+            self.assertRegex(row, r"^  \S", row)  # the hang of the command on main
+            words = row.removesuffix(" \\").split()
+            self.assertTrue(len(words) == 1 or (len(words) == 2 and words[0].startswith("--")), row)  # a flag with its value, or one argument
+        self.assertTrue(all(r.endswith(" \\") for r in rows[:-1]) and not rows[-1].endswith("\\"))
+
     def test_ids_are_unique(self):  # CAT-69h
         for parts in ((), ("generators",), ("generators", "demo")):
             ids = re.findall(r'\sid="([^"]+)"', self.page(*parts))
@@ -1257,10 +1370,10 @@ class Site(unittest.TestCase):
         self.assertGreater(len(recipes), 30)
         for path in recipes:
             with open(path, encoding="utf-8") as f:
-                self.assertIn('<h2>Fetching it</h2>\n<p>The <a href="../../quickstart/">quickstart</a>', f.read(), path)
+                self.assertIn('<h2 id="s-fetching-it">Fetching it</h2>\n<p>The <a href="../../quickstart/">quickstart</a>', f.read(), path)
         page = self.page("quickstart")
         # Not listed in this index: no steps, the recipe page instead.
-        self.assertIn('<p class="warning">The uptime-kuma recipe has no version this page can pin right now.', page)
+        self.assertIn(f'<p class="warning">{WARNING}The uptime-kuma recipe has no version this page can pin right now.', page)
         self.assertNotIn("<pre", page)
 
         def links(heading):
@@ -1561,7 +1674,7 @@ class Site(unittest.TestCase):
         self.assertIn("<title>PostgreSQL on Kubernetes: CloudNativePG clusters from Kapitan</title>", page)  # no room for the suffix
         self.assertIn('<meta name="description" content="Bitnami postgresql Helm chart alternative: Kapitan', page)
         self.assertNotIn("without Bitnami", page)
-        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>postgresql</code> recipe of kadet-hub/examples.", page)
+        self.assertIn("<h2 id=\"s-replaces\">Replaces</h2>\n<p>This recipe replaces the <code>postgresql</code> recipe of kadet-hub/examples.", page)
         self.assertIn("<title>CloudNativePG on Kubernetes: the operator from Kapitan classes</title>", self.page("recipes", "cnpg"))  # no room for the suffix
         self.assertIn("<title>MongoDB on Kubernetes with Community Server, as a Kapitan class</title>", self.page("recipes", "mongodb"))  # no room for the suffix
         self.assertIn("<title>PowerDNS on Kubernetes, the Authoritative Server in Kapitan</title>", self.page("recipes", "powerdns"))  # no room for the suffix
@@ -1610,7 +1723,7 @@ class Site(unittest.TestCase):
         self.assertIn('<label for="recipe-search">Find a recipe by Helm chart, image or app</label>', find)
         self.assertRegex(find, r'<input id="recipe-search" type="search" [^>]*autocomplete="off"')
         self.assertIn('<p id="recipe-result" class="result" aria-live="polite"></p>', find)
-        self.assertLess(index.index('class="recipe-find"'), index.index('<ul class="guide-list">'))
+        self.assertLess(index.index('class="recipe-find"'), index.index('<ul class="guide-list columns">'))
         empty = re.search(r'<p id="recipe-empty" class="empty" hidden>.*?</p>', index, re.DOTALL)[0]
         self.assertIn('<button type="button" id="recipe-reset" class="link">Show all</button>', empty)
         for href in ("../guides/bitnami-chart-alternatives/", "../wanted/#recipes",
@@ -1671,7 +1784,8 @@ class Site(unittest.TestCase):
         self.assertIn('<p class="lead">The controller and the webhook, rendered by the kadet-hub <code>kubernetes</code> generator. Derived from the chart.</p>', page)
         self.assertIn(f"<li>Source chart: <code>oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}</code></li>", page)
         self.assertIn("<li><a href=\"../../glossary/#proof-level\">Proof level</a>: <code>deploys</code>, compared with the chart by the kadet-hub/recipes CI</li>", page)
-        self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.0">kubernetes 1.7.0</a> <code>sha256:{"d" * 64}</code></li>', page)
+        self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.0">kubernetes 1.7.0</a> '
+                      f'<code class="digest sha"><span>sha256:{"d" * 32}</span><span>{"d" * 32}</span></code></li>', page)
         self.assertIn("<li><code>recipes.cert-manager.controller</code> (<code>controller.yml</code>): <code>cert-manager</code></li>", page)
         self.assertIn("<li><code>recipes.cert-manager.webhook</code> (<code>webhook.yml</code>): <code>cert-manager-webhook</code></li>", page)
         self.assertIn("<li><code>recipes.cert-manager.crds</code> (<code>crds.yml</code>), an option</li>", page)
@@ -1683,9 +1797,9 @@ class Site(unittest.TestCase):
         self.assertEqual(code(re.search(r'<pre id="commands"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)),
                          "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch")
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes#using-a-recipe">Using a recipe</a>', page)
-        self.assertEqual([h for h in re.findall(r"<h2>([^<]+)</h2>", page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
+        self.assertEqual([h for h in re.findall(r'<h2 id="s-[^"]+">([^<]+)</h2>', page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
-        self.assertIn("<h2>Required parameters</h2>\n<p>No parameter has to be set.</p>", page)
+        self.assertIn("<h2 id=\"s-required-parameters\">Required parameters</h2>\n<p>No parameter has to be set.</p>", page)
         self.assertIn("<td><code>replicaCount</code></td>", page)  # rendered from the README
         self.assertIn("<td><code>cert-manager:leaderelection</code></td>", page)
         self.assertNotIn("alert(8)</script>", page)  # raw HTML is dropped
@@ -1703,10 +1817,10 @@ class Site(unittest.TestCase):
         self.assertNotIn("## Replaces", md)
         page = self.page("recipes", "valkey")  # Replaces after the source and the level
         self.assertIn("<title>Valkey (Redis) on Kubernetes, the BSD-licensed fork in Kapitan</title>", page)  # no room for the suffix
-        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>valkey</code> recipe of kadet-hub/examples.", page)
+        self.assertIn("<h2 id=\"s-replaces\">Replaces</h2>\n<p>This recipe replaces the <code>valkey</code> recipe of kadet-hub/examples.", page)
         self.assertIn("<td>StatefulSet <code>valkey</code></td>", page)
         self.assertNotIn("alert(9)</script>", page)
-        self.assertRegex(page, r"(?s)Proof level</a>: .*</ul>\n<h2>Replaces</h2>.*<h2>What it deploys</h2>")
+        self.assertRegex(page, r"(?s)Proof level</a>: .*</ul>\n<h2 id=\"s-replaces\">Replaces</h2>.*<h2 id=\"s-what-it-deploys\">What it deploys</h2>")
         md = self.markdown("recipes", "valkey")
         self.assertRegex(md, r"\n- Page: \S+\n\n## Replaces\n\nThis recipe replaces the `valkey` recipe of kadet-hub/examples\..*\n\n"
                              r"\| kadet-hub/examples \| This recipe \|\n\|---\|---\|\n\| StatefulSet `valkey` \| Deployment `valkey` \|\n\n## Required parameters\n")
@@ -1720,9 +1834,9 @@ class Site(unittest.TestCase):
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with", page)
         self.assertIn("<li><code>recipes.miniflux.db</code> (<code>db.yml</code>): <code>miniflux-db</code></li>", page)
-        self.assertEqual([h for h in re.findall(r"<h2>([^<]+)</h2>", page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
+        self.assertEqual([h for h in re.findall(r'<h2 id="s-[^"]+">([^<]+)</h2>', page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Mapping", "Proof"])
-        self.assertIn("<h2>Required parameters</h2>\n<p>The password must be set as a ref. Without it the compile stops with\n"
+        self.assertIn("<h2 id=\"s-required-parameters\">Required parameters</h2>\n<p>The password must be set as a ref. Without it the compile stops with\n"
                       "<code>Interpolation key 'applications.miniflux.admin.password' not found</code>.</p>", page)
         self.assertIn("        password: <ref>", code(re.search(r'<pre id="include"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
         self.assertIn("<td>service <code>db</code></td>", page)
@@ -1742,9 +1856,9 @@ class Site(unittest.TestCase):
         self.assertNotIn("Source chart", page)
         self.assertNotIn("compared with", page)
         self.assertIn("<li><code>recipes.mysql.mysql</code> (<code>mysql.yml</code>): <code>mysql</code></li>", page)
-        self.assertEqual(re.findall(r"<h2>([^<]+)</h2>", page),
+        self.assertEqual(re.findall(r'<h2 id="s-[^"]+">([^<]+)</h2>', page),
                          ["Replaces", "What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Proof"])
-        self.assertIn("        subdir: mysql\n", _unescape(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
+        self.assertIn("        subdir: mysql\n", code(re.search(r'<pre id="fetch"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)))
         md = self.markdown("recipes", "mysql")
         self.assertIn(f"\n- Source: container image {DESIGN_SOURCE}, recipe designed in kadet-hub\n"
                       "- Proof level: deploys, deployed on kind and smoke tested by the kadet-hub/recipes CI\n- Generators: kubernetes 1.7.0", md)
@@ -1757,16 +1871,16 @@ class Site(unittest.TestCase):
         self.assertNotIn("compared with", powerdns)
         kafka = self.page("recipes", "kafka")
         self.assertIn(f"<li>Source: container image <code>{KAFKA_SOURCE}</code>, recipe designed in kadet-hub</li>", kafka)
-        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>kafka</code> recipe of kadet-hub/examples.", kafka)
+        self.assertIn("<h2 id=\"s-replaces\">Replaces</h2>\n<p>This recipe replaces the <code>kafka</code> recipe of kadet-hub/examples.", kafka)
         self.assertNotIn("compared with", kafka)
         self.assertNotIn("without Bitnami", kafka)
         rabbitmq = self.page("recipes", "rabbitmq")
         self.assertIn(f"<li>Source: container image <code>{RABBITMQ_SOURCE}</code>, recipe designed in kadet-hub</li>", rabbitmq)
-        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>rabbitmq</code> recipe of kadet-hub/examples.", rabbitmq)
+        self.assertIn("<h2 id=\"s-replaces\">Replaces</h2>\n<p>This recipe replaces the <code>rabbitmq</code> recipe of kadet-hub/examples.", rabbitmq)
         self.assertNotIn("without Bitnami", rabbitmq)
         keycloak = self.page("recipes", "keycloak")
         self.assertIn(f"<li>Source: container image <code>{KEYCLOAK_SOURCE}</code>, recipe designed in kadet-hub</li>", keycloak)
-        self.assertIn("<h2>Replaces</h2>\n<p>This recipe replaces the <code>keycloak</code> recipe of kadet-hub/examples.", keycloak)
+        self.assertIn("<h2 id=\"s-replaces\">Replaces</h2>\n<p>This recipe replaces the <code>keycloak</code> recipe of kadet-hub/examples.", keycloak)
         self.assertNotIn("without Bitnami", keycloak)
 
     def test_recipe_file_missing_fails_the_build(self):  # CAT-37a, CAT-37c, CAT-37e
@@ -2151,8 +2265,8 @@ class Site(unittest.TestCase):
     def test_one_column_with_table_of_contents(self):
         html = self.page("generators", "demo")
         self.assertNotIn("<aside", html)
-        self.assertIn('<nav class="toc" aria-labelledby="toc">\n<details open>', html)  # open without JavaScript
-        self.assertLess(html.index('class="toc"'), html.index('class="generator-body"'))  # beside the column, not in it
+        self.assertIn('<nav class="toc rail" aria-labelledby="toc">\n<details open>', html)  # open without JavaScript
+        self.assertLess(html.index('class="toc rail"'), html.index('class="main-col stack"'))  # beside the column, not in it
         start = html.index('id="toc"')
         toc = html[start:html.index("</nav>", start)]
         links = ["readme", "versions"]
@@ -2281,7 +2395,9 @@ class Site(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.out, "guides", "writing-a-kapitan-generator", "badge.json")))
         html = self.page("generators", "demo")
         section = html[html.index('<details class="badge-snippet">'):html.index("</details>", html.index('<details class="badge-snippet">'))]
-        self.assertLess(html.index('<details class="badge-snippet">'), html.index('class="toc"'))  # below the actions, not a section
+        # CAT-32a: below the page's actions in the head band, not a section or the rail
+        self.assertRegex(html, r'Report a problem</a></p>\s*<details class="badge-snippet">')
+        self.assertLess(html.index('<details class="badge-snippet">'), html.index("</header>", html.index('<header class="page-head">')))
         snippet = code(re.search(r'<pre id="badge-markdown"><code>(.*?)</code></pre>', section, re.DOTALL).group(1))
         self.assertEqual(snippet, "[![kadet-hub](https://img.shields.io/endpoint?url=https://kadet-hub.org/generators/demo/badge.json)]"
                                "(https://kadet-hub.org/generators/demo/)")
@@ -2900,16 +3016,37 @@ class Diagrams(unittest.TestCase):
             version = re.search(r"Generated by graphviz version (\S+)", svg).group(1)
             self.assertIn(f"Rendered with Graphviz {version};", dot, name)
             self.assertLessEqual(float(re.search(r'<svg width="([\d.]+)pt"', svg).group(1)), 340, name)  # readable at 360 px
+            self.assertNotRegex(re.sub(r"//.*", "", dot), r"color|#[0-9a-fA-F]{6}", name)  # CAT-35a, CAT-35b: classes, no colour
             fails = re.findall(r'<g id="[^"]+" class="(?:node|edge) fail">.*?</g>', svg, re.DOTALL)
             for group in fails:
-                self.assertIn('stroke-dasharray="', group, name)  # never colour alone
+                if "<ellipse" not in group:  # a point where failing steps meet carries no line of its own
+                    self.assertIn('stroke-dasharray="', group, name)  # never colour alone
             if fails:
-                self.assertIn(">fails</text>", svg, name)
+                self.assertRegex(svg, r">(?: |&#160;)*fails(?: |&#160;)*</text>", name)
         for bad in ("<style>text { fill: red }</style>", '<g style="fill: red"/>', "<script>alert(1)</script>", '<g onload="alert(1)"/>',
                     '<a xlink:href="https://example.org/x"/>', '<image href="//example.org/x.png"/>'):
             svg = f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">{bad}</svg>'
             self.assertNotEqual(svg_findings(svg), [], bad)
         self.assertEqual(svg_findings('<svg xmlns="http://www.w3.org/2000/svg"><use href="#i-x"/></svg>'), [])
+
+class InChrome(unittest.TestCase):  # AC-50, CAT-9h, CAT-25a, CAT-35c, CAT-54, CAT-76, CAT-79
+    """catalog/browser.mjs renders one page of every page type in Chrome. It takes the playwright-core of
+    catalog/playground/package.json (npm ci there) and Chrome ($CHROME); without them the test is skipped.
+    With SHOTS=<dir> it keeps the 20 screenshots of AC-50 there."""
+
+    def test_rendered_pages(self):
+        playwright = os.path.join(HERE, "playground", "node_modules", "playwright-core")
+        if not (shutil.which("node") and os.path.isdir(playwright) and os.path.exists(os.environ.get("CHROME", "/usr/bin/google-chrome"))):
+            self.skipTest("node, playwright-core or Chrome missing")
+        # The site fixture with a kind two generators render and an image report, so every page type has a page.
+        index = json.loads(json.dumps(SITE_INDEX))
+        index["generators"]["plain"]["0.2.0"]["kinds"] = [{"group": "gateway.networking.k8s.io", "version": "v1", "kind": "HTTPRoute"}]
+        with tempfile.TemporaryDirectory() as tmp:
+            report = os.path.join(tmp, "security.json")
+            with open(report, "w", encoding="utf-8") as f:
+                json.dump(SECURITY, f)
+            out = build(index, tmp, security=report)
+            subprocess.run(["node", os.path.join(HERE, "browser.mjs"), out, *filter(None, [os.environ.get("SHOTS")])], check=True)
 
 
 class Harbour(unittest.TestCase):  # CAT-66, CAT-68, CAT-69 to CAT-69j, CAT-73b to CAT-73j: the generators and what they write
@@ -3189,7 +3326,8 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn("<title>cert-manager on Kubernetes, matched to its chart object by object</title>", page)  # same URL and content page
         self.assertIn(f"<li>Source chart: <code>{ARTIFACT_CHART}</code></li>", page)
         self.assertNotIn("v1.21.2", page)  # main's chart
-        self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.1">kubernetes 1.7.1</a> <code>sha256:{"e" * 64}</code></li>', page)
+        self.assertIn(f'<li>Generators: <a href="../../generators/kubernetes/#v1.7.1">kubernetes 1.7.1</a> '
+                      f'<code class="digest sha"><span>sha256:{"e" * 32}</span><span>{"e" * 32}</span></code></li>', page)
         self.assertIn("<td><code>webhook.timeoutSeconds</code></td>", page)
         self.assertNotIn("alert(8)</script>", page)  # raw HTML is dropped
         self.assertIn('<a href="#v1.1.0"><code>1.1.0</code></a>, published <time datetime="2026-10-26T15:53:43Z">2026-10-26</time></li>', page)
@@ -3257,17 +3395,18 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
 
     def test_yanked_versions_and_generators(self):  # CAT-38: the reason and no fetch inventory entry
         page = self.page("recipes", "cert-manager")
-        versions = page[page.index("<h2>Versions</h2>"):]
+        versions = page[page.index('<h2 id="s-versions">Versions</h2>'):]
         self.assertLess(versions.index('id="v1.1.0"'), versions.index('id="v1.0.0"'))
-        self.assertIn(f'<li id="v1.0.0"><code>1.0.0</code>, <time datetime="2026-10-26T15:53:43Z">2026-10-26</time>: <code>sha256:{"a" * 64}</code>'
-                      '<br><span class="warning">Yanked: wrong CRDs</span></li>', versions)
-        self.assertEqual(page.count("a" * 64), 1)
+        whole = f'<code class="digest sha"><span>sha256:{"a" * 32}</span><span>{"a" * 32}</span></code>'  # CAT-64a
+        self.assertIn(f'<li id="v1.0.0"><code>1.0.0</code>, <time datetime="2026-10-26T15:53:43Z">2026-10-26</time>: {whole}'
+                      f'<span class="warning">{WARNING}Yanked: wrong CRDs</span></li>', versions)
+        self.assertEqual(page.count(whole), 1)
         self.assertIn(f"\n## Versions\n\n- 1.1.0, 2026-10-26: sha256:{'b' * 64}\n- 1.0.0, 2026-10-26: sha256:{'a' * 64}; yanked: wrong CRDs\n",
                       self.page("recipes", "cert-manager", name="index.md"))
         page = self.page("recipes", "valkey")
         reason = "pins the generator kubernetes 1.9.0, which is yanked: renders a broken Service"
-        self.assertIn(f'<p class="warning">Version 1.0.0 {reason}</p>', page)
-        self.assertIn(f'<br><span class="warning">P{reason[1:]}</span></li>', page)
+        self.assertIn(f'<p class="warning">{WARNING}Version 1.0.0 {reason}</p>', page)
+        self.assertIn(f'<br><span class="warning">{WARNING}P{reason[1:]}</span></li>', page)
         self.assertNotIn('<pre id="fetch">', page)
         self.assertNotIn('<pre id="verify">', page)
         self.assertNotIn(f"recipes/valkey:1.0.0@sha256:{'3' * 64}", page)
@@ -3280,10 +3419,10 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertIn(f"ref: {CHART_RECIPE_SHA}\n", self.snippet(page, "fetch"))
         self.assertIn("Until this recipe is published as an OCI artifact", page)
         self.assertNotIn("Latest version", page)
-        self.assertIn('<br><span class="warning">Yanked: entry removed</span></li>', page)
+        self.assertIn(f'<span class="warning">{WARNING}Yanked: entry removed</span></li>', page)
         self.assertFalse(os.path.exists(os.path.join(self.out, "recipes", "no-page")))  # no content page, no page
         page = self.page("recipes", "miniflux")  # unlisted
-        self.assertNotIn("<h2>Versions</h2>", page)
+        self.assertNotIn(">Versions</h2>", page)
         self.assertIn("        subdir: miniflux\n", self.snippet(page, "fetch"))
 
     def test_layer_missing_fails_the_build(self):  # CAT-38, CAT-37a
@@ -3370,6 +3509,10 @@ class ListedRecipe(unittest.TestCase):  # CAT-38 to CAT-38b
         self.assertRegex(home, r'data-tag="helm"[^>]*>.*?helm <span class="count">\(1\)</span>')
         self.assertNotIn("Certificate", self.page("kinds"))
         self.assertEqual(re.findall(r'<tr id="([^"]+)">', self.page("compatibility")), ["kubernetes"])
+
+    def test_digests_and_warnings(self):  # CAT-64, CAT-64a, CAT-59c
+        self.assertGreater(digests_shown(self, self.out), 3)
+        self.assertGreater(warnings_open_with_the_icon(self, self.out), 1)
 
     def test_seo(self):  # CAT-11d over the new markup
         result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True, check=False)
@@ -3466,10 +3609,13 @@ class Quickstart(unittest.TestCase):  # CAT-40
             out = build(index, tmp, recipe_layers(os.path.join(tmp, "artifacts"), {"uptime-kuma": UPTIME_KUMA_FILES}))
             with open(os.path.join(out, "quickstart", "index.html"), encoding="utf-8") as f:
                 page = f.read()
-        self.assertIn('<p class="warning">The uptime-kuma recipe has no version this page can pin right now. '
+        self.assertIn(f'<p class="warning">{WARNING}The uptime-kuma recipe has no version this page can pin right now. '
                       'Its <a href="../recipes/uptime-kuma/">recipe page</a> says why.</p>', page)
         self.assertNotIn("<pre", page)
         self.assertIn(">Coming from Helm?</h2>", page)
+
+    def test_digests_in_code_panels(self):  # CAT-64, CAT-64a
+        self.assertGreater(digests_shown(self, self.out), 0)
 
     def test_seo(self):  # CAT-11d over the new page
         result = subprocess.run([sys.executable, "-I", SEO_CHECK, self.out], capture_output=True, text=True, check=False)
@@ -3553,13 +3699,13 @@ class Stacks(unittest.TestCase):  # CAT-45 to CAT-50
     def test_used_in_stacks(self):  # CAT-48
         a = '<li><a href="../../blog/stack-a/">Stack A: cert-manager and Valkey on Kubernetes</a></li>'
         b = '<li><a href="../../blog/stack-b/">Stack B: Valkey alone on Kubernetes with Kapitan</a></li>'
-        self.assertRegex(self.page("recipes", "valkey"), rf"<h2>Used in stacks</h2>\n<ul>{re.escape(a + b)}</ul>\s*<h2>Versions</h2>")
+        self.assertRegex(self.page("recipes", "valkey"), rf'<h2>Used in stacks</h2>\n<ul>{re.escape(a + b)}</ul>\s*<h2 id="s-versions">Versions</h2>')
         self.assertIn(f"<h2>Used in stacks</h2>\n<ul>{a}</ul>", self.page("recipes", "cert-manager"))
         self.assertNotIn("Used in stacks", self.page("recipes", "mysql"))
         page = self.page("generators", "kubernetes")
-        self.assertRegex(page, r'<li><a href="#stacks">Used in stacks</a></li>\s*<li><a href="#versions">Versions</a></li>')  # CAT-19
-        self.assertRegex(page, rf'(?s)<div class="generator-body">\s*<section class="stacks" aria-labelledby="stacks">\n'
-                               rf'<h2 id="stacks">Used in stacks</h2>\n<ul>{re.escape(a)}</ul>\n</section>\s*</div>')
+        self.assertRegex(page, r'<li><a href="#stacks">Used in stacks</a></li>\s*<li><a href="#versions">Versions</a>')  # CAT-19
+        self.assertRegex(page, rf'(?s)<div class="main-col stack">.*<section class="stacks" aria-labelledby="stacks">\n'
+                               rf'<h2 id="stacks">Used in stacks</h2>\n<ul>{re.escape(a)}</ul>\n</section>\s*<section class="versions"')
         self.assertNotIn("Used in stacks", self.page("generators", "old"))
 
     def test_queued_stack_posts(self):  # CAT-49: every committed stack post, also before its date
@@ -3685,7 +3831,7 @@ class Security(unittest.TestCase):  # CAT-39 to CAT-39c
                          r"in the 1 image of version 1\.0\.0, 1 by tag, digest at scan time: CRITICAL 0, HIGH 0, MEDIUM 0, LOW 1, UNKNOWN 0\. ")
         page = self.page("security", "generators", "tagged")
         self.assertIn(f"<p>By tag, digest at scan time: <code>sha256:{'7' * 64}</code></p>", page)
-        self.assertIn('<p class="warning">No image at this tag on 2026-10-29: MANIFEST_UNKNOWN: manifest unknown</p>', page)
+        self.assertIn(f'<p class="warning">{WARNING}No image at this tag on 2026-10-29: MANIFEST_UNKNOWN: manifest unknown</p>', page)
 
     def test_recipe_at_main(self):  # CAT-39: a recipe page without a listed version reports main of kadet-hub/recipes
         self.assertRegex(self.fact("recipes", "valkey"), r'^grade <span class="grade grade-d">D</span> 2 findings, one per advisory and package, '
@@ -3717,9 +3863,12 @@ class Security(unittest.TestCase):  # CAT-39 to CAT-39c
                                 ("CVE-2026-1", "HIGH", "openssl", "3.0.1", "3.0.2"), ("GHSA-aaaa-bbbb-cccc", "MEDIUM", "golang.org/x/net", "0.1.0", "0.2.0")])
         self.assertIn("Trivy 0.76.1 scanned the images with the vulnerability database of 2026-10-29.", page)
         self.assertNotIn("By tag", page)
-        self.assertIn('<p class="warning">Not scanned: MANIFEST_UNKNOWN: manifest[31m unknown</p>', self.page("security", "generators", "failing"))
+        self.assertIn(f'<p class="warning">{WARNING}Not scanned: MANIFEST_UNKNOWN: manifest[31m unknown</p>', self.page("security", "generators", "failing"))
         self.assertIn("<p>No vulnerabilities found.</p>", self.page("security", "generators", "clean"))
         self.assertIn("<h1>Image security report: cert-manager recipe</h1>", self.page("security", "recipes", "cert-manager"))
+
+    def test_warnings_open_with_the_icon(self):  # CAT-59c
+        self.assertGreater(warnings_open_with_the_icon(self, self.out), 1)
 
     def test_seo(self):  # CAT-11d over the new pages
         p = subprocess.run([sys.executable, SEO_CHECK, self.out], capture_output=True, text=True, check=False)

@@ -1,10 +1,16 @@
 {{ define "main" }}
 {{- /* CAT-36a: a blog post. */ -}}
-<article class="prose-page prose post">
-<h1>{{ .Title }}</h1>
+<article>
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    <p class="lead">{{ .Description }}</p>
+  </div>
+  {{ partial "spot.html" "mast" }}
+</header>
+<div class="prose-page prose post">
 <p class="byline">By <a href="https://github.com/{{ site.Data.catalog.owner }}">kadet-hub maintainers</a> · Published <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2 January 2006" }}</time>
 {{- if gt .Lastmod .Date }} · Updated <time datetime="{{ .Lastmod.Format "2006-01-02" }}">{{ .Lastmod.Format "2 January 2006" }}</time>{{ end }} · {{ .ReadingTime }} min read</p>
-<p class="lead">{{ .Description }}</p>
 {{ if ge .WordCount 800 }}<nav class="toc" aria-labelledby="toc">
 <details open>
   <summary><h2 id="toc">On this page</h2></summary>
@@ -38,5 +44,6 @@
 {{ with $posts.Prev . }}<a rel="next" href="{{ .RelPermalink }}">Newer: {{ .Title }}</a>{{ end }}
 </nav>
 </footer>
+</div>
 </article>
 {{ end }}

@@ -1,11 +1,16 @@
 {{ define "main" }}{{/* CAT-40: the uptime-kuma recipe from an empty directory to its web UI on kind, with the commands of its recipe page. */}}
 {{ $r := partial "chart-recipe.html" (site.GetPage "/recipes/uptime-kuma") }}
 {{ $consumers := printf "https://github.com/%s/registry/blob/main/docs/consumers.md" site.Data.catalog.owner }}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    <p class="lead">From an empty directory to Uptime Kuma, a self-hosted monitoring tool, on a kind cluster on your machine: install Kapitan, fetch the <a href="{{ "/recipes/uptime-kuma/" | relURL }}">uptime-kuma recipe</a> pinned by version and digest, verify it, compile it and apply the manifests. The steps take about five minutes, most of it waiting for the image and the first readiness probe.</p>
+  </div>
+  {{ partial "spot.html" "pilot" }}
+</header>
 <section class="prose-page prose">
-<h1>{{ .Title }}</h1>
-<p class="lead">From an empty directory to Uptime Kuma, a self-hosted monitoring tool, on a kind cluster on your machine: install Kapitan, fetch the <a href="{{ "/recipes/uptime-kuma/" | relURL }}">uptime-kuma recipe</a> pinned by version and digest, verify it, compile it and apply the manifests. The steps take about five minutes, most of it waiting for the image and the first readiness probe.</p>
 {{ if or (not $r.latest) $r.blocked }}
-<p class="warning">The uptime-kuma recipe has no version this page can pin right now. Its <a href="{{ "/recipes/uptime-kuma/" | relURL }}">recipe page</a> says why.</p>
+<p class="warning"><svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>The uptime-kuma recipe has no version this page can pin right now. Its <a href="{{ "/recipes/uptime-kuma/" | relURL }}">recipe page</a> says why.</p>
 {{ else }}
 <h2>What you need</h2>
 <p>Docker, <a href="https://kind.sigs.k8s.io/">kind</a>, kubectl, <a href="https://docs.astral.sh/uv/">uv</a> and the GitHub CLI <code>gh</code>, logged in with <code>gh auth login</code> for the verify step.</p>
@@ -20,6 +25,7 @@
 {{ partial "snippet.html" (dict "id" "project" "label" "project commands" "text" "mkdir -p uptime-kuma/fetch/targets uptime-kuma/inventory/targets\ncd uptime-kuma\ncat > .kapitan <<'EOF'\nglobal:\n  inventory-backend: omegaconf\nEOF") }}
 <p>The fetch inventory pins the <a href="{{ "/glossary/#recipe" | relURL }}">recipe</a> by version {{ $r.latest.version }} and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. It is a separate inventory because Kapitan reads the inventory before it fetches, so a class cannot be fetched by the inventory that includes it:</p>
 {{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" (printf "cat > fetch/targets/recipes.yml <<'EOF'\n%s\nEOF" $r.fetch) "event" "copy-fetch-inventory/quickstart") }}
+{{/* CAT-64a: the digest the commands shorten, whole once. */}}<dl class="details"><dt class="row">uptime-kuma {{ $r.latest.version }}</dt><dd class="row">{{ partial "digest.html" $r.latest.digest }}</dd></dl>
 <p>The <a href="{{ "/glossary/#target" | relURL }}">target</a> includes the recipe as a <a href="{{ "/glossary/#class" | relURL }}">class</a> and sets the namespace and the target's name, which is also its output directory under <code>compiled/</code>:</p>
 {{ partial "snippet.html" (dict "id" "target" "label" "target" "text" (printf "cat > inventory/targets/uptime-kuma.yml <<'EOF'\n%s\nEOF" $r.include)) }}
 <h2>4. Verify the recipe</h2>
@@ -30,6 +36,7 @@
 <p>The first command fetches the recipe into <code>inventory/classes/recipes/uptime-kuma</code> and then exits with status 1 and <code>No such file or directory: .../compiled</code>, because the fetch target compiles nothing. The second fetches the <a href="{{ "/generators/kubernetes/" | relURL }}">kubernetes</a> generator the recipe pins into <code>lib/kubernetes</code> and writes a StatefulSet and a Service to <code>compiled/uptime-kuma/manifests/</code>. It warns that the container sets no resource requests; a target sets them under <code>components.uptime-kuma.resources</code>.</p>
 {{ with $r.included }}<p>Version {{ $r.latest.version }} includes {{ . }}. Kapitan's <code>--fetch</code> reads no index, so pull the included recipes by digest before the second command:</p>
 {{ partial "snippet.html" (dict "id" "pull" "label" "pull commands" "text" $r.pull) }}
+<dl class="details">{{ range $r.latest.includes }}<dt class="row">{{ .name }} {{ .version }}</dt><dd class="row">{{ partial "digest.html" .digest }}</dd>{{ end }}</dl>
 {{ end }}{{ partial "snippet.html" (dict "id" "compile" "label" "compile commands" "text" $r.commands) }}
 <h2>6. Apply</h2>
 <p>The recipe renders no Namespace, so the first command creates it. <code>rollout status</code> waits until the pod is ready. Its readiness probe runs every 60 seconds, so this takes a minute or two after the image is pulled.</p>

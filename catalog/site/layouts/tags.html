@@ -1,8 +1,13 @@
 {{ define "main" }}
 {{ $gens := where site.Data.catalog.generators "latest" "!=" nil }}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>Tags</h1>
+    <p class="lead">A tag is a claim by the generator's author. The maintainer checks it in review against this page; for <code>kubernetes</code>, <code>helm</code> and <code>terraform</code> the evidence named below can be checked in the manifest and the compiled output.</p>
+  </div>
+  {{ partial "spot.html" "gauge" }}
+</header>
 <section class="prose-page">
-<h1>Tags</h1>
-<p class="lead">A tag is a claim by the generator's author. The maintainer checks it in review against this page; for <code>kubernetes</code>, <code>helm</code> and <code>terraform</code> the evidence named below can be checked in the manifest and the compiled output.</p>
 <div class="tag-defs">
 {{ range $id, $t := site.Data.tags }}
 {{ $n := len (where $gens "tags" "intersect" (slice $id)) }}

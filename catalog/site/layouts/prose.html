@@ -1,7 +1,28 @@
 {{ define "main" }}
-<section class="prose-page prose">
-<h1>{{ .Title }}</h1>
-{{ if eq .Section "blog" }}<p class="lead"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2 January 2006" }}</time></p>{{ end }}
+{{ $guide := eq .Section "guides" }}
+{{ $toc := .TableOfContents }}
+<article class="doc">
+<header class="page-head">
+  <div class="page-head-text">
+    {{ if $guide }}<p class="crumbs"><a href="{{ "/guides/" | relURL }}">Guides</a></p>{{ end }}
+    <h1>{{ .Title }}</h1>
+    {{ if eq .Section "blog" }}<p class="lead"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2 January 2006" }}</time></p>{{ end }}
+    {{ if $guide }}{{ with .Description }}<p class="lead">{{ . }}</p>{{ end }}{{ end }}
+  </div>
+  {{ if $guide }}{{ partial "spot.html" "guide" }}{{ end }}
+</header>
+<div class="with-rail">
+{{ if and $guide (in $toc "<li>") }}
+<nav class="toc rail" aria-labelledby="toc">
+<details open>
+  <summary><h2 id="toc">On this page</h2></summary>
+  {{ $toc | replaceRE `</?nav[^>]*>` "" | safeHTML }}
+</details>
+</nav>
+{{ end }}
+<div class="prose doc-body main-col">
 {{ .Content }}
-</section>
+</div>
+</div>
+</article>
 {{ end }}

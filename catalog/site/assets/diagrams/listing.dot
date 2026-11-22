@@ -1,10 +1,6 @@
-// CAT-35: listing a new generator. Rendered with Graphviz 14.1.4; ./render regenerates listing.svg.
+// CAT-35: listing a new generator. Rendered with Graphviz 16.1.1; ./render sets the look the six diagrams share and regenerates listing.svg.
 digraph listing {
-  bgcolor=transparent; nodesep=0.3; ranksep=0.28;
-  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
-  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
-  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
-
+  node [group="flow"];
   subgraph cluster_author {
     label="Author, own repository";
     template [label="Repository from\ngenerator-template"];
@@ -18,7 +14,7 @@ digraph listing {
   tag -> pr;
 
   subgraph cluster_gate {
-    label="Gate, from main:\lread-only token\l";
+    label="Gate, from main:\rread-only token\r"; labeljust=r;
     registration [label="Registration"];
     source [label="Source and charts\nfetched as data"];
     scans [label="Static scans"];
@@ -26,21 +22,29 @@ digraph listing {
     output [label="Output checks"];
     diff [label="Output diff against the\napproved version"];
     registration -> source -> scans -> sandbox -> output -> diff;
+
+    // one line collects the failure of every check and leaves the gate at its end
+    node [group="fails" shape=point width=0.05 class="fail"];
+    edge [class="fail" style=dashed arrowhead=none weight=5];
+    {rank=same; registration -> f1}
+    {rank=same; source -> f2}
+    {rank=same; scans -> f3}
+    {rank=same; sandbox -> f4}
+    {rank=same; output -> f5}
+    {rank=same; diff; out [style=invis width=0]}
+    f1 -> f2 -> f3 -> f4 -> f5;
+    f5 -> out [label="   fails   "];
   }
   pr -> registration;
 
-  red [label="Gate check fails,\nmerge blocked" class="fail" style="rounded,dashed"];
-  registration -> red [label="fails" class="fail" style=dashed];
-  source -> red [label="fails" class="fail" style=dashed];
-  scans -> red [label="fails" class="fail" style=dashed];
-  sandbox -> red [label="fails" class="fail" style=dashed];
-  output -> red [label="fails" class="fail" style=dashed];
+  red [label="Gate check fails,\nmerge blocked" group="fails" class="fail" style="rounded,dashed"];
+  out -> red [class="fail" style=dashed];
 
   comment [label="Report comment\non every run"];
   diff -> comment;
   red -> comment [class="fail" style=dashed];
   review [label="Maintainer reviews code\nand output diff, approves"];
   merge [label="Merge, branch up to\ndate with main"];
-  comment -> review [label="gate passed"];
+  comment -> review [label="   gate passed   "];
   review -> merge;
 }

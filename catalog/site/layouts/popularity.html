@@ -1,7 +1,13 @@
 {{ define "main" }}
 {{/* CAT-23: the score and its inputs for every generator. */}}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p class="lead">{{ . }}</p>{{ end }}
+  </div>
+  {{ partial "spot.html" "bollard" }}
+</header>
 <section class="prose-page prose">
-<h1>{{ .Title }}</h1>
 {{ .Content }}
 <table class="popularity">
 <thead><tr><th scope="col">Generator</th><th scope="col">👍</th><th scope="col">Stars ÷ n</th><th scope="col">Pulls</th><th scope="col">Score</th></tr></thead>

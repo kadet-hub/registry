@@ -5,22 +5,12 @@
 {{ $name := .name }}{{ $shared := .stars_shared }}{{ $gen := . }}
 {{ $stacks := (where (where site.RegularPages "Section" "blog") "Params.stack.generators" "intersect" (slice .name)).ByDate.Reverse }}
 <article class="generator">
-<header class="generator-head">
-  <span class="monogram large hue-{{ .hue }}" aria-hidden="true">{{ .monogram }}{{ with .tags }}<svg class="badge"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ end }}</span>
-  <div>
-    <h1>{{ .name }}</h1>
+<header class="page-head">
+  <div class="page-head-text">
+    <p class="crumbs"><a href="{{ "/generators/" | relURL }}">Generators</a> / {{ .name }}</p>
+    <div class="title-row">{{ partial "cube.html" (.tags | default slice) }}<h1>{{ .name }}</h1>{{ with .latest }}<span class="ver">{{ .version }}</span>{{ end }}</div>
     <p class="lead">{{ .description }}</p>
     {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/tags/%s/" . | relURL }}"><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ . }}"/></svg>{{ . }}</a>{{ end }}</p>{{ end }}
-    <dl class="facts">
-      <div><dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</dd></div>
-      <div><dt>License</dt><dd>{{ .license }}</dd></div>
-      <div><dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
-      <div><dt>Source</dt><dd><a href="{{ .source_url }}" data-goatcounter-click="source-repo/generators/{{ .name }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} {{ with $shared }}repo stars, shared by {{ . }} generators{{ else }}stars{{ end }}{{ end }}</dd></div>
-      {{ with .discussion }}<div><dt>Thumbs up</dt><dd><a href="{{ .url }}">👍 {{ .up }}</a> on GitHub Discussions</dd></div>{{ end }}
-      <div><dt>Popularity</dt><dd><a href="{{ printf "/popularity/#%s" .name | relURL }}">{{ .score }}</a> · {{ with .pulls }}{{ . }} pulls{{ else }}pulls not read{{ end }}</dd></div>
-      {{ $v := "" }}{{ with .latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "generators" "name" .name "version" $v) }}
-      <div><dt>Image security</dt><dd>{{ with $sec.grade }}Grade <span class="grade grade-{{ $sec.class }}">{{ . }}</span> {{ end }}{{ $sec.text }}{{ with $sec.full }} <a href="{{ . | relURL }}">Full report</a>{{ end }}</dd></div>
-    </dl>
     {{ $q := dict "template" "generator-report.yml" "generator" .name "title" (printf "[report] %s: " .name) }}{{ with .latest }}{{ $q = merge $q (dict "version" .version) }}{{ end }}
     {{/* CAT-21: feature requests go to the source repository's tracker. */}}
     {{ $title := printf "[%s] " .name }}
@@ -39,20 +29,33 @@
     </details>
     {{ end }}
   </div>
+  {{ partial "spot.html" "generator" }}
 </header>
+<dl class="fact-grid">
+  <div><dt>Latest</dt><dd>{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ else }}none, all versions yanked{{ end }}</dd></div>
+  <div><dt>License</dt><dd>{{ .license }}</dd></div>
+  <div><dt>Owners</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}<a href="https://github.com/{{ . }}">{{ . }}</a>{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
+  <div><dt>Source</dt><dd><a href="{{ .source_url }}" data-goatcounter-click="source-repo/generators/{{ .name }}">{{ strings.TrimPrefix "https://" .source_url }}</a>{{ with .stars }} · {{ . }} {{ with $shared }}repo stars, shared by {{ . }} generators{{ else }}stars{{ end }}{{ end }}</dd></div>
+  {{ with .discussion }}<div><dt>Thumbs up</dt><dd><a href="{{ .url }}">👍 {{ .up }}</a> on GitHub Discussions</dd></div>{{ end }}
+  <div><dt>Popularity</dt><dd><a href="{{ printf "/popularity/#%s" .name | relURL }}">{{ .score }}</a> · {{ with .pulls }}{{ . }} pulls{{ else }}pulls not read{{ end }}</dd></div>
+  {{ $v := "" }}{{ with .latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "generators" "name" .name "version" $v) }}
+  <div><dt>Image security</dt><dd>{{ with $sec.grade }}Grade <span class="grade grade-{{ $sec.class }}">{{ . }}</span> {{ end }}{{ $sec.text }}{{ with $sec.full }} <a href="{{ . | relURL }}">Full report</a>{{ end }}</dd></div>
+</dl>
 
-<nav class="toc" aria-labelledby="toc">
+<div class="with-rail">
+<nav class="toc rail" aria-labelledby="toc">
 <details open>
   <summary><h2 id="toc">On this page</h2></summary>
   <ol>
     {{ with .readme }}<li><a href="#readme">README</a></li>{{ end }}
     {{ with $stacks }}<li><a href="#stacks">Used in stacks</a></li>{{ end }}
-    <li><a href="#versions">Versions</a></li>
+    <li><a href="#versions">Versions</a>
+      <ol>{{ range .versions }}<li><a href="#v{{ .version }}">{{ .version }}{{ if .yanked }} (yanked){{ end }}</a></li>{{ end }}</ol></li>
   </ol>
 </details>
 </nav>
 
-<div class="generator-body">
+<div class="main-col stack">
 {{ with .readme }}
 <section class="readme" id="readme" aria-label="README">
   {{ $page.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .) }}
@@ -64,7 +67,6 @@
 <ul>{{ range . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}</ul>
 </section>
 {{ end }}
-</div>
 
 <section class="versions" aria-labelledby="versions">
 <h2 id="versions">Versions</h2>
@@ -79,24 +81,40 @@
 <details class="version{{ if .yanked }} yanked{{ end }}" id="v{{ .version }}"{{ if eq $i 0 }} open{{ end }}>
   <summary><span class="v">{{ .version }}</span><a class="permalink" href="#v{{ .version }}" aria-label="Link to version {{ .version }}">#</a>{{ with .published }} <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ if .yanked }} <span class="pill warn">yanked</span>{{ end }}</summary>
   {{ if .yanked }}
-  <p class="warning">Yanked: {{ .yanked }}</p>
-  <p>Digest: <code>{{ .digest }}</code></p>
+  <p class="warning"><svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>Yanked: {{ .yanked }}</p>
+  <p>Digest:</p>{{ partial "digest.html" .digest }}
   {{ with .rekor }}<p class="note">Transparency log: <a href="https://search.sigstore.dev/?logIndex={{ . }}">Rekor entry {{ . }}</a></p>{{ end }}
   {{ with .advisories }}<p>Advisories: {{ range $j, $a := . }}{{ if $j }}, {{ end }}<a href="https://github.com/{{ $owner }}/registry/security/advisories/{{ $a }}">{{ $a }}</a>{{ end }}</p>{{ end }}
   {{ else }}
-  <h3>Inventory</h3>
-  {{ partial "snippet.html" (dict "id" (printf "entry-%d" $i) "label" (printf "inventory entry for %s" .version) "text" (partial "commands.html" (dict "name" $name "version" .version "digest" .digest)).entry) }}
-  <h3>Verify</h3>
-  {{ partial "verify.html" (dict "v" . "name" $name "id" (printf "verify-%d" $i) "label" (printf "verify command for %s" .version)) }}
-  {{ partial "details.html" (dict "v" .) }}
-  <h3>Checks</h3>
-  {{ partial "scan.html" (dict "v" . "name" $name) }}
-  <h3>Output diff</h3>
-  {{ partial "diff.html" (dict "v" . "name" $name) }}
+  {{/* The three things a consumer does with a version, numbered and marked with who acts, as the stations of the start page. */}}
+  <div class="vsteps">
+    <section class="vstep">
+      <h3><span class="station-n">1</span>Inventory <span class="who">Your project</span></h3>
+      {{ partial "snippet.html" (dict "id" (printf "entry-%d" $i) "label" (printf "inventory entry for %s" .version) "title" "Inventory entry" "text" (partial "commands.html" (dict "name" $name "version" .version "digest" .digest)).entry) }}
+    </section>
+    <section class="vstep">
+      <h3><span class="station-n">2</span>Verify <span class="who hub">kadet-hub</span></h3>
+      {{ partial "verify.html" (dict "v" . "name" $name "id" (printf "verify-%d" $i) "label" (printf "verify command for %s" .version) "title" "Terminal") }}
+    </section>
+    <section class="vstep half">
+      <h3><span class="station-n">3</span>Checks <span class="who hub">kadet-hub</span></h3>
+      {{ partial "scan.html" (dict "v" . "name" $name) }}
+    </section>
+    <section class="vstep half">
+      <h3>Record</h3>
+      {{ partial "details.html" (dict "v" .) }}
+    </section>
+    <section class="vstep">
+      <h3>Output diff</h3>
+      {{ partial "diff.html" (dict "v" . "name" $name) }}
+    </section>
+  </div>
   {{ end }}
 </details>
 {{ end }}
 </section>
+</div>
+</div>
 </article>
 {{ end }}
 {{ end }}

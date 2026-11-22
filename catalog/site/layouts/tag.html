@@ -2,10 +2,15 @@
 {{ $id := .Params.tag }}
 {{ $t := index site.Data.tags $id }}
 {{ $gens := where (where site.Data.catalog.generators "latest" "!=" nil) "tags" "intersect" (slice $id) }}
+<header class="page-head">
+  <div class="page-head-text">
+    <p class="crumbs"><a href="{{ "/tags/" | relURL }}">Tags</a> / {{ $id }}</p>
+    <h1><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ $id }}"/></svg> {{ $t.title }} generators for Kapitan</h1>
+    <p class="lead">{{ $t.means }}</p>
+  </div>
+  {{ partial "spot.html" "gauge" }}
+</header>
 <section class="prose-page">
-<p class="crumbs"><a href="{{ "/tags/" | relURL }}">Tags</a> / {{ $id }}</p>
-<h1><svg class="icon" aria-hidden="true"><use href="#i-tag-{{ $id }}"/></svg> {{ $t.title }} generators for Kapitan</h1>
-<p class="lead">{{ $t.means }}</p>
 <dl class="details">
   <dt>Tag a generator when</dt><dd>{{ $t.assign | markdownify }}</dd>
   <dt>Not when</dt><dd>{{ $t.not | markdownify }}</dd>

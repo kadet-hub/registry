@@ -2,10 +2,32 @@
 {{ $r := partial "chart-recipe.html" . }}
 {{ with $r.latest }}{{ $.Store.Set "recipe-blob" $r.record.blob_url }}{{ end }}
 {{ $owner := site.Data.catalog.owner }}
-<section class="prose-page prose">
-<h1>{{ .Title }}</h1>
-<p class="lead">{{ $r.lead | replaceRE `\{\{([<%])` `{{\$1` | markdownify }}</p>
-<ul>
+{{/* The sections of this page, for the rail. */}}
+{{ $toc := slice }}
+{{ with $r.replaces }}{{ $toc = $toc | append "Replaces" }}{{ end }}
+{{ $toc = $toc | append "What it deploys" "Required parameters" "Include" "Fetching it" }}
+{{ range $r.sections }}{{ $toc = $toc | append .heading }}{{ end }}
+{{ with $r.record }}{{ $toc = $toc | append "Versions" }}{{ end }}
+<article class="doc">
+<header class="page-head">
+  <div class="page-head-text">
+    <p class="crumbs"><a href="{{ "/recipes/" | relURL }}">Recipes</a> / {{ $r.name }}</p>
+    <div class="title-row"><h1>{{ .Title }}</h1></div>
+    <p class="term-line">A recipe is packed cargo for one app: inventory classes, ready to load.</p>
+    <p class="lead">{{ $r.lead | replaceRE `\{\{([<%])` `{{\$1` | markdownify }}</p>
+    <p class="tags">{{ with $r.latest }}<span class="ver">{{ .version }}</span>{{ end }}<span class="who kapitan">proof level {{ $r.level }}</span></p>
+  </div>
+  {{ partial "spot.html" "recipe" }}
+</header>
+<div class="with-rail">
+<nav class="toc rail" aria-labelledby="toc">
+<details open>
+  <summary><h2 id="toc">On this page</h2></summary>
+  <ol>{{ range $toc }}<li><a href="#s-{{ anchorize . }}">{{ . }}</a></li>{{ end }}</ol>
+</details>
+</nav>
+<div class="prose doc-body main-col">
+<ul class="summary">
 {{ with $r.latest }}<li>Latest version: <a href="#v{{ .version }}"><code>{{ .version }}</code></a>{{ with .published }}, published <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}</li>
 {{ end -}}
 {{ with $r.compose -}}
@@ -27,34 +49,36 @@
 {{ end -}}
 {{ with $r.requires }}<li>Prerequisites, installed once per cluster before the recipe: {{ range $i, $n := . }}{{ if $i }}, {{ end }}{{ if site.GetPage (printf "/recipes/%s" $n) }}<a href="{{ printf "/recipes/%s/" $n | relURL }}"><code>{{ $n }}</code></a>{{ else }}<code>{{ $n }}</code>{{ end }}{{ end }}</li>
 {{ end -}}
-<li>Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/#v%s" $g.name $g.version | relURL }}">{{ $g.name }} {{ $g.version }}</a> <code>{{ $g.digest }}</code>{{ end }}</li>
+<li>Generators: {{ range $i, $g := $r.generators }}{{ if $i }}, {{ end }}<a href="{{ printf "/generators/%s/#v%s" $g.name $g.version | relURL }}">{{ $g.name }} {{ $g.version }}</a> {{ partial "digest.html" $g.digest }}{{ end }}</li>
 {{ $v := "" }}{{ with $r.latest }}{{ $v = .version }}{{ end }}{{ $sec := partial "security.html" (dict "report" "recipes" "name" $r.name "version" $v) -}}
 <li>Image security: {{ with $sec.grade }}grade <span class="grade grade-{{ $sec.class }}">{{ . }}</span> {{ end }}{{ $sec.text }}{{ with $sec.full }} <a href="{{ . | relURL }}">Full report</a>{{ end }}
 {{- with $sec.grade }}<br>The grade rates the upstream images the recipe pins, not the recipe: {{ range $i, $img := $sec.images }}{{ if $i }}, {{ end }}{{ with .page }}<a href="{{ . }}"><code>{{ $img.repository }}</code></a>{{ else }}<code>{{ .repository }}</code>{{ end }}{{ end }}.{{ end }}</li>
 </ul>
-{{ with $r.replaces }}<h2>Replaces</h2>
+{{ with $r.replaces }}<h2 id="s-replaces">Replaces</h2>
 {{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .) }}
 {{ end -}}
-<h2>What it deploys</h2>
+<h2 id="s-what-it-deploys">What it deploys</h2>
 <ul>
 {{ range $r.classes }}<li><code>{{ .class }}</code> (<code>{{ .file }}</code>){{ if .option }}, an option{{ end }}{{ with .components }}: {{ range $i, $c := . }}{{ if $i }}, {{ end }}<code>{{ $c }}</code>{{ end }}{{ end }}</li>
 {{ end }}</ul>
-<h2>Required parameters</h2>
+<h2 id="s-required-parameters">Required parameters</h2>
 {{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` $r.required) }}
-<h2>Include</h2>
+<h2 id="s-include">Include</h2>
 <p>A <a href="{{ "/glossary/#target" | relURL }}">target</a> includes the recipe and its options as <a href="{{ "/glossary/#class" | relURL }}">classes</a> and can override anything the recipe sets:</p>
 {{ partial "snippet.html" (dict "id" "include" "label" "include snippet" "text" $r.include) }}
-<h2>Fetching it</h2>
+<h2 id="s-fetching-it">Fetching it</h2>
 <p>The <a href="{{ "/quickstart/" | relURL }}">quickstart</a> goes through these steps on a kind cluster with the uptime-kuma recipe, from installing Kapitan to the running app.</p>
 {{ with $r.latest }}
 {{ with $r.blocked }}
-{{ range . }}<p class="warning">Version {{ $r.latest.version }} pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</p>
+{{ range . }}<p class="warning"><svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>Version {{ $r.latest.version }} pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</p>
 {{ end }}<p>The consumer workflow rejects a yanked generator, so this page shows no fetch inventory for the version.</p>
 {{ else }}
 <p>A separate <a href="{{ "/glossary/#fetch-inventory" | relURL }}">fetch inventory</a> pins the recipe by version and <a href="{{ "/glossary/#digest" | relURL }}">digest</a>. This is <code>fetch/targets/recipes.yml</code> for version {{ $r.latest.version }}:</p>
 {{ partial "snippet.html" (dict "id" "fetch" "label" "fetch inventory" "text" $r.fetch "event" (printf "copy-fetch-inventory/recipes/%s" $r.name)) }}
 {{ with $r.included }}<p>Version {{ $r.latest.version }} includes {{ . }}. The consumer workflow adds the included recipes at the digests the index lists. Kapitan's <code>--fetch</code> reads no index, so for a local compile pull them by digest first:</p>
 {{ partial "snippet.html" (dict "id" "pull" "label" "pull commands" "text" $r.pull) }}
+{{/* CAT-64a: the digests the commands shorten stand whole once on the page. */}}
+<dl class="details">{{ range $r.latest.includes }}<dt class="row">{{ .name }} {{ .version }}</dt><dd class="row">{{ partial "digest.html" .digest }}</dd>{{ end }}</dl>
 {{ end }}<p>The first command fetches the recipe into <code>inventory/classes/recipes/{{ $r.name }}</code>, the second the generators and compiles:</p>
 {{ partial "snippet.html" (dict "id" "commands" "label" "commands" "text" $r.commands) }}
 <p>The first command exits with status 1 because the fetch target compiles nothing. Kapitan's <code>--fetch</code> checks neither the digest nor the attestation. This verifies the attestation of the recipe{{ with $r.included }} and of the recipes it includes{{ end }}:</p>
@@ -71,19 +95,21 @@
 <p>The first command exits with status 1 because the fetch target compiles nothing. Kapitan's <code>--fetch</code> checks neither the <a href="{{ "/glossary/#digest" | relURL }}">digest</a> nor the attestation of a generator. <a href="{{ $r.guide }}">Using a recipe</a> describes how to verify them and how to raise the pin.</p>
 {{ end }}
 {{ range $r.sections }}
-<h2>{{ .heading }}</h2>
+<h2 id="s-{{ anchorize .heading }}">{{ .heading }}</h2>
 {{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .body) }}
 {{ end }}
 {{ with (where (where site.RegularPages "Section" "blog") "Params.stack.recipes" "intersect" (slice $r.name)).ByDate.Reverse }}<h2>Used in stacks</h2>{{/* CAT-48 */}}
 <ul>{{ range . }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}</ul>
 {{ end }}
 {{ with $r.record }}
-<h2>Versions</h2>
+<h2 id="s-versions">Versions</h2>
 <ul>
-{{ range .versions }}<li id="v{{ .version }}"><code>{{ .version }}</code>{{ with .published }}, <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}: <code>{{ .digest }}</code>{{ with .yanked }}<br><span class="warning">Yanked: {{ . }}</span>{{ end }}
-{{- range .generators }}{{ if .yanked }}<br><span class="warning">Pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</span>{{ end }}{{ end }}</li>
+{{ range .versions }}<li id="v{{ .version }}"><code>{{ .version }}</code>{{ with .published }}, <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}: {{ partial "digest.html" .digest }}{{ with .yanked }}<span class="warning"><svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>Yanked: {{ . }}</span>{{ end }}
+{{- range .generators }}{{ if .yanked }}<br><span class="warning"><svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>Pins the generator {{ .name }} {{ .version }}, which is yanked: {{ .yanked }}</span>{{ end }}{{ end }}</li>
 {{ end }}</ul>
 {{ end }}
 <p>The recipe's files are in <a href="{{ $r.folder }}" data-goatcounter-click="source-repo/recipes/{{ $r.name }}">kadet-hub/recipes</a>. <a href="{{ "/recipes/" | relURL }}">All recipes</a></p>
-</section>
+</div>
+</div>
+</article>
 {{ end }}
