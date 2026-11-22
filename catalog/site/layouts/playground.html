@@ -49,7 +49,7 @@
     <label>Why is this value set? <input type="search" id="pg-search" placeholder="Parameter path, e.g. app.replicas" autocomplete="off" spellcheck="false" aria-describedby="pg-count"></label>
     <span id="pg-count" role="status" aria-live="polite"></span>
   </div>
-  <p id="pg-prov-warning" class="warning" hidden></p>
+  <p id="pg-prov-warning" class="warning" hidden><svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg><span id="pg-prov-warning-text"></span></p>
   <h3 class="pg-h">Classes in the order <span id="pg-prov-backend"></span> merged them</h3>
   <ol id="pg-classes" class="pg-classes"></ol>
   <p id="pg-order-other" class="pg-note"></p>
@@ -59,7 +59,7 @@
 </section>
 </div>
 {{ else }}
-<p class="warning">The playground is not part of this build of the site.</p>
+<p class="warning"><svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>The playground is not part of this build of the site.</p>
 {{ end }}
 <h2>What runs here</h2>
 <p>Kapitan compiles in a Web Worker of this page, with the omegaconf or the reclass <a href="{{ "/glossary/#inventory-backend" | relURL }}">inventory backend</a> and the kadet and Jinja2 inputs. Not available: the reclass-rs backend, the jsonnet, helm, kustomize, CUE and external inputs, fetching dependencies, and refs. The Terraform example writes Terraform JSON; terraform init, plan and apply do not run here.</p>

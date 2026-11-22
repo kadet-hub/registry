@@ -143,13 +143,12 @@ def digests_shown(test, out):
 
 
 def warnings_open_with_the_icon(test, out):
-    """CAT-59c: every warning of the generator, recipe, quickstart and security pages opens with the warning icon."""
+    """CAT-59c: every warning on every page of the build opens with the warning icon, hidden ones too."""
     count = 0
-    for section in ("generators", "recipes", "quickstart", "security"):
-        for path in glob.glob(os.path.join(out, section, "**", "index.html"), recursive=True):
-            for warning in re.findall(r'class="warning">(.{0,80})', read(path)):
-                test.assertTrue(warning.startswith(WARNING), (path, warning))
-                count += 1
+    for path in glob.glob(os.path.join(out, "**", "index.html"), recursive=True):
+        for warning in re.findall(r'class="warning"[^>]*>(.{0,80})', read(path)):
+            test.assertTrue(warning.startswith(WARNING), (path, warning))
+            count += 1
     return count
 
 

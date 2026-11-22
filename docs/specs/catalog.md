@@ -3525,8 +3525,9 @@ CAT-42, CAT-54, CAT-55, CAT-58b, CAT-64, CAT-66, CAT-67, CAT-68, CAT-73.
 
 - CAT-59c: Every warning MUST open with the warning icon.
 
-  The warnings are the `.warning` lines of the generator, recipe,
-  quickstart and security pages, such as "Yanked: …". The icon sprite
+  The warnings are the `.warning` lines of every page, such as
+  "Yanked: …" on a generator page or the playground's notices, and the
+  ones a script fills keep the icon in the markup. The icon sprite
   has no warning icon today; the implementation adds Lucide's warning
   triangle to it. Icon and words set a warning apart from the signal
   orange, which marks kadet-hub's verify step.
