@@ -137,6 +137,13 @@ the build job (RISK-10).
   logs, whether § 5 DDG requires an imprint, whether a c/o address
   suffices for it (OQ-2), and whether a reference to sources hosted
   elsewhere satisfies GPLv2 for a mirrored image (RISK-15). Decided 2026-11-21, formerly OQ-1.
+- DEC-52: The code of the registry stays under Apache-2.0. The name
+  "kadet-hub", the mark and the drawings of the site, the start page's
+  scene and the inner pages' drawings, are excluded from it: all
+  rights reserved, their use allowed only to refer to kadet-hub. A file
+  `NOTICE` says so, and the site's footer and imprint point to it
+  ([catalog.md](catalog.md), CAT-78 to CAT-78c). Decided 2026-11-22
+  without legal review (DEC-51).
 
 ## Area specs
 

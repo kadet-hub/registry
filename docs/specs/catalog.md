@@ -18,14 +18,14 @@ its own, so a later platform with ratings can read the same index instead
 of migrating site data.
 
 Each generator has a card (CAT-22) and a page at `/generators/<name>/`
-with the latest version's README and every version. The home page's
-introduction spans the width of the card grid below it. Search and tag filter run in the browser over the rendered cards.
+with the latest version's README and every version. The cards are listed
+at `/generators/` (CAT-67a), and `/` is a start page (CAT-67). Search and tag filter run in the browser over the rendered cards.
 Owner logins and stars come from the GitHub API at build time; they are
 display data only, and a failed lookup shows the user ID or no stars.
 
-A generator has no logo of its own: the card shows the icon of its first
-tag on a tile coloured from a fixed palette by a hash of the name; the
-generator page keeps the monogram of its name. Submitters supply no images, so none needs to be checked. The
+A generator has no logo of its own: its card and its page show a cube,
+teal where its tags name Terraform and indigo otherwise, the colours of
+the start page's cargo (CAT-22). Submitters supply no images, so none needs to be checked. The
 icons are Lucide's (ISC), inlined into every page as an SVG sprite. The
 site follows the system colour scheme; a toggle overrides it and is
 remembered in the browser's `localStorage`.
@@ -58,7 +58,7 @@ remembered in the browser's `localStorage`.
   Tags are multiply assigned (a generator can be `helm`, `operators` and
   `kubernetes` at once), so OR would widen the result with every click.
   The result line names the selected tags. Without
-  JavaScript the home page lists every generator.
+  JavaScript `/generators/` lists every generator.
 
   - Test: `catalog/test_catalog.py` (partial: the links and the markup; the
     filter itself runs in the browser)
@@ -70,21 +70,74 @@ remembered in the browser's `localStorage`.
   Until this change the links went to the filtered home page. Audit tools
   flag internal links with query parameters, and the tag page (CAT-18)
   lists the same generators with the tag's definition; the filter chips
-  on the home page still combine tags.
+  on `/generators/` still combine tags.
 
   - Test: `catalog/test_catalog.py`
   - Since: #221
 
-- CAT-9: Code blocks, tables and long values such as digests MUST wrap
-  instead of scrolling horizontally, and every inventory entry and command
-  MUST have a copy button.
+- CAT-9: Tables, long values outside code, such as a digest in a table,
+  and, below 48rem, code blocks MUST wrap instead of scrolling
+  horizontally.
+
+  Below 48rem a line of code wraps between its tokens and hangs four
+  characters under its own indentation. A token is a word, or a piece of
+  a word longer than 24 characters cut after a slash, an `@`, a comma or
+  a JSON key; it breaks only when it alone is longer than the line
+  (CAT-9g). From 48rem code keeps its lines (CAT-9f).
+
+  - Test: `catalog/test_catalog.py` (partial: the markup); manual: 375
+    px, no code block scrolls sideways
+  - Since: #45; code limited to below 48rem: not implemented
+
+- CAT-9f: From 48rem a line of code MUST NOT wrap.
+
+  A wrapped line of YAML or of a command reads as two. A block wider than
+  its box scrolls sideways and says so with a "scroll" mark at its edge
+  until its end shows; `site.js` sets the mark. The panels of CAT-9h fit
+  their boxes instead.
+
+  - Test: none (`catalog/test_catalog.py`: `pre` keeps `white-space:
+    pre` from 48rem, and `site.js` marks a `pre` wider than its box)
+  - Since: not implemented
+
+- CAT-9g: A line of code MUST NOT break inside a token, unless the token
+  alone is longer than the line.
+
+  - Test: none (`catalog/test_catalog.py`: every line of a code panel is
+    split into token spans by the rule of CAT-9); manual: 375 px, the
+    figure and a generator page
+  - Since: not implemented
+
+- CAT-9h: At 1024 and 1440 px a code panel whose lines the site writes
+  itself MUST NOT scroll sideways: the panels of the harbour figure
+  (CAT-66), the panels of the live edit (CAT-68), and the Inventory and
+  Verify panels of each listed version on a generator page (CAT-74).
+
+  The site shortens the digests in these lines (CAT-64) and folds their
+  commands at their flags (CAT-66n) until they fit. Every other code
+  panel may be wider than its box, such as the badge snippet of CAT-32a,
+  152 characters without a space for kubernetes, or code from a
+  generator's README: from 48rem it scrolls sideways with the mark of
+  CAT-9f, and below 48rem it wraps as CAT-9 and CAT-9g say.
+
+  - Test: none (the script of AC-50: every `pre` of these panels has no
+    more width than its box at 1024 and 1440 px)
+  - Since: not implemented
+
+- CAT-9c: Every inventory entry and command outside the harbour figure
+  and the live edit (CAT-66, CAT-68) MUST have a copy button.
+
+  The figure and the live edit record one run, with prompts and output
+  in one block, and nothing in them is meant to be copied. The commands
+  a visitor runs stand on the generator pages (CAT-2) and in the
+  quickstart (CAT-40).
+
   - Test: `catalog/test_catalog.py` (partial: the markup)
-  - Since: #45
+  - Since: #45; the exception for the figure and the live edit: not
+    implemented
 
 - CAT-9a: Below 48rem the site header MUST be one row with a menu button
-  that opens the nav as a list below it, the tag chips MUST be collapsed
-  behind a "Filter by tag" button that counts the selected tags, and the
-  home page filters MUST NOT stay fixed while the visitor scrolls.
+  that opens the nav as a list below it.
 
   At 393 px, an iPhone 15, the ten nav links wrapped into four
   right-aligned rows and the header was 150 px tall; the eleven tag chips
@@ -92,16 +145,33 @@ remembered in the browser's `localStorage`.
   viewport, more than half of every scrolled screen. The menu follows
   GitHub's mobile header: brand, theme button, menu button; Escape closes
   the open menu. The filters scroll with the page; the search is at the top
-  of the list, one scroll up. The hero buttons share each row's width
-  instead of leaving ragged gaps.
+  of the list, one scroll up. The start page's hero has no buttons
+  (CAT-67).
 
-  Both buttons are added by `site.js`. Without JavaScript the nav and the
-  chips stay open, so every link and tag remains reachable.
+  The menu button and the tag button of CAT-9d are added by `site.js`.
+  Without JavaScript the nav and the chips stay open, so every link and
+  tag remains reachable.
 
-  - Test: `catalog/test_catalog.py` (partial: markup and stylesheet);
-    manual: 393 px viewport, menu and tag filter open and close, filters
-    not sticky
+  - Test: `catalog/test_catalog.py` (`test_mobile_header_and_filters`,
+    partial: markup and stylesheet); manual: 393 px viewport, the menu
+    opens and closes
   - Since: #309
+
+- CAT-9d: Below 48rem the tag chips of `/generators/` MUST be collapsed
+  behind a "Filter by tag" button that counts the selected tags.
+
+  - Test: `catalog/test_catalog.py` (`test_mobile_header_and_filters`,
+    partial: markup and stylesheet); manual: 393 px viewport, the tag
+    filter opens and closes
+  - Since: #309 on `/`; at `/generators/`: not implemented
+
+- CAT-9e: Below 48rem the filters of `/generators/` MUST NOT stay fixed
+  while the visitor scrolls.
+
+  - Test: `catalog/test_catalog.py` (`test_mobile_header_and_filters`:
+    the rule `.filters { position: static; }`); manual: 393 px viewport,
+    filters not sticky
+  - Since: #309 on `/`; at `/generators/`: not implemented
 
 - CAT-9b: The fact labels of a generator page, the check line of each
   version and the generator name of each row on `/compatibility/` MUST
@@ -128,9 +198,8 @@ remembered in the browser's `localStorage`.
   background in the light and the dark theme.
 
   4.5:1 is the WCAG 2.2 AA level for text below 24 px. It applies to all
-  text here, since every pair of colour tokens reaches it: the lowest,
-  `--text-muted` on `--accent-bg` in the light theme, has 5.38:1 by the
-  WCAG formula on the hex values in `style.css`. The failures came from
+  text here, since every pair of colour tokens reaches it; "Visual
+  identity" lists the lowest pairs. The failures came from
   text faded with `opacity`. Measured in Chrome on the live site on
   2026-11-12, the version permalink "#" had 2.64:1 in light and 3.31:1 in
   dark, and the date of a yanked version 4.47:1 in light. The count in a
@@ -144,8 +213,9 @@ remembered in the browser's `localStorage`.
   search, the version field of the compatibility selector, the Mastodon
   server field under a post and the playground's parameter filter. Only
   the recipe finder's placeholder took `--text-muted`. The stylesheet now
-  gives every placeholder `--text-muted`, which has 6.31:1 in light and
-  6.82:1 in dark on `--surface`, the background of all five fields.
+  gives every placeholder `--text-muted`, which has 8.78:1 in light and
+  7.59:1 in dark on `--surface`, the background of all six fields, the
+  start page's search (CAT-67b) included.
 
   - Test: `catalog/test_catalog.py` (`Site.test_text_reaches_aa`,
     partial: the token pairs and the `opacity` rules of the stylesheet,
@@ -153,7 +223,7 @@ remembered in the browser's `localStorage`.
     partial: every field with a placeholder on the pages of the fixture
     build with the playground gets the rule, the field's background is
     not checked)
-  - Since: #680
+  - Since: #680; the ratios of the Harbour tokens: not implemented
 
 - CAT-55: Every link and control MUST meet WCAG 2.2 success criterion
   2.5.8: a target of at least 24 by 24 px, or the space around a smaller
@@ -171,7 +241,7 @@ remembered in the browser's `localStorage`.
     link or control outside text below 24 px that overlaps another target
   - Since: #680
 
-- CAT-10: The home page MUST let visitors sort the cards by name, by the
+- CAT-10: `/generators/` MUST let visitors sort the cards by name, by the
   time of the latest version and by popularity score (CAT-23).
 
   Sorting by stars or 👍 alone was replaced by the score, which combines
@@ -179,7 +249,7 @@ remembered in the browser's `localStorage`.
   every generator has the same one.
 
   - Test: `catalog/test_catalog.py` (partial: the sort keys in the markup)
-  - Since: #45
+  - Since: #45; at `/generators/`: not implemented
 
 - CAT-11: Every page MUST have a title of 30 to 65 characters, a meta
   description of 50 to 160 characters, one `h1` and an absolute canonical
@@ -188,8 +258,8 @@ remembered in the browser's `localStorage`.
 
   The length limits are the ones kapicorp/kapitan enforces for its
   documentation (`tests/test_docs_rendering.py`); here they are checked on
-  the built HTML. Filtered views (`?tags=`) are the home page and share
-  its canonical URL. Generator pages carry schema.org
+  the built HTML. Filtered views (`?tags=`, `?q=`) are `/generators/` and
+  share its canonical URL. Generator pages carry schema.org
   `SoftwareSourceCode` as JSON-LD, which the CSP does not block because a
   data block is never executed. A generator description that leaves the
   title or description outside the limits is padded or cut by the
@@ -704,7 +774,8 @@ remembered in the browser's `localStorage`.
 
   The text goes into `<pre><code>` through Hugo's escaping, never through
   `safeHTML` or Markdown, with control characters removed (Unicode Cc
-  other than tab and newline, and Bidi_Control); long lines wrap (CAT-9).
+  other than tab and newline, and Bidi_Control). Its long lines follow
+  CAT-9f from 48rem and CAT-9 below it.
   Beyond 150 lines the page says the text is truncated and links the
   download, which is the attested text unchanged.
 
@@ -934,35 +1005,35 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py`
   - Since: #73, #93
 
-- CAT-22: Every card MUST show the same fields in the same order: the
-  name as the only card-wide link, below it the latest version and its
-  date, the description clamped to three lines, the tags, and labelled
-  facts: "Built for" (one software and version per line, or "not
-  recorded"), "Maintainer" (the owners' logins as text; the generator page links
-  their profiles), "Popularity"
-  (the score of CAT-23, linked to its explanation) and "Scanned" (the scan
-  date or "not scanned").
+- CAT-22: Every card MUST show the same fields in the same order: its
+  cube, the name as the only card-wide link with the owners' logins under
+  it, the latest version as a pill beside them, the description clamped
+  to three lines, the tags, "Built for" with one chip per software and
+  version (or "Built for: not recorded"), and a foot with the date of the
+  latest version, the scan date (or "Not scanned") and the popularity
+  score of CAT-23, linked to its explanation.
 
   Users read the top left first and scan the first words of lines (NN/g);
   attributes that appear on some cards and not on others make a catalog
   look smaller and are hard to compare (Baymard), so missing values are
   stated instead of omitted. License and the note that stars are shared
   by several generators move to the generator page, where there is room
-  to explain them. The version sits on its own line under the name, so it
-  is in the same place on every card whatever the length of the name.
-  Facts carry visible labels instead of bare icons. A generator built for
-  several products, such as cert-manager with trust-manager, lists each
-  on its own line, because a run-on line with separators reads like the
-  version line above it and wraps mid-name on narrow cards. The name link
-  stretches over the card and the tag and popularity links sit above it, the block-link pattern recommended by Heydon
-  Pickering and Adrian Roselli; the focus ring is drawn when the name link
-  has keyboard focus, not when a tag link does.
+  to explain them. The version stands at the end of the card's head, in
+  the same place on every card whatever the length of the name. Each fact
+  in the foot carries its label. A generator built for several products,
+  such as cert-manager with trust-manager, gets a chip for each, and a
+  chip wraps as a whole. The cube is teal where the tags name Terraform
+  and indigo otherwise, the colours of the start page's cargo. The name
+  link stretches over the card and the tag and popularity links sit above
+  it, the block-link pattern recommended by Heydon Pickering and Adrian
+  Roselli; the focus ring is drawn when the name link has keyboard focus,
+  not when a tag link does.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #73, #81, #92, #230
+  - Since: #73, #81, #92, #230; the Harbour card: not implemented
 
-- CAT-26: A generator without a listed version MUST NOT have a card on the
-  home page or a tag page, and MUST NOT be counted there.
+- CAT-26: A generator without a listed version MUST NOT have a card on
+  `/generators/` or a tag page.
 
   Every version of a removed entry is yanked with the reason `entry
   removed`, and the index keeps them. Their card read "no listed version,
@@ -972,7 +1043,15 @@ remembered in the browser's `localStorage`.
   keeps its row, which that page links to.
 
   - Test: `catalog/test_catalog.py`
-  - Since: #224
+  - Since: #224; `/generators/`: not implemented
+
+- CAT-26a: A generator without a listed version MUST NOT be counted on
+  `/generators/`, a tag page or the start page (CAT-67).
+
+  - Test: `catalog/test_catalog.py` (the counts of the tag filter and of
+    the tag pages; the start page's count in `Site.test_start_page` of
+    the implementation)
+  - Since: #224; `/generators/` and the start page: not implemented
 
 - CAT-23: Every generator MUST have a popularity score
   `round(10·log2(1 + 👍) + 4·log2(1 + stars ÷ n) + 2·log2(1 + pulls))`,
@@ -1478,7 +1557,7 @@ Related: CAT-15, CAT-30, CON-2.
   - Test: `catalog/test_catalog.py`
   - Since: #235, #247
 
-- CAT-29a: The home page search MUST match the kind names (CAT-29) of
+- CAT-29a: The search of `/generators/` MUST match the kind names (CAT-29) of
   each card's latest listed version, from either source.
 
   Search compares in lower case, so "HTTPRoute" finds the generators of
@@ -1487,9 +1566,9 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (partial: the search text in the
     markup; the matching runs in the browser)
-  - Since: #235
+  - Since: #235; at `/generators/`: not implemented
 
-- CAT-29e: The home page search MUST match the software names the card
+- CAT-29e: The search of `/generators/` MUST match the software names the card
   shows under "Built for", from the latest listed version's
   `compatibility` (CAT-15).
 
@@ -1499,7 +1578,7 @@ Related: CAT-15, CAT-30, CON-2.
   names Chainsaw only under Built for, did not.
 
   - Test: `catalog/test_catalog.py::test_search_matches_built_for`
-  - Since: #421
+  - Since: #421; at `/generators/`: not implemented
 
 - CAT-24: The guide "Writing a Kapitan generator" MUST have a section
   "Generator contract" at `#generator-contract` that states what `main()`
@@ -1567,9 +1646,15 @@ Related: CAT-15, CAT-30, CON-2.
   above on every committed SVG, which also catches a hand edit or another
   tool's output.
 
-  Lines and arrowheads take `--text-muted`, text `--text`; a failure path
-  takes `--warn`, is dashed and labelled "fails", so colour never carries
-  the meaning alone. `pointer-events: none` keeps the `<title>` that
+  The diagrams carry classes and no colour; `style.css` colours the
+  classes. The normal flow is indigo: nodes on `--accent-bg` with an
+  `--accent` edge, lines and arrowheads in `--accent`, text in `--text`.
+  An attested or signed result is teal, on `--teal-bg` with a
+  `--teal-line` edge. A failure path or a stop is orange, on `--signal`
+  lines and `--signal-bg` nodes with `--signal-text`, and also dashed and
+  labelled, so colour never carries the meaning alone. A cluster stands
+  on `--bg-subtle` with its label in `--text-muted`. Nodes have rounded
+  corners. `pointer-events: none` keeps the `<title>` that
   `dot` writes for every node and edge from showing as a tooltip. Every
   diagram runs top to bottom and is at most 340 pt wide, so at a 360 px
   viewport it shrinks to the 328 px column with 12 pt labels at about
@@ -1585,6 +1670,48 @@ Related: CAT-15, CAT-30, CON-2.
     `test_diagram_svgs`); `test_seo` checks the page (CAT-11d); manual:
     the page in Chromium at 375 px and 1280 px, light and dark
   - Since: #257
+
+- CAT-35b: Every diagram MUST be rendered by `assets/diagrams/render`,
+  which measures its labels in Manrope Medium.
+
+  The six diagrams share their look in this one script: node, edge and
+  graph settings, rounded nodes, 12 pt labels in Manrope Medium. `dot`
+  measures the labels with Pango, which reads no WOFF2, so `render` takes
+  the TTF the site's WOFF2 is cut from (CAT-60), checks its SHA-256 and
+  shows it to fontconfig for the run only. Without the font `dot` falls
+  back to another face without failing, and the boxes no longer fit
+  their text, so `render` fails when its log does not name Manrope
+  Medium.
+
+  - Test: none (`catalog/test_catalog.py`: every `.dot` names the
+    Graphviz version that rendered it and holds no colour); manual:
+    `render` run in the merge request
+  - Since: not implemented
+
+- CAT-35c: A label of a diagram MUST NOT touch a line, a node or another
+  label.
+
+  `dot` has no setting for it, so the `.dot` files hold what keeps text
+  off lines: an edge label carries three spaces on either side, since
+  `dot` reserves the label's box next to the edge; nodes of one flow
+  share a group, which keeps the flow straight; where several steps fail
+  into one outcome, each step has a point on its rank and the points form
+  one dashed line that carries the label once; a cluster's label stands
+  on the side where no edge enters the cluster.
+
+  An edge label and a cluster label keep at least 4 pt from every edge
+  line and arrowhead, every node outline and every other label, measured
+  on the box of their glyphs in Manrope Medium at the diagrams' 12 pt. A
+  node label lies inside its own node's outline. In the six diagrams of
+  the preview build, measured in Chrome 156 on 2026-11-22, the closest
+  gap is 4.69 pt, between "passes" and its own edge in `upstream.svg`,
+  and every node label stands at least 6 pt inside the box of its node.
+
+  - Test: none (a browser script in `catalog/test_catalog.py`, in the
+    manner of `playground/browser.mjs`: in every SVG, these 4 pt around
+    each edge and cluster label, and each node label inside its node's
+    outline)
+  - Since: not implemented
 
 - CAT-36: The site MUST have a blog at `/blog/` that lists every post
   under `catalog/site/content/blog/`, newest first with its date, and an
@@ -1964,7 +2091,8 @@ Related: CAT-15, CAT-30, CON-2.
   no other tool. The file name carries a hash that changes with the
   drawn text. A corrected title therefore gets a new URL, which a
   platform that caches previews by URL fetches again. The size budget is
-  near the 244,751 bytes of `og.png` and far below LinkedIn's 5 MB, the
+  near the 244,751 bytes `og.png` had before the mark of CAT-61 and far
+  below LinkedIn's 5 MB, the
   smallest documented limit of the platforms in use. The cards of the 23
   posts on 2026-11-12 have 41,880 to 68,853 bytes.
 
@@ -2007,9 +2135,9 @@ Related: CAT-15, CAT-30, CON-2.
   The title is drawn at 64 px and keeps about 34 px there. The domain is
   drawn at 36 px and the tags at 32 px.
 
-  The colours are tokens of the dark theme on its `--bg` `#0d1117`: the
-  title in `--text` at 15.84:1, the tags in `--accent` at 7.43:1 and the
-  domain in `--text-muted` at 7.55:1, by the WCAG formula. The tags carry
+  The colours are tokens of the dark theme on its `--bg` `#1c1b3a`: the
+  title in `--text` at 13.24:1, the tags in `--accent` at 7.56:1 and the
+  domain in `--text-muted` at 9.21:1, by the WCAG formula. The tags carry
   the accent because a reader looks for a tool, and the domain is the
   same on every card. The mark keeps the favicon's colours, which the
   WCAG exception for logos covers.
@@ -2020,14 +2148,14 @@ Related: CAT-15, CAT-30, CON-2.
     are background; the colours in `og-card.html`;
     `Site.test_card_lines_keep_a_long_last_word`: a last line whose
     first word leaves no room for "…" keeps that word)
-  - Since: #683
+  - Since: #683; the Harbour colours: not implemented
 
 - CAT-58b: The card MUST show nothing but the site's "K" mark, the
   domain `kadet-hub.org`, the post's title and its `tools` as hashtags.
 
-  The mark is the one of `static/favicon.svg`, drawn for this site in
-  65af103. `base.png` holds it at four times that size, 64 px at (80, 80)
-  on `--bg`, rasterised from the favicon's SVG with rsvg-convert 2.63.4.
+  The mark is the one of `static/favicon.svg` (CAT-61). `base.png` holds
+  it at four times that size, 64 px at (80, 80) on `--bg`, rasterised
+  from the favicon's SVG; the base image of #683 used rsvg-convert 2.63.4.
   A tool appears as the hashtag the social posts already carry, in the
   card's font.
 
@@ -2051,12 +2179,12 @@ Related: CAT-15, CAT-30, CON-2.
   License 1.1, which allows redistribution with the license text, and
   `OFL.txt` next to the font holds that text. The font declares no
   Reserved Font Name. Hugo reads it at build time and does not publish
-  it. The site's own font is Archivo (CAT-60), which the card does not
-  use.
+  it. The site's own fonts are Sora and Manrope (CAT-60), which the card
+  does not use.
 
   - Test: manual: review of `base.png` and `og-card.html` in the merge
     request
-  - Since: #683
+  - Since: #683; the mark of CAT-61: not implemented
 
 - CAT-45: A blog post that puts several recipes or generators together
   into one use case, backed by a project in kadet-hub/examples, MUST name
@@ -2543,7 +2671,7 @@ narrow them.
   from an `@`. A recipe pins one chart version, and a reader who pastes a
   chart reference usually runs another.
 
-  The query is kept in the URL as `?q=`, as on the home page (CAT-8), so
+  The query is kept in the URL as `?q=`, as on `/generators/` (CAT-8), so
   going back from a recipe page restores the list. The canonical URL stays
   `/recipes/` (CAT-11). When no entry matches, the page says so and links
   the Bitnami guide, the open recipe requests on `/wanted/` and the
@@ -2643,9 +2771,10 @@ narrow them.
   and `generators`, and `docs/consumers.md` MUST document these fields as
   CAT-34d does.
 
-  Listed recipes are not cards on the home page and do not count in the
+  Listed recipes are not cards on `/generators/` and do not count in its
   tag filter, `/kinds/` or `/compatibility/`. Those pages describe
-  generators, and a recipe has no tags.
+  generators, and a recipe has no tags. The start page counts them under
+  Recipes (CAT-67).
 
   Each pin in `generators` also carries `yanked`, the reason the index
   gives for that generator version, or `null`. A tool can then skip a
@@ -2933,6 +3062,48 @@ index is refused (CON-2).
   - Test: `catalog/test_catalog.py`
   - Since: #196
 
+- CAT-25a: A request to the counter MUST NOT carry the query of a page's
+  URL, neither as the page counted nor as its referrer.
+
+  `count.js` sends `location.search` as the parameter `q` of every count
+  and event, whatever its `path` setting says (`get_data` in the shipped
+  copy), while the privacy page names only path, title, referrer and
+  screen width. A search from the start page lands on
+  `/generators/?q=…` (CAT-67b), so the typed query would reach the
+  GoatCounter instance, as the recipe finder's `/recipes/?q=` (CAT-37i)
+  and the tag filter's `?tags=` already let it today. The pages with such
+  a query set `no_onload` in `data-goatcounter-settings`, and `site.js`
+  counts the view itself at a moment the URL holds no query: it replaces
+  the URL by its path, counts, and puts the query back. `count.js` stays
+  the upstream copy (CAT-25).
+
+  The query also travels as the next page's referrer. `count.js` sends
+  `document.referrer` as `r` when no referrer is set, and within one
+  site the browsers' default policy, `strict-origin-when-cross-origin`,
+  hands on origin, path and query
+  ([MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Referrer-Policy),
+  read 2026-11-22). A card followed from `/generators/?q=helm` would
+  send `helm` with the generator page's count. Every page therefore
+  carries `<meta name="referrer" content="strict-origin">`, and a link
+  within the site hands on the origin alone. In Chrome 156 on
+  2026-11-22, `document.referrer` after such a link held the full URL
+  without the meta element and the origin with it. To other sites over HTTPS
+  the policy sends the origin, as the default does. GoatCounter loses the
+  path of a referrer inside the site, which nothing reads; the referrers
+  per network that CAT-36a compares come from other sites. The policy
+  sits in a meta element because the site cannot set response headers on
+  GitHub Pages, as for the CSP. A `referrer` callback in `site.js` would
+  keep the internal paths, but it would have to run before `count.js` on
+  every page.
+
+  - Test: none (`catalog/test_catalog.py`: the referrer meta element on
+    every HTML page of the fixture build, `no_onload` on `/generators/`
+    and `/recipes/`, and the count in `site.js` with the query removed;
+    a browser script in the manner of `playground/browser.mjs` opens
+    `/generators/?q=helm` on the fixture build, follows a card to its
+    generator page, and finds `helm` in no request to the counter)
+  - Since: not implemented
+
 - CAT-42: Copying a fetch inventory or a verify command, and following
   the link to a generator's source repository or to a recipe's folder in
   kadet-hub/recipes, MUST count as a GoatCounter event. The event's name
@@ -3017,12 +3188,12 @@ index is refused (CON-2).
     kadet-hub/recipes: #371; inventory backend, dependency, fetch
     inventory, sandbox and consumer workflow: #687
 
-- CAT-5: URLs `/` and `/generators/<name>/` MUST stay stable.
+- CAT-5: URLs `/`, `/generators/` and `/generators/<name>/` MUST stay
+  stable.
   - Test: none
-  - Since: #16
+  - Since: #16; `/generators/`: not implemented
 
-- CAT-6: The home page MUST link to `docs/consumers.md` and
-  `docs/authors.md`, and MUST say so when no generator is listed.
+- CAT-6: `/` MUST link to `docs/consumers.md` and `docs/authors.md`.
 
   `docs/authors.md` describes registration for authors: manifest, fixture
   project, entry and what the gate and the review check, and when a
@@ -3033,8 +3204,20 @@ index is refused (CON-2).
   `kadet-hub/generator-template` starts a generator with the files the gate
   expects, a local check and `AGENTS.md` for coding agents.
 
-  - Test: `catalog/test_catalog.py`
+  On `/` the links are the navigation's "Use" and "Publish", since the
+  start page's hero has no buttons (CAT-67).
+
+  - Test: `catalog/test_catalog.py` (`test_home_links_both_guides`)
   - Since: #18, #158
+
+- CAT-6a: `/generators/` MUST say so when no generator is listed.
+
+  The start page shows no catalog, so the empty state moves with the
+  cards (CAT-67a) and links `docs/authors.md` to add the first one.
+
+  - Test: `catalog/test_catalog.py` (`test_empty_index_says_so`, which
+    reads `/generators/` once the catalog moves there)
+  - Since: #18, #158 on `/`; at `/generators/`: not implemented
 
 - CAT-56: `README.md` MUST link the playground at
   `https://kadet-hub.org/playground/` above its first `##` heading.
@@ -3098,87 +3281,203 @@ The redesign takes its motif from Kapitan's own wording. Kapitan is the
 word for captain in several Slavic languages, and kapitan.dev names its
 site "Kapitan: Keep your ship together" (`og:site_name`, checked
 2026-11-21). A kadet module is then the cadet, and kadet-hub the harbour
-where cadets are checked, signed and handed out. The mark is a K whose
-stem stands for the inventory and whose arms form a cadet's rank chevron,
-with the rendered outputs as two dots at the ends, on an ink tile of its
-own.
+where cadets are checked, signed and handed out.
 
-The operator chose the direction "Chart Room" on 2026-11-21: a nautical
-chart and a cargo manifest. The light theme has a paper ground with a
-fine graticule, drawn as a CSS gradient, navy ink text and one signal
-colour for what a visitor acts on: the primary button, and in its
-darker text shade the focus ring. The dark theme is the same chart at night, ink ground and paper
-text. An ink band inside the light theme, such as the hero, sets
-`color-scheme: dark` and declares `color: var(--text)` and
-`background: var(--bg)` again. A custom property is substituted where it
-is used, so the tokens resolve to the dark values inside the band, while
-an inherited `color` would keep the light value computed on `body`.
-Every text on a band then has a measured pair. Headings use Archivo
-expanded to 125 % at weight 800, body text Archivo at normal width; code
-and digests keep the system monospace stack of `--mono`.
+The direction is "Harbour". The operator chose it on 2026-11-21 from six
+mockups and approved its look on 2026-11-22 on a rendered preview of real
+pages. It replaces "Chart Room", merged on 2026-11-21 with #703 and built
+in #705 and #706; the table of directions below holds the reason. The
+preview build is not part of the repository. The reference files in
+[harbour/](harbour/README.md) are drawn from it, and this spec states
+the look it showed. A requirement marked not implemented binds the
+implementation whether the preview met it or not.
+
+The light theme has a cool near-white ground, white surfaces and navy
+text, with no beige and no graticule. Indigo is the main hue: links, the
+selected station, the kubernetes container and what it writes. Teal is
+the second: the terraform-aws container and what it writes, the Recipes
+tile, the values the live edit changes, the signal after a passed check
+and an attested result in a diagram. Orange marks kadet-hub's check: the
+customs gate, its scan, its seals and its signal before the check, and
+the sealed containers of the catalog's and the generator page's spot
+drawings. Besides it, orange marks only a page's primary button, the
+failure paths of the diagrams (CAT-35a) and small accents in the other
+spot drawings, at most one per drawing (CAT-73j). Its darker
+shades are the text of the "kadet-hub" chip and the focus ring. Light is
+the default polarity because adults with normal vision read dark text
+on a light ground slightly but reliably better, more so at small sizes
+(NN/g, reporting the measurements of Piepenbrock et al. 2013 and 2014).
+The dark theme stays, as the operator decided on 2026-11-21, and follows
+`prefers-color-scheme` and the toggle. It is the same harbour at night:
+navy ground, light indigo text, dark water and land, and the objects of
+the scene in their day colours.
+
+The terminals and files of the figure (CAT-66), the target of the live
+edit (CAT-68) and the code snippets of generator and recipe pages are
+dark panels in both themes. A panel sets `color-scheme: dark` and
+declares `color: var(--text)` and `background: var(--bg)` again. A custom
+property is substituted where it is used, so the tokens resolve to their
+dark values inside the panel, while an inherited `color` would keep the
+light value computed on `body`. Every text on a panel then has a pair of
+the dark column. Code blocks in running text stay on `--bg-subtle`.
+
+Headings use Sora at weight 600 and body text Manrope at weight 500, both
+at their normal width (CAT-60). Code and digests keep the system
+monospace stack of `--mono`.
+
+The light values are the mockup's unless the table says "derived". The
+dark `--bg`, `--surface`, `--text` and `--text-muted` are the colours of
+the mockup's dark panels; the other dark values are this spec's.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg` | `#f4efe4` paper | `#0e1b2c` ink | ground |
-| `--bg-subtle` | `#eae3d3` | `#13233a` | inline code, tag pills |
-| `--surface` | `#fffdf8` | `#16283d` | cards, fields |
-| `--text` | `#0e1b2c` | `#f4efe4` | text |
-| `--text-muted` | `#4a5566` | `#a9b4c4` | secondary text, placeholders |
-| `--accent` | `#0b6876` sea | `#6fd6e6` shallows | links, data |
-| `--accent-strong` | `#0e1b2c` | `#f4efe4` | link hover |
-| `--accent-bg` | `#e5f2f3` | `#163a46` | highlighted facts |
-| `--on-accent` | `#ffffff` | `#0e1b2c` | text on an accent fill |
-| `--signal` | `#e2562b` | `#e2562b` | primary button |
-| `--on-signal` | `#0e1b2c` | `#0e1b2c` | text on the primary button |
-| `--signal-text` | `#b43d16` | `#ff8a5c` | signal colour as text |
-| `--focus` | `#b43d16` | `#ff8a5c` | focus ring |
-| `--border` | `#c9bfa8` | `#2a3b52` | decorative rules and the graticule |
-| `--border-strong` | `#8a7f68` | `#6b829b` | field and control borders |
+| `--bg` | `#f4f5fb` | `#1c1b3a` | page ground, the ground of a dark panel |
+| `--bg-subtle` | `#e9ebfa` | `#232249` | the live edit's band, code in running text, inline code, tag pills, a diagram's cluster |
+| `--surface` | `#ffffff` | `#2a2952` | cards, tiles, fields, the station panel, the scene's pills and labels, a diagram's ground |
+| `--text` | `#1c1b3a` | `#e3e4fd` | text |
+| `--text-muted` | `#48476b` | `#b9bdf6` | secondary text, placeholders |
+| `--accent` | `#3b3fc4` | `#a5a8fa` | links, the selected station, a diagram's flow |
+| `--accent-strong` | `#1c1b3a` | `#e3e4fd` | link hover |
+| `--accent-bg` | `#e3e4fd` | `#2e2f6b` | the "Kapitan" chip, station numbers, the Guides tile, a diagram's nodes |
+| `--on-accent` | `#ffffff` | `#1c1b3a` | text on `--accent` |
+| `--teal` | `#18a999` | `#18a999` | the Recipes tile |
+| `--on-teal` | `#07211d` | `#07211d` | text on `--teal` |
+| `--teal-bg` | `#b9efe6` | `#0e4d45` | the values the live edit changes and a diagram's attested result, under `--text` only |
+| `--teal-line` | `#118a7b` | `#2ec4b3` | the edge of a teal ground: a diagram's attested result |
+| `--signal` | `#e26a1f` | `#e26a1f` | the primary button, a diagram's failure path |
+| `--on-signal` | `#1c1b3a` | `#1c1b3a` | text on `--signal` |
+| `--signal-text` | `#7a3208` | `#ff8a3d` | orange as text: the "kadet-hub" chip, a failure label in a diagram |
+| `--signal-bg` | `#ffe3cf` | `#3a2418` | the "kadet-hub" chip, a diagram's failure node |
+| `--focus` | `#bc5718` | `#ff8a3d` | focus ring; light derived from `#e26a1f` |
+| `--border` | `#dfe0f2` | `#3a3970` | decorative rules, card edges, station buttons |
+| `--border-strong` | `#787dc1` | `#8286cc` | field borders; light derived from `#c9cbe6` |
+| `--warn`, `--warn-bg` | `#9a3412`, `#fff1e7` | `#fdba74`, `#3a2112` | failures and warnings, the current values |
+| `--ok`, `--ok-bg` | `#166534`, `#e8f7ee` | `#86efac`, `#12301e` | passed checks, the current values |
+| `--shadow-c` | `rgb(28 27 58 / 6%)` | `rgb(0 0 0 / 40%)` | card shadow; light derived |
+| `--shadow-lift-c` | `rgb(59 63 196 / 45%)` | `rgb(0 0 0 / 50%)` | the search field, the selected station, a card under the pointer |
 
-`--warn`, `--warn-bg`, `--ok` and `--ok-bg` keep their current values.
-The lowest text pairs, computed with the WCAG formula from these hex
-values, are `--on-signal` on `--signal` at 4.62:1, `--accent` on
-`--bg-subtle` at 5.05:1 in light and `--text-muted` on `--accent-bg` at
-5.80:1 in dark. `--border-strong` reaches 3.44:1 on `--bg` in light and
-3.77:1 on `--surface` in dark. `--focus` reaches at least 4.54:1 on
-every ground of the table in light (lowest on `--bg-subtle`) and 5.23:1
-in dark (lowest on `--accent-bg`); `--signal` itself would reach only
-2.93:1 on `--bg-subtle`. Both are above the 3:1 WCAG 2.2 asks of
-non-text contrast. `--border` stays below it at 1.59:1 and
-marks nothing a visitor must see. The card tiles lose their hash hues:
-each tile is `--bg-subtle` with its tag icon in `--text`, so the signal
-colour stays the only colour that asks for an action.
+The grade colours of CAT-39 keep Artifact Hub's values in both themes.
 
-A digest is shown whole in one colour. A highlighted prefix would teach
-visitors to compare the first characters, and eight hex characters are
-32 bits, which a forged artifact can match by brute force. Verification
-is the command of CAT-2, not the eye.
+The scene's tokens follow. Its ground, land and shadows change with the
+theme; its objects keep their colours. Each object family has a top, a
+right and a left face, as the light falls in the reference drawings,
+which use no colour outside the two tables (CAT-69g). The live edit's two
+island icons and the cubes of the cards take the same families.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--sc-water` | `#cdd5fb` | `#232262` | the scene's ground, the head band of inner pages |
+| `--sc-shallow` | `#dbe1fd` | `#2b2a72` | shallow water around the islands |
+| `--sc-shade` | `#d9defb` | `#b4b3e6` | shadows, multiplied over what lies below |
+| `--sc-shade-road`, `-water`, `-deck` | `#cbcff4`, `#b7c1f6`, `#b2b5f4` | `#25245f`, `#1b1a52`, `#b2b5f4` | solid shadows of parts that move, since a moving group cannot multiply over what lies below |
+| `--sc-land-t`, `-r`, `-l` | `#ffffff`, `#b9bdf6`, `#9ea3f2` | `#3a3984`, `#302f70`, `#282763` | quay, yard and islands |
+| `--sc-road` | `#dfe1f7` | `#2e2d6c` | the lane |
+| `--sc-foam` | `#ffffff` | `#5655a8` | waves, swell, wake, routes, road markings |
+| `--sc-light`, `--sc-wht-r`, `--sc-wht-l` | `#ffffff`, `#e9eafd`, `#cfd2fb` | the same | the white family: plates, the cargo list, windows, the ship's superstructure, the top container of the catalog's drawing; text on the hull and on the cargo list's head |
+| `--sc-ink` | `#1c1b3a` | the same | text on plates and on the cargo list, cables, the shield's outline |
+| `--sc-ind-t`, `-r`, `-l` | `#e3e4fd`, `#a5a8fa`, `#8a8ef7` | the same | the harbour office's walls, details of the ship and of the crane's trolley, containers in the inner pages' drawings |
+| `--sc-kub-t`, `-r`, `-l` | `#b0b4ff`, `#5b61ea`, `#454acf` | the same | the kubernetes container, what it writes and the store on its island |
+| `--sc-hull-t`, `-r`, `-l` | `#c7c9fb`, `#4347c4`, `#34379f` | the same | the ship's hull and deck, the crane, the truck's frame, the feet of the gate, the Generators tile |
+| `--sc-teal-t`, `-r`, `-l` | `#b9efe6`, `#18a999`, `#118a7b` | the same | the terraform-aws container, what it writes and its island, trees, the signal after the check |
+| `--sc-or-t`, `-r`, `-l` | `#ffd2b3`, `#ff8a3d`, `#e26a1f` | the same | the customs gate, the seals, the signal before the check, the lashings of the recipe drawing |
+
+The ratios below are computed with the WCAG 2 formula from these hex
+values and rounded down to two decimals, light first. Every text token
+(`--text`, `--text-muted`, `--accent`, `--accent-strong`,
+`--signal-text`, `--warn`, `--ok`) reaches at least 5.69:1 on every
+ground of the first table (`--bg`, `--bg-subtle`, `--surface`,
+`--accent-bg`, `--signal-bg`) in light, lowest `--ok` on `--accent-bg`,
+and 5.16:1 in dark, lowest `--signal-text` on `--accent-bg`. The lowest
+text pair of each theme is on a fill: `--on-signal` on `--signal`,
+4.98:1 in both. The other fills give `--on-accent` on `--accent` 7.79:1
+and 7.56:1, `--on-teal` on `--teal` 5.76:1 in both, `--text` on
+`--teal-bg` 13.06:1 and 7.74:1, `--warn` on `--warn-bg` 6.60:1 and
+8.85:1, and `--ok` on `--ok-bg` 6.44:1 and 10.19:1. The Generators tile
+keeps `--sc-hull-r` in both themes, with `--sc-light` text at 7.15:1 and
+its count in the reverse pair; the Recipes tile's count is
+`--sc-teal-t` on `--on-teal`, 13.30:1.
+
+In the scene, text stands on plates, on the hull and on pills. In both
+themes `--sc-ink` reaches 16.57:1 on `--sc-light` and `--sc-light` 7.15:1
+on `--sc-hull-r`. A station's pill and an island's label have `--text`
+on `--surface`, 16.57:1 and 10.91:1, a label's path `--text-muted` on
+`--surface`, 8.78:1 and 7.59:1, and a pill's number `--accent` on
+`--accent-bg`, 6.22:1 and 5.52:1. Selected, the pill has `--on-accent`
+on `--accent`, 7.79:1 and 7.56:1, and its number `--accent` on
+`--surface`, 7.79:1 and 6.23:1. In a diagram on `--surface`, a failure
+label in `--signal-text` reaches 9.18:1 and 5.82:1, and 7.49:1 and
+6.19:1 inside its node on `--signal-bg`.
+
+`--focus` reaches at least 3.71:1 on every ground of the first table in
+light, lowest on `--accent-bg`, and 3.21:1 on `--sc-water`; in dark
+5.16:1, lowest on `--accent-bg`. The mockup's ring, `#e26a1f`, reaches
+2.65:1 on `--accent-bg` and 2.80:1 on `--bg-subtle`, so the light value
+is that hue darkened until it holds 3.2:1 on every light ground.
+`--border-strong` reaches 3.22:1 on `--bg-subtle`, 3.50:1 on `--bg` and
+3.81:1 on `--surface`, the field's own fill, in light, and 4.05:1 on
+`--surface`, 4.46:1 on `--bg-subtle` and 4.91:1 on `--bg` in dark; a
+field inside a dark panel takes the dark values. The mockup's field
+border, `#c9cbe6`, reaches 1.46:1 on `--bg`, so the light value is that
+hue darkened until it holds 3.2:1 on `--bg-subtle`. The search button's
+`--signal` reaches 3.32:1 on the field's `--surface` in light and 4.10:1
+in dark. In a diagram on `--surface`, a flow line in `--accent` reaches
+7.79:1 and 6.23:1, a failure line in `--signal` 3.32:1 and 4.10:1, and
+the edge of an attested result in `--teal-line` 4.24:1 and 6.28:1. All of
+these are above the 3:1 that WCAG 2.2 asks of non-text contrast.
+`--border` stays below it, 1.20:1 on `--bg` in light and 1.57:1 in dark,
+and marks nothing a visitor must see: the station buttons are known by
+their labels.
+
+These colours never carry text: `--signal`, which reaches 2.65:1 to
+3.32:1 on the light grounds, `--focus` in light, 3.71:1 to 4.65:1,
+`--border`, `--border-strong`, `--teal`, 2.92:1 on white, and
+`--teal-line`, 4.24:1 on white. The `-bg` tokens, `--sc-water` and the
+faces of the scene are grounds and carry text only in the pairs above.
+`--accent` on `--teal-bg` would reach 4.42:1 in dark.
+
+`--warn`, at a hue of about 15 degrees, sits next to the signal orange at
+about 23. A warning therefore differs by more than its hue: it opens with
+the warning icon and says in words what failed (CAT-59c). kadet-hub's
+verify step is the seal with a check in the scene and the "kadet-hub"
+chip, never a warning, and a diagram's failure path is dashed and
+labelled as well as orange (CAT-35a).
 
 | Direction considered | Why not |
 |---|---|
 | Bridge: dark first, values as cyan and amber instrument readouts, IBM Plex | The operator preferred Chart Room when comparing the mockups |
 | Kilo: the yellow and blue signal flag K as the mark, flat colour blocks, Space Grotesk | Flag yellow `#FFC20E` reaches 1.6:1 on white, so it can carry no text and only grounds ink; the flag stands for the letter K, not for Kapitan |
+| Chart Room: a paper ground `#f4efe4` with a graticule, navy ink, Archivo headings expanded to 125 %, a K with a cadet's chevron on an ink tile | Rejected by the operator on 2026-11-21 after seeing it rendered in #705 and #706: he disliked the beige ground and the expanded headings and called the result generic |
 
-The redesign lands in one merge request, because `release.yml` deploys
-every push to `main` and a split would show new tokens next to the old
-mark. The merge request attaches screenshots of the home page, a
-generator page, a recipe page and a guide at 375 and 1440 px in both
-themes, since the mockups are not in the repository, and lists the tests
-it changes: the CSP strings in `test_badge` and
-`test_goatcounter_counts_from_the_own_origin`, and
-`Playground.test_highlight_colours_reach_aa`. `Site.test_text_reaches_aa`
-reads its pairs from a fixed list, so it gains the new tokens: every text
-token, `--signal-text` included, on every ground of the table,
-`--on-signal` on `--signal`, and at 3:1 `--focus` on every ground and
-`--border-strong` on `--bg` and `--surface`.
-A revert of that one commit restores the old look. Four weeks before and
+One implementation pull request from `main` builds this spec. #705 and
+#706 are closed with a pointer to it, and their parts that still hold are
+ported: the `font-src` line of the CSP, the Reference disclosure, the
+`/generators/` split, the search form with its `q` handling, the guides'
+links to the catalog and the test scaffolding. The operator decided both
+on 2026-11-21. `release.yml` deploys every push to `main`, and
+`style.css` is the one stylesheet of every page ("Page types"), so the
+one merge restyles every page type at once, with no interim state. A
+revert of its commit restores the old look.
+
+The implementation pull request changes these existing tests: the CSP
+strings in `test_badge` and `test_goatcounter_counts_from_the_own_origin`;
+`Playground.test_highlight_colours_reach_aa`; `Site.test_text_reaches_aa`,
+which gains every text token on every ground of the first table, the
+fill pairs, the scene pairs and at 3:1 `--focus` and `--border-strong`,
+whose parser reads only `light-dark(#x, #y)`, so a token equal in both
+themes is written `light-dark(x, x)`, and whose opacity check leaves out
+`@keyframes`, where a fractional opacity is a step of an animation
+(CAT-69f); `test_quickstart_linked`, which expects "Use" right after
+"Quickstart" and finds "Generators" there (CAT-67c); `test_wanted_page`,
+whose links of CAT-31 are no longer hero buttons; `test_diagram_svgs`,
+whose diagrams take classes instead of colours (CAT-35a); and the catalog
+tests that read `/`, which read `/generators/`. Four weeks before and
 after the release the operator compares the weekly CAT-42 events
 (`copy-fetch-inventory`, `copy-verify`) on the GoatCounter instance of
 CAT-25, since `/stats/` shows no visitor numbers (CAT-33); a drop is a
 reason to revisit the design, at this traffic not a measurement of it.
 
-Related: LEG-5, CAT-2, CAT-3, CAT-9a, CAT-11b, CAT-11f, CAT-22, CAT-42, CAT-54,
-CAT-55, CAT-58b.
+Related: LEG-5, CAT-2, CAT-3, CAT-9a, CAT-11b, CAT-11f, CAT-22, CAT-35a,
+CAT-42, CAT-54, CAT-55, CAT-58b, CAT-64, CAT-66, CAT-67, CAT-68, CAT-73.
 
 - CAT-59: Every colour in `static/style.css` MUST come from a custom
   property defined on `:root` with a light and a dark value.
@@ -3190,11 +3489,10 @@ CAT-55, CAT-58b.
   colours only, so the current `--shadow: light-dark(<shadow>, <shadow>)`
   is invalid and Chrome renders no card shadow in either theme (checked
   on the live site on 2026-11-21). CAT-54 still applies to the rendered
-  page, and the merge request measures the text of each page type of its
-  screenshots in both themes.
+  page, which AC-50 measures on every page type.
 
   - Test: none (`Site.test_text_reaches_aa` in `catalog/test_catalog.py`:
-    every token of the table with a light and a dark value, and its
+    every token of both tables with a light and a dark value, and its
     pairs)
   - Since: not implemented
 
@@ -3205,62 +3503,126 @@ CAT-55, CAT-58b.
     `rgb()`, `hsl()` or named colour outside `:root`)
   - Since: not implemented
 
-- CAT-60: The site MUST serve Archivo as one variable WOFF2 file with
-  its `wdth` and `wght` axes from `static/fonts/`, beside the font's
-  `OFL.txt`.
+- CAT-59b: The focus ring MUST stand at least 2 px off the element it
+  marks.
+
+  `--focus` reaches only 1.39:1 on `--signal` in light and 1.41:1 in
+  dark, so a ring on the edge of the primary button would vanish into
+  it. With `outline-offset` of 2 px or more the ring lies on the ground
+  around the element, where the pairs above hold; the search button sits
+  on the field's `--surface`, 4.65:1 and 5.82:1.
+
+  - Test: none (`catalog/test_catalog.py`: the `:focus-visible` rule sets
+    `outline-offset` of at least 2 px, and no rule sets a smaller one)
+  - Since: not implemented
+
+- CAT-59c: Every warning MUST open with the warning icon.
+
+  The warnings are the `.warning` lines of the generator, recipe,
+  quickstart and security pages, such as "Yanked: …". The icon sprite
+  has no warning icon today; the implementation adds Lucide's warning
+  triangle to it. Icon and words set a warning apart from the signal
+  orange, which marks kadet-hub's verify step.
+
+  - Test: none (`catalog/test_catalog.py`: every `.warning` of the
+    fixture builds starts with the icon)
+  - Since: not implemented
+
+- CAT-60: The site's only web fonts MUST be Sora and Manrope, each
+  served as one variable WOFF2 file from its own directory under
+  `static/fonts/`, beside its `OFL.txt`.
 
   CAT-3 rules out a font host, and `font-src` falls back to
-  `default-src 'none'`, which blocks fonts from the site too. Headings at
-  125 % width need the `wdth` axis: a static instance renders them at
-  normal width without an error, so the `@font-face` declares
-  `font-stretch: 62.5% 125%`. The file is cut from a pinned commit of
-  the Archivo repository, which publishes no tags or releases (checked
-  2026-11-21), subset to Latin with fonttools' `pyftsubset` keeping both
-  axes; the commit, the SHA-256 of the WOFF2 and the command go into the
-  implementation inventory of
-  [marketplace.md](marketplace.md), as CAT-58b records its font.
-  Archivo is licensed under the SIL Open Font License 1.1 and declares no
-  Reserved Font Name (its `OFL.txt`, checked 2026-11-21), so a subset
-  keeps the name. `font-display: swap` shows text in the fallback stack
-  until the file arrives; a fallback `@font-face` with `size-adjust`
-  reduces the layout shift when Archivo replaces it, and the merge
-  request checks the swap of the `h1` at 375 and 1440 px. The merge
-  request states the file size.
+  `default-src 'none'`, which blocks fonts from the site too (CAT-60a).
+  The directories are `static/fonts/sora/` and `static/fonts/manrope/`,
+  since both licence files are named `OFL.txt`. Both families have a
+  `wght` axis and no width axis, so no rule sets `font-stretch`. Each
+  `@font-face` declares the file's weight range, 100 to 800 for Sora and
+  200 to 800 for Manrope, whose default instance is its lightest weight.
+  The mockup's third family, JetBrains Mono, is not shipped.
+
+  Neither upstream repository has tags or releases (GitHub API,
+  2026-11-21), so the files are cut from pinned commits:
+
+  - Sora: `fonts/variable/Sora[wght].ttf` of sora-xor/sora-font at
+    `7f9a9c5d0ccd1c099cfac420aa27133df1c5fdc4`, its latest commit
+    (2022-09-05), version 2.000, 111,400 bytes, SHA-256
+    `84ff7096ae3ec6c8be47d906d1a0ba4de7f2ce78c615275c77301964a316e16c`.
+  - Manrope: `fonts/variable/Manrope[wght].ttf` of googlefonts/manrope at
+    `468c0dbe38efa331b80bfe9448256abe27be44c3`, its latest commit
+    (2026-09-14), version 4.505, 164,700 bytes, SHA-256
+    `3ae11c49db0455a3cc33e37d380f20fdb8c7f8b41dc07625c177e3d87a9d6ae6`.
+    `ofl/manrope/METADATA.pb` of google/fonts names this repository as
+    the upstream; the earlier one, sharanda/manrope, returns 404.
+
+  Both files have the git blob hash of the files google/fonts ships, so
+  they are the same bytes. Both fonts are licensed under the SIL Open
+  Font License 1.1. The `OFL.txt` at each commit names no Reserved Font
+  Name after its copyright line, so a subset may keep the family name;
+  the name table of each font states the same licence (name ID 13), and
+  `fsType` 0 sets no embedding restriction. Each file is subset to Latin
+  with fonttools' `pyftsubset`, keeping the `wght` axis. The commit, the
+  SHA-256 of source and WOFF2, the command and the file size go into the
+  implementation inventory of [marketplace.md](marketplace.md), as
+  CAT-58b records its font. `font-display: swap` shows text in the
+  fallback stack until a file arrives; a fallback `@font-face` with
+  `size-adjust` per family reduces the layout shift, and the merge
+  request checks the swap of the `h1` at 375 and 1440 px. In the preview
+  build of 2026-11-22 the two files had 30,136 bytes (Sora) and 22,820
+  bytes (Manrope).
 
   - Test: none (`catalog/test_catalog.py`: every `url()` source of an
-    `@font-face` is under `static/fonts/` with an `OFL.txt` beside it;
-    the fallback face uses `local()` only)
+    `@font-face` is under `static/fonts/<family>/` with an `OFL.txt`
+    beside it, the families are Sora and Manrope only, the fallback faces
+    use `local()` only, no rule sets `font-stretch`)
   - Since: not implemented
 
 - CAT-60a: The CSP MUST allow fonts with `font-src 'self'` and no other
   source.
 
-  The graticule is a CSS gradient and the font a file, so neither needs
+  The fonts are files and the scene is inline SVG, so neither needs
   `data:`; the CSP gains no `data:` and no `unsafe-` source either.
 
   - Test: none (`catalog/test_catalog.py`: the CSP of `baseof.html` has
     `font-src 'self'`, no `data:` and no `unsafe-`)
   - Since: not implemented
 
-- CAT-61: The mark MUST be `static/favicon.svg`, drawn on its own ink
-  tile.
+- CAT-61: The mark MUST be `static/favicon.svg`, drawn as
+  `docs/specs/harbour/mark.svg`: an isometric cube in three indigo faces
+  with a white K across its front, clipped to the cube's outline, without
+  a tile.
 
-  The header shows the mark as an `img`, which neither the page's
-  tokens nor its theme toggle reach, so the tile keeps it legible on
-  both grounds. The card text of `og-card.html` takes the dark values of
-  the token table on that tile's ink. CAT-58b found that Kapitan's
-  repository has no logo policy and that section 6 of its Apache 2.0
-  license grants no trademark rights; the Kapitan logo is a figure, not
-  a letter, so a K does not imitate it. The motif borrows the wording
-  for the spec, not for the site.
+  The faces are `#8a8ef7` on top, `#4347c4` left and `#5b5fe0` right, and
+  the K is drawn in strokes 12 units wide. The header shows the mark as
+  an `img`, which neither the page's tokens nor its theme toggle reach,
+  so its colours are fixed and have to hold on both grounds. Two faces
+  reach 3:1 against each: on the light `--bg` the left face 6.57:1 and
+  the right 4.64:1, on the dark `--bg` the top 5.75:1 and the right
+  3.28:1. The cube's outline therefore stays without a tile. CAT-58b
+  found that Kapitan's repository has no logo policy and that section 6
+  of its Apache 2.0 license grants no trademark rights; the Kapitan logo
+  is a figure, not a letter, so a K on a cube does not imitate it. The
+  scene borrows the harbour, not Kapitan's tagline or artwork (CAT-61a).
 
-  - Test: manual: review of the SVG in the merge request
+  - Test: manual: `static/favicon.svg` against
+    `docs/specs/harbour/mark.svg` in the merge request
   - Since: not implemented
 
 - CAT-61b: `static/apple-touch-icon.png`, `static/og.png` and the Open
   Graph base image of CAT-58b MUST be rasterised from the mark of CAT-61.
 
   - Test: manual: review of the three PNGs in the merge request
+  - Since: not implemented
+
+- CAT-61c: `static/apple-touch-icon.png` and `static/og.png` MUST have an
+  opaque ground.
+
+  The mark has no tile (CAT-61), and iOS fills the transparent parts of a
+  touch icon with black. The touch icon takes the light `--bg`, and
+  `og.png` the dark `--bg` of the post cards (CAT-58a).
+
+  - Test: none (`catalog/test_catalog.py`: neither PNG has an alpha
+    channel)
   - Since: not implemented
 
 - CAT-61a: The mark and the site's copy MUST NOT use Kapitan's
@@ -3274,31 +3636,107 @@ CAT-55, CAT-58b.
     "official kapitan" that finds nothing
   - Since: not implemented
 
-- CAT-62: The section "How a version gets listed" of the home page MUST
-  stand between the introduction and the search, with its approved
-  copy.
+- CAT-70: The mark MUST stay legible at 16 px.
+
+  In a mark 86 units high, the K's strokes of 12 units are 2.23 px wide
+  at 16 px, 4.47 px at 32 px and 25.12 px at 180 px, the touch icon. White
+  reaches 7.15:1 on the left face and 5.05:1 on the right, and 2.87:1
+  where the stem and the upper arm reach into the top face. Rendered with
+  rsvg-convert 2.63.4 on 2026-11-22, the K reads at 16, 32 and 180 px.
+  WCAG exempts a logo from contrast, and one SVG serves every size
+  (CAT-61b), so a browser tab settles it.
+
+  - Test: manual: the favicon at 16 and 32 px in a browser tab with light
+    and dark browser chrome, and `apple-touch-icon.png` at 180 px, in the
+    merge request
+  - Since: not implemented
+
+The code of the registry is licensed under Apache-2.0; the name, the mark
+and the drawings are not (DEC-52 in [marketplace.md](marketplace.md)).
+The operator took this decision on 2026-11-22 without legal review
+(DEC-51). Its point for a visitor is that kadet-hub's look proves
+nothing: a copy of the site can wear it, so the genuine source is named
+and checked by attestation.
+
+- CAT-78: The repository MUST hold a file `NOTICE` that excludes the name
+  "kadet-hub", the mark and the drawings from the Apache-2.0 licence and
+  reserves all rights to them, allowing their use only to refer to
+  kadet-hub.
+
+  The drawings are the start page's scene and the inner pages' drawings.
+  The notice lists the files that hold them and the mark: the partials
+  the scene's generator writes, the reference files in
+  `docs/specs/harbour/`, `static/favicon.svg`,
+  `static/apple-touch-icon.png`, `static/og.png` and the Open Graph base
+  image.
+
+  - Test: none (`catalog/test_catalog.py`: `NOTICE` exists and names
+    every file the scene's generator writes and every file of
+    `docs/specs/harbour/` with an `.svg` extension)
+  - Since: not implemented
+
+- CAT-78a: The footer of every page MUST say in one sentence that the
+  name, the mark and the drawings are not under the code's licence, and
+  link `NOTICE`.
+
+  - Test: none (`catalog/test_catalog.py`: the sentence and its link in
+    the footer of every page of the fixture build)
+  - Since: not implemented
+
+- CAT-78b: The section "Verifying by hand" of `docs/consumers.md` MUST
+  state that the genuine site is kadet-hub.org and the genuine artifacts
+  are under `ghcr.io/kadet-hub`, checked by their attestation and not by
+  the look of a page.
+
+  The footer's "How to verify" links this section.
+
+  - Test: none (`catalog/test_catalog.py`: the sentence in the section)
+  - Since: not implemented
+
+- CAT-78c: The imprint's sentence on the licence MUST say that the
+  name, the mark and the drawings are excluded from Apache-2.0, and link
+  `NOTICE`.
+
+  Today it says that the site's texts and code are published under the
+  Apache License 2.0, which without the exclusion says the opposite of
+  DEC-52.
+
+  - Test: none (`catalog/test_catalog.py`: the imprint page of the
+    fixture build names the exclusion and links `NOTICE`)
+  - Since: not implemented
+
+- CAT-62: The section "How a version gets listed" MUST close the start
+  page, after "Where to go next" (CAT-67), with its approved copy.
 
   The steps are what sets a listed generator apart from a chart found
-  elsewhere, and today a visitor reads them only after scrolling past
-  every card. The section keeps its `h2` with an `h3` per step and its
-  links, so CAT-11b holds, and it is drawn as the route of the chart:
-  the steps as waypoints on a dashed line. On a phone the open steps
-  would push the search a screen down for the visitor who came back for
-  a digest, so CAT-62a collapses them there.
+  elsewhere. With the cards on the home page a visitor read them only
+  after scrolling past every card; with the cards at `/generators/`
+  (CAT-67a) the start page has no grid to pass, and the steps follow the
+  destinations. The section keeps its `h2` with an `h3` per step and its
+  links, so CAT-11b holds. The mockup does not show it, so it takes the
+  type and tokens of the page and no motif of its own; Chart Room drew it
+  as a route on the chart.
 
-  - Test: none (`catalog/test_catalog.py`: `<h2 id="listing">` before
-    the search in the home page's HTML, the existing checks of CAT-11b
-    and CAT-35 unchanged)
+  CAT-62b, which #705 published for a compact row of hero buttons on
+  phones, is not carried over, since the hero has no buttons (CAT-67).
+  The ID stays unused.
+
+  - Test: none (`catalog/test_catalog.py`: `<h2 id="listing">` after the
+    `h2` "Where to go next" in the HTML of `/`, the existing checks of
+    CAT-11b and CAT-35 unchanged)
   - Since: not implemented
 
 - CAT-62a: Below 48rem the steps of that section MUST be collapsed under
   its `h2`.
 
   They sit in a `details` element that `site.js` closes on narrow
-  screens, the CAT-9a pattern, so without JavaScript they stay open.
+  screens, the CAT-9a pattern, so without JavaScript they stay open. On a
+  phone they come after the scene, five stations, the live edit and six
+  tiles; collapsed, their heading tells the visitor who gets there what
+  they hold.
 
   - Test: none (`catalog/test_catalog.py`: the `details` around the
-    steps; manual: 393 px, the search follows the collapsed steps)
+    steps); manual: 393 px, the steps collapsed under their heading
   - Since: not implemented
 
 - CAT-63: The site navigation MUST link Tags, Kinds, Compatibility and
@@ -3318,7 +3756,7 @@ CAT-55, CAT-58b.
   nested disclosure that opens on a tap, with or without JavaScript, one
   tap from its links.
   CAT-9a's check of the nav then finds all 13 links, four of them inside
-  the disclosure.
+  the disclosure, and 14 with "Generators" of CAT-67c.
 
   - Test: none (`catalog/test_catalog.py`: the header links and the
     disclosure)
@@ -3340,21 +3778,46 @@ CAT-55, CAT-58b.
     at 1440 px
   - Since: not implemented
 
-- CAT-64: A digest the site renders from the index MUST be shown in full
-  and in one colour.
+- CAT-64: A digest in a code panel MUST show its first and last eight
+  hex characters around a marked ellipsis, and keep the whole value in
+  its copy text and its title.
 
-  This covers every inventory entry and verify command a template builds
-  from the index, on generator and recipe pages and in the quickstart. A
-  digest written by hand into the prose of a post or guide, stack posts
-  included, may be shortened, such as `sha256:7cc4b5ae…`, since the
-  reader copies nothing from it.
+  This covers every code panel: the figure's terminals and files, the
+  live edit and the snippets of generator and recipe pages and of the
+  quickstart. The middle of the digest stays in the text at no size, so
+  the copy button and a selection take all 64 characters, and the
+  `title` shows them.
 
-  - Test: none (`catalog/test_catalog.py`: no element inside a digest
-    in the built pages)
+  What is lost: a reader who compares a panel with another source by eye
+  sees 16 of 64 hex characters, 64 bits. A forged digest that matches
+  those 16 takes about 2^64 attempts, so the shortened form is a safer
+  display than a highlighted prefix of eight characters, 32 bits; it is
+  still a display and not a check. The whole digest stands once on the
+  page (CAT-64a) for a reader who compares by eye, and verification is
+  the command of CAT-2. A digest written by hand into the prose of a post
+  or guide may be shortened the same way, since the reader copies
+  nothing from it.
+
+  - Test: none (`catalog/test_catalog.py`: every `sha256` digest inside a
+    `pre` of the fixture builds shows eight and eight characters with the
+    ellipsis mark, and its title and its text hold all 64)
+  - Since: not implemented
+
+- CAT-64a: A page that shows a shortened digest MUST show it whole once,
+  set in two equal halves.
+
+  The halves stand on one line where both fit and one under the other
+  where they do not, and a half never breaks. On the start page the
+  station Inventory lists both pins whole; on a generator page the
+  version's record does.
+
+  - Test: none (`catalog/test_catalog.py`: on each page of the fixture
+    builds, every shortened digest also stands whole once, in an element
+    of two halves of 32 characters)
   - Since: not implemented
 
 - CAT-65: The home page hero MUST state the notice of LEG-5 in one line
-  below its buttons, linking `TERMS.md`.
+  below its search, linking `TERMS.md`.
 
   The footer carries the notice on every page, but a visitor who decides
   from the hero whether to pin a generator does not scroll to it. The
@@ -3364,4 +3827,1239 @@ CAT-55, CAT-58b.
 
   - Test: none (`catalog/test_catalog.py`: the line and its link inside
     the hero of the home page)
+  - Since: not implemented
+
+## Page types
+
+The operator decided on 2026-11-21 that every page of the site follows
+Harbour, not only the start page, and on 2026-11-22 that every page
+gets a head band. `baseof.html` links one stylesheet, `style.css`, and
+every HTML layout of `catalog/site/layouts/` fills its `main` block
+(checked on main on 2026-11-21), so the tokens, the fonts and the shared
+components reach every page at once.
+
+The start page carries the scene and a hero of its own. Every other page
+opens with a head band on the scene's water: its title, its lead and its
+breadcrumb, and on the right a small drawing of its section, the spot
+drawing. Inner pages get layout work beyond the tokens: the catalog's
+cards (CAT-22), two columns of cards on the lists of guides, posts,
+stacks and recipes (CAT-79), a three-step block for each version on a
+generator page (CAT-74), and from 78rem a rail beside the main column
+with the list "On this page" (CAT-19, CAT-75), so a wide screen is used
+while running text keeps its measure (CAT-76). Operational pages, such
+as the catalog, a generator page, the compatibility table, the kinds, a
+security report and the playground, stay dense and put their task first.
+
+The band holds what a page opened with before. Compatibility, stats,
+popularity and wanted had no lead and now show their description as one.
+The lead of kinds keeps its first sentence, and the rest moves below the
+band. Imprint and privacy have no lead. A generator page, a recipe page,
+a guide, a kind page and a tag page carry a breadcrumb back to their
+list, such as "Generators / kubernetes"; no other page has one.
+
+Each section has one motif, shared by its list and its single pages. The
+table names each drawing by its name in `_partials/spot.html`, which is
+also the name of its reference, `docs/specs/harbour/spot-<name>.svg`
+(CAT-69g). A row can change when its drawing does not read at 184 px.
+
+| Section | Layouts | Spot drawing | Name |
+|---|---|---|---|
+| Generators | `generators.html` | three containers stacked on a quay corner | `catalog` |
+| Generator pages | `page.html` | one sealed container on its bearers | `generator` |
+| Recipes | `recipes.html`, `chart-recipe.html` | three containers lashed into one load | `recipe` |
+| Stacks | `stacks.html` | a barge with several container stacks | `barge` |
+| Playground | `playground.html` | a model ship on a slipway | `basin` |
+| Guides | `guides.html`, `prose.html` under `/guides/` | a lighthouse on its rock | `guide` |
+| Blog | `blog.html`, `post.html` | a signal mast with flags | `mast` |
+| Quickstart | `quickstart.html` | a pilot boat at a quay | `pilot` |
+| Popularity and wanted | `popularity.html`, `wanted.html` | a bollard with a line | `bollard` |
+| Reference and statistics | `tags.html`, `tag.html`, `kinds.html`, `kind.html`, `compatibility.html`, `glossary.html`, `stats.html`, `security.html` | a tide gauge with a float | `gauge` |
+| Legal pages | `prose.html` for `/imprint/` and `/privacy/` | none | |
+
+`generators.html` (CAT-67a) is new; the other layouts are on main.
+Stacks have no single pages: `/stacks/` links each stack's blog post,
+recipes, generators and example project. Use and Publish in the
+navigation link `docs/consumers.md` and `docs/authors.md` on GitHub and
+have no page on the site. A legal page added later, such as terms or a
+page for removal requests, takes the last row. The Atom feeds,
+`/llms.txt`, the Markdown variants, `badge.json` and `robots.txt` carry
+no style.
+
+Related: CAT-19, CAT-22, CAT-59, CAT-59a, CAT-60, CAT-66, CAT-69a,
+CAT-69b, CAT-69h.
+
+- CAT-71: Every page type MUST take its colours, fonts and shared
+  components from `style.css`: the header, the footer, buttons, fields,
+  cards, code panels and tables.
+
+  Each component is defined once and looks the same on every page; a
+  page adds layout, not colours or fonts of its own.
+
+  - Test: none (`catalog/test_catalog.py`: every HTML page of the
+    fixture build links `style.css` and no other stylesheet); manual:
+    AC-50
+  - Since: not implemented
+
+- CAT-71a: `style.css` MUST NOT keep a style of Chart Room or of the
+  look before the redesign.
+
+  The check looks for what each left behind: Archivo, `font-stretch` and
+  the graticule's `linear-gradient` from #705, the `.hue-*` tiles and the
+  system font stack as body font from before. A later edit that brings
+  one back fails it.
+
+  - Test: none (`catalog/test_catalog.py`: no `Archivo`,
+    `font-stretch`, `linear-gradient` or `.hue-` in the stylesheet, and
+    Manrope first in the body's font stack)
+  - Since: not implemented
+
+- CAT-72: The harbour scene MUST appear on the start page only.
+
+  The scene explains the compile once. On another page it would push the
+  page's task down.
+
+  - Test: none (`catalog/test_catalog.py`: the scene's partials are
+    included by `home.html` only)
+  - Since: not implemented
+
+CAT-72a to CAT-72e stay unused; the spot drawings are CAT-73a to
+CAT-73g and CAT-73j. CAT-73i, which a draft of this change gave a 404 page, stays
+unused.
+
+- CAT-73: Every page except the start page MUST open with the head band,
+  which holds its `h1` and, where the page has them, its lead and its
+  breadcrumb.
+
+  The band stands on `--sc-water`, so a page shows at a glance that it
+  belongs to the harbour of the start page.
+
+  - Test: none (`catalog/test_catalog.py`: a walk over the built fixture
+    site finds the band with the page's `h1` on every HTML page but `/`)
+  - Since: not implemented
+
+- CAT-73a: The head band MUST carry the spot drawing of its page's row in
+  the table above, and the pages of the last row none.
+
+  - Test: none (`catalog/test_catalog.py`: the drawing of each layout
+    against the table)
+  - Since: not implemented
+
+- CAT-73b: A spot drawing MUST hold no text and none of the scene's
+  landmarks: the office, the gate, the crane, the ship Kapitan, the truck,
+  the islands and the buoy.
+
+  A label in a drawing 184 px high would be too small to read, and the
+  page's title says what the page is. A landmark would retell the scene's
+  story on a page that does not tell it, so the reference pages' tide
+  gauge carries a float, not a buoy. Containers, bollards, lamps and
+  trees stand on any quay and recur.
+
+  - Test: none (`catalog/test_catalog.py`: no `text` element in a spot
+    drawing); manual: the drawings beside the scene in the merge request
+  - Since: not implemented
+
+- CAT-73c: A spot drawing MUST stand whole and vertically centred in its
+  band, 184 px high.
+
+  It reaches 1rem into the band's padding, which leaves .75rem to the
+  band's edge, and what moves stays within that margin, so no frame of
+  its motion is clipped.
+
+  - Test: none (`catalog/test_catalog.py`: the rule of the drawing's
+    height and placement); manual: every motion's frames at 1440 px
+  - Since: not implemented
+
+- CAT-73d: Below 48rem a spot drawing MUST be left out.
+
+  A phone then shows the title and the first paragraph without
+  decoration above them.
+
+  - Test: none (`catalog/test_catalog.py`: the rule below 48rem)
+  - Since: not implemented
+
+- CAT-73e: A spot drawing MUST move once when its page loads and come
+  to rest 1.5 to 2.5 seconds after it, with CSS animations of `transform`
+  and `opacity` only, and stay still under `prefers-reduced-motion:
+  reduce`.
+
+  Each motion starts 0.35 to 0.45 seconds after the page loads. The end
+  times are those of the preview build's stylesheet, the delay plus the
+  duration of its last animation:
+
+  | Name | Motion | At rest after |
+  |---|---|---|
+  | `catalog` | the top container is set down, then its seal pops on | 1.85 s |
+  | `generator` | a scan runs over the container, then its seal pops on | 1.85 s |
+  | `recipe` | the lashings pull tight and the top container settles | 1.85 s |
+  | `barge` | the barge glides in, and its wake fades | 2.35 s |
+  | `basin` | the model ship slides down the slipway, and a ripple spreads | 2.05 s |
+  | `guide` | the beam turns once, the light comes on and its rays show | 2.45 s |
+  | `mast` | four flags are hoisted one after the other | 2.05 s |
+  | `pilot` | the pilot boat casts off, and its wake churns | 2.25 s |
+  | `bollard` | the line drops over the bollard and pulls tight | 1.85 s |
+  | `gauge` | the float bobs once, and a ripple spreads | 2.05 s |
+
+  None loops.
+
+  - Test: none (`catalog/test_catalog.py`: the spot drawings' animation
+    rules name `transform` and `opacity` only, run once, end by 2.5 s
+    and sit inside `prefers-reduced-motion: no-preference`)
+  - Since: not implemented
+
+- CAT-73f: A spot drawing MUST be inline SVG marked `aria-hidden="true"`.
+
+  It carries nothing a reader needs, so assistive technology skips it.
+
+  - Test: none (`catalog/test_catalog.py`: `aria-hidden="true"` on every
+    spot drawing)
+  - Since: not implemented
+
+- CAT-73g: A spot drawing MUST meet CAT-69a, CAT-69b and CAT-69h.
+
+  It then takes its colours from the scene's tokens through classes and
+  follows the theme, under the same CSP as the scene, with ids that do
+  not collide with the page's.
+
+  - Test: none (`catalog/test_catalog.py`: the checks of CAT-69a,
+    CAT-69b and CAT-69h on the spot drawings)
+  - Since: not implemented
+
+- CAT-73h: On `/playground/` the head band MUST stand above the editor.
+
+  The playground keeps its own layout and the site's CSP (DEC-42); the
+  band adds no script.
+
+  - Test: none (`catalog/test_catalog.py`: the band before the editor in
+    the HTML of `/playground/`)
+  - Since: not implemented
+
+- CAT-73j: A spot drawing other than `catalog` and `generator` MUST
+  have at most one orange part, and none shaped like a seal or a check
+  mark.
+
+  A part is one object, such as a line, a flag or a float, in as many
+  shapes as it takes to draw. Orange in a drawing then reads as
+  kadet-hub's check only in the two drawings of sealed containers. The
+  accents are the lashings of `recipe`, the hull stripe of `pilot`, one
+  flag of `mast`, the line of `bollard` and the top of the float of
+  `gauge`; `barge`, `basin` and `guide` have none.
+
+  - Test: none (`catalog/test_catalog.py`: no seal and no check mark in
+    a spot drawing but `catalog` and `generator`); manual: the orange
+    parts of each spot drawing, in the merge request
+  - Since: not implemented
+
+- CAT-74: Each listed version on a generator page MUST show what a
+  consumer does with it as three numbered steps, Inventory, Verify and
+  Checks, each marked with who acts.
+
+  The steps take the stations of the start page: "Inventory" with the
+  inventory entry is the visitor's project, "Verify" with the commands
+  of CAT-2 and "Checks" with the gate's results are kadet-hub's. The
+  version's record and its output diff follow the steps.
+
+  - Test: none (`catalog/test_catalog.py`: the three steps, their order
+    and their chips in each listed version of a generator page)
+  - Since: not implemented
+
+- CAT-75: From 78rem the list "On this page" of a recipe page and of a
+  guide MUST stand beside the main column and stay in view while the
+  page scrolls.
+
+  A generator page does the same under CAT-19. Below 78rem the list is a
+  disclosure above the sections.
+
+  - Test: none (`catalog/test_catalog.py`: the rail's rules from 78rem
+    and the rail in `chart-recipe.html` and `prose.html`)
+  - Since: not implemented
+
+- CAT-76: A line of running text MUST hold at most 80 characters.
+
+  WCAG 2.2 success criterion 1.4.8 (AAA) sets 80 characters as the
+  limit. The rail of CAT-75 takes the width of a wide screen, so the
+  lines of the main column need not grow.
+
+  - Test: none (the script of AC-50 counts the characters of the longest
+    line of running text on each page type)
+  - Since: not implemented
+
+- CAT-77: The head band of a recipe page and the start page's Recipes
+  tile MUST explain the word "recipe" in one maritime line.
+
+  Recipes keep their name. The band says "A recipe is packed cargo for
+  one app: inventory classes, ready to load", and the tile "Packed cargo
+  for one app".
+
+  - Test: none (`catalog/test_catalog.py`: the line in the band of every
+    recipe page and in the tile of `/`)
+  - Since: not implemented
+
+- CAT-79: The card lists of `/guides/`, `/blog/`, `/stacks/` and
+  `/recipes/` MUST span the main column, in two columns from 64rem and in
+  one column below.
+
+  The head band above a list spans the column. A single column at
+  reading width would leave a third of a wide screen empty beside it,
+  while two columns show twice the cards per screen and keep the lines
+  of a card short (CAT-76). The catalog's cards (CAT-22) fill the column
+  too.
+
+  - Test: none (`catalog/test_catalog.py`: the lists' rule of two
+    columns from 64rem and one below, with no width limit on the lists;
+    the script of AC-50: two cards side by side in each of these lists at
+    1440 px, one at 375 px)
+  - Since: not implemented
+
+- AC-50 (CAT-9h, CAT-54, CAT-59, CAT-71, CAT-71a, CAT-72, CAT-73,
+  CAT-76, CAT-79): the implementation pull request adds a script that
+  renders one page of every type above with the repository's headless
+  Chrome, through playwright-core as `catalog/playground/browser.mjs`
+  does, in the light and the dark theme. On each rendered page it finds
+  no text below 4.5:1 against its background, and it runs the rendered
+  checks that CAT-9h, CAT-76 and CAT-79 name. The pull request attaches 20 screenshots for review: the start page,
+  `/generators/`, one generator page, one guide and one recipe page, each
+  at 375 and 1440 px in both themes. Check: the script, run in the pull
+  request; manual: the review of the screenshots.
+
+## Start page and catalog
+
+Until this change `/` held the hero, the catalog (search, tag filter,
+sort, result line and card grid) and the steps of how a version gets
+listed. Each element added above the catalog pushed its search further
+down. On 2026-11-21 the operator decided to split the page: `/` becomes
+a start page that shows what a generator does and where to go next, and
+the catalog moves to `/generators/` with its behaviour unchanged. #706
+built the split in the Chart Room look; the implementation pull request
+ports it ("Visual identity"). Today's start page has 73,239 bytes, and
+GitHub Pages serves it gzipped in 12,807 (measured 2026-11-21); the
+implementation's merge request states the new weight with the fonts.
+
+Related: CAT-5, CAT-6, CAT-8, CAT-11, CAT-12, CAT-26, CAT-31, CAT-38b,
+CAT-62, CAT-63, CAT-65.
+
+- CAT-67: `/` MUST be a start page with, in this order:
+
+  1. the hero: its `h1`, a lead, the search of CAT-67b and the notice of
+     CAT-65;
+  2. the harbour figure (CAT-66);
+  3. the live edit (CAT-68);
+  4. the section "Where to go next": Generators, Recipes, Stacks,
+     Playground, Quickstart and Guides, each with one line on what it
+     holds and, where the index or the content gives one, its count,
+     followed by "Request a generator" and "Wanted generators";
+  5. the section "How a version gets listed" (CAT-62).
+
+  The counts come from the build. Generators counts the generators with
+  a listed version (CAT-26), Recipes the recipes of the index with a
+  listed version (CAT-38b), Stacks the published stack posts of
+  `/stacks/` (CAT-46) and Guides the pages of `/guides/`. Playground and
+  Quickstart have no count. A count of 0 is left out, because
+  `/recipes/` also lists recipes the index does not list yet (CAT-37,
+  CAT-38), and "0 listed" would read as an empty page.
+
+  The destinations are tiles under the `h2` "Where to go next", and
+  their names are no headings (CAT-11b). Generators, the widest, stands
+  on `--sc-hull-r` in both themes with a drawing of three cargo cubes;
+  Recipes on `--teal` with a drawing of three stacked containers and the
+  line of CAT-77; Guides on `--accent-bg`; the others on `--surface`.
+
+  The hero has no buttons, as in the mockup. On `/` the navigation's
+  "Use" and "Publish" link `docs/consumers.md` and `docs/authors.md`
+  (CAT-6), and the request form of CAT-12 and `/wanted/` of CAT-31
+  follow the tiles. The mockup's `h1`, "The Helm alternative where every
+  generator clears customs.", names Helm (CAT-11f) but neither Kapitan
+  nor Kubernetes or Terraform, which CAT-11a asks of it; the hero keeps
+  an `h1` that meets both.
+
+  - Test: none (`catalog/test_catalog.py`: the five parts in this order
+    in the HTML of `/`, the heading, the six destinations and their
+    counts against `/generators/`, `/stacks/` and `/guides/`, no count
+    of 0, the two request links after the tiles)
+  - Since: not implemented
+
+- CAT-67a: The catalog of CAT-8, CAT-10, CAT-22, CAT-26, CAT-29a and
+  CAT-29e MUST be at `/generators/`, with its own title and description
+  (CAT-11).
+
+  `layouts/generators.html` takes the catalog's markup from the home
+  page, with the ids and data attributes `site.js` reads, and
+  `content/generators.md` gives it its title and description. The
+  generator pages stay at `/generators/<name>/` (CAT-5). Links that mean
+  the catalog point there: the "Catalog" line of `/llms.txt` and the
+  three guides that link it as `/`, `apiserver-dry-run`, `config-tools`
+  and `same-app` (checked on main on 2026-11-21). In #706 the
+  `/generators/*` cascade of `hugo.toml` did not reach the page itself,
+  so it has no Markdown variant and no badge.
+
+  - Test: none (`catalog/test_catalog.py`: the checks of CAT-8 to
+    CAT-29e read `/generators/`; the "Catalog" line of `/llms.txt`)
+  - Since: not implemented
+
+- CAT-67b: The start page's search MUST submit its query with GET to
+  `/generators/` as the parameter `q`.
+
+  Without JavaScript the form still lands on `/generators/?q=…`, which
+  then shows every card. The field searches generators only (CAT-29a,
+  CAT-29e), so its label and placeholder promise nothing else; the
+  mockup's placeholder, "Search 39 generators and 58 recipes", promises
+  recipes, which `/recipes/` searches (CAT-37i). The mockup draws the
+  search button in indigo; as the primary button it takes `--signal`
+  ("Visual identity").
+
+  - Test: none (`catalog/test_catalog.py`: the form's `action`,
+    `method` and field name); manual: "HTTPRoute" submitted on `/` with
+    and without JavaScript
+  - Since: not implemented
+
+- CAT-67f: `/generators/` MUST put the `q` parameter into its search
+  field and filter by it.
+
+  `site.js` already reads `q` into the catalog's field and writes the
+  query into the URL while a visitor types (CAT-8). The field moves with
+  the catalog; the parameter stays.
+
+  - Test: none (`catalog/test_catalog.py`: the line of `site.js` that
+    reads `q`); manual: as for CAT-67b
+  - Since: not implemented
+
+- CAT-67g: The CSP MUST allow the start page's form with
+  `form-action 'self'`.
+
+  Under the current `form-action 'none'`, Chrome blocked the submit with
+  a CSP violation and the page stayed on `/` (#706, fixture build,
+  2026-11-21). `'self'` admits forms that send to the site's own origin.
+  The site's other forms, the version selector of CAT-34 and the
+  Mastodon share of CAT-36d, cancel their submit in `site.js`.
+
+  - Test: none (`catalog/test_catalog.py`: the CSP of every page;
+    `test_badge` and `test_goatcounter_counts_from_the_own_origin`
+    compare the whole CSP)
+  - Since: not implemented
+
+- CAT-67c: The site navigation MUST link `/generators/` as "Generators",
+  right after Quickstart.
+
+  The brand links `/`, which no longer lists generators, so the catalog
+  needs an entry of its own. CAT-40a keeps Quickstart first and CAT-47
+  Stacks after Recipes. The mockup's navigation has the same order but
+  six of the links; the site keeps all of them and the disclosure of
+  CAT-63.
+
+  - Test: none (`catalog/test_catalog.py`: the link and its place in the
+    header of every page)
+  - Since: not implemented
+
+- CAT-67d: Below 48rem each station's text MUST have above it a window
+  of about 300 px into the vertical drawing that shows that station.
+
+  #706 first left the figure out on phones to keep the search on the
+  first screen; with the search in the hero (CAT-67e) the figure can
+  follow it. Scaled into the 343 px column of a 375 px screen, the wide
+  drawing would render its smallest labels at 3.2 px (CAT-69d). The
+  vertical drawing, `docs/specs/harbour/scene-narrow.svg`, is 380 units
+  wide and 1,422 high, with the office, the gate, the crane with the ship
+  and the two islands one below the other. A window is 316 units high,
+  300 px in the 361 px column of a 393 px screen and 285 px at 375 px.
+  With the tabs, the window stands under them and the drawing moves
+  behind it to the selected station; without JavaScript or with reduced
+  motion, each station of the list carries its own window, drawn again
+  through `<use>`. Neither the figure nor the page scrolls sideways.
+
+  - Test: none (`catalog/test_catalog.py`: the five windows in the
+    static list and the rules below 48rem); manual: 393 by 852 px, each
+    station's window above its text, with and without JavaScript
+  - Since: not implemented
+
+- CAT-67i: A station's window MUST show that station's main object
+  whole: the office, the gate, the crane, the ship and the two islands.
+
+  In the preview build some objects reach past their window's edge; the
+  implementation sets the windows so they do not.
+
+  - Test: manual: the five windows at 393 and 375 px
+  - Since: not implemented
+
+- CAT-67j: Below 48rem a button "Show whole harbour" MUST open the whole
+  vertical drawing, and close it again.
+
+  Open, the button reads "Show one station" and stays in view at the
+  drawing's foot.
+
+  - Test: none (`catalog/test_catalog.py`: the button in the markup,
+    hidden until `site.js` shows it, and its `aria-expanded`); manual:
+    393 px, open and close
+  - Since: not implemented
+
+- CAT-67h: At each width at most one drawing of the scene MUST be in the
+  accessibility tree.
+
+  The stylesheet switches the drawings at 48rem: `@media (width < 48rem)`
+  gives the wide drawing `display: none`, and `@media (width >= 48rem)`
+  the vertical one. With `max-width: 48rem` and `min-width: 48rem` both
+  rules would match at exactly 768 px and hide both; the range syntax
+  leaves no width with both or neither. An element under
+  `display: none` is out of the accessibility tree and the tab order. In
+  the static list below 48rem the windows are copies marked
+  `aria-hidden="true"` and the drawing itself is hidden, so no scene
+  image is read there; the station texts carry what the drawing shows
+  (CAT-69d). `site.js` marks the selected station in both drawings, so a
+  resize keeps the selection.
+
+  - Test: none (`catalog/test_catalog.py`: the two `display: none` rules
+    in the two range queries, both drawings `role="img"` with the same
+    name, the windows `aria-hidden`); manual: Chrome's accessibility tree
+    at 393 and 1440 px
+  - Since: not implemented
+
+- CAT-67e: The start page's search MUST stand in the hero at every
+  width.
+
+  Visitors spend 57 % of their viewing time above the fold and 74 % in
+  the first two screens (NN/g, eye tracking with 120 participants and
+  more than 130,000 fixations, 2018). In #706 the search followed the
+  hero on phones and the figure from 48rem, so the page rendered the
+  form twice, once per width, to keep the focus order with the screen.
+  In the hero it has one place at every width, so one form remains, and
+  the second one with its id `q-narrow` is dropped.
+
+  - Test: none (`catalog/test_catalog.py`: one search form, inside the
+    hero); manual: 393 by 852 px, the search field on the first screen
+  - Since: not implemented
+
+## The harbour figure
+
+The hero says what a listed version passed, not what a generator does
+for the visitor: turn a block of inventory into finished files. The
+start page shows that with a real run, drawn as a harbour in isometric
+view. #706 first drew three panes, inventory, generator and files, which
+suggested a direct path from one to the next; its review on 2026-11-21
+replaced them with the five steps of a real run. CAT-66b, which #706
+published for marking the target's values in the outputs, is not
+carried over: the live edit (CAT-68) shows where they land. The ID
+stays unused.
+
+The run is kadet-hub's consumer flow on the `helm-vs-terraform` example
+of kadet-hub/examples, recorded on 2026-11-21 in
+`catalog/site/assets/harbour/run/`; its README names the example's
+commit, the index serial and the tools with their versions. The flow is
+the one of the example's own `check` script and of the consumer workflow
+(CON-1, CON-2): the index is verified, each pin is looked up in the
+index and its attestation verified, `oras pull` fetches it by digest,
+`tar` unpacks it into `lib/<name>`, and `kapitan compile` runs without
+`--fetch`. Kapitan 0.36.3 verifies nothing itself, neither an
+attestation nor a digest ([consumers.md](consumers.md)), so the fetch is
+oras's, by digest, after the check, and Kapitan only compiles. An earlier
+recording ran `gh attestation verify` and then `kapitan compile --fetch`.
+Nothing bound the verified digests to the bytes Kapitan fetched, which
+is the path `docs/consumers.md` warns against, so it was replaced.
+
+The example's target `prod` takes the classes `generators` and
+`uploads` and sets `bucket` and `region`. Each station has a name, a
+place in the harbour and a chip that names who acts:
+
+1. Inventory, at the harbour office, "Your project". The target, its
+   classes and the two pins of `inventory/classes/generators.yml`, which
+   the next stations check and fetch. The station lists both pins with
+   their versions and whole digests under the line of CAT-66g, and shows
+   `prod.yml` and the dependency entries of `generators.yml`.
+2. Verify, at the customs gate, "kadet-hub". `gh release download`
+   fetches the index of the latest release, `gh attestation verify`
+   checks it, `jq` reads its serial and each pin's record, its digest
+   and `yanked`, and `gh attestation verify` checks each pinned digest
+   (CAT-66h).
+3. Fetch, at the crane, "kadet-hub". `oras pull` fetches each artifact
+   by its digest, and `tar -xf` unpacks it into `lib/kubernetes` and
+   `lib/terraform-aws`. Kapitan takes no part.
+4. Generators, on the ship Kapitan, "Kapitan". `kapitan compile` renders
+   the inventory, then for each `kapitan.compile` entry with
+   `input_type: kadet` imports the generator from `lib/` and calls its
+   `main()`; kubernetes writes YAML to `manifests/`, terraform-aws JSON
+   to `terraform/`. The station shows the compile's output and the two
+   kadet entries of `generators.yml`.
+5. Output, at the two islands, "Kapitan". The files under
+   `compiled/prod/`: three manifests in `compiled/prod/manifests/shop/`,
+   two Terraform JSON files and the provider lock file in
+   `compiled/prod/terraform/`. The station shows the lines of
+   `web-cm.yml`, `bucket-uploads.tf.json` and `providers.tf.json` that
+   carry `bucket` and `region`, and links the live edit.
+
+The session takes one pin after the other, so station 2 shows the
+checks of both pins and station 3 both fetches. The figure leaves out
+what the flow does not do: no kgenlib, no download cache and no schema
+validation by Kapitan.
+
+The drawing tells the same run as one story. The same two containers,
+kubernetes in a strong indigo and terraform-aws in teal, travel through
+all five stations, and each station's motion starts where the last one
+ended. At the office a cargo list unfolds on the wall, its lines
+kubernetes and terraform-aws are ticked, and a truck with both
+containers, still unsealed, rolls in and stops before the gate. At the
+gate a scan runs over each container, a seal pops onto each, the signal
+turns from orange to teal, the barrier lifts and the truck drives
+through to the crane. The crane's spreader lifts each container off the
+truck and lowers it onto the ship, and the truck leaves empty. On the
+ship each container lights up in turn, parcels rise and stack on deck,
+the funnel smokes and the hull bobs. Then the parcels leave the stacks
+and sail the routes to the two islands. The motion of each station
+takes its own time: 2.2 seconds for the inventory, 2.4 for the gate,
+3.45 for the crane, the longest, and about 2 for each of the last two,
+whose last puff of smoke and last parcel end at 2.0 and 1.78 seconds.
+
+Segments are the reason for the stations. Mayer's segmenting principle
+(after Mayer & Chandler 2001) holds that learners understand an
+animation better when they advance it in segments, and animation helped
+most where complex features of the change mattered (Ploetzner et al.
+2021, g = 0.65). These are learning studies with transfer tests, which
+apply to a landing page by analogy; the part a visitor advances is the
+free choice of stations after the play-through.
+
+The scene has two drawings of the same harbour: the wide one from 48rem,
+and below it a vertical one for the phone's windows (CAT-67d, CAT-67h).
+CAT-69 to CAT-69j apply to both.
+
+The wide drawing, `docs/specs/harbour/scene-wide.svg`, is an isometric
+view on water, 1,168 by 700 units. Along the left runs the quay with its
+lane, a yard of empty slots with trees behind it, and bollards and lamps
+at its edge. On the quay stand the harbour office with the cargo list of
+the target on its wall, under the plate "inventory/" and the head
+"prod"; the orange customs gate over the lane, with the plate
+"kadet-hub" on its beam, a shield with a check above it, a barrier and a
+signal of two lamps; and a portal crane over the lane and the quay's
+edge, its trolley and spreader on a boom that reaches over the ship. The
+ship lies at the quay with its bow to the right, "Kapitan" on the hull,
+a plate "lib/", a superstructure with a funnel at the stern, and on deck
+the two containers, each with its plate and an orange seal, beside the
+stacks of parcels they wrote. Dotted routes lead from the bow to two
+islands on the right, each with a store in its cargo's colour: the
+island of Kubernetes manifests and the island of Terraform JSON. Each
+island has a flat label beside it in the manner of the pills, with its
+name and its path, `compiled/prod/manifests/` and
+`compiled/prod/terraform/`. A buoy floats in the water in front of the
+ship. Five pills name the stations at their
+objects: 1 Inventory at the office, 2 Verify at the gate, 3 Fetch at the
+crane, 4 Generators at the ship and 5 Output on a route. The pills, the
+plates, the cargo list, the hull and the islands' labels hold every
+label of the drawing, and a container's plate carries its name only.
+
+The vertical drawing, `docs/specs/harbour/scene-narrow.svg`, shows the
+same harbour in pieces one below the other: the office, the gate, the
+crane with the ship, where the two containers stand on one hatch, and
+the two islands, which one route calls at in turn.
+
+Both reference drawings show the finished run with no station selected:
+the barrier up, the signal teal, the containers sealed on deck and the
+parcels at the islands. The cargo takes the scene's indigo and teal, and
+the islands are named by what they hold. CAT-58b found that the Linux
+Foundation, which holds the Kubernetes marks, allows fair use of word
+marks only, and that HashiCorp and AWS restrict their logos to approved
+or plain-text use; blue cubes beside "Kubernetes" and purple blocks
+beside "Terraform" would come close to those logos' design elements.
+
+A reference drawing holds the literal light values of the token tables.
+Where tokens share a value, the Use column decides. A shadow in
+`--sc-shade` carries `style="mix-blend-mode:multiply"`, the one style a
+reference file holds, since the site multiplies it over what lies below.
+The
+implementation draws the same shapes with classes bound to the tokens
+(CAT-69a).
+
+Related: CAT-3, CAT-9, CAT-9c, CAT-9g, CAT-9h, CAT-35a, CAT-54, CAT-55,
+CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
+
+- CAT-66: The start page MUST show the harbour figure: the five stations
+  above in their order, each with its text and with the commands, output
+  and file lines of the recording in `catalog/site/assets/harbour/run/`.
+
+  A script in the repository, `catalog/harbour_figure.py`, writes the
+  figure's partial `_partials/harbour.html` and the live edit's
+  `_partials/live-edit.html` from the recording, by line ranges it keeps
+  in one table, so every line on the page is a line of the recording.
+  Between two ranges of a file the panel marks the gap, "⋯ 5 lines",
+  with the number of lines left out. A file's name is the panel's title.
+  Three things change how a line is shown, and the note of CAT-66o names
+  them: temporary paths read `<tmp>`, a digest is shortened (CAT-64),
+  and a long command is folded (CAT-66n). A terminal more than 21rem
+  high scrolls inside its panel: it takes the keyboard, fades out at its
+  foot, and a button there names the lines left, such as "12 more lines
+  ↓".
+
+  The station texts use the glossary's terms (CAT-13a). A station's
+  chip shows "Your project" in `--text` on `--bg-subtle`, "kadet-hub" in
+  `--signal-text` on `--signal-bg` and "Kapitan" in `--accent` on
+  `--accent-bg`. A station's commands and files stand in dark panels
+  under its text, at the station's whole width. The figure's `h2`, "One
+  compile in five stations", is visually hidden.
+
+  - Test: none (`catalog/test_catalog.py`: `harbour_figure.py` run on
+    the recording writes the committed partials; each line of a panel,
+    unfolded and with its digests whole, is a line of its file in the
+    recording, in that file's order; each gap's count equals the lines it
+    leaves out; the five stations stand in order with their names, places
+    and chips)
+  - Since: not implemented
+
+- CAT-66n: A command longer than 100 characters in a panel of CAT-9h,
+  each digest counted at its shortened 24, MUST be folded at its flags:
+  the command with its arguments up to the first flag or URL, then one
+  line per flag with its value and one per further argument, each line
+  but the last ending in a backslash.
+
+  The 100 characters only decide which commands fold. A flag keeps its
+  value on its line, however long, since a value on a line of its own
+  reads as an argument; how wide a line may be is bounded once, by the
+  rendered check of CAT-9h. The figure's continued lines hang four
+  characters in, and the Verify panel of a generator page keeps the two
+  of its command on main (CAT-2). The longest folded line of the
+  recording is `--cert-identity` with the release workflow's identity,
+  103 characters with its hang; the longest of the Verify panel is the
+  same flag, 101 characters. A folded command still runs as typed.
+
+  - Test: none (`catalog/test_catalog.py`: every command of those panels
+    longer than 100 characters so counted is folded, each flag on one
+    line with its value, and its lines joined give the command of the
+    recording or of CAT-2)
+  - Since: not implemented
+
+- CAT-66o: The figure's note MUST name every change the panels make to
+  the recorded lines.
+
+  The note names the example and the date and Kapitan version of the
+  run, and says that temporary paths read `<tmp>`, that "⋯" marks lines
+  left out, that a digest shows its first and last eight characters,
+  that a long command is folded at its flags, that each whole digest
+  stands in station 1, and that on a narrow screen a long line continues
+  indented on the next one.
+
+  - Test: none (`catalog/test_catalog.py`: the note's sentences in the
+    HTML of `/`)
+  - Since: not implemented
+
+- CAT-66g: The station texts MUST carry the line "Recorded on <date>,
+  not necessarily the latest version", with the recording's date.
+
+  Versions rot. The example moved its kubernetes pin seven times in the
+  17 days from 2026-10-22 to 2026-11-08, and index serial 147 already
+  lists terraform-aws 0.1.5 next to the recorded 0.1.4. Versions and
+  digests therefore appear only in the station texts, rendered from the
+  recording, and never in the drawings (CAT-69c).
+
+  - Test: none (`catalog/test_catalog.py`: the line with the recording's
+    date in the HTML of `/`)
+  - Since: not implemented
+
+- CAT-66f: The catalog build MUST fail when the index lists a version the
+  recording pins as yanked or with advisories.
+
+  A recording stays valid while its versions are only old (CAT-66g). It
+  is recorded again when one of its pins becomes unsafe to show, and the
+  figure follows it in the same merge request. The release's catalog job
+  compares the two pins of `run/inventory/classes/generators.yml` with
+  the index it builds from, so a yank or a non-empty `advisories` stops
+  the deploy and the previous site stays live, as for the findings of
+  CAT-11d. A version bump alone needs no new recording.
+
+  - Test: none (`catalog/test_catalog.py`: a fixture index that yanks a
+    recorded pin, and one that lists an advisory for it, fail the build)
+  - Since: not implemented
+
+- CAT-66h: Station 2 MUST state what the check proves and what it does
+  not, and link "What a listing covers" in `docs/consumers.md`.
+
+  The check proves that the release workflow of kadet-hub/registry built
+  the artifact with this digest. It does not prove that a generator is
+  harmless in the visitor's project, so the visitor reviews the compiled
+  output before applying it. No sentence of the figure says or implies
+  that Kapitan verifies anything or that the visitor's compile is
+  checked.
+
+  - Test: none (`catalog/test_catalog.py`: both sentences and the link
+    to `docs/consumers.md#what-a-listing-covers` in station 2)
+  - Since: not implemented
+
+- CAT-66a: With JavaScript and motion allowed, the figure MUST play its
+  stations once, from the moment 90 % of the drawing is in view, each
+  station for as long as its motion takes, and stop on station 5.
+
+  The operator decided on 2026-11-21 for a start on view instead of on
+  load, so a visitor who scrolls down still sees the play-through. A
+  drawing taller than 90 % of the viewport starts once it fills that
+  much of it. `site.js` watches the drawing with an
+  `IntersectionObserver`. A station stays for 2.5, 2.8, 3.9, 2.4 and 2.4
+  seconds, its motion and a short rest, from each station's `data-ms`.
+  Until the run starts the scene rests on the end of station 1. All
+  stations share one grid cell, so the panel keeps the height of the
+  tallest and nothing below the figure moves while they change. Styles
+  live in `style.css` and the timing in `site.js`, since the CSP admits
+  no inline style or script (CAT-3).
+
+  - Test: none (`catalog/test_catalog.py`, partial: the observer's
+    threshold in `site.js`, the five `data-ms` and the rules of the
+    playing figure); manual: the figure plays when scrolled into view at
+    1440 and 393 px
+  - Since: not implemented
+
+- CAT-66c: While the stations play, a visible Pause control MUST stop
+  them.
+
+  The play-through takes 14.0 seconds and changes the station four
+  times in its first 11.6, next to other content, so WCAG 2.2 success
+  criterion 2.2.2 (Level A) asks for a way to pause it; a start on
+  scrolling into view counts as automatic too. The control stands on the
+  drawing's frame and reads "Play" while stopped.
+
+  - Test: none (`catalog/test_catalog.py`: the control in the markup,
+    hidden until `site.js` shows it); manual: Pause during the
+    play-through
+  - Since: not implemented
+
+- CAT-66i: The play-through MUST stop when focus enters the station tabs
+  or the pointer moves over a station or a tab.
+
+  The operator decided this on 2026-11-21: a visitor who reaches for a
+  station wants to read it, not to see it change. A pointer that rests
+  where the figure scrolls in does not count; one that moves does.
+
+  - Test: none (`catalog/test_catalog.py`, partial: the `focusin` and
+    `pointermove` listeners in `site.js`); manual: Tab into the stations
+    and move the pointer over them during the play-through
+  - Since: not implemented
+
+- CAT-66d: Selecting a station MUST highlight it in the scene and show
+  its text, commands and lines.
+
+  `site.js` turns the five station buttons into the WAI-ARIA tabs
+  pattern with automatic activation over the stations of CAT-66e: the
+  arrow keys, Home and End move the focus, and the focused tab is the
+  selected one. A tab shows the station's number, name and place; below
+  48rem it shows number and name, and the place is read to assistive
+  technology only. A click on a station in the drawing selects it too;
+  where stations lie inside each other, as the cargo on the ship, the
+  innermost one under the pointer decides. The drawing's shapes take no
+  focus, since the tabs are the keyboard route, and its small pills fall
+  under the exception of WCAG 2.5.8 for a function that another control
+  of the page offers at 24 px or more (CAT-55).
+
+  - Test: none (`catalog/test_catalog.py`: the tab roles `site.js` sets,
+    partial); manual: the tabs with mouse and keyboard, a click on each
+    station of the drawing
+  - Since: not implemented
+
+- CAT-66r: Selecting a station MUST run its motion once.
+
+  A second selection of the same station runs it again; nothing loops.
+
+  - Test: manual: each station selected twice at 1440 px
+  - Since: not implemented
+
+- CAT-66p: Each station's motion MUST start where the previous
+  station's motion ended.
+
+  The truck that stops before the gate at the end of station 1 is the
+  truck that drives to the gate in station 2, and so on to the parcels.
+
+  - Test: manual: the last frame of each station against the first frame
+    of the next at 1440 px, in the merge request
+  - Since: not implemented
+
+- CAT-66q: Selecting a station MUST show the end states of the stations
+  before it and nothing of what the stations after it bring.
+
+  Selecting station 2 after station 5 takes the parcels and the
+  containers on deck away again; selecting station 5 first shows the
+  ticked list, the sealed containers and the stacks of the stations
+  before it.
+
+  - Test: none (`catalog/test_catalog.py`: the rules for `.done` and for
+    the stations not yet reached); manual: the stations selected in the
+    order 5, 2, 4 at 1440 px
+  - Since: not implemented
+
+- CAT-66l: The selected station MUST be marked by more than colour.
+
+  The selected tab takes a bar at its foot, an `--accent` border and a
+  filled number; the selected pill in the drawing fills with `--accent`,
+  grows a ring and a larger dot at the end of its stem. Forced colours,
+  such as Windows' contrast themes, replace the tokens and drop
+  shadows, so the mark that remains is drawn as a border or a stroke,
+  not as a shadow (WCAG 2.2 success criterion 1.4.1).
+
+  - Test: none (`catalog/test_catalog.py`: the rules of the selected tab
+    and pill set a border, a ring or a stroke width besides colour);
+    manual: Chrome's `forced-colors: active` emulation
+  - Since: not implemented
+
+- CAT-66k: While the stations play, the figure MUST announce nothing
+  through a live region.
+
+  A screen reader would read a new station every few seconds over
+  whatever the visitor reads. The selected tab's state (`aria-selected`)
+  carries the change for a visitor who goes there.
+
+  - Test: none (`catalog/test_catalog.py`: no `aria-live` and no role
+    `status`, `alert` or `log` in the figure's markup or in what
+    `site.js` adds)
+  - Since: not implemented
+
+- CAT-66e: Without JavaScript and under `prefers-reduced-motion:
+  reduce`, the figure MUST list all five stations in order as static
+  text with their commands, next to the drawing of the finished run.
+
+  The markup holds this list, and `site.js` builds the tabs of CAT-66d
+  over it only when motion is allowed. Every part of the drawing stands
+  where the run leaves it, so the drawing without motion shows the
+  finished run. Below 48rem each station of the list carries its window
+  (CAT-67d).
+
+  - Test: none (`catalog/test_catalog.py`: the five stations as an
+    ordered list in the HTML of `/`, the rules under
+    `prefers-reduced-motion: reduce`); manual: reduced motion and no
+    JavaScript at 1440 and 393 px
+  - Since: not implemented
+
+- CAT-66j: Until `site.js` has built the tabs, the figure MUST show the
+  static list of CAT-66e.
+
+  The playing layout hangs on a class that `site.js` sets after it built
+  the tabs, never on one that `theme.js` sets in the head. A missing or
+  failing `site.js` then leaves the five stations readable instead of a
+  figure laid out for a play-through that never starts.
+
+  - Test: none (`catalog/test_catalog.py`: the playing layout's rules
+    name a class that only `site.js` sets, and `theme.js` sets none for
+    the figure); manual: the start page with `site.js` blocked
+  - Since: not implemented
+
+- CAT-66m: In print the figure MUST show all five stations, with the
+  dark panels in light colours.
+
+  A print rule shows the static list of CAT-66e and sets the dark panels
+  back to the light tokens, so a printer puts the commands on paper
+  without a dark ground.
+
+  - Test: none (`catalog/test_catalog.py`: the `@media print` rules);
+    manual: Chrome's print preview of `/`
+  - Since: not implemented
+
+- CAT-69: The scene MUST be SVG that `catalog/harbour_scene.py` draws from
+  its own geometry, inlined from the partials it writes.
+
+  CAT-58b records that the owner ruled out generated imagery. The script
+  projects boxes, slabs and lines of a small isometric world and writes
+  `_partials/harbour-wide.html`, `harbour-narrow.html`,
+  `harbour-crop.html` with the phone's windows, `spot.html` with the
+  inner pages' drawings (CAT-73), and the keyframes that depend on the
+  geometry between two markers of `style.css`. Inline, the SVG sees
+  `style.css` and `data-theme`, which an SVG loaded through `<img>` does
+  not (CAT-35a), so it follows the theme, can highlight a station and
+  keeps its labels as text.
+
+  | Illustration considered | Why not |
+  |---|---|
+  | A raster image from Qwen-Image-2.1-Turbo, the image model available to the operator | Its licence, the Qwen Research License Agreement released on 2026-09-20, grants use "FOR NON-COMMERCIAL PURPOSES ONLY" (section 2(a)) and defines non-commercial as "for research or evaluation purposes only" (section 1(i)), which the illustration of a published site is not (`LICENSE` of Qwen/Qwen-Image-2.1-Turbo on Hugging Face at revision `fc13ba1`, read 2026-11-21). A raster would also keep one theme and draw its labels as pixels |
+
+  - Test: none (`catalog/test_catalog.py`: `harbour_scene.py` run in a
+    copy of the site writes the committed partials and the committed
+    block of `style.css`; the scene is inline `svg` in the HTML of `/`)
+  - Since: not implemented
+
+- CAT-69a: Every colour of the scene MUST come from a class of
+  `style.css` bound to a token of "Visual identity".
+
+  The partials carry no colour literal, and the scene follows the theme
+  and the toggle. Every class of the scene carries the prefix `h-`, and
+  its rules name no ancestor: the phone's windows show the vertical
+  drawing again through `<use>`, and inside the tree of a `<use>` no
+  selector that reaches outside it matches. A shape drawn once and used
+  in several colours takes its faces from custom properties that a
+  family class sets to scene tokens. Presentation attributes for
+  geometry stay.
+
+  - Test: none (`catalog/test_catalog.py`: no `fill`, `stroke` or
+    `stop-color` attribute with a colour in the partials, and a rule in
+    `style.css` for every class they use)
+  - Since: not implemented
+
+- CAT-69b: The scene MUST contain no `<style>` element, `style`
+  attribute, `<script>` element, event handler attribute or `href` to
+  another document.
+
+  The CSP (`style-src 'self'`, `script-src 'self'`) blocks the first
+  four, as for the diagrams of CAT-35a; `site.js` adds the listeners.
+  `<use href="#…">` points into the page and stays.
+
+  - Test: none (`catalog/test_catalog.py`: these constraints on the
+    partials, as `test_diagram_svgs` checks the diagrams)
+  - Since: not implemented
+
+- CAT-69h: Every `id` inside the drawings MUST be unique on the page.
+
+  Both drawings are inline in one page (CAT-67h), and a reference to an
+  id resolves to the first element that has it. The wide drawing names
+  its two containers `hw-ck` and `hw-ct`, the vertical one itself `hn`
+  and its containers `hn-ck` and `hn-ct`.
+
+  - Test: none (`catalog/test_catalog.py`: no duplicate `id` in the HTML
+    of `/` or of a page with a spot drawing)
+  - Since: not implemented
+
+- CAT-69c: The ship MUST carry exactly the two generators the recording
+  pins, each as a container labelled with its name only.
+
+  The mockup added `certmanager` and `argocd 1.2.0`, which this run never
+  fetched, and labelled the containers with versions and a shortened
+  digest. Versions and digests stand only in the station texts
+  (CAT-66g). The kubernetes container takes `--sc-kub`, a stronger indigo
+  than the office's, and the terraform-aws container `--sc-teal`; each
+  carries an orange seal from the gate on. Both are drawn once and shown
+  wherever they pass.
+
+  - Test: none (`catalog/test_catalog.py`: each name stands on its
+    container and on the cargo list, no other generator name and no digit
+    on a plate)
+  - Since: not implemented
+
+- CAT-69i: An object of the drawings MUST NOT overlap another against
+  the isometric depth order, in any frame of any motion.
+
+  What lies farther back is painted first: the containers hoisted off
+  the truck stand behind every part of the crane, the carried ones in
+  front of its far side, and what stands nearer on deck is painted later.
+
+  - Test: manual: the frames of each station at 1440 and 393 px, in the
+    merge request
+  - Since: not implemented
+
+- CAT-69j: The drawings MUST keep one scale: the containers have the
+  same size on the truck, on the crane and on deck, the office is
+  clearly larger than a container, and a loaded truck passes the gate
+  with room to spare.
+
+  A container is 132 by 50 by 46 units and drawn once (CAT-69c); the
+  office stands 176 by 96 units and 92 high. The gate's posts leave at
+  least 20 units beside the containers, and its beam stands 80 units over the
+  lane, 22 above a loaded truck of 58. `harbour_scene.py` asserts the
+  gate's clearance.
+
+  - Test: none (`catalog/test_catalog.py`: `harbour_scene.py` runs
+    without an assertion error); manual: the frames of station 2
+  - Since: not implemented
+
+- CAT-69d: Every fact a label of the drawings shows MUST also stand in
+  the text of its station.
+
+  The labels are small. From 48rem the wide drawing spans the column,
+  720 px at 48rem without a scrollbar and at most 1168 px, 76rem less two
+  gutters of 24 px each time, so its smallest labels, the islands' paths
+  at 11 units, render at 6.8 to 11 px. The vertical drawing, 380 units
+  wide in a 361 px column at 393 px, renders its smallest labels at
+  11.5 units at 10.9 px. Each drawing is therefore one image whose
+  accessible name lists the stations, and the station texts carry what
+  its labels show.
+
+  - Test: manual: every label of both drawings against the station
+    texts, in the merge request
+  - Since: not implemented
+
+- CAT-69e: Every label of the drawings MUST reach 4.5:1 against what it
+  sits on, in both themes, with its station selected or not.
+
+  The scene pairs of "Visual identity" cover the labels: text stands on
+  plates, on the hull and on pills, never on the water. Selection changes
+  only the selected pill (CAT-66l). The mockup dimmed the other stations
+  with `filter: saturate(.3)` on the whole station, labels and their
+  grounds included; that result depends on the browser's filter pipeline
+  and cannot be computed from the tokens, so the other stations keep
+  their colours.
+
+  - Test: none (`Site.test_text_reaches_aa`: the scene pairs;
+    `catalog/test_catalog.py`: no `filter` and no opacity below 1 in the
+    scene's resting rules)
+  - Since: not implemented
+
+- CAT-69f: Every animation of the figure MUST change only `transform`
+  and `opacity`.
+
+  These two properties move nothing else on the page. A colour change on
+  selection has no transition. Opacity changes only during an animation;
+  at rest every text has opacity 1 (CAT-54). A moving group cannot
+  multiply over what lies below it, so its shadow is a solid
+  `--sc-shade-*` colour.
+
+  - Test: none (`catalog/test_catalog.py`: every `transition` and
+    `@keyframes` in the figure's rules names `transform` and `opacity`
+    only)
+  - Since: not implemented
+
+- CAT-69g: The first implementation of each drawing of the scene and of
+  each spot drawing MUST show the shapes, stations and labels of its
+  reference in `docs/specs/harbour/`.
+
+  The references are written from the preview build's generator in its
+  finished state (`README.md` there). After the first implementation,
+  `harbour_scene.py` is the source, and the references stay as the
+  record of what was approved. The implementation adds
+  `docs/specs/harbour/**` to the paths of `catalog-tests.yml`, since its
+  tests read the references. A spot drawing that replaces one of the
+  table in "Page types" gets its reference in the same merge request.
+
+  - Test: none (`catalog/test_catalog.py`: the references use only the
+    light values of the token tables, no script, no `href` and no style
+    but the shadows' blend); manual: each drawing in the light theme
+    beside its reference, in the first implementation's merge request
+  - Since: not implemented
+
+## The live edit
+
+The example sets `bucket` and `region` once, in the target, and both
+generators read them, so the same values arrive in a Kubernetes
+ConfigMap and in Terraform JSON. The figure shows the run as it
+happened. The live edit below it lets the visitor change the two values
+and see the output lines follow. The browser compiles nothing; it puts
+the values into excerpts of the run's files.
+
+Related: CAT-3, CAT-25, CAT-25a, CAT-42, CAT-54, CAT-66, CAT-67g.
+
+- CAT-68: The start page MUST have a live edit in which the visitor sets
+  `bucket` in a text field and `region` in a select of `eu-central-1`,
+  `eu-west-1` and `us-east-1`, and the excerpts of
+  `compiled/prod/manifests/shop/web-cm.yml`,
+  `compiled/prod/terraform/bucket-uploads.tf.json` and
+  `compiled/prod/terraform/providers.tf.json` show the values set.
+
+  `harbour_figure.py` writes the target and the excerpts from the
+  recording, as it writes the figure (CAT-66). The target
+  stands in a dark panel as the four lines of `prod.yml`, with the two
+  values as the fields, which start at the run's values,
+  `example-shop-uploads-prod` and `eu-central-1`. The excerpts mark the
+  changed values in `--teal-bg`: lines 3 and 4 of `web-cm.yml`, line 13
+  of `bucket-uploads.tf.json` and line 4 of `providers.tf.json`. The
+  mockup recasts the JSON as one line,
+  `"aws_s3_bucket": {"uploads": {"bucket": …}}`, which the file does not
+  have. It also fed the values into the texts of stations 1 and 5 and
+  into the Terraform island's label; these keep the run's values, so the
+  figure shows real lines only (CAT-66). The two excerpts' headings carry
+  a cube in their cargo's colour, indigo for the Kubernetes manifests
+  and teal for the Terraform JSON.
+
+  - Test: none (`catalog/test_catalog.py`: the fields and the three
+    options, the lines of the target and the excerpts against the
+    recording with the run's values in place, the four marked values);
+    manual: changing both values at 1440 and 375 px changes the four
+    marked values
+  - Since: not implemented
+
+- CAT-68a: The live edit MUST state that the browser only substitutes
+  the two values into excerpts of what Kapitan 0.36.3 rendered for the
+  example.
+
+  Otherwise a visitor who changes a value can take the excerpts for a
+  compile.
+
+  - Test: none (`catalog/test_catalog.py`: the sentence in the live
+    edit)
+  - Since: not implemented
+
+- CAT-68b: The live edit MUST link the Playground for a real compile.
+
+  The playground compiles in the visitor's browser with Pyodide
+  (DEC-40), but none of its examples is `helm-vs-terraform` and it runs
+  no reclass-rs (DEC-43). The link therefore offers a compile of an
+  inventory, not of this example, which the mockup's "The real compile
+  runs in the Playground" would promise.
+
+  - Test: none (`catalog/test_catalog.py`: the link to `/playground/`
+    in the live edit)
+  - Since: not implemented
+
+- CAT-68c: `site.js` MUST insert the values as text, never as markup.
+
+  It sets the `textContent` of the marked spans and builds no markup
+  from them (CAT-3), as the recipe finder does (CAT-37i). `region` takes
+  only the three values of the select; any other value, such as one set
+  in the browser's developer tools, changes nothing.
+
+  - Test: none (`catalog/test_catalog.py`, partial: the live edit's code
+    in `site.js` writes with `textContent` and uses none of `innerHTML`,
+    `outerHTML`, `insertAdjacentHTML`, `DOMParser` and
+    `createContextualFragment`)
+  - Since: not implemented
+
+- CAT-68d: The live edit MUST insert a `bucket` value only when it
+  matches the field's `pattern`,
+  `(?!(?:y|n|yes|no|on|off|true|false|null)$)[a-z][a-z0-9\-]{1,61}[a-z0-9]`.
+
+  The value then has 3 to 63 characters, starts with a letter, holds
+  only lowercase letters, digits and hyphens, does not end with a
+  hyphen, and is none of YAML 1.1's reserved words. YAML reads values
+  such as `123`, `2026-11-21`, `1.5`, `yes`, `off`, `true` and `null` as
+  numbers, dates, booleans or null, so an excerpt with them would show a
+  line no compile writes. The browser compiles a `pattern` as
+  `^(?:…)$` with the `v` flag, under which a hyphen in a class needs its
+  escape. Node 26 with the `v` flag accepted `abc`,
+  `example-shop-uploads-prod`, `yes1` and 63 letters, and refused `ab`,
+  `yes`, `off`, `123`, `2026-11-21`, `1.5`, `abc-`, `Abc`, `a.b` and 64
+  letters (2026-11-21). An accepted value is also a valid general
+  purpose S3 bucket name ("General purpose bucket naming rules" in the
+  Amazon S3 User Guide, read 2026-11-21), except for S3's reserved
+  prefixes and suffixes, which the page does not check.
+
+  The field carries `minlength="3"`, `maxlength="63"`,
+  `autocapitalize="none"`, `autocorrect="off"` and `spellcheck="false"`.
+  While the value breaks the pattern, the field is marked invalid, a
+  line under it states the rule, and the excerpts keep the last value
+  that met it. The mockup drops other characters as they are typed and
+  cuts the value at 40.
+
+  - Test: none (`catalog/test_catalog.py`: the field's attributes in the
+    HTML of `/`, and the pattern compiled with the `v` flag against the
+    values above); manual: `yes`, `123`, `Shop` and `ab` leave the
+    excerpts unchanged
+  - Since: not implemented
+
+- CAT-68e: The values MUST NOT leave the page.
+
+  `site.js` stores them nowhere, neither in `localStorage`,
+  `sessionStorage` nor a cookie, writes no URL, sends no request, and the
+  fields carry no counter event (CAT-42). A reload shows the run's values
+  again.
+
+  - Test: none (`catalog/test_catalog.py`, partial: the live edit's code
+    in `site.js` uses no storage, no `history` or `location` write, and
+    none of `fetch`, `sendBeacon`, `XMLHttpRequest`, `Image` and
+    `WebSocket`, and the section has no `data-goatcounter-click`);
+    manual: the network panel and the storage of Chrome while both
+    values change
+  - Since: not implemented
+
+- CAT-68g: The live edit MUST NOT sit in a `form` element.
+
+  Enter in a field submits its form, and under `form-action 'self'`
+  (CAT-67g) a form without an `action` would send both values to the
+  page's own URL as a query, into the address bar, the history and the
+  counter (CAT-25a).
+
+  - Test: none (`catalog/test_catalog.py`: no `form` element around the
+    live edit in the HTML of `/`)
+  - Since: not implemented
+
+- CAT-68h: The live edit MUST read no value from the URL.
+
+  A link with chosen parameters would otherwise put a stranger's text
+  into the site's own figure. The fields start at the run's values.
+
+  - Test: none (`catalog/test_catalog.py`, partial: the live edit's code
+    in `site.js` reads neither `location` nor `URLSearchParams`)
+  - Since: not implemented
+
+- CAT-68f: Without JavaScript the live edit MUST show the run's values in
+  the target and in the excerpts, without fields.
+
+  The fields are `hidden` in the markup, and `site.js` shows them in
+  place of the values, the pattern of CAT-9a. Disabled fields were the
+  other option, but browsers grey the text of a disabled field, which
+  WCAG exempts from contrast, so the run's values would show faded.
+
+  - Test: none (`catalog/test_catalog.py`: the fields carry `hidden` and
+    the values stand as text in the HTML of `/`); manual: no JavaScript
+    at 375 px
   - Since: not implemented

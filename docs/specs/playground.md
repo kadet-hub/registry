@@ -340,8 +340,8 @@ the page's thread. The editor stays a textarea, so editing a large file
 costs what it cost before.
 
 The token colours are the site's `--accent`, `--ok`, `--warn` and
-`--text-muted` on `pre`'s `--bg-subtle`. The lowest ratio is 5.58:1, for
-`--text-muted` in the light theme.
+`--text-muted` on `pre`'s `--bg-subtle`. The lowest ratio is 6.01:1, for
+`--ok` in the light theme.
 
 - PG-23: The page MUST highlight the compiled files and the Helm output
   whose names end in `.yml`, `.yaml`, `.json` or `.md`, and MUST NOT change
