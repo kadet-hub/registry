@@ -1,0 +1,97 @@
+$ gh release download --repo kadet-hub/registry --pattern index.json* -D <tmp>
+Finding assets to download...
+Downloading index.json...
+Downloading index.json.intoto.jsonl...
+Downloading index.json.sigstore.json...
+$ gh attestation verify <tmp>/index.json --bundle <tmp>/index.json.sigstore.json --owner kadet-hub --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+Loaded digest sha256:3084ff2666cf449d02f37cc324703ac527cefea32930f5305022c513b21f8dca for file://<tmp>/index.json
+Loaded 1 attestations from <tmp>/index.json.sigstore.json
+
+The following policy criteria will be enforced:
+- Predicate type must match:............. https://slsa.dev/provenance/v1
+- Source Repository Owner URI must match: https://github.com/kadet-hub
+- Subject Alternative Name must match:... https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+- OIDC Issuer must match:................ https://token.actions.githubusercontent.com
+
+✓ Verification succeeded!
+
+The following 1 attestation matched the policy criteria
+
+- Attestation #1
+  - Build repo:..... kadet-hub/registry
+  - Build workflow:. .github/workflows/release.yml@refs/heads/main
+  - Signer repo:.... kadet-hub/registry
+  - Signer workflow: .github/workflows/release.yml@refs/heads/main
+
+$ jq .serial <tmp>/index.json
+147
+$ jq -c '.generators.kubernetes["1.16.0"] | {digest, yanked}' <tmp>/index.json
+{"digest":"sha256:7c6a790b21c8c378022a894f16850665092684326598f6974de65a3a4c4e44b7","yanked":null}
+$ gh attestation verify oci://ghcr.io/kadet-hub/kubernetes@sha256:7c6a790b21c8c378022a894f16850665092684326598f6974de65a3a4c4e44b7 --owner kadet-hub --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+Loaded digest sha256:7c6a790b21c8c378022a894f16850665092684326598f6974de65a3a4c4e44b7 for oci://ghcr.io/kadet-hub/kubernetes@sha256:7c6a790b21c8c378022a894f16850665092684326598f6974de65a3a4c4e44b7
+Loaded 1 attestation from GitHub API
+
+The following policy criteria will be enforced:
+- Predicate type must match:............. https://slsa.dev/provenance/v1
+- Source Repository Owner URI must match: https://github.com/kadet-hub
+- Subject Alternative Name must match:... https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+- OIDC Issuer must match:................ https://token.actions.githubusercontent.com
+
+✓ Verification succeeded!
+
+The following 1 attestation matched the policy criteria
+
+- Attestation #1
+  - Build repo:..... kadet-hub/registry
+  - Build workflow:. .github/workflows/release.yml@refs/heads/main
+  - Signer repo:.... kadet-hub/registry
+  - Signer workflow: .github/workflows/release.yml@refs/heads/main
+
+$ oras pull --no-tty -o <tmp>/kubernetes ghcr.io/kadet-hub/kubernetes@sha256:7c6a790b21c8c378022a894f16850665092684326598f6974de65a3a4c4e44b7
+Downloading 7c6a790b21c8 application/vnd.oci.image.manifest.v1+json
+Processing  7c6a790b21c8 application/vnd.oci.image.manifest.v1+json
+Skipped     8cc14593677b application/vnd.kadet-hub.generator.config.v1+json
+Downloading 9a3e4f2ae79b kubernetes.tar
+Downloaded  9a3e4f2ae79b kubernetes.tar
+Downloaded  7c6a790b21c8 application/vnd.oci.image.manifest.v1+json
+Skipped pulling layers without file name in "org.opencontainers.image.title"
+Use 'oras copy ghcr.io/kadet-hub/kubernetes@sha256:7c6a790b21c8c378022a894f16850665092684326598f6974de65a3a4c4e44b7 --to-oci-layout <layout-dir>' to pull all layers.
+$ tar -xf <tmp>/kubernetes/kubernetes.tar -C lib/kubernetes --no-same-owner
+$ jq -c '.generators["terraform-aws"]["0.1.4"] | {digest, yanked}' <tmp>/index.json
+{"digest":"sha256:9f1c2415fc071c8460e2f8daa6ee428d517688eca2a9c4a236d3443ff6e7e065","yanked":null}
+$ gh attestation verify oci://ghcr.io/kadet-hub/terraform-aws@sha256:9f1c2415fc071c8460e2f8daa6ee428d517688eca2a9c4a236d3443ff6e7e065 --owner kadet-hub --cert-identity https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+Loaded digest sha256:9f1c2415fc071c8460e2f8daa6ee428d517688eca2a9c4a236d3443ff6e7e065 for oci://ghcr.io/kadet-hub/terraform-aws@sha256:9f1c2415fc071c8460e2f8daa6ee428d517688eca2a9c4a236d3443ff6e7e065
+Loaded 1 attestation from GitHub API
+
+The following policy criteria will be enforced:
+- Predicate type must match:............. https://slsa.dev/provenance/v1
+- Source Repository Owner URI must match: https://github.com/kadet-hub
+- Subject Alternative Name must match:... https://github.com/kadet-hub/registry/.github/workflows/release.yml@refs/heads/main
+- OIDC Issuer must match:................ https://token.actions.githubusercontent.com
+
+✓ Verification succeeded!
+
+The following 1 attestation matched the policy criteria
+
+- Attestation #1
+  - Build repo:..... kadet-hub/registry
+  - Build workflow:. .github/workflows/release.yml@refs/heads/main
+  - Signer repo:.... kadet-hub/registry
+  - Signer workflow: .github/workflows/release.yml@refs/heads/main
+
+$ oras pull --no-tty -o <tmp>/terraform-aws ghcr.io/kadet-hub/terraform-aws@sha256:9f1c2415fc071c8460e2f8daa6ee428d517688eca2a9c4a236d3443ff6e7e065
+Downloading 9f1c2415fc07 application/vnd.oci.image.manifest.v1+json
+Processing  9f1c2415fc07 application/vnd.oci.image.manifest.v1+json
+Skipped     2bf33991f119 application/vnd.kadet-hub.generator.config.v1+json
+Downloading ade37a066180 terraform-aws.tar
+Downloaded  ade37a066180 terraform-aws.tar
+Downloaded  9f1c2415fc07 application/vnd.oci.image.manifest.v1+json
+Skipped pulling layers without file name in "org.opencontainers.image.title"
+Use 'oras copy ghcr.io/kadet-hub/terraform-aws@sha256:9f1c2415fc071c8460e2f8daa6ee428d517688eca2a9c4a236d3443ff6e7e065 --to-oci-layout <layout-dir>' to pull all layers.
+$ tar -xf <tmp>/terraform-aws/terraform-aws.tar -C lib/terraform-aws --no-same-owner
+$ kapitan compile
+Rendered inventory (0.06s): discovered 1 targets.
+Compiling 1/1 targets using 1 concurrent processes: (24 CPU available)
+Compiled prod (0.56s)
+Compiled 1 targets in 5.87s
+

@@ -1,0 +1,1250 @@
+<svg viewBox="0 0 380 1422" xmlns="http://www.w3.org/2000/svg" width="380" height="1422">
+<title>kadet-hub harbour scene, vertical drawing: reference, light theme, finished run</title>
+<rect x="0" y="0" width="380" height="1422" fill="#cdd5fb">
+</rect>
+<g>
+<path d="M250 150l60.6 -35M20 470l52 -30M290 760l52 -30M250 1096l69.3 -40" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="26 10 8 10">
+</path>
+<path d="M300 250l17.3 -10M314 255l7.8 -4.5M16 250l17.3 -10M30 255l7.8 -4.5M330 470l17.3 -10M344 475l7.8 -4.5M300 1030l17.3 -10M314 1035l7.8 -4.5M20 1150l17.3 -10M34 1155l7.8 -4.5M300 1404l17.3 -10M314 1409l7.8 -4.5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-261.3 353.5l537-310l192.2 111l-536.9 310z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M477.4 146l-536.9 310v-26l536.9-310z" fill="#b9bdf6">
+</path>
+<path d="M477.4 146l-536.9 310" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-59.5 456l-192.2-111v-26l192.2 111z" fill="#9ea3f2">
+</path>
+<path d="M-59.5 456l-192.2-111" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-251.7 319l536.9-310l192.2 111l-536.9 310z" fill="#ffffff">
+</path>
+<path d="M-121.8 394l536.9-310l45 26l-536.9 310z" fill="#dfe1f7">
+</path>
+<path d="M-99.3 407l536.9-310" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 12">
+</path>
+<path d="M-118.4 396l537-310M-80.3 418l537-310" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<g>
+<path d="M-45.6 216l43.3-25l90 52l-43.3 25z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M4.6 191l83.1 48v-92l-83.1-48z" fill="#8a8ef7">
+</path>
+<path d="M87.7 239l152.5-88v-92l-152.5 88z" fill="#a5a8fa">
+</path>
+<path d="M4.6 191l83.1 48v-5l-83.1-48z" fill="#34379f">
+</path>
+<path d="M87.7 239l152.5-88v-5l-152.5 88z" fill="#4347c4">
+</path>
+<path d="M5.5 200.5l27.7 16v-4l-27.7-16z" fill="#9ea3f2">
+</path>
+<path d="M33.2 216.5l7.8-4.5v-4l-7.8 4.5z" fill="#b9bdf6">
+</path>
+<path d="M5.5 196.5l7.8-4.5l27.7 16l-7.8 4.5z" fill="#ffffff">
+</path>
+<path d="M16.7 193l20.8 12v-39l-20.8-12z" fill="#34379f">
+</path>
+<path d="M19.3 173.5l15.6 9v-14l-15.6-9z" fill="#e3e4fd">
+</path>
+<path d="M6.3 156l27.7 16v-3l-27.7-16z" fill="#34379f">
+</path>
+<path d="M34 172l7-4v-3l-7 4z" fill="#4347c4">
+</path>
+<path d="M6.3 153l7-4l27.7 16l-7 4z" fill="#c7c9fb">
+</path>
+<path d="M49.6 197l27.7 16v-20l-27.7-16z" fill="#ffffff">
+</path>
+<path d="M47.9 199l31.2 18v-3l-31.2-18z" fill="#34379f">
+</path>
+<path d="M15 139l17.3 10v-20l-17.3-10z" fill="#ffffff">
+</path>
+<path d="M13.3 141l20.7 12v-3l-20.7-12z" fill="#34379f">
+</path>
+<path d="M39.2 153l17.4 10v-20l-17.4-10z" fill="#ffffff">
+</path>
+<path d="M37.5 155l20.8 12v-3l-20.8-12z" fill="#34379f">
+</path>
+<path d="M63.5 167l17.3 10v-20l-17.3-10z" fill="#ffffff">
+</path>
+<path d="M61.8 169l20.7 12v-3l-20.7-12z" fill="#34379f">
+</path>
+<path d="M99.9 220l22.5-13v-14l-22.5 13zM134.5 200l22.5-13v-14l-22.5 13zM169.1 180l22.6-13v-14l-22.6 13zM203.8 160l22.5-13v-14l-22.5 13zM96.4 158l81.4-47v-13l-81.4 47z" fill="#ffffff">
+</path>
+<text transform="matrix(1 -0.577 0 1 137.1 132.1)" fill="#1c1b3a" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="12.5" font-weight="600" text-anchor="middle">inventory/</text>
+<g>
+<path d="M96.4 202l123-71v-14l-123 71z" fill="#ffffff">
+</path>
+<path d="M101.6 196.5l9.5-5.5v-9l-9.5 5.5z" fill="#18a999">
+</path>
+<g>
+<path d="M-4 0l3 3 5-6" transform="matrix(0.866 -0.5 0 1 106.4 189.2)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+<text transform="matrix(1 -0.577 0 1 117.2 186.8)" fill="#1c1b3a" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11.5" font-weight="600" text-anchor="start">terraform-aws</text>
+</g>
+<g>
+<path d="M96.4 188l123-71v-14l-123 71z" fill="#ffffff">
+</path>
+<path d="M101.6 182.5l9.5-5.5v-9l-9.5 5.5z" fill="#5b61ea">
+</path>
+<g>
+<path d="M-4 0l3 3 5-6" transform="matrix(0.866 -0.5 0 1 106.4 175.2)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+<text transform="matrix(1 -0.577 0 1 117.2 172.8)" fill="#1c1b3a" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11.5" font-weight="600" text-anchor="start">kubernetes</text>
+</g>
+<path d="M96.4 174l123-71v-13l-123 71z" fill="#4347c4">
+</path>
+<text transform="matrix(1 -0.577 0 1 103.3 167.2)" fill="#ffffff" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="12" font-weight="600" text-anchor="start">prod</text>
+<path d="M-2.3 99l90 52v-7l-90-52z" fill="#34379f">
+</path>
+<path d="M87.7 151l159.4-92v-7l-159.4 92z" fill="#4347c4">
+</path>
+<path d="M-2.3 92l159.3-92l90.1 52l-159.4 92z" fill="#c7c9fb">
+</path>
+<path d="M8.1 92l148.9-86l79.7 46l-149 86z" fill="#e3e4fd">
+</path>
+<path d="M125.8 52l20.8 12v-11l-20.8-12z" fill="#cfd2fb">
+</path>
+<path d="M146.6 64l24.3-14v-11l-24.3 14z" fill="#e9eafd">
+</path>
+<path d="M125.8 41l24.3-14l20.8 12l-24.3 14z" fill="#ffffff">
+</path>
+</g>
+<path d="M-177.1 698.5l519.6-300l138.6 80l-519.6 300z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M490.6 470l-519.6 300v-26l519.6-300z" fill="#b9bdf6">
+</path>
+<path d="M490.6 470l-519.6 300" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-29 770l-138.6-80v-26l138.6 80z" fill="#9ea3f2">
+</path>
+<path d="M-29 770l-138.6-80" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-167.6 664l519.6-300l138.6 80l-519.6 300z" fill="#ffffff">
+</path>
+<path d="M-117.3 693l519.6-300l45 26l-519.6 300z" fill="#dfe1f7">
+</path>
+<path d="M-94.8 706l519.6-300" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 12">
+</path>
+<path d="M-113.9 695l519.6-300M-75.8 717l519.6-300" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<g>
+<path d="M262.8 476.5l4.4-2.5l39.8 23l-4.3 2.5z" fill="#ffffff">
+</path>
+<path d="M211.7 467l22.6-13l107.3 62l-22.5 13z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M223.9 460l34.6-20l10.4 6l-34.6 20z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M255 440l13.9 8v-6l-13.9-8z" fill="#34379f">
+</path>
+<path d="M268.9 448l12.1-7v-6l-12.1 7z" fill="#4347c4">
+</path>
+<path d="M255 434l12.2-7l13.8 8l-12.1 7z" fill="#c7c9fb">
+</path>
+<path d="M258.5 434l10.4 6v-74l-10.4-6z" fill="#e26a1f">
+</path>
+<path d="M268.9 440l8.7-5v-74l-8.7 5z" fill="#ff8a3d">
+</path>
+<path d="M258.5 360l8.7-5l10.4 6l-8.7 5z" fill="#ffd2b3">
+</path>
+<path d="M260.2 430l5.2 3v-11l-5.2-3z" fill="#34379f">
+</path>
+<path d="M265.4 433l2.6-1.5v-11l-2.6 1.5z" fill="#4347c4">
+</path>
+<path d="M260.2 419l2.6-1.5l5.2 3l-2.6 1.5z" fill="#c7c9fb">
+</path>
+<g transform="matrix(-0.5 -1.443 0.866 0.5 31.39 596.87)">
+<path d="M266.3 427.5l69.3 40v-5l-69.3-40z" fill="#ffffff">
+</path>
+<path d="M273.2 431.5l8.7 5v-5l-8.7-5zM290.6 441.5l8.6 5v-5l-8.6-5zM307.9 451.5l8.6 5v-5l-8.6-5zM325.2 461.5l8.7 5v-5l-8.7-5z" fill="#e26a1f">
+</path>
+</g>
+</g>
+<g>
+<path d="M320.9 516l34.6-20l10.4 6l-34.6 20z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M352 496l13.9 8v-6l-13.9-8z" fill="#34379f">
+</path>
+<path d="M365.9 504l12.1-7v-6l-12.1 7z" fill="#4347c4">
+</path>
+<path d="M352 490l12.2-7l13.8 8l-12.1 7z" fill="#c7c9fb">
+</path>
+<path d="M355.5 490l10.4 6v-74l-10.4-6z" fill="#e26a1f">
+</path>
+<path d="M365.9 496l8.7-5v-74l-8.7 5z" fill="#ff8a3d">
+</path>
+<path d="M355.5 416l8.7-5l10.4 6l-8.7 5z" fill="#ffd2b3">
+</path>
+<path d="M352 469l8.7 5v-28l-8.7-5z" fill="#34379f">
+</path>
+<path d="M360.7 474l4.3-2.5v-28l-4.3 2.5z" fill="#4347c4">
+</path>
+<path d="M352 441l4.4-2.5l8.6 5l-4.3 2.5z" fill="#c7c9fb">
+</path>
+<circle r="3.6" transform="matrix(0.866 0.5 0 1 356.4 451.5)" fill="#4347c4">
+</circle>
+<circle r="3.6" transform="matrix(0.866 0.5 0 1 356.4 462.5)" fill="#b9efe6">
+</circle>
+<path d="M256.8 361l107.4 62v-24l-107.4-62z" fill="#e26a1f">
+</path>
+<path d="M364.2 423l12.1-7v-24l-12.1 7z" fill="#ff8a3d">
+</path>
+<path d="M256.8 337l12.1-7l107.4 62l-12.1 7z" fill="#ffd2b3">
+</path>
+<path d="M268.9 364l83.1 48v-16l-83.1-48z" fill="#ffffff">
+</path>
+<text transform="matrix(1 0.577 0 1 310.5 384.5)" fill="#1c1b3a" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="12.5" font-weight="600" text-anchor="middle">kadet-hub</text>
+<path d="M316.5 364.5v-8" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<g transform="matrix(0.866 0.5 0 1 316.5 340.5)">
+<path d="M-13-17c8.7 3.3 17.3 3.3 26 0v15.2c0 8.7-13 15.2-13 15.2s-13-6.5-13-15.2z" fill="#ffffff" stroke="#1c1b3a" stroke-width="2" stroke-linejoin="round">
+</path>
+<path d="M-6-3l4.5 4.5 7.5-9" fill="none" stroke="#e26a1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+</g>
+<path d="M-227.9 1023.5l511-295l126.4 73l-510.9 295z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M419.1 793l-511 295v-26l511-295z" fill="#b9bdf6">
+</path>
+<path d="M419.1 793l-511 295" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-91.9 1088l-126.4-73v-26l126.4 73z" fill="#9ea3f2">
+</path>
+<path d="M-91.9 1088l-126.4-73" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M-218.3 989l510.9-295l126.5 73l-511 295z" fill="#ffffff">
+</path>
+<path d="M-206.2 996l510.9-295l45.1 26l-511 295z" fill="#dfe1f7">
+</path>
+<path d="M-183.7 1009l511-295" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 12">
+</path>
+<path d="M-202.8 998l511-295M-164.6 1020l510.9-295" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<g>
+<path d="M-157.3 1026.2l381.1-220M-100.1 1059.2l381-220" fill="none" stroke="#b9bdf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<g>
+<path d="M140.2 850l20.8-12l7.8 4.5l-20.8 12z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M1.6 930l20.8-12l7.8 4.5l-20.8 12z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M197.3 883l20.8-12l7.8 4.5l-20.8 12z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M58.8 963l20.8-12l7.8 4.5l-20.8 12z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M157.5 837l13 7.5v-9l-13-7.5z" fill="#34379f">
+</path>
+<path d="M170.5 844.5l23.4-13.5v-9l-23.4 13.5z" fill="#4347c4">
+</path>
+<path d="M157.5 828l23.4-13.5l13 7.5l-23.4 13.5z" fill="#c7c9fb">
+</path>
+<path d="M167.9 825l7.8 4.5v-167l-7.8-4.5z" fill="#34379f">
+</path>
+<path d="M175.7 829.5l7.8-4.5v-167l-7.8 4.5z" fill="#4347c4">
+</path>
+<path d="M167.9 658l7.8-4.5l7.8 4.5l-7.8 4.5z" fill="#c7c9fb">
+</path>
+<path d="M38 890l6.1 3.5v-8l-6.1-3.5z" fill="#34379f">
+</path>
+<path d="M44.1 893.5l130.7-75.5v-8l-130.7 75.5z" fill="#4347c4">
+</path>
+<path d="M38 882l130.8-75.5l6 3.5l-130.7 75.5z" fill="#c7c9fb">
+</path>
+<path d="M44.9 886l130.8-147.5M175.7 810.5l-130.8 3.5" fill="none" stroke="#a5a8fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M38 810l6.1 3.5v-8l-6.1-3.5z" fill="#34379f">
+</path>
+<path d="M44.1 813.5l130.7-75.5v-8l-130.7 75.5z" fill="#4347c4">
+</path>
+<path d="M38 802l130.8-75.5l6 3.5l-130.7 75.5z" fill="#c7c9fb">
+</path>
+<path d="M214.7 870l13 7.5v-9l-13-7.5z" fill="#34379f">
+</path>
+<path d="M227.7 877.5l23.3-13.5v-9l-23.3 13.5z" fill="#4347c4">
+</path>
+<path d="M214.7 861l23.4-13.5l12.9 7.5l-23.3 13.5z" fill="#c7c9fb">
+</path>
+<path d="M225.1 858l7.8 4.5v-167l-7.8-4.5z" fill="#34379f">
+</path>
+<path d="M232.9 862.5l7.7-4.5v-167l-7.7 4.5z" fill="#4347c4">
+</path>
+<path d="M225.1 691l7.8-4.5l7.7 4.5l-7.7 4.5z" fill="#c7c9fb">
+</path>
+<path d="M95.2 923l6 3.5v-8l-6-3.5z" fill="#34379f">
+</path>
+<path d="M101.2 926.5l130.8-75.5v-8l-130.8 75.5z" fill="#4347c4">
+</path>
+<path d="M95.2 915l130.7-75.5l6.1 3.5l-130.8 75.5z" fill="#c7c9fb">
+</path>
+<path d="M102.1 919l130.8-147.5M232.9 843.5l-130.8 3.5" fill="none" stroke="#a5a8fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M95.2 843l6 3.5v-8l-6-3.5z" fill="#34379f">
+</path>
+<path d="M101.2 846.5l130.8-75.5v-8l-130.8 75.5z" fill="#4347c4">
+</path>
+<path d="M95.2 835l130.7-75.5l6.1 3.5l-130.8 75.5z" fill="#c7c9fb">
+</path>
+<path d="M176.6 738l49.3 28.5v-8l-49.3-28.5z" fill="#34379f">
+</path>
+<path d="M225.9 766.5l6.1-3.5v-8l-6.1 3.5z" fill="#4347c4">
+</path>
+<path d="M176.6 730l6-3.5l49.4 28.5l-6.1 3.5z" fill="#c7c9fb">
+</path>
+<path d="M175.7 730.5l49.4-39.5" fill="none" stroke="#a5a8fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+<g>
+<g>
+<path d="M219 749.5V756.5" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linejoin="round">
+</path>
+<path d="M236.3 759.5V766.5" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linejoin="round">
+</path>
+<path d="M194.8 763.5V770.5" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linejoin="round">
+</path>
+<path d="M212.1 773.5V780.5" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linejoin="round">
+</path>
+<path d="M144.5 801.5l36.4 21v-5l-36.4-21z" fill="#34379f">
+</path>
+<path d="M180.9 822.5l105.6-61v-5l-105.6 61z" fill="#4347c4">
+</path>
+<path d="M144.5 796.5l105.7-61l36.3 21l-105.6 61z" fill="#c7c9fb">
+</path>
+<path d="M189.6 778.5l22.5 13v-8l-22.5-13z" fill="#34379f">
+</path>
+<path d="M212.1 791.5l29.4-17v-8l-29.4 17z" fill="#4347c4">
+</path>
+<path d="M189.6 770.5l29.4-17l22.5 13l-29.4 17z" fill="#c7c9fb">
+</path>
+</g>
+</g>
+<g>
+<path d="M18.9 917l13 7.5v-9l-13-7.5z" fill="#34379f">
+</path>
+<path d="M31.9 924.5l23.4-13.5v-9l-23.4 13.5z" fill="#4347c4">
+</path>
+<path d="M18.9 908l23.4-13.5l13 7.5l-23.4 13.5z" fill="#c7c9fb">
+</path>
+<path d="M29.3 905l7.8 4.5v-167l-7.8-4.5z" fill="#34379f">
+</path>
+<path d="M37.1 909.5l7.8-4.5v-167l-7.8 4.5z" fill="#4347c4">
+</path>
+<path d="M29.3 738l7.8-4.5l7.8 4.5l-7.8 4.5z" fill="#c7c9fb">
+</path>
+<path d="M76.1 950l13 7.5v-9l-13-7.5z" fill="#34379f">
+</path>
+<path d="M89.1 957.5l23.4-13.5v-9l-23.4 13.5z" fill="#4347c4">
+</path>
+<path d="M76.1 941l23.4-13.5l13 7.5l-23.4 13.5z" fill="#c7c9fb">
+</path>
+<path d="M86.5 938l7.8 4.5v-167l-7.8-4.5z" fill="#34379f">
+</path>
+<path d="M94.3 942.5l7.8-4.5v-167l-7.8 4.5z" fill="#4347c4">
+</path>
+<path d="M86.5 771l7.8-4.5l7.8 4.5l-7.8 4.5z" fill="#c7c9fb">
+</path>
+<path d="M38 818l49.4 28.5v-8l-49.4-28.5z" fill="#34379f">
+</path>
+<path d="M87.4 846.5l6-3.5v-8l-6 3.5z" fill="#4347c4">
+</path>
+<path d="M38 810l6.1-3.5l49.3 28.5l-6 3.5z" fill="#c7c9fb">
+</path>
+<path d="M37.1 810.5l49.4-39.5" fill="none" stroke="#a5a8fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+</g>
+<g>
+<path d="M32.8 1030l84.9 49l230.3-133l2.6-46.5l-13.8-2l-73.6-.5z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M67.4 1030l39.9 23l-38.1 38l-67.6-39z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<g>
+<path d="M57.1 1028l-66.7 26.5M110.7 1059l-45.9 38.5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M65.3 1037.8l7.8-4.6l7.8 4.6l-7.8 4.4zM80.4 1050l9.6-5.5l9.5 5.5l-9.5 5.5zM65.7 1048l6.9-4l7 4l-7 4zM80.4 1060.5l5.2-3l5.2 3l-5.2 3zM44.1 1043l6-3.5l6.1 3.5l-6.1 3.5zM57.1 1058l5.1-3l5.2 3l-5.2 3zM34.5 1055.5l4.4-2.5l4.3 2.5l-4.3 2.5zM55.3 1073.5l4.4-2.5l4.3 2.5l-4.3 2.5zM32.8 1071l3.5-2l3.4 2l-3.4 2z" fill="#ffffff">
+</path>
+</g>
+</g>
+<g>
+<g>
+<path d="M62.2 1027l50.3 29v-44l-50.3-29z" fill="#34379f">
+</path>
+<path d="M62.2 1027l50.3 29v-7l-50.3-29z" fill="#8a8ef7">
+</path>
+<path d="M112.5 1056h24.2v-44h-24.2z" fill="#4347c4">
+</path>
+<path d="M112.5 1056h24.2v-7h-24.2z" fill="#a5a8fa">
+</path>
+<path d="M337.6 940l-.8-42.5l17.3-67l-16.5 52.5z" fill="#4347c4">
+</path>
+<path d="M337.6 940l-.8-42.5l4.7-9.7l-3.9 45.2z" fill="#a5a8fa">
+</path>
+<path d="M62.2 1027l50.3 29h24.2l200.9-116l-.8-42.5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle r="4" transform="matrix(0.866 -0.5 0 1 338.9 889.8)" fill="#a5a8fa">
+</circle>
+<path d="M67.4 995l8.7 5v-5l-8.7-5zM98.6 1013l8.7 5v-5l-8.7-5z" fill="#8a8ef7">
+</path>
+<path d="M75.2 1020.5l24.3 14v-18l-24.3-14z" fill="#1c1b3a">
+</path>
+<path d="M87.4 1027.5v-18M106.4 1041.5l4.3 2.5M106.4 1035.5l4.3 2.5M106.4 1029.5l4.3 2.5" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M62.2 983v-14l183.6-106l74.5 43l-183.6 106h-24.2z" fill="#a5a8fa">
+</path>
+<path d="M64.8 974.5l183.6-106v-4l-183.6 106z" fill="#4347c4">
+</path>
+<path d="M65.7 986v-12l182.7-105.5l69.3 40l-182.7 105.5h-20.8z" fill="#c7c9fb">
+</path>
+<path d="M70.5 965.8v-9M91.3 953.8v-9M112 941.8v-9M132.8 929.8v-9M153.6 917.8v-9M174.4 905.8v-9M195.2 893.8v-9M216 881.8v-9M236.8 869.8v-9M63.5 960.8l183.6-106" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M248.4 868.5l69.3 40v-17l-69.3-40z" fill="#34379f">
+</path>
+<path d="M277 885l12.1 7v-15l-12.1-7z" fill="#e3e4fd">
+</path>
+<path d="M245.8 850l17.4-10l90.9-9.5l-16.5 52.5l-17.3 10z" fill="#a5a8fa">
+</path>
+<path d="M251 854l13.9-8l82.3-7.5l-13 47.5l-13.9 8z" fill="#c7c9fb">
+</path>
+<path d="M281.4 862.5l8.6 5v-7l-8.6-5z" fill="#34379f">
+</path>
+<path d="M290 867.5l10.4-6v-7l-10.4 6z" fill="#4347c4">
+</path>
+<path d="M281.4 855.5l10.3-6l8.7 5l-10.4 6z" fill="#c7c9fb">
+</path>
+<path d="M296.9 871.5l8.7 5v-7l-8.7-5z" fill="#34379f">
+</path>
+<path d="M305.6 876.5l10.4-6v-7l-10.4 6z" fill="#4347c4">
+</path>
+<path d="M296.9 864.5l10.4-6l8.7 5l-10.4 6z" fill="#c7c9fb">
+</path>
+<path d="M331.6 847.5v-30" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M328.1 817.5l3.5 2v-4l-3.5-2z" fill="#cfd2fb">
+</path>
+<path d="M331.6 819.5l3.4-2v-4l-3.4 2z" fill="#e9eafd">
+</path>
+<path d="M328.1 813.5l3.5-2l3.4 2l-3.4 2z" fill="#ffffff">
+</path>
+<path d="M129.8 948l50.2 29v-6l-50.2-29z" fill="#8a8ef7">
+</path>
+<path d="M180 977l121.3-70v-6l-121.3 70z" fill="#a5a8fa">
+</path>
+<path d="M129.8 942l121.2-70l50.3 29l-121.3 70z" fill="#e3e4fd">
+</path>
+<path d="M160.1 924.5l50.2 29M190.4 907l50.2 29M220.7 889.5l50.3 29" fill="none" stroke="#a5a8fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+<g>
+<g transform="matrix(1 0 0 1 0 94)">
+<g transform="matrix(1 0 0 1 136.7 848)">
+<g>
+<path d="M0 0l43.3 25v-46l-43.3-25z" fill="#454acf">
+</path>
+<path d="M43.3 25l114.3-66v-46l-114.3 66z" fill="#5b61ea">
+</path>
+<path d="M0 -46l114.3-66l43.3 25l-114.3 66z" fill="#b0b4ff">
+</path>
+<path d="M43.3 25l114.3-66v-4l-114.3 66zM43.3 -17l114.3-66v-4l-114.3 66z" fill="#454acf">
+</path>
+<path d="M46.8 16v-32M154.2 -46v-32" fill="none" stroke="#454acf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M51.1 8.5l98.7-57v-22l-98.7 57z" fill="#ffffff">
+</path>
+<text transform="matrix(1 -0.577 0 1 100.5 -26.5)" fill="#1c1b3a" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="12.5" font-weight="600" text-anchor="middle">kubernetes</text>
+<path d="M7.8 -.5v-36M21.7 7.5v-36M35.5 15.5v-36" fill="none" stroke="#b0b4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -46l4.3-2.5l4.4 2.5l-4.4 2.5zM39 -23.5l4.3-2.5l4.3 2.5l-4.3 2.5zM110 -109.5l4.3-2.5l4.3 2.5l-4.3 2.5zM149 -87l4.3-2.5l4.3 2.5l-4.3 2.5z" fill="#5b61ea">
+</path>
+</g>
+</g>
+<g>
+<circle r="7.5" transform="matrix(0.866 -0.5 0 1 191.3 829.5)" fill="#ff8a3d">
+</circle>
+<path d="M-4 0l3 3 5-6" transform="matrix(0.866 -0.5 0 1 191.3 829.5)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+</g>
+</g>
+<g>
+<g transform="matrix(1 0 0 1 0 48)">
+<g transform="matrix(1 0 0 1 136.7 848)">
+<g>
+<path d="M0 0l43.3 25v-46l-43.3-25z" fill="#118a7b">
+</path>
+<path d="M43.3 25l114.3-66v-46l-114.3 66z" fill="#18a999">
+</path>
+<path d="M0 -46l114.3-66l43.3 25l-114.3 66z" fill="#b9efe6">
+</path>
+<path d="M43.3 25l114.3-66v-4l-114.3 66zM43.3 -17l114.3-66v-4l-114.3 66z" fill="#118a7b">
+</path>
+<path d="M46.8 16v-32M154.2 -46v-32" fill="none" stroke="#118a7b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M51.1 8.5l98.7-57v-22l-98.7 57z" fill="#ffffff">
+</path>
+<text transform="matrix(1 -0.577 0 1 100.5 -26.5)" fill="#1c1b3a" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="12.5" font-weight="600" text-anchor="middle">terraform-aws</text>
+<path d="M7.8 -.5v-36M21.7 7.5v-36M35.5 15.5v-36" fill="none" stroke="#b9efe6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M0 -46l4.3-2.5l4.4 2.5l-4.4 2.5zM39 -23.5l4.3-2.5l4.3 2.5l-4.3 2.5zM110 -109.5l4.3-2.5l4.3 2.5l-4.3 2.5zM149 -87l4.3-2.5l4.3 2.5l-4.3 2.5z" fill="#18a999">
+</path>
+</g>
+</g>
+<g>
+<circle r="7.5" transform="matrix(0.866 -0.5 0 1 191.3 829.5)" fill="#ff8a3d">
+</circle>
+<path d="M-4 0l3 3 5-6" transform="matrix(0.866 -0.5 0 1 191.3 829.5)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+</g>
+</g>
+<g>
+<path d="M68.7 979.2l7.4-4.2l57.2 33l-7.4 4.2z" fill="#b2b5f4">
+</path>
+<path d="M76.1 975l57.2 33v-32l-57.2-33z" fill="#cfd2fb">
+</path>
+<path d="M133.3 1008l48.5-28v-32l-48.5 28z" fill="#e9eafd">
+</path>
+<path d="M76.1 943l48.5-28l57.2 33l-48.5 28z" fill="#ffffff">
+</path>
+<path d="M141.1 990.5l7.8-4.5v-10l-7.8 4.5zM154 983l7.8-4.5v-10l-7.8 4.5zM167 975.5l7.8-4.5v-10l-7.8 4.5z" fill="#4347c4">
+</path>
+<path d="M84.8 980l10.4 6v-22l-10.4-6z" fill="#34379f">
+</path>
+<path d="M88.2 928l71 41v-4l-71-41z" fill="#cfd2fb">
+</path>
+<path d="M159.2 969l29.5-17v-4l-29.5 17z" fill="#e9eafd">
+</path>
+<path d="M88.2 924l29.5-17l71 41l-29.5 17z" fill="#ffffff">
+</path>
+<path d="M103.8 929l46.8 27v-22l-46.8-27z" fill="#cfd2fb">
+</path>
+<path d="M150.6 956l24.2-14v-22l-24.2 14z" fill="#e9eafd">
+</path>
+<path d="M103.8 907l24.3-14l46.7 27l-24.2 14z" fill="#ffffff">
+</path>
+<path d="M107.3 924l39.8 23v-10l-39.8-23z" fill="#34379f">
+</path>
+<path d="M153.2 947.5l19-11v-10l-19 11z" fill="#4347c4">
+</path>
+<path d="M100.4 907l50.2 29v-3l-50.2-29z" fill="#34379f">
+</path>
+<path d="M150.6 936l27.7-16v-3l-27.7 16z" fill="#4347c4">
+</path>
+<path d="M100.4 904l27.7-16l50.2 29l-27.7 16z" fill="#c7c9fb">
+</path>
+<path d="M141.1 909.5v-23" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M133.3 897l12.1 7v-3l-12.1-7z" fill="#cfd2fb">
+</path>
+<path d="M145.4 904l3.5-2v-3l-3.5 2z" fill="#e9eafd">
+</path>
+<path d="M133.3 894l3.4-2l12.2 7l-3.5 2z" fill="#ffffff">
+</path>
+<path d="M103 955.5l20.7 12v-32l-20.7-12z" fill="#34379f">
+</path>
+<path d="M123.7 967.5l13.9-8v-32l-13.9 8z" fill="#4347c4">
+</path>
+<path d="M103 923.5l13.8-8l20.8 12l-13.9 8z" fill="#c7c9fb">
+</path>
+<path d="M103 938.5l20.7 12v-8l-20.7-12z" fill="#118a7b">
+</path>
+<path d="M123.7 950.5l13.9-8v-8l-13.9 8z" fill="#18a999">
+</path>
+<path d="M109 924l8.7-5l13.8 8l-8.6 5z" fill="#1c1b3a">
+</path>
+<g>
+<path d="M115.1 919.5l5.2 3v-6l-5.2-3z" fill="#8a8ef7">
+</path>
+<path d="M120.3 922.5l5.2-3v-6l-5.2 3z" fill="#a5a8fa">
+</path>
+<path d="M115.1 913.5l5.2-3l5.2 3l-5.2 3z" fill="#e3e4fd">
+</path>
+</g>
+<g>
+<path d="M111.6 910.5l6.9 4v-8l-6.9-4z" fill="#8a8ef7">
+</path>
+<path d="M118.5 914.5l7-4v-8l-7 4z" fill="#a5a8fa">
+</path>
+<path d="M111.6 902.5l6.9-4l7 4l-7 4z" fill="#e3e4fd">
+</path>
+</g>
+<g>
+<path d="M107.3 898.5l9.5 5.5v-11l-9.5-5.5z" fill="#8a8ef7">
+</path>
+<path d="M116.8 904l9.5-5.5v-11l-9.5 5.5z" fill="#a5a8fa">
+</path>
+<path d="M107.3 887.5l9.5-5.5l9.5 5.5l-9.5 5.5z" fill="#e3e4fd">
+</path>
+</g>
+<path d="M67 984.2v-9M88.7 996.8v-9M110.3 1009.2v-9M63.5 973.2l50.3 29h21.6M67.4 983v-26" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M67.4 957v9l12.2 2.5z" fill="#18a999">
+</path>
+</g>
+<g>
+<path d="M134.1 1010.5l171.5-99l2.6 1.5l-171.5 99z" fill="#a5a8fa">
+</path>
+<path d="M136.7 1056l200.9-116v-57l-17.3 10l-12.1 20l-171.5 99z" fill="#4347c4">
+</path>
+<path d="M136.7 1056l200.9-116v-7l-200.9 116z" fill="#a5a8fa">
+</path>
+<path d="M136.7 1056l200.9-116" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M138.5 1025l197.4-114" fill="none" stroke="#8a8ef7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<text transform="matrix(1 -0.577 0 1 143.7 1038)" fill="#ffffff" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="22" font-weight="600" text-anchor="start">Kapitan</text>
+<path d="M282.2 959l45.1-26v-18l-45.1 26z" fill="#ffffff">
+</path>
+<text transform="matrix(1 -0.577 0 1 304.7 941.5)" fill="#1c1b3a" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="12.5" font-weight="600" text-anchor="middle">lib/</text>
+<path d="M194.3 977.2v-9M215.1 965.2v-9M235.9 953.2v-9M256.7 941.2v-9M277.5 929.2v-9M298.2 917.2v-9M194.3 968.2l110.9-64" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+</g>
+</g>
+<g>
+<g>
+<path d="M64.8 661.5l223.5 129v-13l-223.5-129z" fill="#34379f">
+</path>
+<path d="M288.3 790.5l8.6-5v-13l-8.6 5z" fill="#4347c4">
+</path>
+<path d="M64.8 648.5l8.7-5l223.4 129l-8.6 5z" fill="#c7c9fb">
+</path>
+<path d="M252.8 802l6 3.5v-9l-6-3.5z" fill="#34379f">
+</path>
+<path d="M258.8 805.5l29.5-17v-9l-29.5 17z" fill="#4347c4">
+</path>
+<path d="M252.8 793l29.4-17l6.1 3.5l-29.5 17z" fill="#c7c9fb">
+</path>
+<g>
+<path d="M188.7 765l24.2 14v-10l-24.2-14z" fill="#118a7b">
+</path>
+<path d="M212.9 779l29.5-17v-10l-29.5 17z" fill="#18a999">
+</path>
+<path d="M188.7 755l29.4-17l24.3 14l-29.5 17z" fill="#b9efe6">
+</path>
+</g>
+<path d="M93.4 702l36.4 21v-25l-36.4-21z" fill="#8a8ef7">
+</path>
+<path d="M129.8 723l34.6-20v-25l-34.6 20z" fill="#a5a8fa">
+</path>
+<path d="M93.4 677l34.7-20l36.3 21l-34.6 20z" fill="#e3e4fd">
+</path>
+<path d="M98.6 697l26 15v-10l-26-15zM90 677l39.8 23v-4l-39.8-23z" fill="#34379f">
+</path>
+<path d="M129.8 700l38.1-22v-4l-38.1 22z" fill="#4347c4">
+</path>
+<path d="M90 673l38.1-22l39.8 23l-38.1 22z" fill="#c7c9fb">
+</path>
+<path d="M26.7 683.5l223.5 129v-13l-223.5-129z" fill="#34379f">
+</path>
+<path d="M250.2 812.5l8.6-5v-13l-8.6 5z" fill="#4347c4">
+</path>
+<path d="M26.7 670.5l8.7-5l223.4 129l-8.6 5z" fill="#c7c9fb">
+</path>
+<path d="M154.9 782.5l15.6 9v-21l-15.6-9z" fill="#cfd2fb">
+</path>
+<path d="M170.5 791.5l13.9-8v-21l-13.9 8z" fill="#e9eafd">
+</path>
+<path d="M154.9 761.5l13.9-8l15.6 9l-13.9 8z" fill="#ffffff">
+</path>
+<path d="M157.5 778l10.4 6v-9l-10.4-6z" fill="#34379f">
+</path>
+<path d="M173.1 784l8.7-5v-9l-8.7 5z" fill="#4347c4">
+</path>
+<path d="M174.4 709.2l4.3 2.6v-39l-4.3-2.6z" fill="#34379f">
+</path>
+<path d="M178.7 711.8l4.4-2.6v-39l-4.4 2.6z" fill="#4347c4">
+</path>
+<path d="M174.4 670.2l4.3-2.4l4.4 2.4l-4.4 2.6z" fill="#c7c9fb">
+</path>
+<path d="M178.7 670.2l107 100.8M178.7 670.2l-102.6-20.2" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M136.3 731.2l4.3 2.6v-39l-4.3-2.6z" fill="#34379f">
+</path>
+<path d="M140.6 733.8l4.4-2.6v-39l-4.4 2.6z" fill="#4347c4">
+</path>
+<path d="M136.3 692.2l4.3-2.4l4.4 2.4l-4.4 2.6z" fill="#c7c9fb">
+</path>
+<path d="M140.6 692.2l107 100.8M140.6 692.2l-102.6-20.2" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M136.3 697.2l4.3 2.6v-5l-4.3-2.6z" fill="#34379f">
+</path>
+<path d="M140.6 699.8l42.5-24.6v-5l-42.5 24.6z" fill="#4347c4">
+</path>
+<path d="M136.3 692.2l42.4-24.4l4.4 2.4l-42.5 24.6z" fill="#c7c9fb">
+</path>
+<path d="M156.2 681.2l3.5 2v-4l-3.5-2z" fill="#118a7b">
+</path>
+<path d="M159.7 683.2l3.4-2v-4l-3.4 2z" fill="#18a999">
+</path>
+<path d="M156.2 677.2l3.5-2l3.4 2l-3.4 2z" fill="#b9efe6">
+</path>
+</g>
+</g>
+<g>
+<path d="M57.9 1058.5Q-10 1148.5 21.6 1262.8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 8">
+</path>
+<path d="M21.6 1262.8Q35.6 1320.8 115.6 1352.8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 8">
+</path>
+<path d="M8.8 1212.3l88.5-51.1l10 5.8l17.4-10.1l47.4 27.3l13.7-7.9l28.7 16.6l-8.7 5l11.2 6.5l-91 52.6l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-49.9-28.8l14.9-8.6z" fill="#dbe1fd">
+</path>
+<path d="M8.8 1212.3l88.5-51.1l10 5.8l17.4-10.1l47.4 27.3l13.7-7.9l28.7 16.6l-8.7 5l11.2 6.5l-91 52.6l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-49.9-28.8l14.9-8.6l-23.6-13.7" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="14 9">
+</path>
+<path d="M198.3 1192.9l-8.7 5v-5l8.7-5.1z" fill="#b9bdf6">
+</path>
+<path d="M198.3 1192.9l-8.7 5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M48.7 1226l-23.7-13.7v-5l23.7 13.7z" fill="#9ea3f2">
+</path>
+<path d="M48.7 1226l-23.7-13.7" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M200.8 1204.4l-74.8 43.2v-5l74.8-43.2z" fill="#b9bdf6">
+</path>
+<path d="M200.8 1204.4l-74.8 43.2" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M67.4 1254.1l-33.7-19.5v-5l33.7 19.4z" fill="#9ea3f2">
+</path>
+<path d="M67.4 1254.1l-33.7-19.5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M126 1247.6l-10-5.8v-5l10 5.8z" fill="#9ea3f2">
+</path>
+<path d="M126 1247.6l-10-5.8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M116 1241.8l-22.4 13v-5l22.4-13z" fill="#b9bdf6">
+</path>
+<path d="M116 1241.8l-22.4 13" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M79.8 1246.9l-12.4 7.2v-5.1l12.4-7.2z" fill="#b9bdf6">
+</path>
+<path d="M79.8 1246.9l-12.4 7.2" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M93.6 1254.8l-13.8-7.9v-5.1l13.8 8z" fill="#9ea3f2">
+</path>
+<path d="M93.6 1254.8l-13.8-7.9" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M25 1207.3l72.3-41.8l10 5.8l17.4-10.1l31.2 18l13.7-7.9l28.7 16.5l-8.7 5.1l11.2 6.5l-74.8 43.2l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-33.7-19.4l15-8.6z" fill="#dfe1f7">
+</path>
+<path d="M187.1 1187.8l-8.7 5.1v-7.9l8.7-5.1z" fill="#b9bdf6">
+</path>
+<path d="M59.9 1221l-23.7-13.7v-7.9l23.7 13.6z" fill="#9ea3f2">
+</path>
+<path d="M189.6 1199.4l-63.6 36.7v-7.9l63.6-36.8z" fill="#b9bdf6">
+</path>
+<path d="M126 1236.1l-10-5.8v-7.9l10 5.8zM67.4 1242.6l-22.5-13v-7.9l22.5 12.9z" fill="#9ea3f2">
+</path>
+<path d="M116 1230.3l-22.4 13v-7.9l22.4-13zM79.8 1235.4l-12.4 7.2v-8l12.4-7.2z" fill="#b9bdf6">
+</path>
+<path d="M93.6 1243.3l-13.8-7.9v-8l13.8 8z" fill="#9ea3f2">
+</path>
+<path d="M36.2 1199.4l61.1-35.3l10 5.7l17.4-10l31.2 18l13.7-8l17.5 10.1l-8.7 5.1l11.2 6.4l-63.6 36.8l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-22.5-12.9l15-8.7z" fill="#ffffff">
+</path>
+<path d="M123.5 1182.8l-26.2 15.1v-6.5l26.2-15.1z" fill="#b9bdf6">
+</path>
+<path d="M97.3 1197.9l-8.7-5v-6.5l8.7 5zM71.1 1203l-17.5-10.1v-6.5l17.5 10.1z" fill="#9ea3f2">
+</path>
+<path d="M88.6 1192.9l-17.5 10.1v-6.5l17.5-10.1z" fill="#b9bdf6">
+</path>
+<path d="M53.6 1186.4l27.5-15.8l10 5.7l16.2-9.3l16.2 9.3l-26.2 15.1l-8.7-5l-17.5 10.1z" fill="#ffffff">
+</path>
+<g transform="matrix(1 0 0 1 0 -6.5)">
+<path d="M62.9 1192.8l7.9-4.6l7.2 4.1l-7.9 4.6z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M76.1 1188.2l1.9 1.1v-5.8l-1.9-1.1z" fill="#34379f">
+</path>
+<path d="M78 1189.3l1.8-1.1v-5.8l-1.8 1.1z" fill="#4347c4">
+</path>
+<path d="M76.1 1182.4l1.9-1.1l1.8 1.1l-1.8 1.1z" fill="#c7c9fb">
+</path>
+<path d="M63.6 1183.2l14.4 8.3v-21.5z" fill="#118a7b">
+</path>
+<path d="M78 1191.5l14.3-8.3l-14.3-13.2z" fill="#18a999">
+</path>
+<path d="M67.2 1175.8l10.8 6.2v-18.6z" fill="#118a7b">
+</path>
+<path d="M78 1182l10.7-6.2l-10.7-12.4z" fill="#18a999">
+</path>
+<path d="M92.3 1188.7l6.6-3.7l5.9 3.4l-6.5 3.7z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M102.9 1185l1.9 1v-4.7l-1.9-1.1z" fill="#34379f">
+</path>
+<path d="M104.8 1186l1.8-1v-4.8l-1.8 1.1z" fill="#4347c4">
+</path>
+<path d="M102.9 1180.2l1.9-1.1l1.8 1.1l-1.8 1.1z" fill="#c7c9fb">
+</path>
+<path d="M92.9 1180.9l11.9 6.8v-17.8z" fill="#118a7b">
+</path>
+<path d="M104.8 1187.7l11.8-6.8l-11.8-11z" fill="#18a999">
+</path>
+<path d="M95.9 1174.7l8.9 5.1v-15.4z" fill="#118a7b">
+</path>
+<path d="M104.8 1179.8l8.9-5.1l-8.9-10.3z" fill="#18a999">
+</path>
+</g>
+<path d="M111 1173.3l7.2-4.2l6.5 3.8l-7.2 4.2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M122.9 1169.1l1.8 1.1v-5.3l-1.8-1.1z" fill="#34379f">
+</path>
+<path d="M124.7 1170.2l1.9-1.1v-5.3l-1.9 1.1z" fill="#4347c4">
+</path>
+<path d="M122.9 1163.8l1.8-1.1l1.9 1.1l-1.9 1.1z" fill="#c7c9fb">
+</path>
+<path d="M111.6 1164.6l13.1 7.5v-19.6z" fill="#118a7b">
+</path>
+<path d="M124.7 1172.1l13.1-7.5l-13.1-12.1z" fill="#18a999">
+</path>
+<path d="M114.9 1157.8l9.8 5.7v-17.1z" fill="#118a7b">
+</path>
+<path d="M124.7 1163.5l9.9-5.7l-9.9-11.4z" fill="#18a999">
+</path>
+<path d="M50.6 1226l6.2-3.6l5.6 3.2l-6.2 3.6z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M60.5 1222.4l1.9 1.1v-4.6l-1.9-1z" fill="#34379f">
+</path>
+<path d="M62.4 1223.5l1.8-1.1v-4.5l-1.8 1z" fill="#4347c4">
+</path>
+<path d="M60.5 1217.9l1.9-1.1l1.8 1.1l-1.8 1z" fill="#c7c9fb">
+</path>
+<path d="M51.2 1218.5l11.2 6.5v-16.9z" fill="#118a7b">
+</path>
+<path d="M62.4 1225l11.2-6.5l-11.2-10.4z" fill="#18a999">
+</path>
+<path d="M54 1212.7l8.4 4.8v-14.5z" fill="#118a7b">
+</path>
+<path d="M62.4 1217.5l8.4-4.8l-8.4-9.7z" fill="#18a999">
+</path>
+<g transform="matrix(1 0 0 1 0 7.9)">
+<path d="M106 1239l5 2.8v-2.8l-5-2.9z" fill="#9ea3f2">
+</path>
+<path d="M111 1241.8l4-2.3v-2.8l-4 2.3z" fill="#b9bdf6">
+</path>
+<path d="M106 1236.1l4-2.3l5 2.9l-4 2.3z" fill="#ffffff">
+</path>
+<path d="M92.3 1163.4l4.4 2.5v-2.5l-4.4-2.6z" fill="#9ea3f2">
+</path>
+<path d="M96.7 1165.9l3.5-2v-2.6l-3.5 2.1z" fill="#b9bdf6">
+</path>
+<path d="M92.3 1160.8l3.5-2l4.4 2.5l-3.5 2.1z" fill="#ffffff">
+</path>
+</g>
+<path d="M95.7 1201.7l10.3-5.9l27.5 15.8l-10.3 5.9z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M108.5 1195.8l25 14.4v-21.6l-25-14.4z" fill="#454acf">
+</path>
+<path d="M133.5 1210.2l36.1-20.9v-21.6l-36.1 20.9z" fill="#5b61ea">
+</path>
+<path d="M108.5 1174.2l36.2-20.9l24.9 14.4l-36.1 20.9z" fill="#b0b4ff">
+</path>
+<path d="M138.4 1207.3l8.8-5.1v-14.4l-8.8 5.1z" fill="#4347c4">
+</path>
+<path d="M152.2 1192.2l12.4-7.2v-7.2l-12.4 7.2z" fill="#ffffff">
+</path>
+<path d="M114.1 1199l13.7 7.9v-12.9l-13.7-8z" fill="#34379f">
+</path>
+<path d="M114.1 1194.7l13.7 7.9M114.1 1190.4l13.7 7.9" fill="none" stroke="#454acf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M106 1174.2l27.5 15.8v-2.2l-27.5-15.8z" fill="#34379f">
+</path>
+<path d="M133.5 1190l38.6-22.3v-2.2l-38.6 22.3z" fill="#4347c4">
+</path>
+<path d="M106 1172l38.7-22.3l27.4 15.8l-38.6 22.3z" fill="#c7c9fb">
+</path>
+<path d="M111 1172l33.7-19.4l22.4 12.9l-33.6 19.5z" fill="#b0b4ff">
+</path>
+<path d="M100 1219.4l3.5-2l8.8 5l-3.5 2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M103.5 1217.4l8.8 5v-10.1l-8.8-5z" fill="#454acf">
+</path>
+<path d="M112.3 1222.4l8.7-5v-10.1l-8.7 5z" fill="#5b61ea">
+</path>
+<path d="M103.5 1207.3l8.8-5.1l8.7 5.1l-8.7 5z" fill="#b0b4ff">
+</path>
+<path d="M109.4 1214l3.5-2l8.7 5l-3.5 2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M112.9 1212l8.7 5v-10.1l-8.7-5z" fill="#454acf">
+</path>
+<path d="M121.6 1217l8.7-5v-10.1l-8.7 5z" fill="#5b61ea">
+</path>
+<path d="M112.9 1201.9l8.7-5.1l8.7 5.1l-8.7 5z" fill="#b0b4ff">
+</path>
+<path d="M108.2 1204.6l8.7 5v-10.1l-8.7-5z" fill="#454acf">
+</path>
+<path d="M116.9 1209.6l8.8-5v-10.1l-8.8 5z" fill="#5b61ea">
+</path>
+<path d="M108.2 1194.5l8.7-5l8.8 5l-8.8 5z" fill="#b0b4ff">
+</path>
+<path d="M17.5 1255.5l3.7-2.1l13.7 7.9l-3.7 2.1z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M21.2 1253.4l13.7 7.9v-7.2l-13.7-7.9z" fill="#34379f">
+</path>
+<path d="M34.9 1261.3l26.2-15.1v-7.2l-26.2 15.1z" fill="#4347c4">
+</path>
+<path d="M21.2 1246.2l26.2-15.2l13.7 8l-26.2 15.1z" fill="#c7c9fb">
+</path>
+<path d="M28.7 1244.7v-14.4" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M26.2 1230.3l2.5 1.5v-2.9l-2.5-1.5z" fill="#cfd2fb">
+</path>
+<path d="M28.7 1231.8l2.5-1.5v-2.9l-2.5 1.5z" fill="#e9eafd">
+</path>
+<path d="M26.2 1227.4l2.5-1.4l2.5 1.4l-2.5 1.5z" fill="#ffffff">
+</path>
+<path d="M104.8 1304.3l88.5-51.1l10 5.8l17.4-10.1l47.4 27.3l13.7-7.9l28.7 16.6l-8.7 5l11.2 6.5l-91 52.6l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-49.9-28.8l14.9-8.6z" fill="#dbe1fd">
+</path>
+<path d="M104.8 1304.3l88.5-51.1l10 5.8l17.4-10.1l47.4 27.3l13.7-7.9l28.7 16.6l-8.7 5l11.2 6.5l-91 52.6l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-49.9-28.8l14.9-8.6l-23.6-13.7" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="14 9">
+</path>
+<path d="M294.3 1284.9l-8.7 5v-5l8.7-5.1z" fill="#b9bdf6">
+</path>
+<path d="M294.3 1284.9l-8.7 5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M144.7 1318l-23.7-13.7v-5l23.7 13.7z" fill="#9ea3f2">
+</path>
+<path d="M144.7 1318l-23.7-13.7" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M296.8 1296.4l-74.8 43.2v-5l74.8-43.2z" fill="#b9bdf6">
+</path>
+<path d="M296.8 1296.4l-74.8 43.2" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M163.4 1346.1l-33.7-19.5v-5l33.7 19.4z" fill="#9ea3f2">
+</path>
+<path d="M163.4 1346.1l-33.7-19.5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M222 1339.6l-10-5.8v-5l10 5.8z" fill="#9ea3f2">
+</path>
+<path d="M222 1339.6l-10-5.8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M212 1333.8l-22.4 13v-5l22.4-13z" fill="#b9bdf6">
+</path>
+<path d="M212 1333.8l-22.4 13" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M175.8 1338.9l-12.4 7.2v-5.1l12.4-7.2z" fill="#b9bdf6">
+</path>
+<path d="M175.8 1338.9l-12.4 7.2" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M189.6 1346.8l-13.8-7.9v-5.1l13.8 8z" fill="#9ea3f2">
+</path>
+<path d="M189.6 1346.8l-13.8-7.9" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M121 1299.3l72.3-41.8l10 5.8l17.4-10.1l31.2 18l13.7-7.9l28.7 16.5l-8.7 5.1l11.2 6.5l-74.8 43.2l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-33.7-19.4l15-8.6z" fill="#dfe1f7">
+</path>
+<path d="M283.1 1279.8l-8.7 5.1v-7.9l8.7-5.1z" fill="#b9bdf6">
+</path>
+<path d="M155.9 1313l-23.7-13.7v-7.9l23.7 13.6z" fill="#9ea3f2">
+</path>
+<path d="M285.6 1291.4l-63.6 36.7v-7.9l63.6-36.8z" fill="#b9bdf6">
+</path>
+<path d="M222 1328.1l-10-5.8v-7.9l10 5.8zM163.4 1334.6l-22.5-13v-7.9l22.5 12.9z" fill="#9ea3f2">
+</path>
+<path d="M212 1322.3l-22.4 13v-7.9l22.4-13zM175.8 1327.4l-12.4 7.2v-8l12.4-7.2z" fill="#b9bdf6">
+</path>
+<path d="M189.6 1335.3l-13.8-7.9v-8l13.8 8z" fill="#9ea3f2">
+</path>
+<path d="M132.2 1291.4l61.1-35.3l10 5.7l17.4-10l31.2 18l13.7-8l17.5 10.1l-8.7 5.1l11.2 6.4l-63.6 36.8l-10-5.8l-22.4 13l-13.8-8l-12.4 7.2l-22.5-12.9l15-8.7z" fill="#ffffff">
+</path>
+<path d="M219.5 1274.8l-26.2 15.1v-6.5l26.2-15.1z" fill="#b9bdf6">
+</path>
+<path d="M193.3 1289.9l-8.7-5v-6.5l8.7 5zM167.1 1295l-17.5-10.1v-6.5l17.5 10.1z" fill="#9ea3f2">
+</path>
+<path d="M184.6 1284.9l-17.5 10.1v-6.5l17.5-10.1z" fill="#b9bdf6">
+</path>
+<path d="M149.6 1278.4l27.5-15.8l10 5.7l16.2-9.3l16.2 9.3l-26.2 15.1l-8.7-5l-17.5 10.1z" fill="#ffffff">
+</path>
+<g transform="matrix(1 0 0 1 0 -6.5)">
+<path d="M158.9 1284.8l7.9-4.6l7.2 4.1l-7.9 4.6z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M172.1 1280.2l1.9 1.1v-5.8l-1.9-1.1z" fill="#34379f">
+</path>
+<path d="M174 1281.3l1.8-1.1v-5.8l-1.8 1.1z" fill="#4347c4">
+</path>
+<path d="M172.1 1274.4l1.9-1.1l1.8 1.1l-1.8 1.1z" fill="#c7c9fb">
+</path>
+<path d="M159.6 1275.2l14.4 8.3v-21.5z" fill="#118a7b">
+</path>
+<path d="M174 1283.5l14.3-8.3l-14.3-13.2z" fill="#18a999">
+</path>
+<path d="M163.2 1267.8l10.8 6.2v-18.6z" fill="#118a7b">
+</path>
+<path d="M174 1274l10.7-6.2l-10.7-12.4z" fill="#18a999">
+</path>
+<path d="M188.3 1280.7l6.6-3.7l5.9 3.4l-6.5 3.7z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M198.9 1277l1.9 1v-4.7l-1.9-1.1z" fill="#34379f">
+</path>
+<path d="M200.8 1278l1.8-1v-4.8l-1.8 1.1z" fill="#4347c4">
+</path>
+<path d="M198.9 1272.2l1.9-1.1l1.8 1.1l-1.8 1.1z" fill="#c7c9fb">
+</path>
+<path d="M188.9 1272.9l11.9 6.8v-17.8z" fill="#118a7b">
+</path>
+<path d="M200.8 1279.7l11.8-6.8l-11.8-11z" fill="#18a999">
+</path>
+<path d="M191.9 1266.7l8.9 5.1v-15.4z" fill="#118a7b">
+</path>
+<path d="M200.8 1271.8l8.9-5.1l-8.9-10.3z" fill="#18a999">
+</path>
+</g>
+<path d="M207 1265.3l7.2-4.2l6.5 3.8l-7.2 4.2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M218.9 1261.1l1.8 1.1v-5.3l-1.8-1.1z" fill="#34379f">
+</path>
+<path d="M220.7 1262.2l1.9-1.1v-5.3l-1.9 1.1z" fill="#4347c4">
+</path>
+<path d="M218.9 1255.8l1.8-1.1l1.9 1.1l-1.9 1.1z" fill="#c7c9fb">
+</path>
+<path d="M207.6 1256.6l13.1 7.5v-19.6z" fill="#118a7b">
+</path>
+<path d="M220.7 1264.1l13.1-7.5l-13.1-12.1z" fill="#18a999">
+</path>
+<path d="M210.9 1249.8l9.8 5.7v-17.1z" fill="#118a7b">
+</path>
+<path d="M220.7 1255.5l9.9-5.7l-9.9-11.4z" fill="#18a999">
+</path>
+<path d="M146.6 1318l6.2-3.6l5.6 3.2l-6.2 3.6z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M156.5 1314.4l1.9 1.1v-4.6l-1.9-1z" fill="#34379f">
+</path>
+<path d="M158.4 1315.5l1.8-1.1v-4.5l-1.8 1z" fill="#4347c4">
+</path>
+<path d="M156.5 1309.9l1.9-1.1l1.8 1.1l-1.8 1z" fill="#c7c9fb">
+</path>
+<path d="M147.2 1310.5l11.2 6.5v-16.9z" fill="#118a7b">
+</path>
+<path d="M158.4 1317l11.2-6.5l-11.2-10.4z" fill="#18a999">
+</path>
+<path d="M150 1304.7l8.4 4.8v-14.5z" fill="#118a7b">
+</path>
+<path d="M158.4 1309.5l8.4-4.8l-8.4-9.7z" fill="#18a999">
+</path>
+<g transform="matrix(1 0 0 1 0 7.9)">
+<path d="M202 1331l5 2.8v-2.8l-5-2.9z" fill="#9ea3f2">
+</path>
+<path d="M207 1333.8l4-2.3v-2.8l-4 2.3z" fill="#b9bdf6">
+</path>
+<path d="M202 1328.1l4-2.3l5 2.9l-4 2.3z" fill="#ffffff">
+</path>
+<path d="M188.3 1255.4l4.4 2.5v-2.5l-4.4-2.6z" fill="#9ea3f2">
+</path>
+<path d="M192.7 1257.9l3.5-2v-2.6l-3.5 2.1z" fill="#b9bdf6">
+</path>
+<path d="M188.3 1252.8l3.5-2l4.4 2.5l-3.5 2.1z" fill="#ffffff">
+</path>
+</g>
+<path d="M191.7 1293.7l10.3-5.9l27.5 15.8l-10.3 5.9z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M204.5 1287.8l25 14.4v-21.6l-25-14.4z" fill="#118a7b">
+</path>
+<path d="M229.5 1302.2l36.1-20.9v-21.6l-36.1 20.9z" fill="#18a999">
+</path>
+<path d="M204.5 1266.2l36.2-20.9l24.9 14.4l-36.1 20.9z" fill="#b9efe6">
+</path>
+<path d="M234.4 1299.3l8.8-5.1v-14.4l-8.8 5.1z" fill="#4347c4">
+</path>
+<path d="M248.2 1284.2l12.4-7.2v-7.2l-12.4 7.2z" fill="#ffffff">
+</path>
+<path d="M210.1 1291l13.7 7.9v-12.9l-13.7-8z" fill="#34379f">
+</path>
+<path d="M210.1 1286.7l13.7 7.9M210.1 1282.4l13.7 7.9" fill="none" stroke="#118a7b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M202 1266.2l27.5 15.8v-2.2l-27.5-15.8z" fill="#34379f">
+</path>
+<path d="M229.5 1282l38.6-22.3v-2.2l-38.6 22.3z" fill="#4347c4">
+</path>
+<path d="M202 1264l38.7-22.3l27.4 15.8l-38.6 22.3z" fill="#c7c9fb">
+</path>
+<path d="M207 1264l33.7-19.4l22.4 12.9l-33.6 19.5z" fill="#b9efe6">
+</path>
+<path d="M196 1311.4l3.5-2l8.8 5l-3.5 2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M199.5 1309.4l8.8 5v-10.1l-8.8-5z" fill="#118a7b">
+</path>
+<path d="M208.3 1314.4l8.7-5v-10.1l-8.7 5z" fill="#18a999">
+</path>
+<path d="M199.5 1299.3l8.8-5.1l8.7 5.1l-8.7 5z" fill="#b9efe6">
+</path>
+<path d="M205.4 1306l3.5-2l8.7 5l-3.5 2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M208.9 1304l8.7 5v-10.1l-8.7-5z" fill="#118a7b">
+</path>
+<path d="M217.6 1309l8.7-5v-10.1l-8.7 5z" fill="#18a999">
+</path>
+<path d="M208.9 1293.9l8.7-5.1l8.7 5.1l-8.7 5z" fill="#b9efe6">
+</path>
+<path d="M113.5 1347.5l3.7-2.1l13.7 7.9l-3.7 2.1z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M117.2 1345.4l13.7 7.9v-7.2l-13.7-7.9z" fill="#34379f">
+</path>
+<path d="M130.9 1353.3l26.2-15.1v-7.2l-26.2 15.1z" fill="#4347c4">
+</path>
+<path d="M117.2 1338.2l26.2-15.2l13.7 8l-26.2 15.1z" fill="#c7c9fb">
+</path>
+<path d="M124.7 1336.7v-14.4" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M122.2 1322.3l2.5 1.5v-2.9l-2.5-1.5z" fill="#cfd2fb">
+</path>
+<path d="M124.7 1323.8l2.5-1.5v-2.9l-2.5 1.5z" fill="#e9eafd">
+</path>
+<path d="M122.2 1319.4l2.5-1.4l2.5 1.4l-2.5 1.5z" fill="#ffffff">
+</path>
+<g>
+<path d="M-6.4 1227.8l17.4-10l17.3 10l-17.3 10z" fill="#b7c1f6">
+</path>
+<path d="M.6 1224.8l13.8 8v-3l-13.8-8z" fill="#8a8ef7">
+</path>
+<path d="M14.4 1232.8l13.9-8v-3l-13.9 8z" fill="#a5a8fa">
+</path>
+<path d="M.6 1221.8l13.8-8l13.9 8l-13.9 8z" fill="#e3e4fd">
+</path>
+<path d="M4 1221.8l10.4 6v-12l-10.4-6z" fill="#454acf">
+</path>
+<path d="M14.4 1227.8l10.4-6v-12l-10.4 6z" fill="#5b61ea">
+</path>
+<path d="M4 1209.8l10.4-6l10.4 6l-10.4 6z" fill="#b0b4ff">
+</path>
+</g>
+<g>
+<path d="M-7.3 1167.9l17.3-10l17.3 10l-17.3 10z" fill="#b7c1f6">
+</path>
+<path d="M-.4 1164.9l13.8 8v-3l-13.8-8z" fill="#8a8ef7">
+</path>
+<path d="M13.4 1172.9l13.9-8v-3l-13.9 8z" fill="#a5a8fa">
+</path>
+<path d="M-.4 1161.9l13.8-8l13.9 8l-13.9 8z" fill="#e3e4fd">
+</path>
+<path d="M3.1 1161.9l10.3 6v-12l-10.3-6z" fill="#454acf">
+</path>
+<path d="M13.4 1167.9l10.4-6v-12l-10.4 6z" fill="#5b61ea">
+</path>
+<path d="M3.1 1149.9l10.3-6l10.4 6l-10.4 6z" fill="#b0b4ff">
+</path>
+</g>
+<g>
+<path d="M7.3 1111.8l17.3-10l17.3 10l-17.3 10z" fill="#b7c1f6">
+</path>
+<path d="M14.2 1108.8l13.9 8v-3l-13.9-8z" fill="#8a8ef7">
+</path>
+<path d="M28.1 1116.8l13.8-8v-3l-13.8 8z" fill="#a5a8fa">
+</path>
+<path d="M14.2 1105.8l13.9-8l13.8 8l-13.8 8z" fill="#e3e4fd">
+</path>
+<path d="M17.7 1105.8l10.4 6v-12l-10.4-6z" fill="#454acf">
+</path>
+<path d="M28.1 1111.8l10.4-6v-12l-10.4 6z" fill="#5b61ea">
+</path>
+<path d="M17.7 1093.8l10.4-6l10.4 6l-10.4 6z" fill="#b0b4ff">
+</path>
+</g>
+<g>
+<path d="M58.1 1335.4l17.3-10l17.3 10l-17.3 10z" fill="#b7c1f6">
+</path>
+<path d="M65 1332.4l13.8 8v-3l-13.8-8z" fill="#34379f">
+</path>
+<path d="M78.8 1340.4l13.9-8v-3l-13.9 8z" fill="#4347c4">
+</path>
+<path d="M65 1329.4l13.8-8l13.9 8l-13.9 8z" fill="#c7c9fb">
+</path>
+<path d="M68.5 1329.4l10.3 6v-12l-10.3-6z" fill="#118a7b">
+</path>
+<path d="M78.8 1335.4l10.4-6v-12l-10.4 6z" fill="#18a999">
+</path>
+<path d="M68.5 1317.4l10.3-6l10.4 6l-10.4 6z" fill="#b9efe6">
+</path>
+</g>
+<g>
+<path d="M15.5 1296.2l17.4-10l17.3 10l-17.3 10z" fill="#b7c1f6">
+</path>
+<path d="M22.5 1293.2l13.8 8v-3l-13.8-8z" fill="#34379f">
+</path>
+<path d="M36.3 1301.2l13.9-8v-3l-13.9 8z" fill="#4347c4">
+</path>
+<path d="M22.5 1290.2l13.8-8l13.9 8l-13.9 8z" fill="#c7c9fb">
+</path>
+<path d="M25.9 1290.2l10.4 6v-12l-10.4-6z" fill="#118a7b">
+</path>
+<path d="M36.3 1296.2l10.4-6v-12l-10.4 6z" fill="#18a999">
+</path>
+<path d="M25.9 1278.2l10.4-6l10.4 6l-10.4 6z" fill="#b9efe6">
+</path>
+</g>
+</g>
+<g transform="matrix(1 0 0 1 262 8)">
+<path d="M14 28L-99.8 41" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle cx="-99.8" cy="41" r="3.5" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</circle>
+<rect width="104" height="28" rx="14" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</rect>
+<circle cx="14" cy="14" r="10" fill="#e3e4fd">
+</circle>
+<text x="14" y="18.6" fill="#3b3fc4" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600" text-anchor="middle">1</text>
+<text x="30" y="18.6" fill="#1c1b3a" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600">Inventory</text>
+</g>
+<g transform="matrix(1 0 0 1 124 324)">
+<path d="M70 0L140.6 10.5" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle cx="140.6" cy="10.5" r="3.5" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</circle>
+<rect width="84" height="28" rx="14" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</rect>
+<circle cx="14" cy="14" r="10" fill="#e3e4fd">
+</circle>
+<text x="14" y="18.6" fill="#3b3fc4" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600" text-anchor="middle">2</text>
+<text x="30" y="18.6" fill="#1c1b3a" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600">Verify</text>
+</g>
+<g transform="matrix(1 0 0 1 270 640)">
+<path d="M14 28L-1.6 148" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle cx="-1.6" cy="148" r="3.5" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</circle>
+<rect width="78" height="28" rx="14" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</rect>
+<circle cx="14" cy="14" r="10" fill="#e3e4fd">
+</circle>
+<text x="14" y="18.6" fill="#3b3fc4" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600" text-anchor="middle">3</text>
+<text x="30" y="18.6" fill="#1c1b3a" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600">Fetch</text>
+</g>
+<g transform="matrix(1 0 0 1 252 1008)">
+<path d="M14 0L7.7 -32" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle cx="7.7" cy="-32" r="3.5" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</circle>
+<rect width="118" height="28" rx="14" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</rect>
+<circle cx="14" cy="14" r="10" fill="#e3e4fd">
+</circle>
+<text x="14" y="18.6" fill="#3b3fc4" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600" text-anchor="middle">4</text>
+<text x="30" y="18.6" fill="#1c1b3a" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600">Generators</text>
+</g>
+<g transform="matrix(1 0 0 1 6 1116)">
+<path d="M14 28L6 63.4" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle cx="6" cy="63.4" r="3.5" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</circle>
+<rect width="88" height="28" rx="14" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</rect>
+<circle cx="14" cy="14" r="10" fill="#e3e4fd">
+</circle>
+<text x="14" y="18.6" fill="#3b3fc4" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600" text-anchor="middle">5</text>
+<text x="30" y="18.6" fill="#1c1b3a" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600">Output</text>
+</g>
+<g>
+<g transform="matrix(1 0 0 1 180 1112)">
+<path d="M14 46L.8 66.5" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle cx=".8" cy="66.5" r="3.5" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</circle>
+<rect width="196" height="46" rx="12" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</rect>
+<text x="13" y="19.5" fill="#1c1b3a" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600">Kubernetes manifests</text>
+<text x="13" y="36" fill="#48476b" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11.7" font-weight="500">compiled/prod/manifests/</text>
+</g>
+<g transform="matrix(1 0 0 1 4 1372)">
+<path d="M135.7 0L135.7 -54.7" fill="none" stroke="#1c1b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<circle cx="135.7" cy="-54.7" r="3.5" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</circle>
+<rect width="196" height="46" rx="12" fill="#ffffff" stroke="#1c1b3a" stroke-width="2">
+</rect>
+<text x="13" y="19.5" fill="#1c1b3a" font-family="Sora, Manrope, system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="13" font-weight="600">Terraform JSON</text>
+<text x="13" y="36" fill="#48476b" font-family="ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace" font-size="11.7" font-weight="500">compiled/prod/terraform/</text>
+</g>
+</g>
+</g>
+</svg>

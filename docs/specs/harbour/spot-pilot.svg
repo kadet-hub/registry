@@ -1,0 +1,101 @@
+<svg viewBox="6.2 -108 184.2 173" xmlns="http://www.w3.org/2000/svg" width="184.2" height="173">
+<title>kadet-hub spot drawing for quickstart pages: reference, light theme, at rest</title>
+<rect x="6.2" y="-108" width="184.2" height="173" fill="#cdd5fb">
+</rect>
+<path d="M18.2 18.5l103.9-60l26 15l-103.9 60z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M155.9 -34l-103.9 60v-26l103.9-60z" fill="#b9bdf6">
+</path>
+<path d="M155.9 -34l-103.9 60" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M52 26l-26-15v-26l26 15z" fill="#9ea3f2">
+</path>
+<path d="M52 26l-26-15" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M26 -15l103.9-60l26 15l-103.9 60z" fill="#ffffff">
+</path>
+<path d="M48.5 -9l3.5-2l5.2 3l-3.5 2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M52.8 -11l4.4 2.5v-6l-4.4-2.5z" fill="#34379f">
+</path>
+<path d="M57.2 -8.5l4.3-2.5v-6l-4.3 2.5z" fill="#4347c4">
+</path>
+<path d="M52.8 -17l4.4-2.5l4.3 2.5l-4.3 2.5z" fill="#c7c9fb">
+</path>
+<path d="M49.4 -17l7.8 4.5v-3l-7.8-4.5z" fill="#34379f">
+</path>
+<path d="M57.2 -12.5l7.8-4.5v-3l-7.8 4.5z" fill="#4347c4">
+</path>
+<path d="M49.4 -20l7.8-4.5l7.8 4.5l-7.8 4.5z" fill="#c7c9fb">
+</path>
+<path d="M100.5 -39l3.4-2l5.2 3l-3.4 2z" fill="#d9defb" style="mix-blend-mode:multiply">
+</path>
+<path d="M104.8 -41l4.3 2.5v-6l-4.3-2.5z" fill="#34379f">
+</path>
+<path d="M109.1 -38.5l4.3-2.5v-6l-4.3 2.5z" fill="#4347c4">
+</path>
+<path d="M104.8 -47l4.3-2.5l4.3 2.5l-4.3 2.5z" fill="#c7c9fb">
+</path>
+<path d="M101.3 -47l7.8 4.5v-3l-7.8-4.5z" fill="#34379f">
+</path>
+<path d="M109.1 -42.5l7.8-4.5v-3l-7.8 4.5z" fill="#4347c4">
+</path>
+<path d="M101.3 -50l7.8-4.5l7.8 4.5l-7.8 4.5z" fill="#c7c9fb">
+</path>
+<path d="M121.2 -62v-34l7.8 4.5" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M124.7 -88l5.2 3v-3l-5.2-3z" fill="#cfd2fb">
+</path>
+<path d="M129.9 -85l3.5-2v-3l-3.5 2z" fill="#e9eafd">
+</path>
+<path d="M124.7 -91l3.5-2l5.2 3l-3.5 2z" fill="#ffffff">
+</path>
+<g>
+<path d="M124.7 6l19.1-19M143.8 17l34.6-10" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M130.8 9.5l6.9-4l6.9 4l-6.9 4zM140.3 0l5.2-3l5.2 3l-5.2 3zM160.2 1l4.3-2.5l4.4 2.5l-4.4 2.5zM164.5 -9l3.5-2l3.5 2l-3.5 2z" fill="#ffffff">
+</path>
+</g>
+<g>
+<path d="M69.3 40l22.5 13l53.7-31l-22.5-13z" fill="#b7c1f6">
+</path>
+<path d="M77.9 31l22.6 13v-9l-22.6-13z" fill="#34379f">
+</path>
+<path d="M100.5 44l43.3-25v-9l-43.3 25z" fill="#4347c4">
+</path>
+<path d="M77.9 22l43.3-25l22.6 13l-43.3 25z" fill="#c7c9fb">
+</path>
+<path d="M77.9 31l-7.8 17.5v-9l7.8-17.5z" fill="#34379f">
+</path>
+<path d="M70.1 48.5l30.4-4.5v-9l-30.4 4.5z" fill="#4347c4">
+</path>
+<path d="M77.9 22l22.6 13l-30.4 4.5z" fill="#c7c9fb">
+</path>
+<path d="M70.1 43.5l30.4-4.5l43.3-25" fill="none" stroke="#e26a1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M91.8 18l15.6 9v-14l-15.6-9z" fill="#cfd2fb">
+</path>
+<path d="M107.4 27l20.8-12v-14l-20.8 12z" fill="#e9eafd">
+</path>
+<path d="M91.8 4l20.8-12l15.6 9l-20.8 12z" fill="#ffffff">
+</path>
+<path d="M94.4 14.5l10.4 6v-6l-10.4-6z" fill="#34379f">
+</path>
+<path d="M110 20.5l15.6-9v-6l-15.6 9z" fill="#4347c4">
+</path>
+<path d="M88.3 4l19.1 11v-2l-19.1-11z" fill="#34379f">
+</path>
+<path d="M107.4 15l24.2-14v-2l-24.2 14z" fill="#4347c4">
+</path>
+<path d="M88.3 2l24.3-14l19 11l-24.2 14z" fill="#c7c9fb">
+</path>
+<path d="M111.7 -.5v-13" fill="none" stroke="#34379f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+</path>
+<path d="M108.3 -13.5l3.4 2v-4l-3.4-2z" fill="#118a7b">
+</path>
+<path d="M111.7 -11.5l3.5-2v-4l-3.5 2z" fill="#18a999">
+</path>
+<path d="M108.3 -17.5l3.4-2l3.5 2l-3.5 2z" fill="#b9efe6">
+</path>
+</g>
+</svg>

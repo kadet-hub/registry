@@ -1,0 +1,63 @@
+{
+  "output": {
+    "uploads_bucket_arn": {
+      "value": "${aws_s3_bucket.uploads.arn}"
+    },
+    "uploads_bucket_id": {
+      "value": "${aws_s3_bucket.uploads.id}"
+    }
+  },
+  "resource": {
+    "aws_s3_bucket": {
+      "uploads": {
+        "bucket": "example-shop-uploads-prod",
+        "force_destroy": false,
+        "tags": {}
+      }
+    },
+    "aws_s3_bucket_ownership_controls": {
+      "uploads": {
+        "bucket": "${aws_s3_bucket.uploads.id}",
+        "rule": {
+          "object_ownership": "BucketOwnerEnforced"
+        }
+      }
+    },
+    "aws_s3_bucket_policy": {
+      "uploads": {
+        "bucket": "${aws_s3_bucket.uploads.id}",
+        "depends_on": [
+          "aws_s3_bucket_public_access_block.uploads"
+        ],
+        "policy": "{\"Statement\": [{\"Action\": \"s3:*\", \"Condition\": {\"Bool\": {\"aws:SecureTransport\": \"false\"}}, \"Effect\": \"Deny\", \"Principal\": \"*\", \"Resource\": [\"${aws_s3_bucket.uploads.arn}\", \"${aws_s3_bucket.uploads.arn}/*\"], \"Sid\": \"DenyInsecureTransport\"}], \"Version\": \"2012-10-17\"}"
+      }
+    },
+    "aws_s3_bucket_public_access_block": {
+      "uploads": {
+        "block_public_acls": true,
+        "block_public_policy": true,
+        "bucket": "${aws_s3_bucket.uploads.id}",
+        "ignore_public_acls": true,
+        "restrict_public_buckets": true
+      }
+    },
+    "aws_s3_bucket_server_side_encryption_configuration": {
+      "uploads": {
+        "bucket": "${aws_s3_bucket.uploads.id}",
+        "rule": {
+          "apply_server_side_encryption_by_default": {
+            "sse_algorithm": "AES256"
+          }
+        }
+      }
+    },
+    "aws_s3_bucket_versioning": {
+      "uploads": {
+        "bucket": "${aws_s3_bucket.uploads.id}",
+        "versioning_configuration": {
+          "status": "Enabled"
+        }
+      }
+    }
+  }
+}

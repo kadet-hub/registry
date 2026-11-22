@@ -1,0 +1,4 @@
+classes: [generators, uploads]
+parameters:
+  bucket: example-shop-uploads-prod
+  region: eu-central-1

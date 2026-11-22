@@ -1,0 +1,36 @@
+# An S3 bucket and the app that writes to it. Both take bucket and region
+# from the target, so each value is set once.
+parameters:
+  namespace: shop
+  generators:
+    terraform-aws:
+      region: ${region}
+      s3_bucket:
+        uploads:
+          bucket: ${bucket}
+    manifest:
+      default_config:
+        security_profile: restricted
+  components:
+    web:
+      image: ghcr.io/stefanprodan/podinfo:6.17.0@sha256:fa2f27c1a8561097e5144bfc0853eba6054d743b68b03de4cad4675616ddefb0
+      command: [./podinfo, --port=8080]
+      security_context: {runAsUser: 65534}
+      ports:
+        http: {container_port: 8080, service_port: 80}
+      healthcheck:
+        readiness: {type: http, port: http, path: /readyz}
+      resources:
+        requests: {cpu: 50m, memory: 64Mi}
+        limits: {memory: 128Mi}
+      env:
+        S3_BUCKET:
+          configMapKeyRef: {key: bucket}
+        AWS_REGION:
+          configMapKeyRef: {key: region}
+      config_maps:
+        config:
+          data:
+            bucket: {value: "${bucket}"}
+            region: {value: "${region}"}
+      service: {type: ClusterIP}
