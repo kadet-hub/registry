@@ -202,17 +202,19 @@ cover none of the changed files.
 
 - CI-2: A push to `main` MUST NOT start the release workflow when it
   changes only files that no release job reads: `docs/`, `tests/`,
-  Markdown files at the repository root, `renovate.json`, `ruff.toml`, issue and pull
+  `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and `TERMS.md` at the
+  repository root, `renovate.json`, `ruff.toml`, issue and pull
   request templates, `CODEOWNERS`, the rulesets `.github/ruleset*.json`,
   the test-only workflows of CI-1, the `scorecard`, `codeql` and `fuzz`
   workflows and `.clusterfuzzlite/` (GI-12 to GI-14).
 
   This list ignores paths instead of listing them, so a new file a release
   job reads still triggers a release; the daily scheduled run (CAT-20)
-  catches up on anything a skipped push left out.
+  catches up on anything a skipped push left out. `CHANGELOG.md` is not
+  on the list: the index job reads it for the release notes (CON-10).
 
   - Test: manual: the release run after the merge of the pull request that introduced this
-  - Since: #58, #237, #243; `checksum-pins.yml` and `playground.yml`: this change
+  - Since: #58, #237, #243; `checksum-pins.yml` and `playground.yml`: #689; root Markdown files by name: this change
 
 - CI-3: The `code-lint` job MUST run ruff with its default rules on every
   Python file and shellcheck on every shell script of the registry, on
@@ -475,6 +477,18 @@ cover none of the changed files.
   are not delayed either: entry bumps (git tags) and images outside Docker
   Hub. An action tag without a GitHub release ages from its commit or
   tagger date, which the tag's author sets (google/clusterfuzzlite `v1`).
+
+  This holds for a new version as well. Renovate's `github-tags`
+  datasource takes the committer date of a lightweight tag or the tagger
+  date of an annotated tag, and a GitHub release's date only when a
+  release exists and is later (renovatebot/renovate 9ce13167,
+  `lib/util/github/graphql/query-adapters/tags-query-adapter.ts`,
+  `lib/modules/datasource/github-tags/index.ts`). A compromised action
+  repository can push a patch tag on a backdated commit without a
+  release; it counts as older than three days and merges under REV-5.
+  Accepted: excluding the `github-actions` manager from automerge would
+  take about seven maintainer merges a month (7 of 23 Renovate pull
+  requests from 24 October to 23 November 2026 changed `.github/`).
 
 - RISK-12: the release build fetches every entry's source on every run
   (`release/build-all`). An author who deletes the pinned commit or the

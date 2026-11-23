@@ -896,8 +896,13 @@ review go into the review comment and do not fail the gate.
   uses the first backend in `inventory_backends`, with all three set to
   `true`.
 
+  The comparison, and the one of CMP-5, runs `diff -r --no-dereference`.
+  A symlink in the output is compared as a link. Followed, a link to a
+  path outside the output would print that file into the gate report and
+  the pull request comment.
+
   - Test: workflow job `gate-selftest` (AC-8)
-  - Since: #23
+  - Since: #23; `--no-dereference`: this change
 
 - CMP-3: The manifest's `kapitan` range MUST include the pinned Kapitan
   version.
