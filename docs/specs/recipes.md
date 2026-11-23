@@ -608,9 +608,9 @@ parameters:
   `application/vnd.oci.image.layer.v1.tar` titled `<name>.tar`, pushed to
   `ghcr.io/kadet-hub/recipes/<name>` and tagged `<X.Y.Z>`. The tar MUST hold
   the shipped tree (REC-4) and the root LICENSE of PUB-15 at its root,
-  normalized as PUB-1 describes. The sign job MUST compare the tar with the
-  tree of `source.sha:source.path` without its `tests` entry, with that
-  LICENSE added.
+  normalized as PUB-1 describes. The sign or verify job (PUB-16) MUST
+  compare the tar with the tree of `source.sha:source.path` without its
+  `tests` entry, with that LICENSE added.
 
   That tree ID is the one `git mktree` writes for `git ls-tree
   <sha>:<path>` with the `tests` line removed, so the sign job's own fetch
@@ -825,7 +825,7 @@ REG-2. They fail closed.
 | `.github/actions/setup-check/` | `check` pin (REC-5, REC-7 to REC-9) |
 | `.github/actions/setup-kind/` | kind, kubectl and uv (REC-9), cloud-provider-kind (REC-17) |
 | `.github/workflows/gate.yml` | `attestations: read` (REC-6), the `renders` job (REC-9) |
-| `release/build-all`, `release/build.py`, `release/tree.py`, `release/sign`, `release/publish-index`, `release/index.py`, `release/output-diff`, `release/scan-record`, `release/sbom.py`, `release/images.py` | REC-11 to REC-13 |
+| `release/build-all`, `release/build.py`, `release/tree.py`, `release/sign`, `release/verify-published`, `release/publish-index`, `release/index.py`, `release/output-diff`, `release/scan-record`, `release/sbom.py`, `release/images.py` | REC-11 to REC-13 |
 | `.github/workflows/release.yml` | The build job's `attestations: read` and kind (REC-12) |
 | `tests/samples/recipes/`, `tests/selftest` | AC-12, AC-14 |
 
