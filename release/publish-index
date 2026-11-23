@@ -10,7 +10,7 @@
 # publish=true|false to $GITHUB_OUTPUT, the published or unchanged index
 # to $INDEX_OUT for the catalog (CAT-1), and for a published index the
 # release notes to $NOTES_OUT (PUB-12) with the CHANGELOG.md sections
-# added since the previous serial's release (CON-10).
+# added since the newest index release (CON-10).
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 work=$(mktemp -d)
@@ -24,6 +24,14 @@ public() {
   visibility=$(gh api "$PACKAGES_API/packages/container/${1//\//%2F}" --jq .visibility 2>/dev/null) || visibility=unknown
   [[ $visibility == public ]] || echo "::warning::package $1 is $visibility; make it public in the web UI"
 }
+# PUB-16: a re-run keeps its first attempt's commit, and with it that commit's yanks.
+if ((${GITHUB_RUN_ATTEMPT:-1} > 1)); then
+  main=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+  if [[ $main != "$GITHUB_SHA" ]]; then
+    echo "PUB-16: attempt $GITHUB_RUN_ATTEMPT of a run at $GITHUB_SHA, main is at $main; start a new run instead"
+    exit 1
+  fi
+fi
 out "ref=$ref"
 
 # entries <dir> <prefix>: the entries of <dir> on main as <prefix>entries.json, and in
@@ -86,9 +94,10 @@ if ((rc == 0)); then
   layer=$(oras manifest fetch -- "$ref@$latest" | jq -er '.layers[0].digest')
   oras blob fetch --output "$work/previous.json" -- "$ref@$layer"
   previous=(--previous "$work/previous.json")
-  # CON-10: CHANGELOG.md at the previous serial's release tag.
-  if [[ -f $root/CHANGELOG.md ]] && gh api -H "Accept: application/vnd.github.raw+json" \
-      "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=index-$(jq .serial "$work/previous.json")" >"$work/changelog.md"; then
+  # CON-10: CHANGELOG.md at the newest index release, which a serial without a release (PUB-12) does not hide.
+  if [[ -f $root/CHANGELOG.md ]] && release=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name) \
+      && gh api -H "Accept: application/vnd.github.raw+json" \
+      "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=$release" >"$work/changelog.md"; then
     previous+=(--changelog "$root/CHANGELOG.md" --changelog-previous "$work/changelog.md")
   else
     echo "::warning::CHANGELOG.md of the previous index release not read; the release notes leave out the consumer changes (CON-10)"

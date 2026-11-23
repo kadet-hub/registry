@@ -280,6 +280,18 @@ since the documented package API has no visibility call.
     by AC-6); `PublishIndex` for the concurrent checks
   - Since: #13, #226, #235, #242, #455
 
+- PUB-4a: The index job MUST fail when a version the previous index lists
+  without `yanked` is missing while its entry still exists.
+
+  Every documented way to remove a version yanks it first (INC-1) or
+  removes the entry, and both keep it listed. A version that disappears
+  otherwise comes from a lookup that wrongly reported the package or tag
+  as not found (`release/common.sh` `lookup`). Publishing that index would
+  drop the version from a signed serial and reset its `published` time.
+
+  - Test: `release/test_release.py::Index.test_missing_version_that_is_not_yanked_fails`
+  - Since: this change
+
 - PUB-5: Setting a version in `yanked` MUST mark it in the index and keep the
   artifact; deleting it is INC-1's call.
   - Test: `release/test_release.py::Index.test_yanked_and_removed`
@@ -561,9 +573,14 @@ since the documented package API has no visibility call.
   (GI-8), checks out nothing and runs `gh release create` on the files the
   index job uploaded. gh creates the release as a draft, uploads the
   assets, then publishes it, and fails when a published release with the
-  tag exists. A failed job is completed by re-running it while the
-  workflow artifacts exist (one day); a serial whose release is never
-  created stays without one.
+  tag exists. The job tries `gh release create` three times, 30 and 90
+  seconds apart: serial 104 lost its release to a single HTTP 502. A
+  failed job is completed by re-running it while the workflow artifacts
+  exist (one day) and while `main` has not moved (PUB-16); a serial whose
+  release is never created stays without one. Serials 45, 104 and 144
+  have none. 45 and 144 failed with HTTP 403 "Resource not accessible by
+  integration" under an unchanged job configuration, a cause not found
+  yet.
 
   `release/index.py` writes the notes from the previous and the new index:
   added are versions the previous index does not list, yanked are
@@ -582,7 +599,23 @@ since the documented package API has no visibility call.
     first release run after the merge creates `index-<serial>` and the
     documented verification passes on its assets; the changelog sections:
     see CON-10
-  - Since: #249; changelog sections: #554
+  - Since: #249; changelog sections: #554; retry: this change
+
+- PUB-16: A re-run of a release run whose commit is no longer the head of
+  `main` MUST NOT publish an index.
+
+  A re-run uses the commit of its first attempt, and the index job takes
+  yanks and advisories from that checkout (INC-1). A re-run of an older
+  run after a yank had merged would publish the next serial without the
+  yank, tag it `latest`, and consumers would accept it (CON-2) until the
+  next run on `main`. The index job therefore fails on attempt 2 or later
+  when `main` has moved; a new run publishes instead. A first attempt is
+  not checked: a push the release skips (CI-2) moves `main` without a run
+  of its own, so a check on every run would hold the index until the next
+  scheduled run.
+
+  - Test: `release/test_release.py::PublishIndex.test_rerun_of_an_old_commit_does_not_publish`
+  - Since: this change
 
 ## Mirrored images
 

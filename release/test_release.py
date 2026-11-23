@@ -101,9 +101,10 @@ class Index(unittest.TestCase):
         self.assertEqual((record["digest"], record["yanked"], record["advisories"], record["published"]),
                          ("sha256:" + "a" * 64, "malicious, see advisory", ["GHSA-2345-6789-cfgh"], NOW))
 
-    def test_deleted_version_that_is_not_yanked_is_dropped(self):
+    def test_missing_version_that_is_not_yanked_fails(self):  # PUB-4a
         first = build([version("gen", "1.0.0")], {"gen": {}}, None, NOW)
-        self.assertEqual(build([], {"gen": {}}, first, LATER)["generators"], {})
+        with self.assertRaisesRegex(SystemExit, "PUB-4a: gen 1.0.0 is in the previous index"):
+            build([], {"gen": {}}, first, LATER)
 
     def test_release_notes(self):
         first = build([version("gen", "1.0.0")], {"gen": {}}, None, NOW)
@@ -537,23 +538,28 @@ class PublishIndex(unittest.TestCase):
         "oras": '[[ $2 == push ]] && exit 0\nf=$FAKE/$1/$(tr / _ <<<"${!#}")\n'
                 '[[ -f $f ]] || { echo "${!#}: not found" >&2; exit 1; }\n'
                 'if [[ $3 == --output && $4 != - ]]; then cp -- "$f" "$4"; else cat -- "$f"; fi',
-        "gh": 'last=${!#}\ncase $1 in api) case $last in *"/contents/CHANGELOG.md?ref=index-"*) cat -- "$FAKE/changelog-${last##*-}" ;;\n'
+        "gh": 'last=${!#}\ncase $1 in api) case $2 in */commits/main) cat -- "$FAKE/main"; exit ;; */releases/latest) cat -- "$FAKE/release"; exit ;; esac\n'
+              '  case $last in *"/contents/CHANGELOG.md?ref=index-"*) cat -- "$FAKE/changelog-${last##*-}" ;;\n'
               '  *) echo public ;; esac ;; attestation) echo + >>"$FAKE/log"; sleep 0.2; echo - >>"$FAKE/log"\n'
               '  ! grep -qxF -- "$3" "$FAKE/unattested" ;; esac',
         "yq": 'cat -- "${!#}"',
     }
 
-    def publish(self, unattested="", no_config="", previous=None, changelogs=None):
+    def publish(self, unattested="", no_config="", previous=None, changelogs=None, release=None, attempt="1", main="c" * 40):
         """Runs the job; returns its exit code, log, $GITHUB_OUTPUT, index, notes and the most gh calls at once.
 
-        previous is the index at `latest`; changelogs maps "root" and release serials to CHANGELOG.md texts."""
+        previous is the index at `latest`; changelogs maps "root" and release serials to CHANGELOG.md texts; release is
+        the serial of the newest GitHub release; attempt is the run attempt and main the head of main, the run's commit
+        being "c" * 40."""
         def oras(command, ref):
             return f"fake/{command}/{ref.replace('/', '_')}"
 
         with tempfile.TemporaryDirectory() as tmp:
             fake, root = os.path.join(tmp, "fake"), os.path.join(tmp, "root")
             shutil.copytree(os.path.join(ROOT, "release"), os.path.join(root, "release"))
-            files = {"root/policy/reserved-names.txt": "index\n", "fake/unattested": ""}
+            files = {"root/policy/reserved-names.txt": "index\n", "fake/unattested": "", "fake/log": "", "fake/main": main + "\n"}
+            if release is not None:
+                files["fake/release"] = f"index-{release}\n"
             if previous:
                 d, layer = digest("index"), digest("index layer")
                 files[oras("resolve", f"{self.REG}/index:latest")] = d + "\n"
@@ -588,7 +594,8 @@ class PublishIndex(unittest.TestCase):
                                env=dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], FAKE=fake,
                                         REGISTRY=self.REG, IDENTITY="i", GITHUB_REPOSITORY="kadet-hub/registry", GH_TOKEN="x",
                                         PACKAGES_API="orgs/kadet-hub", ATTESTED_DELAY_SCALE="0", GITHUB_OUTPUT=result["output"],
-                                        INDEX_OUT=result["index.json"], NOTES_OUT=result["notes.md"]), check=False)
+                                        INDEX_OUT=result["index.json"], NOTES_OUT=result["notes.md"],
+                                        GITHUB_RUN_ATTEMPT=attempt, GITHUB_SHA="c" * 40), check=False)
             texts = {}
             for k, path in result.items():
                 if os.path.exists(path):
@@ -622,15 +629,38 @@ class PublishIndex(unittest.TestCase):
         previous = build([version("a", "1.0.0")], {"a": {}}, None, NOW)
         released = "# Changelog\n\n## 2026-11-05: a (#1)\n\nA.\n"
         current = "# Changelog\n\n## 2026-11-06: b (#2)\n\nB.\n\n## 2026-11-05: a (#1)\n\nA.\n"
-        rc, log, out, index, notes_text, _ = self.publish(previous=previous, changelogs={"root": current, 1: released})
+        rc, log, out, index, notes_text, _ = self.publish(previous=previous, changelogs={"root": current, 1: released}, release=1)
         self.assertEqual((rc, out["serial"]), (0, "2"), log)
         self.assertEqual(notes_text, notes(previous, json.loads(index))
                          + "\nConsumer workflow changes (CHANGELOG.md):\n\n## 2026-11-06: b (#2)\n\nB.\n")
         # No CHANGELOG.md at the previous release's tag: the notes leave the sections out and the run warns.
-        rc, log, out, index, notes_text, _ = self.publish(previous=previous, changelogs={"root": current})
+        rc, log, out, index, notes_text, _ = self.publish(previous=previous, changelogs={"root": current}, release=1)
         self.assertEqual(rc, 0, log)
         self.assertEqual(notes_text, notes(previous, json.loads(index)))
         self.assertIn("::warning::CHANGELOG.md of the previous index release not read", log)
+
+    def test_changelog_since_the_newest_release(self):  # CON-10, PUB-12
+        # Serial 2 got no GitHub release; serial 3's notes list what serial 2's would have.
+        one = build([version("a", "1.0.0")], {"a": {}}, None, NOW)
+        two = build([version("a", "1.0.0"), version("a", "1.1.0")], {"a": {}}, one, NOW)
+        released = "# Changelog\n\n## 2026-11-05: a (#1)\n\nA.\n"
+        current = "# Changelog\n\n## 2026-11-07: c (#3)\n\nC.\n\n## 2026-11-06: b (#2)\n\nB.\n\n" + released[len("# Changelog\n\n"):]
+        rc, log, out, _, notes_text, _ = self.publish(previous=two, changelogs={"root": current, 1: released}, release=1)
+        self.assertEqual((rc, out["serial"]), (0, "3"), log)
+        self.assertTrue(notes_text.endswith("\nConsumer workflow changes (CHANGELOG.md):\n\n## 2026-11-07: c (#3)\n\nC.\n\n"
+                                            "## 2026-11-06: b (#2)\n\nB.\n"), notes_text)
+
+    def test_rerun_of_an_old_commit_does_not_publish(self):  # PUB-16
+        rc, log, out, index, _, _ = self.publish(attempt="2", main="d" * 40)
+        self.assertEqual(rc, 1, log)
+        self.assertIn(f"PUB-16: attempt 2 of a run at {'c' * 40}, main is at {'d' * 40}", log)
+        self.assertEqual(out, {})
+        self.assertIsNone(index)
+        # A re-run while main has not moved, and a first attempt behind main, publish.
+        for attempt, main in (("2", "c" * 40), ("1", "d" * 40)):
+            with self.subTest(attempt=attempt, main=main):
+                rc, log, out, _, _, _ = self.publish(attempt=attempt, main=main)
+                self.assertEqual((rc, out["publish"]), (0, "true"), log)
 
     def test_any_failed_check_fails_the_job(self):
         cfg = digest(f"config {self.REG}/a:1.1.0")

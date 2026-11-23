@@ -373,13 +373,16 @@ they carry the consumer changes as well.
   get no section. The commit history of `sandbox/` lists them.
 
   The release of the next index serial copies each section added since
-  the previous serial's release into its notes, so its tag is the first
-  commit to pin for the change. Sections are matched by heading, and a
+  the newest index release into its notes, so its tag is the first
+  commit to pin for the change. The newest release is GitHub's latest
+  release of the repository, which holds index releases only; a serial
+  without a release (PUB-12) then does not drop the sections it would
+  have listed. Sections are matched by heading, and a
   heading does not change once a release has listed it. When
-  `CHANGELOG.md` at the previous release's tag cannot be read, the notes
+  `CHANGELOG.md` at that release's tag cannot be read, the notes
   leave the sections out and the run prints a warning. This is the case
   for the first release after this change, because the file did not
   exist before.
 
-  - Test: `release/test_release.py` (`Index.test_release_notes_with_changelog`, `PublishIndex.test_changelog_sections_since_the_previous_release`); whether a change needs a section is reviewed
+  - Test: `release/test_release.py` (`Index.test_release_notes_with_changelog`, `PublishIndex.test_changelog_sections_since_the_previous_release`, `PublishIndex.test_changelog_since_the_newest_release`); whether a change needs a section is reviewed
   - Since: #554

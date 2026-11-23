@@ -37,7 +37,9 @@ for f in "$root"/generators/*.yaml "$root"/recipes/*.yaml; do
   echo "## $name $version"
 
   # SEC-16
-  resolved=$("${gitc[@]}" ls-remote -- "$repo" "refs/tags/$tag" "refs/tags/$tag^{}" 2>/dev/null | awk '{print $1}' | tail -n 1) || true
+  # As REG-1 in gate/run: the exact ref, peeled first, not a ref that only ends in refs/tags/<tag>.
+  resolved=$("${gitc[@]}" ls-remote -- "$repo" "refs/tags/$tag" "refs/tags/$tag^{}" 2>/dev/null \
+    | awk -v t="refs/tags/$tag" '$2 == t "^{}" {p = $1} $2 == t {l = $1} END {print (p != "" ? p : l)}') || true
   if [[ $resolved != "$sha" ]]; then
     emit drift "$name" "$tag" "tag $tag resolves to ${resolved:-nothing}, the entry pins $sha"
   fi
