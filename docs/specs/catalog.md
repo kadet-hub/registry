@@ -537,7 +537,7 @@ remembered in the browser's `localStorage`.
   out. On 2026-11-23 all 54 guides and posts met it.
 
   - Test: `catalog/test_catalog.py` (`test_query_owners_linked`)
-  - Since: this change
+  - Since: #724
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
 
