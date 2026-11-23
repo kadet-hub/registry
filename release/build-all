@@ -12,7 +12,8 @@
 # scan/static-scan, sandbox/gate-compile, release/scan-record and
 # release/output-diff need, the main checkout; for a recipe GH_TOKEN, which
 # only gate/recipe-checks gets, and what it and gate/recipe-renders need.
-# Writes the artifacts, their output.diff and names.json to <out dir>, a
+# Writes the artifacts, their output.diff, names.json and new.json, the names
+# without a published tag for the sign matrix (PUB-16), to <out dir>, a
 # recipe's below <out dir>/recipes/.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -102,6 +103,7 @@ print(json.dumps({"source": source, "level": level, "kinds": tag_check.kinds(out
   cp -- "$work/meta.json" "$dest/meta.json"
 }
 
+new=()
 while IFS= read -r name; do
   meta=$out/$name/meta.json
   version=$(jq -r .version -- "$meta")
@@ -111,6 +113,7 @@ while IFS= read -r name; do
     echo "$name $version: published, not compiled"
     continue
   fi
+  new+=("$name")
   if [[ $name == recipes/* ]]; then
     build_recipe "${name#recipes/}" "$version"
     continue
@@ -143,3 +146,4 @@ while IFS= read -r name; do
     -- "$meta" >"$work/meta.json"
   cp -- "$work/meta.json" "$meta"
 done < <(jq -r '.[]' -- "$out/names.json")
+jq -cn '$ARGS.positional' --args "${new[@]}" >"$out/new.json"

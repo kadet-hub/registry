@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Verify job (PUB-16): release/sign --published on every name of names.json
+# that new.json does not list, four at a time (PUB-4); fails after all ran
+# when any of them failed.
+#
+# Usage: verify-published <built dir>
+# Needs: what release/sign needs, except GITHUB_OUTPUT.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+jq -r --slurpfile new "$1/new.json" '(. - $new[0])[]' -- "$1/names.json" \
+  | GITHUB_OUTPUT=/dev/null xargs -r -P 4 -I {} "$root/release/sign" {} "$1/{}" --published

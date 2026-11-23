@@ -26,7 +26,9 @@ index lists, the source, and the tree ID computed from the files of the
 tree. It runs the checks in the sandbox image without network, and the
 compile gate under gVisor for versions without a published tag (CMP-4).
 
-The sign job runs once per entry in the `release` environment. It fetches
+The sign job runs once per entry whose version has no `<version>` tag yet,
+in the `release` environment; the verify job checks the other entries
+(PUB-16). It fetches
 `source.sha` itself, blobless, compares the git tree of `source.path` with
 the tree ID of the tar's contents (PUB-15) and with the metadata, writes the OCI
 manifest itself, pushes config and layer to `ghcr.io/kadet-hub/<name>` by
@@ -61,9 +63,9 @@ since the documented package API has no visibility call.
   `source.sha:source.path` and the LICENSE of PUB-15 alone, reproducibly
   (normalized tar, no timestamp in the manifest), MUST NOT use files
   produced by the gate, and MUST NOT hold `id-token` or any write
-  permission. The sign job MUST fail when the tree ID of the tar differs
-  from the tree of `source.sha:source.path` read by its own fetch, with the
-  LICENSE of PUB-15 added.
+  permission. The sign or verify job (PUB-16) MUST fail when the tree ID of
+  the tar differs from the tree of `source.sha:source.path` read by its own
+  fetch, with the LICENSE of PUB-15 added.
 
   The build job holds `packages: read` to tell which versions are
   published (CMP-4) and to read the latest index for the output diff
@@ -82,9 +84,10 @@ since the documented package API has no visibility call.
 
 - PUB-15: When the shipped tree has no `LICENSE` at its root, the build job
   MUST add the source repository's root `LICENSE` at `source.sha` to the
-  root of the tar, and MUST fail when neither exists. The sign job MUST
-  compare the tar with the tree of its own fetch plus that blob, and the
-  metadata's tree ID with the tree of its own fetch alone.
+  root of the tar, and MUST fail when neither exists. The sign or verify
+  job (PUB-16) MUST compare the tar with the tree of its own fetch plus
+  that blob, and the metadata's tree ID with the tree of its own fetch
+  alone.
 
   The shipped tree is `source.sha:source.path`, for a recipe without its
   `tests` entry (REC-11). On 2026-10-29 all 37 generator entries came from
@@ -109,7 +112,7 @@ since the documented package API has no visibility call.
   catalog does not show the ID, and `docs/consumers.md` verifies digests.
   So `tree` means the same for versions published before and after this
   change. The build job rebuilds the tar of an already published version
-  as well, and the sign job compares it under the same rule before it
+  as well, and the verify job compares it under the same rule before it
   finds the existing tag (PUB-2). Published artifacts are not touched.
 
   QA-1 and REC-4 fail a version without either LICENSE in the gate, so the
@@ -131,11 +134,11 @@ since the documented package API has no visibility call.
   - Since: #418
 
 - PUB-2: The sign job MUST attest a digest before tagging it, MUST NOT move an
-  existing `<version>` tag, MUST fail when an existing tag points to a digest
-  without a marketplace attestation, MUST complete every version left
+  existing `<version>` tag, MUST complete every version left
   untagged by an earlier run, MUST NOT tag a version that is not newer than
   the newest tagged version of the package, and MUST NOT build, attest or
-  tag a yanked version.
+  tag a yanked version. The sign or verify job (PUB-16) MUST fail when an
+  existing tag points to a digest without a marketplace attestation.
 
   The last ordering rule replaces REG-6 at release time: the gate compares
   against the previous entry, the sign job against what consumers can
@@ -143,6 +146,57 @@ since the documented package API has no visibility call.
 
   - Test: manual: AC-6
   - Since: #13
+
+- PUB-16: The build job MUST pass to the sign matrix only the entries whose
+  version has no `<version>` tag. A single verify job MUST run the sign
+  job's checks of PUB-1, PUB-2 and PUB-15 on every other entry the build
+  job built, and MUST NOT push or tag. The index job MUST NOT run unless
+  the verify job succeeded and the sign jobs succeeded or were skipped.
+
+  Until this change the matrix held every entry. For a tagged version a
+  sign job only compared the tar and checked the tag's attestation, in 3
+  to 10 seconds, but each job needed a runner of its own, and the
+  account's limit on concurrent jobs queued them. The release run of
+  4df58d2 on 2026-11-23 published nothing and ran 96 sign jobs from 03:47
+  to 04:13 UTC; 60 of them started after 04:05.
+
+  `release/build-all` resolves each version's tag anyway to decide what to
+  compile (CMP-4), and writes the untagged names to `new.json` for the
+  matrix. `release/verify-published` runs `release/sign --published` on
+  every name of `names.json` that `new.json` does not list, four at a time
+  as the index job does (PUB-4). Every built name is therefore checked by
+  a sign job or by the verify job, and a name listed as new although it is
+  tagged is checked by its sign job as before. With `--published`,
+  `release/sign` fails where it would push. A tag deleted between the
+  build and the verify job therefore fails the run, and the next run
+  publishes the version again.
+
+  The verify job runs on its own runner, so the comparison stays outside
+  the job whose host-side parsers read the entries and built the tar
+  (RISK-10). It holds `contents: read`, `packages: read` and
+  `attestations: read` for the fetch, the tag lookup and `gh attestation
+  verify`, and no environment, since it holds no write permission
+  (GI-15). Running the checks in the build job was considered. It would
+  save one runner, but put the comparison into that job and hand
+  `GH_TOKEN`, which `release/build-all` gives only to the recipe checks,
+  to the attestation lookups.
+
+  New versions keep one sign job each, with `fail-fast: false`, so a
+  failing entry holds back no other entry's push, attestations and tag.
+
+  The "Verify and push" steps of the 96 sign jobs took 508 seconds in
+  total in the run of 4df58d2 and 520 in the scheduled run of b904797.
+  Four at a time that is about 520 / 4 = 130 seconds for the verify job
+  (own calculation, not measured). A run without a new version is then
+  bounded by the jobs that remain: in the runs of 4df58d2, 28de115 and
+  b904797 the build took 3.5 to 5 minutes, the index 6.5 to 9 and the
+  catalog 4 to 5.5.
+
+  - Test: `release/test_release.py`
+    (`BuildAll.test_only_untagged_versions_reach_the_sign_matrix`,
+    `VerifyPublished`); manual: the first release run after the merge
+    without a new version runs no sign job
+  - Since: this change
 
 - PUB-3: Every published artifact MUST carry a GitHub artifact attestation
   (SLSA provenance) from the release workflow. The documented verification

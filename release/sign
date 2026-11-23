@@ -4,7 +4,8 @@
 # tags, push by digest and write the SBOM of what was pushed and the output
 # diff predicate.
 #
-# Usage: sign <name> <built dir>, with recipes/<recipe> as <name> for a recipe
+# Usage: sign <name> <built dir> [--published], with recipes/<recipe> as <name>
+# for a recipe; --published, for the verify job (PUB-16), fails where it would push.
 # Needs: REGISTRY (ghcr.io/<owner>), IDENTITY (certificate identity),
 # GITHUB_REPOSITORY, GH_TOKEN, oras logged in, the main checkout as working
 # directory. Writes ref, digest, version, sbom, diff (when the build job
@@ -69,6 +70,7 @@ if ((rc == 0)); then
   out "publish=false"
   exit 0
 fi
+[[ ${3:-} != --published ]] || { echo "PUB-16: $ref:$version is not tagged, though the build job found it"; exit 1; }
 rc=0; tags=$(lookup oras repo tags -- "$ref") || rc=$?
 ((rc < 2)) || exit 1
 newest=$(printf '%s\n' "$tags" | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -n 1)

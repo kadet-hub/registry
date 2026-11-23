@@ -301,6 +301,7 @@ case "$1 $2" in
   "blob fetch") cp -- "$FAKE_INDEX" "$4" ;;
   "blob push") ;;
   "manifest push") [[ -z ${FAKE_PUSHED:-} ]] || cp -- "${@: -1}" "$FAKE_PUSHED" ;;
+  "resolve --") [[ " ${FAKE_TAGGED:-} " == *" $3 "* ]] || { echo "$3: not found" >&2; exit 1; }; echo sha256:tagged ;;
   *) echo "$*: not found" >&2; exit 1 ;;
 esac
 """,
@@ -719,6 +720,29 @@ echo '[]' >"$out/names.json"
         with open(os.path.join(out, "licenses.txt"), encoding="utf-8") as f:
             self.assertEqual(f.read(), f"./demo.LICENSE:license at {'c' * 40}:LICENSE\n")
 
+    def test_only_untagged_versions_reach_the_sign_matrix(self):  # PUB-16
+        docker = """#!/usr/bin/env bash
+for a; do [[ $a == type=bind,src=*,dst=/out ]] && out=${a#type=bind,src=} && out=${out%,dst=/out}; done
+for n in demo other; do mkdir -p -- "$out/$n"; echo "{\\"name\\": \\"$n\\", \\"version\\": \\"1.13.0\\"}" >"$out/$n/meta.json"; done
+echo '["demo", "other"]' >"$out/names.json"
+"""
+        for rel, text in dict(BUILD_FAKES, **{"bin/docker": docker}).items():
+            path = os.path.join(self.tmp, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            os.chmod(path, 0o755)
+        out = os.path.join(self.tmp, "out")
+        for tagged, new in (("ghcr.io/kadet-hub/other:1.13.0", ["demo"]),
+                            ("ghcr.io/kadet-hub/demo:1.13.0 ghcr.io/kadet-hub/other:1.13.0", [])):
+            with self.subTest(new=new):
+                shutil.rmtree(out, ignore_errors=True)
+                p = subprocess.run([os.path.join(self.root, "release", "build-all"), out], env=dict(self.env, FAKE_TAGGED=tagged),
+                                   check=True, capture_output=True, text=True)
+                with open(os.path.join(out, "new.json"), encoding="utf-8") as f:
+                    self.assertEqual(json.load(f), new)
+                self.assertEqual(p.stdout.count("published, not compiled"), 2 - len(new), p.stdout)
+
     def build_recipe(self, source, renders_rc=0, rev="d" * 40, declared=None):  # REC-12, REC-13, REC-18
         recipe = {"pins": [f"ghcr.io/kadet-hub/kubernetes:1.9.0@sha256:{'a' * 64}", f"ghcr.io/kadet-hub/certmanager:1.0.2@sha256:{'b' * 64}"],
                   "recipes": {"other": {"rule": "REC-16", "version": "1.0.0", "digest": "sha256:" + "d" * 64},
@@ -945,6 +969,65 @@ exec {shutil.which("git")} "${{args[@]}}"
         p, _, manifest = self.sign("gen", sha, shipped)
         self.assertEqual((p.returncode, manifest), (1, None))
         self.assertIn("PUB-15: gen 1.0.0: no LICENSE in the tree or at the repository root", p.stdout)
+
+
+class VerifyPublished(unittest.TestCase):
+    """PUB-16: release/verify-published runs release/sign's checks on the built names new.json does not list."""
+
+    setUp = OutputDiff.setUp
+    FILES = Recipe.FILES
+    commit = Recipe.commit
+
+    def verify(self, sha, tar, new=(), tagged="ghcr.io/kadet-hub/gen:1.0.0", attested=True):
+        """Runs the job on gen at sha, built with the tar's files {path: text}, and on the names in new, built as empty directories."""
+        with open(os.path.join(self.root, "generators", "gen.yaml"), "w", encoding="utf-8") as f:
+            f.write(f"source:\n  repo: {REPO}\n  path: gen\n  tag: gen-v1.0.0\n  sha: {sha}\n")
+        built = os.path.join(self.tmp, "built")
+        shutil.rmtree(built, ignore_errors=True)
+        for name in ("gen", *new):
+            os.makedirs(os.path.join(built, name))
+        write_tar({p: (False, t.encode()) for p, t in tar.items()}, os.path.join(built, "gen", "gen.tar"))
+        shipped = {p[4:]: (False, t.encode()) for p, t in self.FILES.items() if p.startswith("gen/")}
+        files = {"gen/meta.json": {"name": "gen", "version": "1.0.0", "tree": tree_id(shipped),
+                                   "source": {"repo": REPO, "path": "gen", "tag": "gen-v1.0.0", "sha": sha}},
+                 "names.json": ["gen", *new], "new.json": list(new)}
+        for rel, data in files.items():
+            with open(os.path.join(built, rel), "w", encoding="utf-8") as f:
+                json.dump(data, f)
+        with open(os.path.join(self.tmp, "bin", "gh"), "w", encoding="utf-8") as f:
+            f.write("#!/usr/bin/env bash\n[[ $1 == attestation && -z ${FAKE_UNATTESTED:-} ]]\n")
+        os.chmod(os.path.join(self.tmp, "bin", "gh"), 0o755)
+        pushed = os.path.join(self.tmp, "manifest.json")
+        p = subprocess.run([os.path.join(self.root, "release", "verify-published"), built], capture_output=True, text=True,
+                           env=dict(self.env, FAKE_TAGGED=tagged, FAKE_PUSHED=pushed, FAKE_UNATTESTED="" if attested else "1",
+                                    ATTESTED_DELAY_SCALE="0"), cwd=self.root, check=False)
+        self.assertFalse(os.path.exists(pushed))
+        return p.returncode, p.stdout + p.stderr
+
+    def test_tagged_versions_are_checked_as_by_the_sign_job(self):
+        sha = self.commit()
+        shipped = {p[4:]: t for p, t in self.FILES.items() if p.startswith("gen/")}
+        tar = dict(shipped, LICENSE=self.FILES["LICENSE"])
+        # recipes/demo is in the sign matrix: its empty directory would fail release/sign.
+        rc, log = self.verify(sha, tar, new=["recipes/demo"])
+        self.assertEqual(rc, 0, log)
+        self.assertEqual(log, "gen 1.0.0: published as sha256:tagged\n")
+        # No untagged version: the sign matrix is empty and gen still fails on each of the sign job's findings.
+        for kwargs, message in (({"tar": shipped}, "PUB-1: gen 1.0.0: tar tree"),  # without the root LICENSE (PUB-15)
+                                ({"attested": False}, "PUB-2: ghcr.io/kadet-hub/gen:1.0.0 points to sha256:tagged without"),
+                                ({"tagged": ""}, "PUB-16: ghcr.io/kadet-hub/gen:1.0.0 is not tagged, though the build job found it")):
+            with self.subTest(message=message):
+                rc, log = self.verify(sha, **dict({"tar": tar}, **kwargs))
+                self.assertNotEqual(rc, 0, log)
+                self.assertIn(message, log)
+
+    def test_index_waits_for_the_verify_job(self):
+        with open(os.path.join(ROOT, ".github", "workflows", "release.yml"), encoding="utf-8") as f:
+            workflow = f.read()
+        for line in ("if: needs.build.outputs.new != '[]'", "name: ${{ fromJSON(needs.build.outputs.new) }}",
+                     "run: release/verify-published built", "needs: [build, sign, verify]",
+                     "needs.verify.result == 'success' && (needs.sign.result == 'success' || needs.sign.result == 'skipped')"):
+            self.assertIn(line, workflow)
 
 
 class Mirror(unittest.TestCase):
