@@ -30,8 +30,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           # renovate: datasource=github-release-attachments depName=astral-sh/ruff
-          RUFF_VERSION: 0.17.4
-          RUFF_SHA256: 3ab2b34aeacdbc1ea5c529cdbda3e05792633d587228123fd09f3b5a0facb27a
+          RUFF_VERSION: 0.17.6
+          RUFF_SHA256: 94b33791f48cd54ab35ad673a443a5c001d3e6d87effeaba9899070b700d45f3
           # renovate: datasource=github-release-attachments depName=koalaman/shellcheck
           SHELLCHECK_VERSION: v0.11.0
           SHELLCHECK_SHA256: b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6
