@@ -3954,9 +3954,11 @@ unused.
   gauge carries a float, not a buoy. Containers, bollards, lamps and
   trees stand on any quay and recur.
 
-  - Test: none (`catalog/test_catalog.py`: no `text` element in a spot
-    drawing); manual: the drawings beside the scene in the merge request
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_drawings_carry_no_colour_or_style`: no `text` element
+    in a spot drawing); manual: the drawings beside the scene in the
+    merge request
+  - Since: #712
 
 - CAT-73c: A spot drawing MUST stand whole and vertically centred in its
   band, 184 px high.
@@ -4010,9 +4012,10 @@ unused.
 
   It carries nothing a reader needs, so assistive technology skips it.
 
-  - Test: none (`catalog/test_catalog.py`: `aria-hidden="true"` on every
-    spot drawing)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_drawings_carry_no_colour_or_style`:
+    `aria-hidden="true"` on every spot drawing)
+  - Since: #712
 
 - CAT-73g: A spot drawing MUST meet CAT-69a, CAT-69b and CAT-69h.
 
@@ -4044,10 +4047,11 @@ unused.
   flag of `mast`, the line of `bollard` and the top of the float of
   `gauge`; `barge`, `basin` and `guide` have none.
 
-  - Test: none (`catalog/test_catalog.py`: no seal and no check mark in
-    a spot drawing but `catalog` and `generator`); manual: the orange
-    parts of each spot drawing, in the merge request
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Harbour.test_spot_drawings`: no
+    seal and no check mark in a spot drawing but `catalog` and
+    `generator`); manual: the orange parts of each spot drawing, in the
+    merge request
+  - Since: #712
 
 - CAT-74: Each listed version on a generator page MUST show what a
   consumer does with it as three numbered steps, Inventory, Verify and
@@ -4787,9 +4791,10 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   four, as for the diagrams of CAT-35a; `site.js` adds the listeners.
   `<use href="#…">` points into the page and stays.
 
-  - Test: none (`catalog/test_catalog.py`: these constraints on the
-    partials, as `test_diagram_svgs` checks the diagrams)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_drawings_carry_no_colour_or_style`: these constraints
+    on the partials, as `test_diagram_svgs` checks the diagrams)
+  - Since: #712
 
 - CAT-69h: Every `id` inside the drawings MUST be unique on the page.
 
@@ -4813,10 +4818,11 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   carries an orange seal from the gate on. Both are drawn once and shown
   wherever they pass.
 
-  - Test: none (`catalog/test_catalog.py`: each name stands on its
-    container and on the cargo list, no other generator name and no digit
-    on a plate)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_ship_carries_the_two_pinned_generators`: each name
+    stands on its container and on the cargo list, no other generator
+    name and no digit on a plate)
+  - Since: #712
 
 - CAT-69i: An object of the drawings MUST NOT overlap another against
   the isometric depth order, in any frame of any motion.
@@ -4840,9 +4846,10 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   lane, 22 above a loaded truck of 58. `harbour_scene.py` asserts the
   gate's clearance.
 
-  - Test: none (`catalog/test_catalog.py`: `harbour_scene.py` runs
-    without an assertion error); manual: the frames of station 2
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_scene_is_drawn_by_its_generator`: `harbour_scene.py`
+    runs without an assertion error); manual: the frames of station 2
+  - Since: #712
 
 - CAT-69d: Every fact a label of the drawings shows MUST also stand in
   the text of its station.
@@ -4902,11 +4909,12 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   tests read the references. A spot drawing that replaces one of the
   table in "Page types" gets its reference in the same merge request.
 
-  - Test: none (`catalog/test_catalog.py`: the references use only the
-    light values of the token tables, no script, no `href` and no style
-    but the shadows' blend); manual: each drawing in the light theme
-    beside its reference, in the first implementation's merge request
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Harbour.test_references`: the
+    references use only the light values of the token tables, no script,
+    no `href` and no style but the shadows' blend); manual: each drawing
+    in the light theme beside its reference, in the first
+    implementation's merge request
+  - Since: #712
 
 ## The live edit
 

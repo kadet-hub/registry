@@ -38,6 +38,64 @@ from view import (
 OWNER = "kadet-hub"
 
 
+SITE = os.path.join(HERE, "site")
+PARTIALS = os.path.join(SITE, "layouts", "_partials")
+RUN = os.path.join(SITE, "assets", "harbour", "run")
+SCENE = ("harbour-wide.html", "harbour-narrow.html", "harbour-crop.html", "spot.html")  # what catalog/harbour_scene.py writes
+SPOTS = ("catalog", "generator", "recipe", "barge", "basin", "guide", "mast", "pilot", "bollard", "gauge")  # "Page types"
+DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+
+
+def read(*parts):
+    with open(os.path.join(*parts), encoding="utf-8") as f:
+        return f.read()
+
+
+def panel_text(code):
+    """CAT-66: the lines of a panel's <code> as the recording has them: tags dropped, so a shortened digest is whole again,
+    and a command folded at its flags joined; a fold is ("fold", the lines it leaves out)."""
+    rows = []
+    for cls, body in re.findall(r'<span class="(ln[^"]*|fold)">(.*?)</span>(?=<span class="(?:ln|fold)|$)', code, re.DOTALL):
+        text = _unescape(re.sub(r"<[^>]+>", "", body))
+        if cls == "fold":
+            rows.append(("fold", sum(int(n) for n in re.findall(r"(\d+) lines?", text))))
+        elif rows and isinstance(rows[-1], str) and rows[-1].endswith(" \\"):
+            rows[-1] = rows[-1][:-2] + " " + text.lstrip(" ")
+        else:
+            rows.append(text)
+    return rows
+
+
+def panels(html):
+    """Every code panel of the figure and the live edit: its title, or the path above it, and its <code>."""
+    return re.findall(r'<p class="(?:term-title|path)">([^<]+)</p>\s*<pre><code>(.*?)</code></pre>', html, re.DOTALL)
+
+
+def spot(name):
+    return re.search(rf'eq \. "{name}" \}}\}}(<svg.*?</svg>)', read(PARTIALS, "spot.html"), re.DOTALL).group(1)
+
+
+
+# CAT-59: the token tables of "Visual identity" in docs/specs/catalog.md, light and dark.
+TOKENS = {
+    "bg": ("#f4f5fb", "#1c1b3a"), "bg-subtle": ("#e9ebfa", "#232249"), "surface": ("#ffffff", "#2a2952"), "text": ("#1c1b3a", "#e3e4fd"),
+    "text-muted": ("#48476b", "#b9bdf6"), "accent": ("#3b3fc4", "#a5a8fa"), "accent-strong": ("#1c1b3a", "#e3e4fd"), "accent-bg": ("#e3e4fd", "#2e2f6b"),
+    "on-accent": ("#ffffff", "#1c1b3a"), "teal": ("#18a999", "#18a999"), "on-teal": ("#07211d", "#07211d"), "teal-bg": ("#b9efe6", "#0e4d45"),
+    "teal-line": ("#118a7b", "#2ec4b3"), "signal": ("#e26a1f", "#e26a1f"), "on-signal": ("#1c1b3a", "#1c1b3a"), "signal-text": ("#7a3208", "#ff8a3d"),
+    "signal-bg": ("#ffe3cf", "#3a2418"), "focus": ("#bc5718", "#ff8a3d"), "border": ("#dfe0f2", "#3a3970"), "border-strong": ("#787dc1", "#8286cc"),
+    "warn": ("#9a3412", "#fdba74"), "warn-bg": ("#fff1e7", "#3a2112"), "ok": ("#166534", "#86efac"), "ok-bg": ("#e8f7ee", "#12301e"),
+    "sc-water": ("#cdd5fb", "#232262"), "sc-shallow": ("#dbe1fd", "#2b2a72"), "sc-shade": ("#d9defb", "#b4b3e6"),
+    "sc-shade-road": ("#cbcff4", "#25245f"), "sc-shade-water": ("#b7c1f6", "#1b1a52"), "sc-shade-deck": ("#b2b5f4", "#b2b5f4"),
+    "sc-land-t": ("#ffffff", "#3a3984"), "sc-land-r": ("#b9bdf6", "#302f70"), "sc-land-l": ("#9ea3f2", "#282763"), "sc-road": ("#dfe1f7", "#2e2d6c"),
+    "sc-foam": ("#ffffff", "#5655a8"), "sc-light": ("#ffffff", "#ffffff"), "sc-wht-r": ("#e9eafd", "#e9eafd"), "sc-wht-l": ("#cfd2fb", "#cfd2fb"),
+    "sc-ink": ("#1c1b3a", "#1c1b3a"), "sc-ind-t": ("#e3e4fd", "#e3e4fd"), "sc-ind-r": ("#a5a8fa", "#a5a8fa"), "sc-ind-l": ("#8a8ef7", "#8a8ef7"),
+    "sc-kub-t": ("#b0b4ff", "#b0b4ff"), "sc-kub-r": ("#5b61ea", "#5b61ea"), "sc-kub-l": ("#454acf", "#454acf"),
+    "sc-hull-t": ("#c7c9fb", "#c7c9fb"), "sc-hull-r": ("#4347c4", "#4347c4"), "sc-hull-l": ("#34379f", "#34379f"),
+    "sc-teal-t": ("#b9efe6", "#b9efe6"), "sc-teal-r": ("#18a999", "#18a999"), "sc-teal-l": ("#118a7b", "#118a7b"),
+    "sc-or-t": ("#ffd2b3", "#ffd2b3"), "sc-or-r": ("#ff8a3d", "#ff8a3d"), "sc-or-l": ("#e26a1f", "#e26a1f"),
+}
+
+
 def contrast(a, b):
     """WCAG contrast ratio of two #rrggbb colours (CAT-54, PG-25)."""
     def luminance(hex_colour):
@@ -2432,6 +2490,122 @@ class Diagrams(unittest.TestCase):
             svg = f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">{bad}</svg>'
             self.assertNotEqual(svg_findings(svg), [], bad)
         self.assertEqual(svg_findings('<svg xmlns="http://www.w3.org/2000/svg"><use href="#i-x"/></svg>'), [])
+
+class Harbour(unittest.TestCase):  # CAT-66, CAT-68, CAT-69 to CAT-69j, CAT-73b to CAT-73j: the generators and what they write
+    def copy_site(self, tmp):
+        for part in ("assets/harbour", "layouts/_partials"):
+            shutil.copytree(os.path.join(SITE, part), os.path.join(tmp, "site", part))
+        os.makedirs(os.path.join(tmp, "site", "static"))
+        shutil.copy(os.path.join(SITE, "static", "style.css"), os.path.join(tmp, "site", "static"))
+        return os.path.join(tmp, "site")
+
+    def test_figure_is_written_from_the_recording(self):  # CAT-66, CAT-68
+        with tempfile.TemporaryDirectory() as tmp:
+            site = self.copy_site(tmp)
+            subprocess.run([sys.executable, os.path.join(HERE, "harbour_figure.py"), site], check=True)
+            for name in ("harbour.html", "live-edit.html"):
+                self.assertEqual(read(site, "layouts", "_partials", name), read(PARTIALS, name), name)
+        files = {"Terminal": "session.log"}
+        for html in (read(PARTIALS, "harbour.html"), read(PARTIALS, "live-edit.html")):
+            for title, code in panels(html):
+                source = read(RUN, files.get(title, title)).rstrip("\n").split("\n")
+                rows, at, gap = panel_text(code), None, None
+                for row in rows:
+                    if isinstance(row, tuple):
+                        gap = row[1]
+                        continue
+                    found = source.index(row, at + 1 if at is not None else 0)  # a line of the file, in its order
+                    if at is not None:
+                        self.assertEqual(found - at - 1, gap or 0, (title, row))  # a fold counts the lines it leaves out
+                    at, gap = found, None
+        home = read(PARTIALS, "harbour.html")
+        stations = re.findall(r'<h3><span class="station-n">(\d)</span>(\w+) <small>([^<]+)</small></h3><span class="who ?(\w*)">([^<]+)</span>', home)
+        self.assertEqual(stations, [("1", "Inventory", "Harbour office", "", "Your project"), ("2", "Verify", "Customs gate", "hub", "kadet-hub"),
+                                    ("3", "Fetch", "Crane", "hub", "kadet-hub"), ("4", "Generators", "Ship Kapitan", "kapitan", "Kapitan"),
+                                    ("5", "Output", "Two islands", "kapitan", "Kapitan")])
+
+    def test_long_commands_are_folded_at_their_flags(self):  # CAT-66n
+        log = read(RUN, "session.log").split("\n")
+        shown = lambda text: DIGEST.sub("sha256:" + "x" * 17, text)
+        folded = 0
+        for title, code in panels(read(PARTIALS, "harbour.html")):
+            raw = [_unescape(re.sub(r"<[^>]+>", "", body)) for body in re.findall(r'<span class="ln cmd[^"]*">(.*?)</span>(?=<span class="(?:ln|fold)|$)', code)]
+            command = []
+            for line in raw:
+                command.append(line)
+                if line.endswith(" \\"):
+                    continue
+                joined = " ".join(part.removesuffix(" \\").strip(" ") for part in command)
+                self.assertIn(joined, log)
+                self.assertEqual(len(command) > 1, len(shown(joined)) > 100, joined)
+                for row in command[1:]:
+                    self.assertTrue(row.startswith("    "), row)  # the figure's hang
+                    words = row.removesuffix(" \\").split()
+                    self.assertTrue(len(words) == 1 or (len(words) == 2 and words[0].startswith("-")), row)  # a flag with its value, or one argument
+                folded += len(command) > 1
+                command = []
+        self.assertGreaterEqual(folded, 3)
+
+    def test_scene_is_drawn_by_its_generator(self):  # CAT-69, CAT-69j
+        with tempfile.TemporaryDirectory() as tmp:
+            site = self.copy_site(tmp)
+            shutil.copy(os.path.join(HERE, "harbour_scene.py"), tmp)
+            subprocess.run([sys.executable, os.path.join(tmp, "harbour_scene.py")], check=True, capture_output=True)  # asserts the gate's clearance
+            for name in SCENE:
+                self.assertEqual(read(site, "layouts", "_partials", name), read(PARTIALS, name), name)
+            self.assertEqual(read(site, "static", "style.css"), read(SITE, "static", "style.css"))  # the block between the markers
+
+    def test_drawings_carry_no_colour_or_style(self):  # CAT-69a, CAT-69b, CAT-69h, CAT-73b, CAT-73f, CAT-73g
+        for name in SCENE:
+            part = read(PARTIALS, name)
+            self.assertNotRegex(part, r'\s(?:fill|stroke|stop-color)="(?!none")[^"]*"', name)
+            self.assertNotRegex(part, r"<style|\sstyle=|<script|\son[a-z]+=", name)
+            self.assertEqual(re.findall(r'href="(?!#)[^"]*"', part), [], name)
+            for cls in {c for attr in re.findall(r'class="([^"]+)"', part) for c in attr.split()}:
+                self.assertTrue(cls.startswith("h-") or cls in ("sc", "scene", "scene-wide", "scene-narrow", "crop", "spot"), (name, cls))
+        for name in SPOTS:
+            svg = spot(name)
+            self.assertIn('aria-hidden="true"', svg[:svg.index(">")], name)
+            self.assertNotIn("<text", svg, name)  # CAT-73b
+            self.assertTrue(all(i.startswith("sp-") for i in re.findall(r'\sid="([^"]+)"', svg)), name)  # a page holds one; no id of the page or the scene
+        wide, narrow = read(PARTIALS, "harbour-wide.html"), read(PARTIALS, "harbour-narrow.html")
+        self.assertEqual(re.findall(r'\sid="([^"]+)"', wide), ["hw-ck", "hw-ct"])
+        self.assertEqual(re.findall(r'\sid="([^"]+)"', narrow), ["hn", "hn-ck", "hn-ct"])
+
+    def test_ship_carries_the_two_pinned_generators(self):  # CAT-69c
+        pins = re.findall(r"ghcr\.io/kadet-hub/([a-z-]+):", read(RUN, "inventory", "classes", "generators.yml"))
+        self.assertEqual(pins, ["kubernetes", "terraform-aws"])
+        for name in ("harbour-wide.html", "harbour-narrow.html"):
+            part = read(PARTIALS, name)
+            plates = re.findall(r'class="h-tx-plate"[^>]*>([^<]*)<', part)
+            self.assertEqual(sorted(set(plates) & set(pins)), pins, name)  # each on its container, drawn once
+            self.assertFalse(any(c.isdigit() for p in plates for c in p), plates)
+            for pin in pins:
+                self.assertIn(f">{pin}<", re.search(r'class="h-tx-list".*', part, re.DOTALL).group(0), name)  # and on the cargo list
+            for other in ("certmanager", "cert-manager", "argocd"):
+                self.assertNotIn(other, part, name)
+
+    def test_spot_drawings(self):  # CAT-73b, CAT-73j
+        for name in SPOTS:
+            svg = spot(name)
+            if name not in ("catalog", "generator"):  # orange reads as kadet-hub's check only on the sealed containers
+                self.assertNotIn('class="h-seal', svg, name)
+                self.assertNotIn('d="M-4 0l3 3 5-6"', svg, name)  # the check mark of a seal
+            else:
+                self.assertIn('class="h-seal', svg, name)
+
+    def test_references(self):  # CAT-69g
+        light = {value for value, _ in TOKENS.values()}
+        names = sorted(os.listdir(os.path.join(HERE, "..", "docs", "specs", "harbour")))
+        self.assertEqual(names, ["README.md", "mark.svg", "scene-narrow.svg", "scene-wide.svg"] + [f"spot-{n}.svg" for n in sorted(SPOTS)])
+        for name in names[1:]:
+            svg = read(HERE, "..", "docs", "specs", "harbour", name)
+            self.assertNotRegex(svg, r"<script|\son[a-z]+=|<style", name)
+            self.assertEqual(re.findall(r'href="(?!#)[^"]*"', svg), [], name)
+            self.assertEqual(set(re.findall(r'\sstyle="([^"]*)"', svg)) - {"mix-blend-mode:multiply"}, set(), name)
+            if name != "mark.svg":  # the mark keeps the favicon's colours (CAT-61)
+                self.assertEqual({c.lower() for c in re.findall(r"#[0-9a-fA-F]{6}\b", svg)} - light, set(), name)
+
 
 def built_for(software, version):
     return {"software": software, "version": version, "source": f"https://example.org/{version}"}
