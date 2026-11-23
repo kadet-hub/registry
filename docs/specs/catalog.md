@@ -105,10 +105,11 @@ remembered in the browser's `localStorage`.
 - CAT-9g: A line of code MUST NOT break inside a token, unless the token
   alone is longer than the line.
 
-  - Test: none (`catalog/test_catalog.py`: every line of a code panel is
-    split into token spans by the rule of CAT-9); manual: 375 px, the
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_code_keeps_its_lines_from_48rem`: the token spans of the
+    figure's and the generator page's panels); manual: 375 px, the
     figure and a generator page
-  - Since: not implemented
+  - Since: #711
 
 - CAT-9h: At 1024 and 1440 px a code panel whose lines the site writes
   itself MUST NOT scroll sideways: the panels of the harbour figure
@@ -122,9 +123,10 @@ remembered in the browser's `localStorage`.
   generator's README: from 48rem it scrolls sideways with the mark of
   CAT-9f, and below 48rem it wraps as CAT-9 and CAT-9g say.
 
-  - Test: none (the script of AC-50: every `pre` of these panels has no
-    more width than its box at 1024 and 1440 px)
-  - Since: not implemented
+  - Test: `catalog/browser.mjs` through `InChrome.test_rendered_pages`:
+    every `pre` of these panels has no more width than its box at 1024
+    and 1440 px
+  - Since: #711
 
 - CAT-9c: Every inventory entry and command outside the harbour figure
   and the live edit (CAT-66, CAT-68) MUST have a copy button.
@@ -1685,10 +1687,10 @@ Related: CAT-15, CAT-30, CON-2.
   their text, so `render` fails when its log does not name Manrope
   Medium.
 
-  - Test: none (`catalog/test_catalog.py`: every `.dot` names the
-    Graphviz version that rendered it and holds no colour); manual:
-    `render` run in the merge request
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Diagrams.test_diagram_svgs`: every
+    `.dot` names the Graphviz version that rendered it and holds no
+    colour); manual: `render` run in the merge request
+  - Since: #711
 
 - CAT-35c: A label of a diagram MUST NOT touch a line, a node or another
   label.
@@ -1709,11 +1711,11 @@ Related: CAT-15, CAT-30, CON-2.
   gap is 4.69 pt, between "passes" and its own edge in `upstream.svg`,
   and every node label stands at least 6 pt inside the box of its node.
 
-  - Test: none (a browser script in `catalog/test_catalog.py`, in the
-    manner of `playground/browser.mjs`: in every SVG, these 4 pt around
-    each edge and cluster label, and each node label inside its node's
-    outline)
-  - Since: not implemented
+  - Test: `catalog/browser.mjs` through `InChrome.test_rendered_pages`:
+    in every SVG of the guide, these 4 pt around each edge and cluster
+    label, measured to the lines' centre, and each node label inside its
+    node's outline
+  - Since: #711
 
 - CAT-36: The site MUST have a blog at `/blog/` that lists every post
   under `catalog/site/content/blog/`, newest first with its date, and an
@@ -3098,13 +3100,15 @@ index is refused (CON-2).
   keep the internal paths, but it would have to run before `count.js` on
   every page.
 
-  - Test: none (`catalog/test_catalog.py`: the referrer meta element on
-    every HTML page of the fixture build, `no_onload` on `/generators/`
-    and `/recipes/`, and the count in `site.js` with the query removed;
-    a browser script in the manner of `playground/browser.mjs` opens
-    `/generators/?q=helm` on the fixture build, follows a card to its
-    generator page, and finds `helm` in no request to the counter)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_counter_sees_no_query`:
+    the referrer meta element on every HTML page of the fixture build,
+    `no_onload` on `/generators/` and `/recipes/`, and the count in
+    `site.js` with the query removed); `catalog/browser.mjs` through
+    `InChrome.test_rendered_pages`: it opens `/generators/?q=httproute`
+    on the fixture build, which finds the fixture's `demo`, follows the
+    card to its generator page, and finds `httproute` in no request to
+    the counter
+  - Since: #711
 
 - CAT-42: Copying a fetch inventory or a verify command, and following
   the link to a generator's source repository or to a recipe's folder in
@@ -3521,15 +3525,20 @@ CAT-42, CAT-54, CAT-55, CAT-58b, CAT-64, CAT-66, CAT-67, CAT-68, CAT-73.
 
 - CAT-59c: Every warning MUST open with the warning icon.
 
-  The warnings are the `.warning` lines of the generator, recipe,
-  quickstart and security pages, such as "Yanked: …". The icon sprite
+  The warnings are the `.warning` lines of every page, such as
+  "Yanked: …" on a generator page or the playground's notices, and the
+  ones a script fills keep the icon in the markup. The icon sprite
   has no warning icon today; the implementation adds Lucide's warning
   triangle to it. Icon and words set a warning apart from the signal
   orange, which marks kadet-hub's verify step.
 
-  - Test: none (`catalog/test_catalog.py`: every `.warning` of the
-    fixture builds starts with the icon)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_warnings_open_with_the_icon`,
+    `ListedRecipe.test_digests_and_warnings`,
+    `Security.test_warnings_open_with_the_icon`: every `.warning` of the
+    generator, recipe, quickstart and security pages of the fixture
+    builds starts with the icon)
+  - Since: #711
 
 - CAT-60: The site's only web fonts MUST be Sora and Manrope, each
   served as one variable WOFF2 file from its own directory under
@@ -3807,10 +3816,12 @@ and checked by attestation.
   or guide may be shortened the same way, since the reader copies
   nothing from it.
 
-  - Test: none (`catalog/test_catalog.py`: every `sha256` digest inside a
-    `pre` of the fixture builds shows eight and eight characters with the
-    ellipsis mark, and its title and its text hold all 64)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_digests_in_code_panels`,
+    `ListedRecipe.test_digests_and_warnings`,
+    `Quickstart.test_digests_in_code_panels`: every `sha256` digest of a
+    code panel of the fixture builds shows eight and eight characters
+    with the ellipsis mark, and its title and its text hold all 64)
+  - Since: #711
 
 - CAT-64a: A page that shows a shortened digest MUST show it whole once,
   set in two equal halves.
@@ -3820,10 +3831,10 @@ and checked by attestation.
   station Inventory lists both pins whole; on a generator page the
   version's record does.
 
-  - Test: none (`catalog/test_catalog.py`: on each page of the fixture
-    builds, every shortened digest also stands whole once, in an element
-    of two halves of 32 characters)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (the tests of CAT-64: on each page
+    of the fixture builds, every shortened digest also stands whole
+    once, in an element of two halves of 32 characters)
+  - Since: #711
 
 - CAT-65: The home page hero MUST state the notice of LEG-5 in one line
   below its search, linking `TERMS.md`.
@@ -3904,10 +3915,10 @@ CAT-69b, CAT-69h.
   Each component is defined once and looks the same on every page; a
   page adds layout, not colours or fonts of its own.
 
-  - Test: none (`catalog/test_catalog.py`: every HTML page of the
-    fixture build links `style.css` and no other stylesheet); manual:
-    AC-50
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_one_stylesheet`: every
+    HTML page of the fixture build links `style.css` and no other
+    stylesheet); manual: AC-50
+  - Since: #711
 
 - CAT-71a: `style.css` MUST NOT keep a style of Chart Room or of the
   look before the redesign.
@@ -3943,16 +3954,17 @@ unused.
   The band stands on `--sc-water`, so a page shows at a glance that it
   belongs to the harbour of the start page.
 
-  - Test: none (`catalog/test_catalog.py`: a walk over the built fixture
-    site finds the band with the page's `h1` on every HTML page but `/`)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_head_band`: a walk over
+    the built fixture site finds the band with the page's `h1` on every
+    HTML page but `/`)
+  - Since: #711
 
 - CAT-73a: The head band MUST carry the spot drawing of its page's row in
   the table above, and the pages of the last row none.
 
-  - Test: none (`catalog/test_catalog.py`: the drawing of each layout
-    against the table)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_head_band`: the drawing
+    of each layout against the table)
+  - Since: #711
 
 - CAT-73b: A spot drawing MUST hold no text and none of the scene's
   landmarks: the office, the gate, the crane, the ship Kapitan, the truck,
@@ -3977,17 +3989,19 @@ unused.
   band's edge, and what moves stays within that margin, so no frame of
   its motion is clipped.
 
-  - Test: none (`catalog/test_catalog.py`: the rule of the drawing's
-    height and placement); manual: every motion's frames at 1440 px
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_spot_drawing_rules`: the
+    rule of the drawing's height and placement); manual: every motion's
+    frames at 1440 px
+  - Since: #711
 
 - CAT-73d: Below 48rem a spot drawing MUST be left out.
 
   A phone then shows the title and the first paragraph without
   decoration above them.
 
-  - Test: none (`catalog/test_catalog.py`: the rule below 48rem)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_spot_drawing_rules`: the
+    rule below 48rem)
+  - Since: #711
 
 - CAT-73e: A spot drawing MUST move once when its page loads and come
   to rest 1.5 to 2.5 seconds after it, with CSS animations of `transform`
@@ -4013,10 +4027,12 @@ unused.
 
   None loops.
 
-  - Test: none (`catalog/test_catalog.py`: the spot drawings' animation
-    rules name `transform` and `opacity` only, run once, end by 2.5 s
-    and sit inside `prefers-reduced-motion: no-preference`)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_motion_changes_transform_and_opacity_only`: the spot
+    drawings' animation rules name `transform` and `opacity` only, run
+    once, end by 2.5 s and sit inside `prefers-reduced-motion:
+    no-preference`)
+  - Since: #711
 
 - CAT-73f: A spot drawing MUST be inline SVG marked `aria-hidden="true"`.
 
@@ -4033,18 +4049,20 @@ unused.
   follows the theme, under the same CSP as the scene, with ids that do
   not collide with the page's.
 
-  - Test: none (`catalog/test_catalog.py`: the checks of CAT-69a,
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_drawings_carry_no_colour_or_style`,
+    `Harbour.test_scene_classes_have_rules`: the checks of CAT-69a,
     CAT-69b and CAT-69h on the spot drawings)
-  - Since: not implemented
+  - Since: #711
 
 - CAT-73h: On `/playground/` the head band MUST stand above the editor.
 
   The playground keeps its own layout and the site's CSP (DEC-42); the
   band adds no script.
 
-  - Test: none (`catalog/test_catalog.py`: the band before the editor in
-    the HTML of `/playground/`)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_head_band`: the band
+    before the editor in `playground.html`)
+  - Since: #711
 
 - CAT-73j: A spot drawing other than `catalog` and `generator` MUST
   have at most one orange part, and none shaped like a seal or a check
@@ -4072,9 +4090,10 @@ unused.
   of CAT-2 and "Checks" with the gate's results are kadet-hub's. The
   version's record and its output diff follow the steps.
 
-  - Test: none (`catalog/test_catalog.py`: the three steps, their order
-    and their chips in each listed version of a generator page)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_version_steps`: the
+    three steps, their order and their chips in each listed version of a
+    generator page)
+  - Since: #711
 
 - CAT-75: From 78rem the list "On this page" of a recipe page and of a
   guide MUST stand beside the main column and stay in view while the
@@ -4083,9 +4102,9 @@ unused.
   A generator page does the same under CAT-19. Below 78rem the list is a
   disclosure above the sections.
 
-  - Test: none (`catalog/test_catalog.py`: the rail's rules from 78rem
-    and the rail in `chart-recipe.html` and `prose.html`)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_rail`: the rail's rules
+    from 78rem and the rail in `chart-recipe.html` and `prose.html`)
+  - Since: #711
 
 - CAT-76: A line of running text MUST hold at most 80 characters.
 
@@ -4093,9 +4112,9 @@ unused.
   limit. The rail of CAT-75 takes the width of a wide screen, so the
   lines of the main column need not grow.
 
-  - Test: none (the script of AC-50 counts the characters of the longest
-    line of running text on each page type)
-  - Since: not implemented
+  - Test: `catalog/browser.mjs` through `InChrome.test_rendered_pages`:
+    the characters of the longest line of running text on each page type
+  - Since: #711
 
 - CAT-77: The head band of a recipe page and the start page's Recipes
   tile MUST explain the word "recipe" in one maritime line.
@@ -4104,9 +4123,9 @@ unused.
   one app: inventory classes, ready to load", and the tile "Packed cargo
   for one app".
 
-  - Test: none (`catalog/test_catalog.py`: the line in the band of every
-    recipe page and in the tile of `/`)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py` (`Site.test_head_band`: the line in
+    the band of every recipe page and in the tile of `/`)
+  - Since: #711
 
 - CAT-79: The card lists of `/guides/`, `/blog/`, `/stacks/` and
   `/recipes/` MUST span the main column, in two columns from 64rem and in
@@ -4118,11 +4137,12 @@ unused.
   of a card short (CAT-76). The catalog's cards (CAT-22) fill the column
   too.
 
-  - Test: none (`catalog/test_catalog.py`: the lists' rule of two
-    columns from 64rem and one below, with no width limit on the lists;
-    the script of AC-50: two cards side by side in each of these lists at
-    1440 px, one at 375 px)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Site.test_card_lists_span_the_column`: the lists' rule of two
+    columns from 64rem and one below, with no width limit on the lists);
+    `catalog/browser.mjs` through `InChrome.test_rendered_pages`: two
+    cards side by side in each of these lists at 1440 px, one at 375 px
+  - Since: #711
 
 - AC-50 (CAT-9h, CAT-54, CAT-59, CAT-71, CAT-71a, CAT-72, CAT-73,
   CAT-76, CAT-79): the implementation pull request adds a script that
@@ -4533,11 +4553,13 @@ CAT-64, CAT-67d, CAT-67h, CON-1, CON-2.
   103 characters with its hang; the longest of the Verify panel is the
   same flag, 101 characters. A folded command still runs as typed.
 
-  - Test: none (`catalog/test_catalog.py`: every command of those panels
-    longer than 100 characters so counted is folded, each flag on one
-    line with its value, and its lines joined give the command of the
-    recording or of CAT-2)
-  - Since: not implemented
+  - Test: `catalog/test_catalog.py`
+    (`Harbour.test_long_commands_are_folded_at_their_flags`,
+    `Site.test_verify_command_is_folded_at_its_flags`: every command of
+    those panels longer than 100 characters so counted is folded, each
+    flag on one line with its value, and its lines joined give the
+    command of the recording or of CAT-2)
+  - Since: #711
 
 - CAT-66o: The figure's note MUST name every change the panels make to
   the recorded lines.

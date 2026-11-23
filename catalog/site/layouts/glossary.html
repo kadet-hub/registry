@@ -1,9 +1,14 @@
 {{ define "main" }}
 {{ $owner := site.Data.catalog.owner }}
 {{ $docs := printf "https://github.com/%s/registry/blob/main/" $owner }}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    <p class="lead">kadet-hub lists generators for <a href="https://kapitan.dev/">Kapitan</a>. These are the terms the catalog uses.</p>
+  </div>
+  {{ partial "spot.html" "gauge" }}
+</header>
 <section class="prose-page">
-<h1>{{ .Title }}</h1>
-<p class="lead">kadet-hub lists generators for <a href="https://kapitan.dev/">Kapitan</a>. These are the terms the catalog uses.</p>
 <dl class="glossary">
 {{- range $t := .Params.terms }}{{/* CAT-13a */}}
   <dt id="{{ .id }}">{{ .name }}</dt>

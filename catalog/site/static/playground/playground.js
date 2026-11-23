@@ -118,7 +118,7 @@ function showTarget() {
   const warning = $("pg-prov-warning");
   const differs = prov.error ? [] : t.mismatches.map((p) => p.join("."));
   warning.hidden = !prov.error && !differs.length;
-  warning.textContent = prov.error ? `The playground could not trace where the values come from: ${prov.error}`
+  $("pg-prov-warning-text").textContent = prov.error ? `The playground could not trace where the values come from: ${prov.error}`
     : `The trace differs from Kapitan's merged inventory at ${differs.join(", ")}, so the sources shown there can be wrong.`;
   if (prov.error) {
     $("pg-classes").replaceChildren();

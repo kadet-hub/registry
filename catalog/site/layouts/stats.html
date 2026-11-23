@@ -2,8 +2,14 @@
 {{/* CAT-33: counts only; of the gate comments, the verdict, the kind of entry and requirement IDs. No visitor numbers (CAT-25). */}}
 {{ $s := site.Data.catalog.stats }}
 {{ $registry := printf "https://github.com/%s/registry" site.Data.catalog.owner }}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p class="lead">{{ . }}</p>{{ end }}
+  </div>
+  {{ partial "spot.html" "gauge" }}
+</header>
 <section class="prose-page prose">
-<h1>{{ .Title }}</h1>
 {{ .Content }}
 <p>Built <time datetime="{{ now.UTC.Format "2006-01-02T15:04:05Z" }}">{{ now.UTC.Format "2006-01-02 15:04 UTC" }}</time> from index serial {{ site.Data.catalog.serial }}, the generators' package pages on GitHub and the gate's comments on the <a href="{{ $registry }}/pulls">registry's pull requests</a>.</p>
 

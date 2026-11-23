@@ -2,11 +2,12 @@
 {{ with .v }}
 <dl class="details">
   {{ range partial "compat.html" . }}<dt>{{ .label }}</dt><dd>{{ .html }}</dd>
-  {{ end }}<dt>Source</dt><dd>{{ .source.tag }} · <code>{{ .source.sha }}</code>{{ if ne .source.path "." }} · {{ .source.path }}{{ end }}</dd>
+  {{ end }}<dt>Source</dt><dd>{{ .source.tag }}{{ if ne .source.path "." }} · {{ .source.path }}{{ end }}</dd>
+  <dt class="row">Source commit</dt><dd class="row">{{ partial "digest.html" .source.sha }}</dd>
   <dt>Binaries</dt><dd>{{ with .binaries }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
   <dt>Output capabilities</dt><dd>{{ with .output_capabilities }}{{ delimit . ", " }}{{ else }}none{{ end }}</dd>
   {{ with .unparsed_outputs }}<dt>Unparsed outputs</dt><dd>{{ delimit . ", " }}</dd>{{ end }}
   {{ with .charts }}<dt>Charts</dt><dd>{{ range . }}{{ .name }} {{ .version }} ({{ .repo }}) {{ end }}</dd>{{ end }}
-  <dt>Digest</dt><dd><code>{{ .digest }}</code></dd>
+  <dt class="row">Digest</dt><dd class="row">{{ partial "digest.html" .digest }}</dd>
 </dl>
 {{ end }}

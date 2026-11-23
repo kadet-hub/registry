@@ -5,7 +5,7 @@
 {{ else }}
 <p>Fixture output against <a href="#v{{ .base }}">{{ .base }}</a>: {{ .files }} file{{ if ne .files 1 }}s{{ end }}, {{ .hunks }} hunk{{ if ne .hunks 1 }}s{{ end }}.</p>
 {{ with $.v.diff }}
-{{ with .text }}<pre class="diff"><code>{{ . }}</code></pre>{{ end }}
+{{ with .text }}<div class="diff-wrap"><pre class="diff"><code>{{ . }}</code></pre></div>{{ end }}
 {{ with .more }}<p class="note">Truncated after 150 lines; {{ . }} more in the download.</p>{{ end }}
 <p><a class="button small-button" href="{{ printf "/generators/%s/%s.output.diff" $.name $.v.version | relURL }}" download><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>Output diff</a></p>
 {{ else }}

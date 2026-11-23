@@ -32,5 +32,8 @@ jobs:
 
       - uses: ./.github/actions/setup-hugo # zizmor: ignore[self-repository] actionlint 1.7.12 rejects $/; the workspace is the main checkout
 
+      - name: playwright-core for the rendered checks (AC-50)
+        run: npm ci --prefix catalog/playground --ignore-scripts --no-audit --no-fund
+
       - name: Unit tests
         run: python3 -m unittest discover -s catalog -v

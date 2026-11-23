@@ -1,32 +1,36 @@
-// CAT-35: using a generator. Rendered with Graphviz 14.1.4; ./render regenerates consuming.svg.
+// CAT-35: using a generator. Rendered with Graphviz 16.1.1; ./render sets the look the six diagrams share and regenerates consuming.svg.
 digraph consuming {
-  bgcolor=transparent; nodesep=0.3; ranksep=0.28;
-  fontname="Helvetica,Arial,sans-serif"; fontsize=12; labeljust=l;
-  node [shape=box style=rounded fontname="Helvetica,Arial,sans-serif" fontsize=12 margin="0.12,0.05"];
-  edge [fontname="Helvetica,Arial,sans-serif" fontsize=11 arrowsize=0.7];
-
+  node [group="flow"];
   renovate [label="Renovate preset:\nnew tag and digest"];
   entry [label="Inventory pins\nname:version@sha256:…"];
-  renovate -> entry [label="pull request"];
+  renovate -> entry [label="   pull request   "];
   ci [label="Consumer CI calls\nconsumer.yml by commit"];
   entry -> ci;
 
   subgraph cluster_workflow {
-    label="consumer.yml";
+    label="consumer.yml"; labeljust=r;
     inventory [label="1 kapitan inventory\nin the sandbox"];
     deps [label="2 Dependencies against\nthe policy and the index"];
-    fetch [label="3 Verify attestation,\nfetch by digest"];
+    fetch [label="3 Verify attestation,\nfetch by digest" class="ok"];
     compile [label="4 Compile in the\nsandbox, output rules"];
     upload [label="5 Upload the\ncompiled output"];
     inventory -> deps -> fetch -> compile -> upload;
+
+    // one line collects the failure of every step and leaves the workflow at its end
+    node [group="fails" shape=point width=0.05 class="fail"];
+    edge [class="fail" style=dashed arrowhead=none weight=5];
+    {rank=same; inventory -> f1}
+    {rank=same; deps -> f2}
+    {rank=same; fetch -> f3}
+    {rank=same; compile -> f4}
+    {rank=same; upload; out [style=invis width=0]}
+    f1 -> f2 -> f3 -> f4;
+    f4 -> out [label="   fails   "];
   }
   ci -> inventory;
 
-  failed [label="CI fails" class="fail" style="rounded,dashed"];
-  inventory -> failed [label="fails" class="fail" style=dashed];
-  deps -> failed [label="fails" class="fail" style=dashed];
-  fetch -> failed [label="fails" class="fail" style=dashed];
-  compile -> failed [label="fails" class="fail" style=dashed];
+  failed [label="CI fails" group="fails" class="fail" style="rounded,dashed"];
+  out -> failed [class="fail" style=dashed];
 
   apply [label="Review the output,\nthen apply"];
   upload -> apply;

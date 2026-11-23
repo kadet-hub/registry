@@ -1,8 +1,14 @@
 {{ define "main" }}
 {{/* CAT-31, CAT-41: open generator and recipe requests; the title is the only text taken from an issue. */}}
 {{ $owner := site.Data.catalog.owner }}
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p class="lead">{{ . }}</p>{{ end }}
+  </div>
+  {{ partial "spot.html" "bollard" }}
+</header>
 <section class="prose-page prose">
-<h1>{{ .Title }}</h1>
 {{ .Content }}
 {{ range slice (dict "heading" "Generators" "repo" "registry" "label" "generator-request" "what" "generator" "list" site.Data.catalog.wanted)
                (dict "heading" "Recipes" "repo" "recipes" "label" "recipe-request" "what" "recipe" "list" site.Data.catalog.wanted_recipes) }}

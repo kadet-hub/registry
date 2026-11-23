@@ -1,6 +1,40 @@
 #!/usr/bin/env bash
-# Render every diagram (CAT-35a): <name>.dot to <name>.svg with Graphviz dot,
-# output unchanged. Update the version in each .dot when dot -V changes.
+# Render every diagram (CAT-35a): <name>.dot to <name>.svg with Graphviz dot. The look the six share stands here once;
+# a .dot holds its nodes, edges and classes. style.css colours the classes, so the SVG carries no colour of its own.
+#
+# dot measures the labels in Manrope Medium, the face the page draws them in, so every box fits its text. Pango reads
+# no WOFF2, so the run takes the TTF the site's WOFF2 was cut from: $MANROPE_TTF, or the pinned upstream file. Either
+# is checked against its SHA-256, and fontconfig sees it for this run only. Update the version in each .dot when
+# dot -V changes.
+#
+# What keeps text off lines is written in the .dot files, because dot has no setting for it. An edge label carries three
+# spaces on either side: dot reserves the label's box next to the edge, and the spaces are the gap. Nodes of one flow
+# share a group, which keeps the flow straight. Where several steps fail into one outcome, each step has a point on
+# its rank, the points form one dashed line, and that line carries the label once. A cluster's label stands on the
+# side where no edge enters the cluster.
 set -euo pipefail
 cd -- "$(dirname -- "$0")"
-for f in *.dot; do dot -Tsvg -o "${f%.dot}.svg" "$f"; done
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir "$tmp/font"
+if [ -n "${MANROPE_TTF:-}" ]; then
+  cp -- "$MANROPE_TTF" "$tmp/font/Manrope.ttf"
+else
+  curl -fsSL -o "$tmp/font/Manrope.ttf" \
+    'https://raw.githubusercontent.com/googlefonts/manrope/468c0dbe38efa331b80bfe9448256abe27be44c3/fonts/variable/Manrope%5Bwght%5D.ttf'
+fi
+echo "3ae11c49db0455a3cc33e37d380f20fdb8c7f8b41dc07625c177e3d87a9d6ae6  $tmp/font/Manrope.ttf" | sha256sum --check --quiet
+printf '<?xml version="1.0"?>\n<fontconfig><dir>%s</dir><cachedir>%s</cachedir></fontconfig>\n' "$tmp/font" "$tmp/cache" > "$tmp/fonts.conf"
+export FONTCONFIG_FILE="$tmp/fonts.conf"
+
+font="Manrope Medium"
+shared=(
+  -Gbgcolor=transparent -Gnodesep=0.2 -Granksep=0.28 -Glabeljust=l -Gstyle=rounded -Gpenwidth=1.5 -Gfontname="$font" -Gfontsize=12
+  -Nshape=box -Nstyle=rounded "-Nmargin=0.1,0.05" -Npenwidth=1.5 -Nfontname="$font" -Nfontsize=12
+  -Earrowsize=0.7 -Epenwidth=1.5 -Efontname="$font" -Efontsize=12
+)
+for f in *.dot; do
+  dot -v "${shared[@]}" -Tsvg -o "${f%.dot}.svg" "$f" 2> "$tmp/log" || { cat "$tmp/log" >&2; exit 1; }
+  # Without the font dot falls back to another face without failing, and the boxes no longer fit.
+  grep -q 'resolved to: (PangoCairoFcFont) "Manrope, Medium"' "$tmp/log" || { echo "$f: dot did not measure with $font" >&2; exit 1; }
+done

@@ -1,0 +1,3 @@
+{{/* A whole digest or commit id in two halves: on one line where both fit, under each other where not, never broken elsewhere. Argument: the value. */}}
+{{- $sha := hasPrefix . "sha256:" }}{{ $h := strings.TrimPrefix "sha256:" . }}{{ $n := div (len $h) 2 -}}
+<code class="digest{{ if $sha }} sha{{ end }}"><span>{{ if $sha }}sha256:{{ end }}{{ substr $h 0 $n }}</span><span>{{ substr $h $n }}</span></code>{{- /* no line break after it, so it stands inline */ -}}
