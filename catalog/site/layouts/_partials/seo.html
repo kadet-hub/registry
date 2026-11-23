@@ -19,7 +19,10 @@
 {{- with $g -}}
   {{- $title = printf "%s · Kapitan generator · kadet-hub" .name -}}
   {{- if gt (len $title) 65 }}{{ $title = printf "%s · Kapitan generator" .name }}{{ end -}}
-  {{- with cond (in .tags "kubernetes") "Kubernetes manifests" (cond (in .tags "terraform") "Terraform JSON" "") -}}{{/* CAT-11: the output the tag's gate evidence checks */}}
+  {{- $out := cond (in .tags "kubernetes") "Kubernetes manifests" (cond (in .tags "terraform") "Terraform JSON" "") -}}{{/* CAT-11: the output the tag's gate evidence checks */}}
+  {{- if and $out (in .tags "clusters") }}{{ $out = "cluster config" }}{{/* CAT-11: kind, k3d, talos write a cluster */}}
+  {{- else if and (in .tags "kubernetes") (strings.Contains (lower .name) "kubernetes") }}{{ $out = "manifests" }}{{ end -}}
+  {{- with $out -}}
     {{- $t := printf "%s %s from a Kapitan generator" $g.name . -}}
     {{- if gt (len $t) 65 }}{{ $t = printf "%s %s from Kapitan" $g.name . }}{{ end -}}
     {{- if le (len $t) 65 }}{{ $title = $t }}{{ end -}}

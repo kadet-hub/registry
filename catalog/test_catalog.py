@@ -2516,7 +2516,7 @@ class Site(unittest.TestCase):
     def test_generator_titles_name_the_output(self):  # CAT-11: the output its tags vouch for, shortened to stay within 65
         long = "long-" + "n" * 34  # the 39 characters REG-2 allows
         tags = {"cloudnative-pg": ("kubernetes", "operators"), "opentelemetry-operator": ("kubernetes",), long: ("kubernetes",),
-                "terraform-aws": ("terraform",), "ab": ()}
+                "terraform-aws": ("terraform",), "ab": (), "kind": ("kubernetes", "clusters"), "kubernetes": ("kubernetes",)}
         with tempfile.TemporaryDirectory() as tmp:
             out = build({"serial": 1, "generators": {n: {"1.0.0": record("a", tags=t)} for n, t in tags.items()}}, tmp)
             result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True, check=False)
@@ -2529,7 +2529,9 @@ class Site(unittest.TestCase):
                                  "opentelemetry-operator": "opentelemetry-operator Kubernetes manifests from Kapitan",
                                  long: f"{long} · Kapitan generator",
                                  "terraform-aws": "terraform-aws Terraform JSON from a Kapitan generator",
-                                 "ab": "ab · Kapitan generator · kadet-hub"})
+                                 "ab": "ab · Kapitan generator · kadet-hub",
+                                 "kind": "kind cluster config from a Kapitan generator",  # a cluster, not workloads
+                                 "kubernetes": "kubernetes manifests from a Kapitan generator"})  # not "kubernetes Kubernetes"
 
     def test_seo_check_finds_violations(self):
         with tempfile.TemporaryDirectory() as tmp:
