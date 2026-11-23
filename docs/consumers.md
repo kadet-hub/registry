@@ -497,6 +497,10 @@ that check; the signed records are in `index.json` (see Verifying by hand).
 
 ## Verifying by hand
 
+The genuine site is kadet-hub.org and the genuine artifacts are under
+`ghcr.io/kadet-hub`. Check them by their attestation, not by the look of a
+page: a copy of the site can wear the same look.
+
 ```sh
 digest=$(oras resolve ghcr.io/kadet-hub/index:latest)
 gh attestation verify "oci://ghcr.io/kadet-hub/index@$digest" --owner kadet-hub \

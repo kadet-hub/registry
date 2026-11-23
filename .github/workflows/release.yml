@@ -382,6 +382,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           OWNER: ${{ github.repository_owner }}
+          CATALOG_RECORDED_PINS: required # CAT-66f
         run: catalog/build "$RUNNER_TEMP/index/index.json" "$RUNNER_TEMP/site"
 
       - name: Check the built site (CAT-11d)

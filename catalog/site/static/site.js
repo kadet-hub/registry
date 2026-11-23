@@ -1,5 +1,5 @@
-// Theme toggle, the menu (CAT-9a), copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), the recipe finder (CAT-37i), and the home page's
-// search, tag filter and sort (CAT-8 to CAT-10, CAT-9a). No markup is built from data.
+// Theme toggle, the counter on pages with a query (CAT-25a), the menu (CAT-9a) and the "Reference" disclosure (CAT-63a), the listing steps (CAT-62a), the harbour figure and the live edit of the start page, copy buttons, the version selector (CAT-34), sharing a post (CAT-36d), the recipe finder (CAT-37i), and the catalog's
+// search, tag filter and sort at /generators/ (CAT-8 to CAT-10, CAT-9a, CAT-67b). No markup is built from data.
 const root = document.documentElement;
 const announce = (text) => { document.getElementById("announce").textContent = text; };
 
@@ -25,8 +25,29 @@ const setMenu = (open) => {
 menuButton.hidden = false;
 setMenu(false);
 menuButton.addEventListener("click", () => setMenu(header.dataset.menu === "closed"));
+// CAT-63a: the open "Reference" disclosure closes on Escape, before the menu around it, and when focus leaves it.
+const reference = header.querySelector(".reference");
 header.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && header.dataset.menu === "open") { setMenu(false); menuButton.focus(); }
+  if (e.key !== "Escape") return;
+  if (reference.open) { reference.open = false; reference.querySelector("summary").focus(); }
+  else if (header.dataset.menu === "open") { setMenu(false); menuButton.focus(); }
+});
+reference.addEventListener("focusout", (e) => { if (!reference.contains(e.relatedTarget)) reference.open = false; });
+
+// CAT-25a: count.js sends location.search with every count, so on a page whose URL can carry a query (no_onload) the view
+// is counted here at a moment the URL holds none: the URL is replaced by its path, counted, and the query put back.
+// count.js stands after this script and loads async, so it may have run or not by the time the document is parsed.
+addEventListener("DOMContentLoaded", () => {
+  const counter = document.querySelector("script[data-goatcounter-settings]");
+  if (!counter) return;
+  const count = () => {
+    const query = location.search;
+    history.replaceState(history.state, "", location.pathname + location.hash);
+    window.goatcounter.count();
+    history.replaceState(history.state, "", location.pathname + query + location.hash);
+  };
+  if (window.goatcounter?.count) count();
+  else counter.addEventListener("load", count);
 });
 
 // Version permalinks (CAT-17): open the version a #v<version> link points to.
@@ -39,6 +60,162 @@ function openVersion() {
 }
 addEventListener("hashchange", openVersion);
 openVersion();
+
+// CAT-62a: below 48rem the start page's listing steps are collapsed under their heading.
+// It follows the breakpoint when a phone rotates or a window resizes, as the stylesheet does.
+const route = document.querySelector(".route");
+if (route) {
+  const wide = matchMedia("(min-width: 48rem)");
+  const follow = () => { route.open = wide.matches; };
+  follow();
+  wide.addEventListener("change", follow);
+}
+
+// The harbour figure. With motion allowed, the five stations become tabs over one panel and a station in the drawing selects
+// its tab. The run plays once when the drawing has come into view, each station for as long as its own motion takes, and stops
+// on Pause, when the pointer moves over a station or when focus enters the tabs (WCAG 2.2.2). Until it starts nothing moves.
+// Without JavaScript or with reduced motion the stations stay listed.
+const harbour = document.querySelector(".harbour");
+if (harbour && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const panels = [...harbour.querySelectorAll(".station")];
+  const tablist = harbour.querySelector(".station-tabs");
+  const tabs = [...tablist.children];
+  const marks = [...harbour.querySelectorAll(".scene [data-station]")];
+  const play = harbour.querySelector(".scene-play");
+  const frame = harbour.querySelector(".scene-frame");
+  const whole = harbour.querySelector(".scene-whole");
+  let at = 0;
+  let timer = null;
+  // The selected station runs its motion; what the earlier stations did stays done, and the later ones have not happened.
+  // The frame names the station too: the truck's rules and, below 48rem, the drawing's window hang on it.
+  const mark = (n) => {
+    for (const m of marks) {
+      m.classList.toggle("on", Number(m.dataset.station) === n);
+      m.classList.toggle("done", Number(m.dataset.station) < n);
+    }
+    frame.dataset.at = n;
+  };
+  const show = (n) => {
+    at = n;
+    panels.forEach((p, i) => p.classList.toggle("on", i + 1 === n));
+    tabs.forEach((t, i) => {
+      t.setAttribute("aria-selected", String(i + 1 === n));
+      t.tabIndex = i + 1 === n ? 0 : -1;
+    });
+    mark(n);
+  };
+  // Runs the selected station's motion once more: without its marks for one style pass, the animations start anew.
+  const replay = () => { mark(0); void frame.offsetWidth; mark(at); };
+  const stop = () => { clearTimeout(timer); timer = null; play.textContent = "Play"; };
+  // Each station stays for as long as its own motion takes (data-ms); after the last one the run is over.
+  const step = () => {
+    timer = setTimeout(() => {
+      if (at === panels.length) return stop();
+      show(at + 1);
+      step();
+    }, Number(panels[at - 1].dataset.ms));
+  };
+  const start = () => {
+    harbour.classList.remove("idle");
+    if (at === panels.length) show(1);
+    else replay(); // the run starts with the motion of the station it stands on
+    play.textContent = "Pause";
+    step();
+  };
+  const go = (n) => { harbour.classList.remove("idle"); stop(); show(n); };
+
+  tablist.setAttribute("role", "tablist");
+  harbour.querySelector(".stations").setAttribute("role", "presentation");
+  tabs.forEach((t, i) => {
+    t.setAttribute("role", "tab");
+    t.id = `station-tab-${i + 1}`;
+    t.setAttribute("aria-controls", panels[i].id);
+    panels[i].setAttribute("role", "tabpanel");
+    panels[i].setAttribute("aria-labelledby", t.id);
+    t.addEventListener("click", () => go(i + 1));
+  });
+  // Tabs with automatic activation: the arrow keys move the focus, and the focused tab is the selected one.
+  tablist.addEventListener("focusin", (e) => { const i = tabs.indexOf(e.target.closest(".station-tab")); if (i >= 0 && (timer || i + 1 !== at)) go(i + 1); });
+  tablist.addEventListener("keydown", (e) => {
+    const to = { ArrowRight: at % tabs.length, ArrowLeft: (at + tabs.length - 2) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    tabs[to].focus();
+  });
+  // A station's parts lie inside each other (the cargo on the ship), so the innermost one under the pointer decides.
+  harbour.querySelector(".scene-window").addEventListener("click", (e) => { const m = e.target.closest("[data-station]"); if (m) go(Number(m.dataset.station)); });
+  // A pointer that rests where the figure scrolls in does not count; one that moves over a station does.
+  harbour.addEventListener("pointermove", (e) => { if (timer && (e.movementX || e.movementY) && e.target.closest("[data-station], .station-tab")) stop(); });
+  play.addEventListener("click", () => (timer ? stop() : start()));
+
+  // Below 48rem the frame shows one station's window, and the tabs stand above it, so drawing and text share a view.
+  // The button opens the whole drawing and closes it again.
+  const narrow = matchMedia("(width < 48rem)");
+  const place = () => (narrow.matches ? frame.before(tablist) : frame.after(tablist));
+  place();
+  narrow.addEventListener("change", place);
+  whole.addEventListener("click", () => {
+    const open = frame.classList.toggle("whole");
+    whole.setAttribute("aria-expanded", String(open));
+    whole.textContent = open ? "Show one station" : "Show whole harbour";
+    if (!open) frame.scrollIntoView({ block: "nearest" });
+  });
+
+  harbour.classList.add("live", "idle");
+  play.hidden = false;
+  whole.hidden = false;
+  show(1);
+  // A terminal taller than its panel scrolls inside it: it takes the keyboard, and a button at its faded end names the lines left.
+  for (const pre of harbour.querySelectorAll(".term pre")) {
+    if (pre.scrollHeight <= pre.clientHeight + 4) continue;
+    const term = pre.parentElement;
+    const lines = [...pre.querySelectorAll(".ln, .fold")];
+    const more = document.createElement("div");
+    const button = document.createElement("button");
+    more.className = "term-more";
+    button.type = "button";
+    more.append(button);
+    term.append(more);
+    pre.tabIndex = 0;
+    pre.setAttribute("role", "group");
+    pre.setAttribute("aria-label", "Commands and output, scrolls");
+    const left = () => {
+      const edge = pre.scrollTop + pre.clientHeight;
+      const n = lines.filter((l) => l.offsetTop + l.offsetHeight > edge + 2).length;
+      term.classList.toggle("at-end", edge >= pre.scrollHeight - 4);
+      button.textContent = `${n} more line${n === 1 ? "" : "s"} ↓`;
+    };
+    button.addEventListener("click", () => pre.scrollBy({ top: pre.clientHeight * 0.8, behavior: "smooth" }));
+    pre.addEventListener("scroll", left, { passive: true });
+    left();
+  }
+  // The run starts once almost all of the drawing is in view, or once it fills a viewport that is shorter than itself.
+  const seen = new IntersectionObserver((entries) => {
+    const e = entries[entries.length - 1];
+    if (e.intersectionRatio >= 0.9 || e.intersectionRect.height >= innerHeight * 0.9) { seen.disconnect(); if (harbour.classList.contains("idle")) start(); }
+  }, { threshold: [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] });
+  seen.observe(frame.querySelector(".scene-window"));
+}
+
+// The live edit: the two values go into the marked places of the excerpts as text. Nothing is read from the URL, stored or sent.
+const liveEdit = document.querySelector(".live-edit");
+if (liveEdit) {
+  const bucket = liveEdit.querySelector("#le-bucket");
+  const region = liveEdit.querySelector("#le-region");
+  const put = (key, value) => { for (const m of liveEdit.querySelectorAll(`mark[data-le="${key}"]`)) m.textContent = value; };
+  // CAT-68d: the field's pattern, compiled as the browser compiles it, so a value fits exactly when the field is valid.
+  const pattern = new RegExp(`^(?:${bucket.pattern})$`, "v");
+  const fits = (v) => pattern.test(v);
+  const regions = [...region.options].map((o) => o.value);
+  for (const line of liveEdit.querySelectorAll(".le-static")) line.hidden = true;
+  liveEdit.querySelector(".le-fields").hidden = false;
+  bucket.addEventListener("input", () => {
+    const ok = fits(bucket.value);
+    bucket.setAttribute("aria-invalid", String(!ok));
+    if (ok) put("bucket", bucket.value);
+  });
+  region.addEventListener("change", () => { if (regions.includes(region.value)) put("region", region.value); });
+}
 
 // CAT-19: the table of contents is collapsed on narrow screens and marks the section in view.
 const toc = document.querySelector(".toc details");
@@ -65,6 +242,20 @@ if (toc) {
     const el = document.getElementById(id);
     if (el) observer.observe(el);
   }
+}
+
+// Code keeps its lines. A block wider than its box scrolls sideways: it takes the keyboard, and a shade stands at its
+// right edge while more follows there.
+const wide = new ResizeObserver((entries) => { for (const e of entries) markWide(e.target); });
+function markWide(pre) {
+  const over = pre.scrollWidth > pre.clientWidth + 1;
+  pre.classList.toggle("scroll-x", over);
+  pre.classList.toggle("more-x", over && pre.scrollWidth - pre.clientWidth - pre.scrollLeft > 1);
+  if (over && !pre.hasAttribute("tabindex")) pre.tabIndex = 0;
+}
+for (const pre of document.querySelectorAll("pre")) {
+  wide.observe(pre);
+  pre.addEventListener("scroll", () => markWide(pre), { passive: true });
 }
 
 // Copy buttons
@@ -186,7 +377,7 @@ if (recipeSearch) {
   apply();
 }
 
-// Home page
+// The catalog at /generators/; the start page's search sends ?q= here (CAT-67b).
 const search = document.getElementById("search");
 if (search) {
   const list = document.querySelector(".cards");

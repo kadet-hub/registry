@@ -1,18 +1,15 @@
-{{/* One generator card; used by the home page, the tag and the kind pages (CAT-18, CAT-22, CAT-29); the search text has the kinds (CAT-29a) and the Built for software (CAT-29e). */}}
+{{/* One generator card; used by the catalog, the tag and the kind pages (CAT-18, CAT-22, CAT-29); the search text has the kinds (CAT-29a) and the Built for software (CAT-29e). */}}
 <li class="card" data-text="{{ lower (printf "%s %s" .name .description) }}{{ range .kinds }} {{ lower . }}{{ end }}{{ with .latest }}{{ with .compatibility }}{{ $sw := slice }}{{ range . }}{{ $sw = $sw | append (lower .software) }}{{ end }}{{ range uniq $sw }} {{ . }}{{ end }}{{ end }}{{ end }}" data-tags="{{ delimit .tags " " }}" data-name="{{ .name }}" data-published="{{ with .latest }}{{ .published }}{{ end }}" data-popularity="{{ .score }}">
   <div class="card-head">
-    <span class="tile hue-{{ .hue }}" aria-hidden="true">{{ with .tags }}<svg class="icon"><use href="#i-tag-{{ index . 0 }}"/></svg>{{ else }}{{ $.monogram }}{{ end }}</span>
-    <div>
+    {{ partial "cube.html" (.tags | default slice) }}
+    <div class="card-title">
       <p class="card-name"><a class="stretched" href="{{ printf "/generators/%s/" .name | relURL }}">{{ .name }}</a></p>
-      <p class="meta-line">{{ with .latest }}{{ .version }}{{ with .published }} · <time datetime="{{ . }}">{{ substr . 0 10 }}</time>{{ end }}{{ end }}</p>
+      <p class="card-by">by {{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</p>
     </div>
+    {{ with .latest }}<span class="ver">{{ .version }}</span>{{ end }}
   </div>
   <p class="description">{{ .description }}</p>
   {{ with .tags }}<p class="tags">{{ range . }}<a class="tag" href="{{ printf "/tags/%s/" . | relURL }}">{{ . }}</a>{{ end }}</p>{{ end }}
-  <dl class="facts">
-    <div><dt>Built for</dt>{{ with .latest }}{{ with .compatibility }}<dd class="built-for">{{ range . }}<span>{{ .software }} {{ .version }}</span>{{ end }}</dd>{{ else }}<dd>not recorded</dd>{{ end }}{{ else }}<dd>not recorded</dd>{{ end }}</div>
-    <div><dt>{{ if gt (len .owners) 1 }}Maintainers{{ else }}Maintainer{{ end }}</dt><dd>{{ range $i, $o := .owners }}{{ if $i }}, {{ end }}{{ with $o.login }}{{ . }}{{ else }}{{ $o.id }}{{ end }}{{ end }}</dd></div>
-    <div><dt>Popularity</dt><dd><a class="fact-link" href="{{ printf "/popularity/#%s" .name | relURL }}">{{ .score }}</a></dd></div>
-    <div><dt>Scanned</dt><dd>{{ with .latest }}{{ with .scan }}{{ substr .at 0 10 }}{{ else }}not scanned{{ end }}{{ else }}not scanned{{ end }}</dd></div>
-  </dl>
+  <p class="card-built">{{ with .latest }}{{ with .compatibility }}<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Built for{{ range . }} <span class="built-chip">{{ .software }} {{ .version }}</span>{{ end }}{{ else }}<span class="muted">Built for: not recorded</span>{{ end }}{{ else }}<span class="muted">Built for: not recorded</span>{{ end }}</p>
+  <p class="card-foot">{{ with .latest }}{{ with .published }}<span>Published <time datetime="{{ . }}">{{ substr . 0 10 }}</time></span>{{ end }}<span>{{ with .scan }}Scanned {{ substr .at 0 10 }}{{ else }}Not scanned{{ end }}</span>{{ end }}<a class="fact-link" href="{{ printf "/popularity/#%s" .name | relURL }}">Popularity {{ .score }}</a></p>
 </li>
