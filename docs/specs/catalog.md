@@ -273,7 +273,13 @@ remembered in the browser's `localStorage`.
   its tags: `<name> Kubernetes manifests from a Kapitan generator` for a
   generator tagged `kubernetes`, `<name> Terraform JSON from a Kapitan
   generator` for one tagged `terraform`. These are the outputs the gate
-  checks as evidence for the two tags (CAT-13). Over 65 characters the
+  checks as evidence for the two tags (CAT-13). A generator also tagged
+  `clusters`, such as kind, k3d and talos, writes the configuration of a
+  cluster rather than workloads, so its title reads `<name> cluster
+  config from a Kapitan generator`. A name that already contains
+  "kubernetes" drops the word from the output, `<name> manifests from a
+  Kapitan generator`, because "kubernetes Kubernetes manifests" repeats
+  it. Over 65 characters the
   title ends in "from Kapitan" instead, as for opentelemetry-operator. A
   generator with neither tag, or a name too long for both forms, keeps
   `<name> · Kapitan generator · kadet-hub` or, shorter,
