@@ -88,6 +88,7 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          set -o pipefail # a failed issue search must not open a duplicate issue
           python3 scan/rescan_issues.py findings/findings.tsv "$RUN_URL" >issues.json
           jq -c '.[]' issues.json | while IFS= read -r issue; do
             title=$(jq -r .title <<<"$issue")

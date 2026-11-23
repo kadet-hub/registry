@@ -142,7 +142,7 @@ done
 backend=${backends[0]}
 echo "### backend $backend with CI set"
 compile "$work/out-ci" --env CI=true --env GITHUB_ACTIONS=true --env GITLAB_CI=true
-if ! (cd -- "$work" && diff -r -- "out-$backend" out-ci) >"$work/ci.diff"; then
+if ! (cd -- "$work" && diff -r --no-dereference -- "out-$backend" out-ci) >"$work/ci.diff"; then
   echo "CMP-2: output differs with CI set:"
   head -n 20 -- "$work/ci.diff"
   status=1
@@ -154,7 +154,7 @@ for backend in "${backends[@]}"; do
   mkdir -- "$work/out-cache-$backend"
   "$here/run" "${allow[@]}" --result "$work/out-cache-$backend" "$work/project" \
     compile --output-path /out --inventory-backend "$backend" --cache || status=1
-  if ! (cd -- "$work" && diff -r -- "out-$backend" "out-cache-$backend") >"$work/cache.diff"; then
+  if ! (cd -- "$work" && diff -r --no-dereference -- "out-$backend" "out-cache-$backend") >"$work/cache.diff"; then
     echo "CMP-5: output differs with --cache on $backend:"
     head -n 20 -- "$work/cache.diff"
     status=1
@@ -170,7 +170,7 @@ rc=0
 ((rc != 1)) || status=1
 sec12 "$work/out-krab"
 krab=incompatible
-if ((rc == 0)) && diff -r -x .krab-manifest.json -- "$work/out-${backends[0]}" "$work/out-krab" >/dev/null; then
+if ((rc == 0)) && diff -r --no-dereference -x .krab-manifest.json -- "$work/out-${backends[0]}" "$work/out-krab" >/dev/null; then
   krab=compatible
 fi
 echo "CMP-4: krab $krab"
