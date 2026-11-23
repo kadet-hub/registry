@@ -55,8 +55,16 @@ Recipe entries `recipes/<name>.yaml` have the same shape; REC-1 to REC-3 in
 
 - REG-1: An entry MUST pin `source.sha` to a full commit SHA, and the gate MUST
   fail when `source.tag` does not resolve to that SHA.
-  - Test: none (partial: `gate/run` checks it; no sample yet)
-  - Since: #8
+
+  The tag is matched by its exact ref name. `git ls-remote` matches its
+  patterns against the end of each ref name, so `refs/tags/v1.2.3` also
+  returns `refs/tags/x/refs/tags/v1.2.3`, a tag the source repository can
+  point at any commit. `gate/run` and the rescan (SEC-16) take the peeled
+  `refs/tags/<tag>^{}` line, or the `refs/tags/<tag>` line of a
+  lightweight tag, and ignore every other line.
+
+  - Test: none (partial: `gate/run` checks it; no sample yet; the same resolution in `scan/test_rescan.py::Rescan.test_tag_matched_by_exact_ref_name`)
+  - Since: #8; exact ref name: this change
 
 - REG-2: `name` MUST match `^[a-z][a-z0-9-]{1,38}$`, MUST equal the entry's
   file name and MUST NOT be on `policy/reserved-names.txt`.
