@@ -2513,6 +2513,24 @@ class Site(unittest.TestCase):
         self.assertNotIn("<", ld)
         self.assertEqual(json.loads(ld)["description"], "<script>alert(1)</script>")
 
+    def test_generator_titles_name_the_output(self):  # CAT-11: the output its tags vouch for, shortened to stay within 65
+        long = "long-" + "n" * 34  # the 39 characters REG-2 allows
+        tags = {"cloudnative-pg": ("kubernetes", "operators"), "opentelemetry-operator": ("kubernetes",), long: ("kubernetes",),
+                "terraform-aws": ("terraform",), "ab": ()}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = build({"serial": 1, "generators": {n: {"1.0.0": record("a", tags=t)} for n, t in tags.items()}}, tmp)
+            result = subprocess.run([sys.executable, "-I", SEO_CHECK, out], capture_output=True, text=True, check=False)
+            found = {}
+            for name in tags:
+                with open(os.path.join(out, "generators", name, "index.html"), encoding="utf-8") as f:
+                    found[name] = _unescape(re.search(r"<title>([^<]*)</title>", f.read()).group(1))
+        self.assertEqual((result.returncode, result.stdout), (0, ""))  # CAT-11d
+        self.assertEqual(found, {"cloudnative-pg": "cloudnative-pg Kubernetes manifests from a Kapitan generator",
+                                 "opentelemetry-operator": "opentelemetry-operator Kubernetes manifests from Kapitan",
+                                 long: f"{long} · Kapitan generator",
+                                 "terraform-aws": "terraform-aws Terraform JSON from a Kapitan generator",
+                                 "ab": "ab · Kapitan generator · kadet-hub"})
+
     def test_seo_check_finds_violations(self):
         with tempfile.TemporaryDirectory() as tmp:
             arts = os.path.join(tmp, "artifacts")
