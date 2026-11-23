@@ -522,6 +522,22 @@ remembered in the browser's `localStorage`.
     against the text
   - Since: #651
 
+
+- CAT-11o: A guide or post whose title or description contains a query
+  from the table of CAT-11f MUST link to a page that row names, unless it
+  is that page.
+
+  CAT-11f gives each query one page and asks the others on the topic to
+  link to it instead of competing with it. This makes that sentence a
+  check. A row's pages are its guides and posts by title and its
+  `/recipes/<name>/` paths; a link to any of them counts. Only queries of
+  two or more words count, because a row such as "postgres, redis, ...
+  helm chart without bitnami" splits at its commas into single words. A
+  row that names "the matching" recipe names no fixed page and is left
+  out. On 2026-11-23 all 54 guides and posts met it.
+
+  - Test: `catalog/test_catalog.py` (`test_query_owners_linked`)
+  - Since: #724
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
 

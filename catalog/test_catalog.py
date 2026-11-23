@@ -714,6 +714,25 @@ def title_queries():
     return found
 
 
+def query_rows():
+    """CAT-11o: per row of the CAT-11f table its queries and the pages it names, guides and posts by title, recipes by path."""
+    with open(os.path.join(HERE, "..", "docs", "specs", "catalog.md"), encoding="utf-8") as f:
+        table = f.read().split("\n- CAT-11f:", 1)[1].split("\n- CAT-", 1)[0]
+    rows, above = [], ([], [])
+    for query, pages in re.findall(r"^ *\| (.+) \| (.+) \|$", table, re.MULTILINE):
+        if query == "Query":
+            continue
+        also = [a for group in re.findall(r"\(also ([^)]*)\)", query) for a in re.findall(r'"([^"]+)"', group)]
+        query = re.sub(r"\((also|checked|Google)[^)]*\)", "", query)
+        named = re.findall(r'(?:guide|blog post) "([^"]+)"', pages)
+        recipes = re.findall(r"`/(recipes/[a-z0-9-]+)/`", pages)
+        if not named and re.search(r"\bsame (guide|post)\b", pages):
+            named = above[0]
+        above = (named or above[0], recipes)
+        if "the matching" not in pages:  # "the matching `/recipes/<name>/` page" names no fixed page
+            rows.append(([q.strip() for q in query.split(",") if q.strip()] + also, named, recipes))
+    return rows
+
 class Site(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -2115,6 +2134,24 @@ class Site(unittest.TestCase):
             for phrase in set(zip(words, words[1:], words[2:])):
                 phrases.setdefault(phrase, []).append(name)
         found += [f"CAT-11k: {' '.join(p)!r} in {len(names)} titles: {', '.join(names)}" for p, names in sorted(phrases.items()) if len(names) > 2]
+        self.assertFalse(found, "\n" + "\n".join(found))
+
+    def test_query_owners_linked(self):  # CAT-11o
+        pages, descriptions, found = titles(), titles("description"), []
+        by_title = {title: name for name, title in pages.items()}
+        for queries, named, recipes in query_rows():
+            owners = [by_title[t] for t in named if t in by_title] + recipes
+            for name, title in pages.items():
+                if name in owners or not name.startswith(("guides/", "blog/")):
+                    continue
+                text = joined(title) + " " + joined(descriptions.get(name, ""))
+                hit = next((q for q in queries if len(q.split()) > 1 and joined(q) in text), None)  # a comma splits "postgres, redis, ... helm chart" into single words
+                if not hit:
+                    continue
+                with open(os.path.join(CONTENT, name + ".md"), encoding="utf-8") as f:
+                    body = f.read().split("\n---\n", 1)[1]
+                if not any(f"](/{o}/" in body for o in owners):
+                    found.append(f"CAT-11o: {name} names {hit!r} but links none of {owners}")
         self.assertFalse(found, "\n" + "\n".join(found))
 
     def test_moved_posts(self):  # CAT-36e to CAT-36g
