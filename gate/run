@@ -54,7 +54,9 @@ status=0
 # REG-1: the tag resolves to the pinned commit.
 export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
 gitc=(git -c protocol.allow=never -c protocol.https.allow=always)
-resolved=$("${gitc[@]}" ls-remote -- "$src_repo" "refs/tags/$tag" "refs/tags/$tag^{}" | awk '{print $1}' | tail -n 1)
+# ls-remote matches name suffixes too (refs/tags/x/refs/tags/<tag>); take the exact ref, peeled first.
+resolved=$("${gitc[@]}" ls-remote -- "$src_repo" "refs/tags/$tag" "refs/tags/$tag^{}" \
+  | awk -v t="refs/tags/$tag" '$2 == t "^{}" {p = $1} $2 == t {l = $1} END {print (p != "" ? p : l)}')
 if [[ $resolved != "$sha" ]]; then
   echo "REG-1: tag $tag resolves to ${resolved:-nothing}, entry pins $sha"
   status=1

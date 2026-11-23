@@ -344,9 +344,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           SERIAL: ${{ needs.index.outputs.serial }}
-        run: >-
-          gh release create --target "$GITHUB_SHA" --title "Index serial $SERIAL" --notes-file notes.md
-          -- "index-$SERIAL" index.json index.json.sigstore.json index.json.intoto.jsonl
+        run: | # PUB-12: three tries; serial 104 lost its release to one HTTP 502
+          for delay in 0 30 90; do
+            sleep "$delay"
+            gh release create --target "$GITHUB_SHA" --title "Index serial $SERIAL" --notes-file notes.md \
+              -- "index-$SERIAL" index.json index.json.sigstore.json index.json.intoto.jsonl && exit 0
+          done
+          exit 1
 
   catalog:
     needs: index

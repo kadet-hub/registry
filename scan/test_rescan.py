@@ -28,7 +28,7 @@ for a; do
     exit
   elif [[ $a == ls-remote ]]; then
     tag=${*: -2:1}; tag=${tag#refs/tags/}
-    awk -v t="$tag" '$1 == t {print $2 "\\trefs/tags/" t}' <<<"$FAKE_TAGS"
+    awk -v t="$tag" '{r = "refs/tags/" $1} $1 == t || substr(r, length(r) - length(t) - 10) == "/refs/tags/" t {print $2 "\\t" r}' <<<"$FAKE_TAGS" | sort -k2
     exit 0
   fi
 done
@@ -55,7 +55,8 @@ exit 1
 class Rescan(unittest.TestCase):
     """SEC-15, SEC-16, REC-14, SEC-19: scan/rescan with fake git, fetch and scan."""
 
-    def test_recipe_entry(self):
+    def rescan(self, tags):
+        """Runs scan/rescan over three entries; returns its findings rows, the pinned images and the fetch log."""
         with tempfile.TemporaryDirectory() as tmp:
             root = os.path.join(tmp, "root")
             os.makedirs(os.path.join(root, "scan"))
@@ -76,7 +77,7 @@ class Rescan(unittest.TestCase):
                 os.chmod(path, 0o755)
             log, findings, images = os.path.join(tmp, "log"), os.path.join(tmp, "findings.tsv"), os.path.join(tmp, "images.tsv")
             env = dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"], FAKE_LOG=log,
-                       FAKE_TAGS=f"v1.0.0 {SHA}\ndemo-v2.0.0 {MOVED}\n", FAKE_MAIN=MAIN, FAKE_RECIPES="alpha beta")
+                       FAKE_TAGS=tags, FAKE_MAIN=MAIN, FAKE_RECIPES="alpha beta")
             subprocess.run([os.path.join(root, "scan", "rescan"), findings, images], env=env, check=True, capture_output=True)
             with open(findings, encoding="utf-8") as f:
                 rows = [ln.rstrip("\n").split("\t") for ln in f]
@@ -84,6 +85,10 @@ class Rescan(unittest.TestCase):
                 pinned = f.read()
             with open(log, encoding="utf-8") as f:
                 calls = f.read().splitlines()
+        return rows, pinned, calls
+
+    def test_recipe_entry(self):
+        rows, pinned, calls = self.rescan(f"v1.0.0 {SHA}\ndemo-v2.0.0 {MOVED}\n")
         self.assertEqual(rows, [
             ["rescan", "demo", "1.0.0", "tree: banned file demo.gitattributes"],
             ["drift", "recipe demo", "demo-v2.0.0", f"tag demo-v2.0.0 resolves to {MOVED}, the entry pins {SHA}"],
@@ -101,6 +106,14 @@ class Rescan(unittest.TestCase):
         self.assertEqual(pinned, f"generators/demo\t1.0.0\t{IMAGE}\nrecipes/demo\t2.0.0\t{IMAGE}\n"
                                  f"recipes/alpha\tmain@{MAIN}\t{IMAGE}\nrecipes/beta\tmain@{MAIN}\t{IMAGE}\n")
         self.assertEqual(len([c for c in calls if f"--rev {MAIN} --recipe alpha " in c]), 1)
+
+    def test_tag_matched_by_exact_ref_name(self):  # REG-1, SEC-16
+        # ls-remote also returns refs/tags/x/refs/tags/v1.0.0, sorted after the real tag; it is not the tag.
+        rows, _, _ = self.rescan(f"v1.0.0 {SHA}\nx/refs/tags/v1.0.0 {MOVED}\ndemo-v2.0.0 {SHA}\n")
+        self.assertNotIn("drift", [r[0] for r in rows])
+        # Only the suffix ref exists: the tag does not resolve.
+        rows, _, _ = self.rescan(f"x/refs/tags/v1.0.0 {SHA}\ndemo-v2.0.0 {SHA}\n")
+        self.assertIn(["drift", "demo", "v1.0.0", f"tag v1.0.0 resolves to nothing, the entry pins {SHA}"], rows)
 
 
 if __name__ == "__main__":

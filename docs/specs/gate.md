@@ -1687,10 +1687,12 @@ code diff and the output diff, not only the verdict.
   while a request waits. The queue can lag by hours, and the merge waits
   for it.
 
-  `neat-bot` has read access only (terraform-homezone GHO-6a), so
-  CODEOWNERS, which requests a code owner only with write access, cannot
-  request it, and its approval counts toward no approval a ruleset
-  requires. No ruleset enforces REV-4. The maintainer, and agents working
+  `neat-bot` has write access, so its approval counts toward the approval
+  REV-1 requires. On a path without a code owner its approval alone
+  satisfies the ruleset; a path in CODEOWNERS still needs the
+  maintainer's review or the admin bypass. Write access also lets it
+  merge, approve workflow runs from forks and create tags and releases,
+  and it reads untrusted pull request text. No ruleset enforces REV-4. The maintainer, and agents working
   under the maintainer's account, keep the admin bypass of REV-1 and use
   it only after the approval.
 
@@ -1701,7 +1703,7 @@ code diff and the output diff, not only the verdict.
     `request review` run succeeds and `gh pr view <n> --json reviewRequests`
     lists `neat-bot`;
     `gh api repos/kadet-hub/registry/collaborators/neat-bot/permission`
-    reports `read`
+    reports `write`
   - Since: #353; approval before the merge: #555
 
 - REV-5: Renovate MUST merge its own pull request once every check on it

@@ -1,9 +1,8 @@
 name: request review
 
-# neat-bot reads this repository only. CODEOWNERS would request it only with
-# write access, so this repository's own token requests it instead. Pull
-# requests from forks get a read-only token and are skipped; request the bot
-# on those by hand after a look at them.
+# neat-bot is not a code owner, so this repository's own token requests it
+# (REV-4). Pull requests from forks get a read-only token and are skipped;
+# request the bot on those by hand after a look at them.
 on:
   pull_request:
     types: [opened, reopened, ready_for_review]

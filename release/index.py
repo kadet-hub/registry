@@ -43,6 +43,9 @@ def section(versions, entries, before, now):
             yanked, advisories = state(name, version)
             if version not in records.get(name, {}) and yanked:
                 records.setdefault(name, {})[version] = dict(record, yanked=yanked, advisories=advisories)
+            elif version not in records.get(name, {}):
+                # PUB-4a: removal always yanks first, so this is a lookup that wrongly said not found.
+                raise SystemExit(f"PUB-4a: {name} {version} is in the previous index, not yanked, and was not found")
     return records
 
 

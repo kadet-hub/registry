@@ -450,6 +450,19 @@ cover none of the changed files.
   is available only on the Team plan for private and internal
   repositories.
 
+  The app also reaches `main`. GI-2a lets a Renovate pull request change
+  `.github/workflows/*.yml` and `.github/actions/*/action.yml`; the gate
+  passes it with "no entry changed", `renders` is skipped, and Renovate
+  merges through its `pull_request` bypass of the `main` ruleset without
+  the code owner review. The next release run executes that workflow as
+  `release.yml@refs/heads/main`, the identity consumers verify, and the
+  `release` environment has a branch policy but no required reviewer. A
+  compromised app can therefore publish artifacts that verify. Accepted:
+  a required reviewer on `release` would make every release wait for the
+  maintainer, and a maintainer merge for every action update costs the
+  same. #664 and #662 merged this way while their review state was
+  `REVIEW_REQUIRED`.
+
   Pending: the `kadet-hub-upstream` App key in `generators` is a repository
   secret, readable by a workflow on any branch there. Moving it into an
   environment that admits only `main`, and rotating it, is open.
