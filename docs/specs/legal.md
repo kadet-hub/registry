@@ -22,7 +22,7 @@ The imprint names the operator by full name, with the c/o address of
 the address service impressum-ohne-adresse.de in Eppelheim as the
 postal address. § 18(1) MStV requires the real full name. The operator's
 private address is not published. Whether the service has confirmed that
-it accepts court and authority letters for the operator is OQ-3 in
+it accepts court and authority letters for the operator is OQ-2 in
 [marketplace.md](marketplace.md). The privacy notice identifies the
 controller as the operator named in the imprint and gives `privacy@` as
 the contact. It does not repeat the name. The e-mail

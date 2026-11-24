@@ -135,7 +135,7 @@ the build job (RISK-10).
   reviewed code counts as adopting it, whether the DSA applies to an
   unpaid service, whether the operator controls GitHub Pages' access
   logs, whether § 5 DDG requires an imprint, whether a c/o address
-  suffices for it (OQ-3), and whether a reference to sources hosted
+  suffices for it (OQ-2), and whether a reference to sources hosted
   elsewhere satisfies GPLv2 for a mirrored image (RISK-15). Decided 2026-11-21, formerly OQ-1.
 - DEC-52: The code of the registry stays under Apache-2.0. The name
   "kadet-hub", the mark and the drawings of the site, the start page's
@@ -559,7 +559,7 @@ coverage is named at each:
 
 ## Open questions
 
-- OQ-3: Whether impressum-ohne-adresse.de has confirmed in writing that
+- OQ-2: Whether impressum-ohne-adresse.de has confirmed in writing that
   its staffed reception accepts court and authority letters for the
   operator, a private person, is not recorded. The imprint publishes its
   c/o address as the serviceable address. A mail-forwarding address or PO
