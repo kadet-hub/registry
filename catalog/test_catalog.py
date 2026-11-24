@@ -351,7 +351,7 @@ CHART_RECIPE_FILES = {
                  f"Source: `oci://quay.io/jetstack/charts/cert-manager:v1.21.2@sha256:{'c' * 64}`\n\nLevel: `deploys`\n\n"
                  "## Include\n\n```yaml\nclasses:\n  - recipes.cert-manager\n  - recipes.cert-manager.crds   # the chart's crds.enabled\n```\n\n"
                  "## Required parameters\n\nNo parameter has to be set.\n\n## Settings\n\n| Chart value | Inventory |\n|---|---|\n| `replicaCount` | `components.cert-manager.replicas` |\n\n"
-                 "## Left out\n\nThe hook <script>alert(8)</script> `Job/cert-manager-startupapicheck`.\n\n"
+                 "## Left out {#startupapicheck-hook}\n\nThe hook <script>alert(8)</script> `Job/cert-manager-startupapicheck`.\n\n"
                  "## Renamed RBAC objects\n\n| Chart | Recipe |\n|---|---|\n| `cert-manager:leaderelection` | `cert-manager-leaderelection` |\n\n"
                  "## Proof\n\n`check cert-manager --level deploys` on kind.\n\n## Replacing a Helm release\n\nNot tested.\n",
     # A leading comment with a comma before any colon, as homepage's kubernetes.yml has: Hugo reads such a string as CSV.
@@ -1815,7 +1815,7 @@ class Site(unittest.TestCase):
         self.assertEqual(code(re.search(r'<pre id="commands"><code>(.*?)</code></pre>', page, re.DOTALL).group(1)),
                          "kapitan compile --inventory-path fetch --fetch --output-path .\nkapitan compile --fetch")
         self.assertIn(f'<a href="https://github.com/{OWNER}/recipes#using-a-recipe">Using a recipe</a>', page)
-        self.assertEqual([h for h in re.findall(r'<h2 id="s-[^"]+">([^<]+)</h2>', page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
+        self.assertEqual([h for h in re.findall(r'<h2 id="(?:s-[^"]+|startupapicheck-hook)">([^<]+)</h2>', page) if h != "Used in stacks"],  # CAT-48 follows the real posts' dates; Stacks tests it
                          ["What it deploys", "Required parameters", "Include", "Fetching it", "Settings", "Left out", "Renamed RBAC objects", "Proof"])
         self.assertIn("<h2 id=\"s-required-parameters\">Required parameters</h2>\n<p>No parameter has to be set.</p>", page)
         self.assertIn("<td><code>replicaCount</code></td>", page)  # rendered from the README
@@ -1842,6 +1842,19 @@ class Site(unittest.TestCase):
         md = self.markdown("recipes", "valkey")
         self.assertRegex(md, r"\n- Page: \S+\n\n## Replaces\n\nThis recipe replaces the `valkey` recipe of kadet-hub/examples\..*\n\n"
                              r"\| kadet-hub/examples \| This recipe \|\n\|---\|---\|\n\| StatefulSet `valkey` \| Deployment `valkey` \|\n\n## Required parameters\n")
+
+    def test_recipe_fixed_anchor(self):  # CAT-37j
+        page = self.page("recipes", "cert-manager")
+        self.assertIn('<h2 id="startupapicheck-hook">Left out</h2>', page)  # the README's anchor, the heading without it
+        self.assertIn('<a href="#startupapicheck-hook">Left out</a>', page)  # "On this page" follows it
+        self.assertNotIn("{#", page)
+        self.assertNotIn('id="s-left-out"', page)
+        self.assertIn("cert-manager-startupapicheck", page)  # still matched as "Left out" (CAT-37c)
+        self.assertIn('<h2 id="s-settings">Settings</h2>', page)  # a heading without an anchor keeps s-<heading>
+        self.assertIn('<a href="#s-settings">Settings</a>', page)
+        md = self.markdown("recipes", "cert-manager")  # CAT-28: the Markdown variant shows the heading without the anchor
+        self.assertIn("\n## Left out\n", md)
+        self.assertNotIn("{#", md)
 
     def test_compose_recipe(self):  # CAT-37e
         page = self.page("recipes", "miniflux")
