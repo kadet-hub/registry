@@ -29,8 +29,11 @@
 {{- $lead := "" }}{{ with findRESubmatch `(?s)\A# [^\n]*\n+(.*?)\n\n` $md 1 }}{{ $lead = index (index . 0) 1 | replaceRE `\s+` " " | strings.TrimSpace | replaceRE `:$` "." }}{{ end -}}
 {{- $sections := slice -}}
 {{- range after 1 (split $md "\n## ") -}}
-  {{- $h := index (split . "\n") 0 | strings.TrimSpace -}}
-  {{- $sections = $sections | append (dict "heading" $h "body" (strings.TrimPrefix $h . | strings.TrimSpace)) -}}
+  {{- $line := index (split . "\n") 0 -}}
+  {{- $h := $line | strings.TrimSpace -}}
+  {{- $anchor := printf "s-%s" (anchorize $h) -}}
+  {{- with findRESubmatch `^(.*?)\s*\{#([a-z0-9-]+)\}$` $h 1 }}{{ $h = index (index . 0) 1 }}{{ $anchor = index (index . 0) 2 }}{{ end -}}{{/* CAT-37j */}}
+  {{- $sections = $sections | append (dict "heading" $h "anchor" $anchor "body" (strings.TrimPrefix $line . | strings.TrimSpace)) -}}
 {{- end -}}
 {{- $include := "" -}}
 {{- with where $sections "heading" "Include" }}{{ with findRESubmatch "(?s)```yaml\n(.*?)\n```" (index . 0).body 1 }}{{ $include = index (index . 0) 1 }}{{ end }}{{ end -}}

@@ -3,11 +3,11 @@
 {{ with $r.latest }}{{ $.Store.Set "recipe-blob" $r.record.blob_url }}{{ end }}
 {{ $owner := site.Data.catalog.owner }}
 {{/* The sections of this page, for the rail. */}}
-{{ $toc := slice }}
-{{ with $r.replaces }}{{ $toc = $toc | append "Replaces" }}{{ end }}
-{{ $toc = $toc | append "What it deploys" "Required parameters" "Include" "Fetching it" }}
-{{ range $r.sections }}{{ $toc = $toc | append .heading }}{{ end }}
-{{ with $r.record }}{{ $toc = $toc | append "Versions" }}{{ end }}
+{{ $toc := slice }}{{/* (heading, anchor); CAT-37j */}}
+{{ with $r.replaces }}{{ $toc = $toc | append (dict "heading" "Replaces" "anchor" "s-replaces") }}{{ end }}
+{{ range slice "What it deploys" "Required parameters" "Include" "Fetching it" }}{{ $toc = $toc | append (dict "heading" . "anchor" (printf "s-%s" (anchorize .))) }}{{ end }}
+{{ range $r.sections }}{{ $toc = $toc | append (dict "heading" .heading "anchor" .anchor) }}{{ end }}
+{{ with $r.record }}{{ $toc = $toc | append (dict "heading" "Versions" "anchor" "s-versions") }}{{ end }}
 <article class="doc">
 <header class="page-head">
   <div class="page-head-text">
@@ -23,7 +23,7 @@
 <nav class="toc rail" aria-labelledby="toc">
 <details open>
   <summary><h2 id="toc">On this page</h2></summary>
-  <ol>{{ range $toc }}<li><a href="#s-{{ anchorize . }}">{{ . }}</a></li>{{ end }}</ol>
+  <ol>{{ range $toc }}<li><a href="#{{ .anchor }}">{{ .heading }}</a></li>{{ end }}</ol>
 </details>
 </nav>
 <div class="prose doc-body main-col">
@@ -95,7 +95,7 @@
 <p>The first command exits with status 1 because the fetch target compiles nothing. Kapitan's <code>--fetch</code> checks neither the <a href="{{ "/glossary/#digest" | relURL }}">digest</a> nor the attestation of a generator. <a href="{{ $r.guide }}">Using a recipe</a> describes how to verify them and how to raise the pin.</p>
 {{ end }}
 {{ range $r.sections }}
-<h2 id="s-{{ anchorize .heading }}">{{ .heading }}</h2>
+<h2 id="{{ .anchor }}">{{ .heading }}</h2>
 {{ $.RenderString (dict "display" "block") (replaceRE `\{\{([<%])` `{{\$1` .body) }}
 {{ end }}
 {{ with (where (where site.RegularPages "Section" "blog") "Params.stack.recipes" "intersect" (slice $r.name)).ByDate.Reverse }}<h2>Used in stacks</h2>{{/* CAT-48 */}}
