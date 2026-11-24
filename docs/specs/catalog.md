@@ -2719,6 +2719,22 @@ narrow them.
   `Site.test_recipe_sources_listed`, `Site.test_recipe_finder`; manual:
   browser run on the built site (2026-11-12).
 
+- CAT-37j: A heading of a recipe README section that the page shows MAY
+  end in a fixed anchor, `## Left out {#bitnami-mongodb}`. The page MUST
+  then give that section and its entry in "On this page" that anchor and
+  show the heading without it; a heading without one keeps
+  `s-<heading>`.
+
+  A comment on an upstream issue links the section that answers it, and
+  that link has to outlive a reworded heading (kadet-hub/outreach OUT-9).
+  The anchor the page builds from the heading changes with its wording,
+  and so does the one GitHub builds for the README. The page matches
+  sections by their heading ("Include", "Left out", CAT-37c), so the
+  anchor is stripped before the match. The anchor is lower-case letters,
+  digits and hyphens.
+
+  - Test: `catalog/test_catalog.py` (`test_recipe_fixed_anchor`)
+  - Since: this change
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
   generators from the latest version that is not yanked, read from its
