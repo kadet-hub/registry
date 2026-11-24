@@ -18,13 +18,14 @@ describe the generators as third-party work, offer a takedown route and
 state what the review does not promise. No lawyer reviews them
 (DEC-51), so they carry no "draft pending legal review" marker.
 
-The imprint names the operator, Danny Heinrich, with the c/o address of
+The imprint names the operator by full name, with the c/o address of
 the address service impressum-ohne-adresse.de in Eppelheim as the
 postal address. § 18(1) MStV requires the real full name. The operator's
 private address is not published. Whether the service has confirmed that
 it accepts court and authority letters for the operator is OQ-3 in
-[marketplace.md](marketplace.md). The privacy notice names the operator
-as controller and refers to the imprint for the address. The e-mail
+[marketplace.md](marketplace.md). The privacy notice identifies the
+controller as the operator named in the imprint and gives `privacy@` as
+the contact. It does not repeat the name. The e-mail
 addresses are the role addresses `contact@`, `privacy@`, `abuse@` and
 `security@kadet-hub.org`, which the operator routes.
 
