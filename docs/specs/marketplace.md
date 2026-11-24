@@ -135,7 +135,7 @@ the build job (RISK-10).
   reviewed code counts as adopting it, whether the DSA applies to an
   unpaid service, whether the operator controls GitHub Pages' access
   logs, whether § 5 DDG requires an imprint, whether a c/o address
-  suffices for it (OQ-2), and whether a reference to sources hosted
+  suffices for it, and whether a reference to sources hosted
   elsewhere satisfies GPLv2 for a mirrored image (RISK-15). Decided 2026-11-21, formerly OQ-1.
 - DEC-52: The code of the registry stays under Apache-2.0. The name
   "kadet-hub", the mark and the drawings of the site, the start page's
@@ -556,22 +556,6 @@ coverage is named at each:
 - REV-2: the comment is rendered, not asserted.
 - CON-3, PUB-13b, REV-6: documentation content.
 - CAT-5: URL stability.
-
-## Open questions
-
-- OQ-2: The operator supplies the name for the imprint and the privacy
-  notice, and the address of an address service for private persons
-  whose staffed reception accepts court and authority letters for the
-  operator, as the imprint's serviceable address (c/o); a
-  mail-forwarding address or PO box does not suffice, and the operator's
-  private address is not published. The services with an explicit power
-  to accept service (Zustellungsvollmacht) checked on 2026-11-21 accept
-  businesses only, so the operator asks the chosen service to confirm the
-  acceptance of service in writing before booking. § 18(1) MStV requires the
-  real full name; a pseudonym or group name does not satisfy it. Until then
-  the name reads `tbd` and the imprint says the address follows. The e-mail
-  addresses are decided: `contact@`, `privacy@`, `abuse@` and
-  `security@kadet-hub.org`, role addresses the operator routes.
 
 ## Implementation inventory
 
