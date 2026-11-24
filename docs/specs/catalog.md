@@ -2733,8 +2733,8 @@ narrow them.
   anchor is stripped before the match. The anchor is lower-case letters,
   digits and hyphens.
 
-  - Test: `catalog/test_catalog.py` (`test_recipe_fixed_anchor`)
-  - Since: this change
+  - Test: `catalog/test_catalog.py` (`test_recipe_fixed_anchor`, `test_chart_recipe`)
+  - Since: #726
 - CAT-38: Once the index lists a recipe (REC-13), its CAT-37c page MUST
   keep its URL and take the README sections, the chart, the level and the
   generators from the latest version that is not yanked, read from its
