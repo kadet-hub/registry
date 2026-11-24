@@ -1508,7 +1508,8 @@ class Site(unittest.TestCase):
         # LEG-1: the operator's name and the c/o address, no placeholder left.
         self.assertIn("Danny Heinrich<br>", imprint)
         self.assertIn("69214 Eppelheim", imprint)
-        self.assertIn("The controller is the operator of kadet-hub: Danny Heinrich,", privacy)
+        self.assertIn("The controller is the operator of kadet-hub named in the", privacy)
+        self.assertNotIn("Heinrich", privacy)
         for page in (imprint, privacy):
             self.assertNotIn("tbd", page)
             self.assertNotIn("placeholders", page)

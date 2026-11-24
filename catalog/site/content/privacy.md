@@ -6,7 +6,7 @@ description: How kadet-hub.org handles personal data. The site sets no cookies a
 
 ## Who is responsible
 
-The controller is the operator of kadet-hub: Danny Heinrich, [privacy@kadet-hub.org](mailto:privacy@kadet-hub.org). The postal address is given in the [imprint](/imprint/).
+The controller is the operator of kadet-hub named in the [imprint](/imprint/), which also gives the postal address. Contact for privacy matters: [privacy@kadet-hub.org](mailto:privacy@kadet-hub.org).
 
 ## What happens when you visit
 
