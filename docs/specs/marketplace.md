@@ -135,7 +135,7 @@ the build job (RISK-10).
   reviewed code counts as adopting it, whether the DSA applies to an
   unpaid service, whether the operator controls GitHub Pages' access
   logs, whether § 5 DDG requires an imprint, whether a c/o address
-  suffices for it, and whether a reference to sources hosted
+  suffices for it (OQ-3), and whether a reference to sources hosted
   elsewhere satisfies GPLv2 for a mirrored image (RISK-15). Decided 2026-11-21, formerly OQ-1.
 - DEC-52: The code of the registry stays under Apache-2.0. The name
   "kadet-hub", the mark and the drawings of the site, the start page's
