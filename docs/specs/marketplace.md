@@ -557,6 +557,16 @@ coverage is named at each:
 - CON-3, PUB-13b, REV-6: documentation content.
 - CAT-5: URL stability.
 
+## Open questions
+
+- OQ-3: Whether impressum-ohne-adresse.de has confirmed in writing that
+  its staffed reception accepts court and authority letters for the
+  operator, a private person, is not recorded. The imprint publishes its
+  c/o address as the serviceable address. A mail-forwarding address or PO
+  box would not suffice. The services checked on 2026-11-21 that grant an
+  explicit power to accept service (Zustellungsvollmacht) took businesses
+  only. The operator owns this check.
+
 ## Implementation inventory
 
 | Path | Content |

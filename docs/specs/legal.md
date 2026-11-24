@@ -21,7 +21,9 @@ state what the review does not promise. No lawyer reviews them
 The imprint names the operator, Danny Heinrich, with the c/o address of
 the address service impressum-ohne-adresse.de in Eppelheim as the
 postal address. § 18(1) MStV requires the real full name. The operator's
-private address is not published. The privacy notice names the operator
+private address is not published. Whether the service has confirmed that
+it accepts court and authority letters for the operator is OQ-3 in
+[marketplace.md](marketplace.md). The privacy notice names the operator
 as controller and refers to the imprint for the address. The e-mail
 addresses are the role addresses `contact@`, `privacy@`, `abuse@` and
 `security@kadet-hub.org`, which the operator routes.
@@ -77,7 +79,7 @@ addresses are the role addresses `contact@`, `privacy@`, `abuse@` and
 
   Rights holders and others report through the `generator-report` form
   ("License, copyright or trademark concern") or, for anything that must
-  not be public, privately to the contact in the imprint. The maintainers answer
+  not be public, privately to `abuse@kadet-hub.org`. The maintainers answer
   with the decision and its reason, as DSA Articles 16 and 17 ask of
   hosting services; whether the DSA applies to an unpaid service is not
   settled, and the maintainers follow it either way (DEC-51).
