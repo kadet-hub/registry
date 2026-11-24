@@ -4,12 +4,12 @@ layout: prose
 description: Imprint (Impressum) of kadet-hub, a community catalog of Kapitan generators run without payment by a private person in Germany.
 ---
 
-*The operator's name and postal address will be added here; until then they read as placeholders.*
-
 ## Angaben gemäß § 5 DDG und § 18 MStV
 
-tbd (name)<br>
-Postal address: follows (c/o address service)<br>
+Danny Heinrich\
+c/o www.impressum-ohne-adresse.de\
+Wernher-von-Braun-Str. 5-7\
+69214 Eppelheim\
 Germany
 
 E-mail: [contact@kadet-hub.org](mailto:contact@kadet-hub.org)
