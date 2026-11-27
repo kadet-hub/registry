@@ -1,8 +1,8 @@
 ---
-title: Actions Runner Controller dind image from your own registry
+title: "Actions Runner Controller dind: override the hardcoded image"
 layout: prose
-description: "GitHub Actions Runner Controller dind image from a mirror or air-gapped registry: gha-runner-scale-set patched with Kustomize or Kapitan, tested on kind."
-lastmod: 2026-11-07
+description: "gha-runner-scale-set 0.15.0 hardcodes docker:dind. Kustomize and Kapitan patches, tested on kind, pull it from a mirror or an air-gapped registry."
+lastmod: 2026-11-23
 aliases: [/blog/actions-runner-controller-dind/]
 ---
 

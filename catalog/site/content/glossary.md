@@ -1,7 +1,7 @@
 ---
-title: Kapitan and Kubernetes glossary
+title: "Kapitan glossary: inventory, targets and refs for Kubernetes"
 layout: glossary
-description: "Kapitan and Kubernetes terms on kadet-hub: inventory, class, target, interpolation, refs, kadet generators, CRDs, OCI artifact, SBOM and provenance."
+description: "What Kapitan's inventory, classes, targets, refs and kadet mean, each linked to the Kapitan docs, then the Kubernetes and supply-chain terms kadet-hub uses."
 # CAT-13a: the list and its DefinedTermSet JSON-LD. A url starting with docs/ points into this repository's docs.
 terms:
   - id: kapitan

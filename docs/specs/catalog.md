@@ -269,8 +269,55 @@ remembered in the browser's `localStorage`.
   title or description outside the limits is padded or cut by the
   template, not rejected at the gate.
 
-  - Test: `catalog/test_catalog.py`
-  - Since: #45
+  A generator page's title names what the generator writes, read from
+  its tags: `<name> Kubernetes manifests from a Kapitan generator` for a
+  generator tagged `kubernetes`, `<name> Terraform JSON from a Kapitan
+  generator` for one tagged `terraform`. These are the outputs the gate
+  checks as evidence for the two tags (CAT-13). A generator also tagged
+  `clusters`, such as kind, k3d and talos, writes the configuration of a
+  cluster rather than workloads, so its title reads `<name> cluster
+  config from a Kapitan generator`. A name that already contains
+  "kubernetes" drops the word from the output, `<name> manifests from a
+  Kapitan generator`, because "kubernetes Kubernetes manifests" repeats
+  it. Over 65 characters the
+  title ends in "from Kapitan" instead, as for opentelemetry-operator. A
+  generator with neither tag, or a name too long for both forms, keeps
+  `<name> · Kapitan generator · kadet-hub` or, shorter,
+  `<name> · Kapitan generator`, which has 59 bytes for the 39 characters
+  REG-2 allows a name. The description stays the generator's own, which
+  lists the resources it renders. calico's has 158 characters, so a
+  sentence added by the template would cut it.
+
+  The earlier title, `<name> · Kapitan generator · kadet-hub`, told a
+  reader who knows Kapitan what the page is, and a searcher nothing about
+  what they get. In Search Console, over the 90 days to 2026-11-20 with
+  the site about five weeks old, five pages ranked in the top ten
+  without a click:
+
+  | Page | Impressions | Average position |
+  |---|---|---|
+  | `/generators/calico/` | 34 | 3.9 |
+  | `/generators/cloudnative-pg/` | 21 | 6.8 |
+  | `/guides/actions-runner-controller-dind/`, counted on its alias `/blog/actions-runner-controller-dind/` | 20 | 7.9 |
+  | `/glossary/` | 11 | 6.5 |
+  | `/generators/external-secrets/` | 10 | 6.9 |
+
+  Most queries are anonymized. The known ones that reached generator
+  pages name the software: "cloudnativepg", "kmcp", "prometheus
+  operator", "kubevirt csi" and "cilium network policy generator". At
+  these counts no click is a weak signal, and the new titles are not a
+  measured fix. The guide and the glossary got new hand-written titles
+  and descriptions in the same change (CAT-11f, CAT-13a).
+
+  The title does not call a generator a Helm alternative. mutate patches
+  a rendered chart and a generator tagged `helm` builds on one, so the
+  claim would be wrong on their pages. For cloudnative-pg,
+  "<name> Kubernetes manifests from Kapitan, a Helm alternative" would
+  have 68 characters.
+
+  - Test: `catalog/test_catalog.py`; generator titles:
+    `Site.test_generator_titles_name_the_output`
+  - Since: #45; generator titles that name the output: #725
 
 - CAT-11a: The home page MUST have a title of 50 to 60 characters and
   MUST carry schema.org `WebSite` and `Organization` as JSON-LD.
@@ -380,7 +427,7 @@ remembered in the browser's `localStorage`.
   | kube prometheus stack dashboards, kube prometheus stack default dashboards, kube prometheus stack default grafana dashboards (checked 2026-10-21) | guide "kube-prometheus-stack default Grafana dashboards, one by one", section #disable-default-dashboards |
   | kustomize helm chart generator, kustomize render helm chart, kustomize enable helm, kustomize helm values file, kustomize helm argocd, render helm chart locally | guide "Patch a Helm chart without forking it", section "Kustomize with helmCharts" |
   | cert-manager helm chart, helm chart initcontainers, trust-manager helm chart, cert manager trust manager helm chart | guide "cert-manager Helm chart initContainers and trust-manager issuer" |
-  | actions runner controller dind, github actions runner controller dind, gha runner scale set dind (checked 2026-10-21) | guide "Actions Runner Controller dind image from your own registry", section #arc-dind-image |
+  | actions runner controller dind, github actions runner controller dind, gha runner scale set dind (checked 2026-10-21) | guide "Actions Runner Controller dind: override the hardcoded image", section #arc-dind-image |
 
   The two requests that guide answers, "cert-manager helm chart
   initcontainers" and "trust-manager custom issuer", complete in neither
@@ -402,7 +449,7 @@ remembered in the browser's `localStorage`.
   already, and a page ranking for it could be taken for kapicorp's own.
 
   - Test: `catalog/test_catalog.py` (`test_home_identity_schema_and_title`)
-  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331, #444, #539, #538, #556
+  - Since: #284, #287, #288, #290, #291, #297, #298, #299, #304, #312, #313, #314, #315, #316, #318, #319, #320, #323, #324, #329, #331, #444, #539, #538, #556, #725
 
 - CAT-11g: Every guide and recipe MUST carry `lastmod` in its front
   matter, the day its text last changed, and schema.org `TechArticle`
@@ -3216,15 +3263,17 @@ index is refused (CON-2).
   text, and only where the word has the glossary's meaning: "kind" in
   "kind cluster" is the tool, not a Kubernetes kind. The glossary's title
   and description follow CAT-11 and CAT-11a and name Kapitan with
-  Kubernetes; which terms the description names is a choice, not
-  measured search volume.
+  Kubernetes. Both name Kapitan terms the glossary defines, so that a
+  searcher who typed one sees it in the result. Which terms they name is
+  a choice, not measured search volume.
 
   Related: CAT-11, CAT-11a, CAT-37.
 
   - Test: `catalog/test_catalog.py` (`test_glossary`)
   - Since: #286; fixture, proof level, operator and the recipe entry for
     kadet-hub/recipes: #371; inventory backend, dependency, fetch
-    inventory, sandbox and consumer workflow: #687
+    inventory, sandbox and consumer workflow: #687; Kapitan terms in the
+    title: #725
 
 - CAT-5: URLs `/`, `/generators/` and `/generators/<name>/` MUST stay
   stable.
