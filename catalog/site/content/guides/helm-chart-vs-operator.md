@@ -4,6 +4,7 @@ layout: prose
 description: "Helm chart vs operator, measured: PostgreSQL from the Bitnami chart and from CloudNativePG on kind, with write gaps on a lost primary and a config change."
 lastmod: 2026-11-07
 aliases: [/blog/helm-chart-vs-operator/]
+selected: true
 ---
 
 A Helm chart writes objects when you run `helm install` or `helm upgrade`,

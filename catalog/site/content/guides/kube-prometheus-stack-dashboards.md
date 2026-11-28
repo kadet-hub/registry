@@ -4,6 +4,7 @@ layout: prose
 description: "kube-prometheus-stack dashboards: which values switch removes which default Grafana dashboard, and how to drop single ones with Kustomize or Kapitan."
 lastmod: 2026-11-07
 aliases: [/blog/kube-prometheus-stack-dashboards/]
+selected: true
 ---
 
 kube-prometheus-stack 92.11.0, the release of 20 October 2026, renders 29

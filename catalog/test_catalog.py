@@ -1152,6 +1152,9 @@ class Site(unittest.TestCase):
         section = self.page().split('<h2 id="selected">Selected guides</h2>', 1)[1].split("</section>", 1)[0]
         links = re.findall(r'<a href="\./guides/([a-z0-9-]+)/">[^<]+</a>', section)
         self.assertEqual(sorted(links), sorted(MOVED_POSTS))
+        marked = [name for name in MOVED_POSTS
+                  if re.search(r"^selected: true$", front_matter(os.path.join(CONTENT, "guides", f"{name}.md")), re.MULTILINE)]
+        self.assertEqual(sorted(marked), sorted(MOVED_POSTS))
 
     def test_catalog_page(self):  # CAT-67a, CAT-8, CAT-10, CAT-11, CAT-16, CAT-5, CAT-6
         catalog, home = self.page("generators"), self.page()

@@ -4,6 +4,7 @@ layout: prose
 description: "Helm chart initContainers for cert-manager and a trust-manager webhook certificate from your own ClusterIssuer, patched by Kapitan and tested on kind."
 lastmod: 2026-11-07
 aliases: [/blog/cert-manager-helm-chart-patches/]
+selected: true
 ---
 
 Two requests against the cert-manager project's Helm charts have no value

@@ -33,11 +33,11 @@
 </ul>
 <p class="more">Nothing fits? <a href="https://github.com/{{ site.Data.catalog.owner }}/registry/issues/new?template=generator-request.yml">Request a generator</a> or look at the <a href="{{ "/wanted/" | relURL }}">wanted generators</a>. To publish one, read <a href="{{ $docs }}authors.md">how to add a generator</a>.</p>
 </section>
-{{/* CAT-67k: the guides that moved from /blog/, known by their alias. */}}
+{{/* CAT-67k */}}
 <section class="doors wrap" aria-labelledby="selected">
 <h2 id="selected">Selected guides</h2>
 <ul class="guide-list columns">
-{{ range $guides }}{{ if .Aliases }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}{{ end }}
+{{ range where $guides "Params.selected" true }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}
 </ul>
 </section>
 <section class="steps wrap" aria-labelledby="listing">

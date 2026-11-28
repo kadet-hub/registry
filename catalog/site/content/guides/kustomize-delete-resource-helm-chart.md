@@ -4,6 +4,7 @@ layout: prose
 description: "Kustomize patch delete resource on a rendered Helm chart, and the same with Kapitan's mutate: Kyverno's forced PDBs and External Secrets' webhooks, on kind."
 lastmod: 2026-11-07
 aliases: [/blog/kustomize-delete-resource-helm-chart/]
+selected: true
 ---
 
 Some Helm charts render an object you need to own yourself and offer no

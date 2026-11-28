@@ -4,6 +4,7 @@ layout: prose
 description: "GitHub Actions Runner Controller dind image from a mirror or air-gapped registry: gha-runner-scale-set patched with Kustomize or Kapitan, tested on kind."
 lastmod: 2026-11-07
 aliases: [/blog/actions-runner-controller-dind/]
+selected: true
 ---
 
 With `containerMode.type: dind`, the gha-runner-scale-set chart of

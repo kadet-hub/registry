@@ -4,6 +4,7 @@ layout: prose
 description: "Renovate automerge on GitHub with a required code-owner review: a pull_request ruleset bypass for the Renovate app, and Renovate waits for every check."
 lastmod: 2026-11-07
 aliases: [/blog/renovate-automerge-required-reviews/]
+selected: true
 ---
 
 Renovate's automerge stops at a branch that requires an approving review.

@@ -4,6 +4,7 @@ layout: prose
 description: "Bitnami PostgreSQL chart alternatives, now that the free charts and images get no updates: from the upstream operator chart to a verified Kapitan generator."
 lastmod: 2026-11-07
 aliases: [/blog/bitnami/]
+selected: true
 ---
 
 If you installed PostgreSQL, Redis or nginx from a Bitnami chart, the

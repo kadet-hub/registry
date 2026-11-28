@@ -4,6 +4,7 @@ layout: prose
 description: "Writing a Helm chart vs a Kapitan inventory, measured on metrics-server, cert-manager and kube-prometheus-stack: equal objects and behaviour on kind."
 lastmod: 2026-11-07
 aliases: [/blog/helm-chart-vs-kapitan-inventory/]
+selected: true
 ---
 
 If you install a third-party chart, keep the chart. Its values are the
