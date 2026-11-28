@@ -538,6 +538,22 @@ remembered in the browser's `localStorage`.
 
   - Test: `catalog/test_catalog.py` (`test_query_owners_linked`)
   - Since: #724
+- CAT-11p: The guides `actions-runner-controller-dind`,
+  `cert-manager-helm-chart-patches` and `kustomize-json-patch-helm-chart`
+  MUST show a fix that works without Kapitan, as a code block, before
+  their first `h2`.
+
+  A reader who searches for the fix may not use Kapitan. These three had
+  the most Google impressions among the guides' old URLs in the last-4-week
+  or all-time page report of Search Console on 2026-11-28. Each opens with
+  a Kustomize patch over `helm template` that the page's own tests or a
+  recorded run cover. The Kapitan version follows.
+
+  - Test: `catalog/test_catalog.py` (`test_guides_answer_first`: the first
+    code block comes before the first `h2` and is a `kustomization.yaml`
+    with no `parameters:` of an inventory)
+  - Since: this change
+
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
 
