@@ -344,6 +344,7 @@ remembered in the browser's `localStorage`.
   | timoni kubernetes, timoni bundle (checked 2026-11-05) | blog post "Timoni vs Kapitan: CUE schemas and bundles pinned by digest" |
   | kcl kubernetes, kcl kubernetes example (checked 2026-11-05) | blog post "KCL vs Kapitan: typed schemas and locked modules on one app" |
   | external secrets operator vault (also "external secrets operator vault example", "external secrets operator vault approle"), external secrets operator rotation (checked 2026-11-05) | blog post "External Secrets Operator with Vault AppRole and Kapitan refs" |
+  | openbao kubernetes auth (also "openbao kubernetes authentication", "openbao kubernetes auth method"), openbao policy example (checked 2026-11-25) | blog post "Kapitan refs in OpenBao: CI and pods reveal without a gpg key", sections #kubernetes-auth for the first and #policies for the second |
   | ingress nginx retirement replacement, ingress nginx gateway api migration | guide "ingress-nginx Gateway API migration for Kapitan targets" |
   | kubectl dry run server side, kubectl dry run server vs client, kubeconform github action | guide "kubectl dry run server-side in CI on a bare kube-apiserver" |
   | kubeconform vs kubeval, helm lint vs kubeconform, kubelinter vs kubeconform (checked 2026-10-22) | same guide, section #kubeval-helm-lint-kube-linter |
