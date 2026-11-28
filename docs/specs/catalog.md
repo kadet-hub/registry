@@ -543,9 +543,9 @@ remembered in the browser's `localStorage`.
   MUST show a fix that works without Kapitan, as a code block, before
   their first `h2`.
 
-  A reader who searches for the fix may not use Kapitan. These three had
-  the most Google impressions among the guides' old URLs in the last-4-week
-  or all-time page report of Search Console on 2026-11-28. Each opens with
+  A reader who searches for the fix may not use Kapitan. Under their old
+  `/blog/` URLs these three had the most Google impressions of the moved
+  guides (Search Console, 1 October to 28 November 2026). Each opens with
   a Kustomize patch over `helm template` that the page's own tests or a
   recorded run cover. The Kapitan version follows.
 

@@ -2,7 +2,7 @@
 title: "Kustomize JSON patch add for nine fields charts leave out"
 layout: prose
 description: "Kustomize JSON patch add and Kapitan's mutate for fields charts lack: appProtocol, trafficDistribution, topologySpreadConstraints, annotations, hostNetwork."
-lastmod: 2026-11-07
+lastmod: 2026-11-28
 aliases: [/blog/kustomize-json-patch-helm-chart/]
 ---
 
@@ -15,6 +15,29 @@ first with a Kustomize patch over `helm template`, then with
 [generator](/glossary/#generator). Most of them are RFC 6902 JSON Patch
 operations, and mutate's `json6902` takes the same operations as
 Kustomize, so the two versions of each patch read almost the same.
+
+**The fix without Kapitan:** save the output of `helm template` as
+`helm.yaml`, add a JSON Patch for the object in a `kustomization.yaml` next
+to it and run `kustomize build .`. This one adds `appProtocol` to the Vault
+Service. Its `test` operation stops the build unless the port is named
+`https`, which needs `global.tlsDisable: false`
+([details](#vault-service-appprotocol)).
+
+```yaml
+resources:
+  - helm.yaml
+patches:
+  - target:
+      kind: Service
+      name: vault
+    patch: |-
+      - op: test
+        path: /spec/ports/0/name
+        value: https
+      - op: add
+        path: /spec/ports/0/appProtocol
+        value: https
+```
 
 Each patch was rendered from the chart version named in its section with
 Helm 4.3.1, Kustomize 5.8.3, and Kapitan 0.36.3 with mutate 0.1.0. In every
@@ -82,21 +105,8 @@ global:
   tlsDisable: false
 ```
 
-```yaml
-resources:
-  - helm.yaml
-patches:
-  - target:
-      kind: Service
-      name: vault
-    patch: |-
-      - op: test
-        path: /spec/ports/0/name
-        value: https
-      - op: add
-        path: /spec/ports/0/appProtocol
-        value: https
-```
+The Kustomize patch is the one at the top of this page. mutate takes the
+same operations:
 
 ```yaml
 parameters:
