@@ -4245,14 +4245,15 @@ CAT-62, CAT-63, CAT-65.
   - Since: #710
 
 - CAT-67k: The section "Selected guides" MUST link, by title, every
-  page of `/guides/` that has an `aliases` entry.
+  page of `/guides/` whose front matter has `selected: true`.
 
-  These are the posts that moved from `/blog/` (CAT-36e, CAT-36f). On
+  The 17 posts that moved from `/blog/` (CAT-36e) carry it. On
   2026-11-27 and 2026-11-28 Search Console's URL Inspection reported all
   17 old URLs as indexed, and of the new ones 1 as indexed, 4 as
   discovered and 12 as unknown. The links give the new URLs a path from
-  the start page. Whether that gets them indexed is not known. A guide
-  that moves later joins the list through its alias.
+  the start page. Whether that gets them indexed is not known. The field
+  is separate from `aliases` (CAT-36f), so a redirect does not decide
+  what the start page shows.
 
   - Test: `catalog/test_catalog.py` (`Site.test_start_page_moved_guides`)
   - Since: #730
