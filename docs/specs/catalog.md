@@ -4213,7 +4213,8 @@ CAT-62, CAT-63, CAT-65.
      Playground, Quickstart and Guides, each with one line on what it
      holds and, where the index or the content gives one, its count,
      followed by "Request a generator" and "Wanted generators";
-  5. the section "How a version gets listed" (CAT-62).
+  5. the section "Selected guides" (CAT-67k);
+  6. the section "How a version gets listed" (CAT-62).
 
   The counts come from the build. Generators counts the generators with
   a listed version (CAT-26), Recipes the recipes of the index with a
@@ -4237,11 +4238,24 @@ CAT-62, CAT-63, CAT-65.
   nor Kubernetes or Terraform, which CAT-11a asks of it; the hero keeps
   an `h1` that meets both.
 
-  - Test: `catalog/test_catalog.py` (`Site.test_start_page`: the five
+  - Test: `catalog/test_catalog.py` (`Site.test_start_page`: the six
     parts in this order in the HTML of `/`, the heading, the six
     destinations and their counts against `/generators/`, `/stacks/` and
     `/guides/`, no count of 0, the two request links after the tiles)
   - Since: #710
+
+- CAT-67k: The section "Selected guides" MUST link, by title, every
+  page of `/guides/` that has an `aliases` entry.
+
+  These are the posts that moved from `/blog/` (CAT-36e, CAT-36f). On
+  2026-11-27 and 2026-11-28 Search Console's URL Inspection reported all
+  17 old URLs as indexed, and of the new ones 1 as indexed, 4 as
+  discovered and 12 as unknown. The links give the new URLs a path from
+  the start page. Whether that gets them indexed is not known. A guide
+  that moves later joins the list through its alias.
+
+  - Test: `catalog/test_catalog.py` (`Site.test_start_page_moved_guides`)
+  - Since: this change
 
 - CAT-67a: The catalog of CAT-8, CAT-10, CAT-22, CAT-26, CAT-29a and
   CAT-29e MUST be at `/generators/`, with its own title and description
