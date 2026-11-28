@@ -2,7 +2,7 @@
 title: cert-manager Helm chart initContainers and trust-manager issuer
 layout: prose
 description: "Helm chart initContainers for cert-manager and a trust-manager webhook certificate from your own ClusterIssuer, patched by Kapitan and tested on kind."
-lastmod: 2026-11-07
+lastmod: 2026-11-28
 aliases: [/blog/cert-manager-helm-chart-patches/]
 ---
 
@@ -14,6 +14,45 @@ of the self-signed one the chart creates. Both can be fixed on the rendered
 manifests without forking the chart. This guide does it with
 [Kapitan](/glossary/#kapitan)'s [mutate](/generators/mutate/)
 [generator](/glossary/#generator), one section per issue.
+
+**Init containers without Kapitan:** this `kustomization.yaml` adds one
+to the controller Deployment:
+
+```yaml
+resources:
+  - helm.yaml
+patches:
+  - target:
+      kind: Deployment
+      name: cert-manager
+    patch: |-
+      - op: add
+        path: /spec/template/spec/initContainers
+        value:
+          - name: init
+            image: docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+            command: [echo, init container added by kustomize]
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: {drop: [ALL]}
+              readOnlyRootFilesystem: true
+              runAsUser: 65534
+```
+
+Put it next to the rendered chart, saved as `helm.yaml`, and run
+`kustomize build .`:
+
+```sh
+helm template cert-manager oci://quay.io/jetstack/charts/cert-manager \
+  --version v1.21.2 --namespace cert-manager > helm.yaml
+```
+
+Replace the example container with yours. `add` creates the list, and
+would replace one that exists. On 28 November 2026, with Kustomize 5.8.3, the
+controller's `initContainers` was the only change to the chart's 44 objects.
+On a kind cluster with Kubernetes 1.37.0, without the cert-manager CRDs, the
+controller rolled out and the init container exited with code 0. This run is
+not part of the CI job below. The trust-manager fix below uses Kapitan.
 
 The code is
 [`cert-manager-mutate`](https://github.com/kadet-hub/examples/tree/main/cert-manager-mutate)

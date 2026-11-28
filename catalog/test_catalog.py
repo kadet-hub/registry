@@ -661,6 +661,18 @@ def front_matter(path):
         return f.read().split("\n---\n", 1)[0]
 
 
+class AnswerFirst(unittest.TestCase):  # CAT-11p
+    def test_guides_answer_first(self):
+        for name in ("actions-runner-controller-dind", "cert-manager-helm-chart-patches", "kustomize-json-patch-helm-chart"):
+            with open(os.path.join(CONTENT, "guides", f"{name}.md"), encoding="utf-8") as f:
+                intro = f.read().split("\n---\n", 1)[1].split("\n## ", 1)[0]
+            block = re.search(r"^```yaml\n(.*?)^```$", intro, re.MULTILINE | re.DOTALL)
+            self.assertIsNotNone(block, name)
+            self.assertEqual(intro.index("```"), block.start(), name)
+            self.assertTrue(block.group(1).startswith("resources:\n  - helm.yaml\n"), name)
+            self.assertNotIn("parameters:", block.group(1), name)
+
+
 def titles(field="title"):
     """CAT-11j: the hand-written title (or another front matter field) of every page under content/, by its path without .md."""
     found = {}
