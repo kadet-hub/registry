@@ -2,7 +2,7 @@
 title: Actions Runner Controller dind image from your own registry
 layout: prose
 description: "GitHub Actions Runner Controller dind image from a mirror or air-gapped registry: gha-runner-scale-set patched with Kustomize or Kapitan, tested on kind."
-lastmod: 2026-11-07
+lastmod: 2026-11-28
 aliases: [/blog/actions-runner-controller-dind/]
 selected: true
 ---
@@ -16,6 +16,22 @@ manifests, first with Kustomize over `helm template`, then with
 [Kapitan](/glossary/#kapitan)'s [mutate](/generators/mutate/)
 [generator](/glossary/#generator), for a pull-through mirror and for a
 registry inside an air-gapped network.
+
+**The fix without Kapitan:** save the output of `helm template` for the chart
+as `helm.yaml`, put this `kustomization.yaml` next to it, with your
+registry in `newName`, and run `kustomize build .`. The
+[Kustomize section](#kustomize-over-helm-template) has the values and the
+commands.
+
+```yaml
+resources:
+  - helm.yaml
+images:
+  - name: docker
+    newName: mirror.gcr.io/library/docker
+    newTag: 29.9.1-dind
+    digest: sha256:3e5756e2b6dad6a5f1f5deacf0a19f9eaa2581b76ae092b2d4a118162e1d4d4e
+```
 
 Each patch was rendered from the 0.15.0 chart with Helm 4.3.1, Kustomize
 5.8.3, and Kapitan 0.36.3 with mutate 0.1.0, and applied to a kind cluster
@@ -100,17 +116,7 @@ helm template arc-runners oci://ghcr.io/actions/actions-runner-controller-charts
 kustomize build .
 ```
 
-with this `kustomization.yaml` next to `helm.yaml`:
-
-```yaml
-resources:
-  - helm.yaml
-images:
-  - name: docker
-    newName: mirror.gcr.io/library/docker
-    newTag: 29.9.1-dind
-    digest: sha256:3e5756e2b6dad6a5f1f5deacf0a19f9eaa2581b76ae092b2d4a118162e1d4d4e
-```
+with the `kustomization.yaml` from the top of this page next to `helm.yaml`.
 
 Kustomize's `images` transformer looks for `containers` and
 `initContainers` at any depth of any object, so it finds dind in the
