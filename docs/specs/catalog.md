@@ -1925,7 +1925,7 @@ Related: CAT-15, CAT-30, CON-2.
 
   - Test: `catalog/test_catalog.py` (`test_blog_post_page`); the width
     of the text: the checks of CAT-76
-  - Since: #272, #278; lines across the column: this change
+  - Since: #272, #278; lines across the column: #732
 
 - CAT-36h: `release.yml` MUST run on two daily schedules, at 04:17 and
   10:47 UTC.
@@ -4182,7 +4182,7 @@ unused.
     `catalog/test_catalog.py` (`Site.test_text_spans_the_column`: no
     `max-width` on `.prose-page`, and a measure in `ch` only for the
     band, the start page and the footer)
-  - Since: #711; across the column: this change
+  - Since: #711; across the column: #732
 
 - CAT-77: The head band of a recipe page and the start page's Recipes
   tile MUST explain the word "recipe" in one maritime line.
