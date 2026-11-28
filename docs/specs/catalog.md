@@ -552,7 +552,7 @@ remembered in the browser's `localStorage`.
   - Test: `catalog/test_catalog.py` (`test_guides_answer_first`: the first
     code block comes before the first `h2` and is a `kustomization.yaml`
     with no `parameters:` of an inventory)
-  - Since: this change
+  - Since: #731
 
 - CAT-11c: Every `img` MUST have a non-empty `alt`, and every page MUST
   link an Apple touch icon.
