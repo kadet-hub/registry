@@ -1872,8 +1872,8 @@ Related: CAT-15, CAT-30, CON-2.
   `topics`, and the next older and newer post. The page MUST carry
   `BlogPosting` JSON-LD with headline, description, image, publication and
   update dates, and the maintainers as an `Organization` author, and
-  `og:type` `article`. Body text MUST be 18 px with lines of at most 68
-  characters; code blocks scroll sideways instead of wrapping.
+  `og:type` `article`. Body text MUST be 18 px and span the column
+  (CAT-76); code blocks scroll sideways instead of wrapping.
 
   The choices follow published guidance rather than taste. Google asks
   for a visible, labelled date that matches `datePublished` and
@@ -1884,8 +1884,8 @@ Related: CAT-15, CAT-30, CON-2.
   Readers scan: in Nielsen's study 79 % scanned, and concise, scannable
   text measured 124 % more usable
   ([NN/g](https://www.nngroup.com/articles/how-users-read-on-the-web/)),
-  hence the lead, the contents list and the anchors. WCAG 1.4.8 sets lines
-  of at most 80 characters and line height of at least 1.5. The author is
+  hence the lead, the contents list and the anchors. WCAG 1.4.8 sets a
+  line height of at least 1.5. The author is
   the maintainers as an organization because the site names no person
   (the imprint is `tbd`).
 
@@ -1923,8 +1923,9 @@ Related: CAT-15, CAT-30, CON-2.
 
   Related: CAT-36, CAT-11d.
 
-  - Test: `catalog/test_catalog.py` (`test_blog_post_page`)
-  - Since: #272, #278
+  - Test: `catalog/test_catalog.py` (`test_blog_post_page`); the width
+    of the text: the checks of CAT-76
+  - Since: #272, #278; lines across the column: #732
 
 - CAT-36h: `release.yml` MUST run on two daily schedules, at 04:17 and
   10:47 UTC.
@@ -3913,8 +3914,8 @@ drawing. Inner pages get layout work beyond the tokens: the catalog's
 cards (CAT-22), two columns of cards on the lists of guides, posts,
 stacks and recipes (CAT-79), a three-step block for each version on a
 generator page (CAT-74), and from 78rem a rail beside the main column
-with the list "On this page" (CAT-19, CAT-75), so a wide screen is used
-while running text keeps its measure (CAT-76). Operational pages, such
+with the list "On this page" (CAT-19, CAT-75). Below the band, text and
+code span the column (CAT-76). Operational pages, such
 as the catalog, a generator page, the compatibility table, the kinds, a
 security report and the playground, stay dense and put their task first.
 
@@ -4154,15 +4155,34 @@ unused.
     from 78rem and the rail in `chart-recipe.html` and `prose.html`)
   - Since: #711
 
-- CAT-76: A line of running text MUST hold at most 80 characters.
+- CAT-76: Below the head band, running text, code blocks and the list
+  "On this page" MUST end at the right edge of their column, which is
+  the band's or, where the rail of CAT-75 stands beside them, the main
+  column's.
 
-  WCAG 2.2 success criterion 1.4.8 (AAA) sets 80 characters as the
-  limit. The rail of CAT-75 takes the width of a wide screen, so the
-  lines of the main column need not grow.
+  The operator decided on 2026-11-28 that text and code align with the
+  page. Until then a post at 1440 px had three right edges: the band at
+  1168 px wide, the contents list and the code blocks at 832 px, the
+  52rem of `.prose-page`, and the paragraphs at 575 px, 51ch of 18 px
+  Manrope. Only the band, the start page and the footer keep a measure,
+  56ch or about 75 characters.
+
+  Long lines are harder to follow from one to the next, and the site no
+  longer meets WCAG 2.2 success criterion 1.4.8 (AAA), which sets 80
+  characters as the limit. The longest line of running text on a page,
+  counted in Chrome on the fixture build of `InChrome` at 1440 px, went
+  from 75 to 150 characters on a post, from 74 to 122 on a guide beside
+  the rail and from 80 to 160 on the glossary. At 1024 px, with the rail
+  above the text, a guide reaches 135.
 
   - Test: `catalog/browser.mjs` through `InChrome.test_rendered_pages`:
-    the characters of the longest line of running text on each page type
-  - Since: #711
+    on every page with a head band at 375, 1024 and 1440 px, the column,
+    or the rail beside it, ends where the band does, and every block of
+    text, code or contents fills its parent from the column down;
+    `catalog/test_catalog.py` (`Site.test_text_spans_the_column`: no
+    `max-width` on `.prose-page`, and a measure in `ch` only for the
+    band, the start page and the footer)
+  - Since: #711; across the column: #732
 
 - CAT-77: The head band of a recipe page and the start page's Recipes
   tile MUST explain the word "recipe" in one maritime line.
@@ -4182,7 +4202,7 @@ unused.
   The head band above a list spans the column. A single column at
   reading width would leave a third of a wide screen empty beside it,
   while two columns show twice the cards per screen and keep the lines
-  of a card short (CAT-76). The catalog's cards (CAT-22) fill the column
+  of a card short. The catalog's cards (CAT-22) fill the column
   too.
 
   - Test: `catalog/test_catalog.py`

@@ -130,10 +130,10 @@ header.site nav a:hover, .reference > summary:hover { color: var(--accent); }
 .reference > div a { padding: .35rem .6rem; }
 footer.site { margin-top: 4rem; padding-block: 2rem 3rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: .9rem; }
 footer.site p { margin: .25rem 0; }
-/* CAT-76: a line of running text holds at most 80 characters. Manrope's ch, the width of its zero, holds about 1.33
-   characters of text, so 56ch keep about 75. Lists with a class are components, not running text. Without specificity,
-   so the narrower measures below win. */
-:where(main, footer.site) :where(p, dd, blockquote, figcaption, ul:not([class]), ol:not([class]), .summary > li) { max-width: 56ch; }
+/* CAT-76: below the head band, text spans its column. The band, the start page and the footer keep a measure of 56ch;
+   Manrope's ch, the width of its zero, holds about 1.33 characters of text, so 56ch keep about 75. Lists with a class
+   are components, not running text. */
+:where(.page-head, main:has(> .home-hero), footer.site) :where(p, dd, blockquote, figcaption, ul:not([class]), ol:not([class])) { max-width: 56ch; }
 
 /* Buttons and chips */
 .button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1.1rem; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-weight: 600; text-decoration: none; }
@@ -785,7 +785,7 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .chroma .p, .chroma .o { color: var(--text-muted); }
 
 /* Tags and glossary pages */
-.prose-page { max-width: 52rem; padding-top: 2rem; }
+.prose-page { padding-top: 2rem; }
 .page-head + .prose-page { padding-top: 0; }
 .prose-page h1 { font-size: clamp(1.8rem, 1.3rem + 2vw, 2.5rem); margin: 0 0 .5rem; }
 .tag-defs { display: grid; gap: 1rem; margin-top: 1.5rem; }
@@ -800,10 +800,8 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 
 /* Prose pages (LEG-1) */
 .prose h2 { font-size: 1.3rem; margin: 2rem 0 .5rem; }
-.prose :is(p, ul, ol, blockquote) { max-width: 53ch; }
-/* CAT-36a: blog posts. 18px body, lines of at most 68 characters (51ch of Manrope), code scrolls instead of wrapping. */
+/* CAT-36a: blog posts. 18px body across the column (CAT-76), code scrolls instead of wrapping. */
 .post { font-size: 1.125rem; line-height: 1.6; }
-.post > p, .post > ul, .post > ol, .post > blockquote { max-width: 51ch; }
 .post pre { white-space: pre; overflow-x: auto; overflow-wrap: normal; word-break: normal; font-size: .85rem; }
 .post .byline { color: var(--text-muted); font-size: .95rem; margin: 0 0 1rem; }
 .post .toc h2 { font-size: .75rem; margin: 0; }
@@ -851,12 +849,10 @@ details.version h3 { font-size: 1rem; margin: 1rem 1.25rem .25rem; }
 .guide-list p { margin: .35rem 0 0; color: var(--text-muted); }
 .guide-list p a { font-weight: inherit; font-size: inherit; }
 /* CAT-79: the card lists of guides, posts, stacks and recipes span the main column, in two columns from 64rem. */
-.prose-page:has(> .columns) { max-width: none; }
 @media (min-width: 64rem) { .columns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .prose table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: .9rem; }
 .prose th, .prose td { border: 1px solid var(--border); padding: .5rem .6rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
-/* CAT-30: the compatibility table takes the page width; below 60rem each row is a block, every value after its column name. */
-.prose-page.wide { max-width: none; }
+/* CAT-30: below 60rem each row of the compatibility table is a block, every value after its column name. */
 .compat th:first-child { width: 16%; }
 .compat th:last-child { width: 24%; }
 @media (max-width: 60rem) {
@@ -1029,8 +1025,7 @@ details.version:target { border-color: var(--accent); }
   .rail.toc details > summary::after { content: none; }
 }
 .doc-body > :first-child { margin-top: 0; }
-.doc-body > .summary { max-width: none; margin: 0 0 1.5rem; padding: 1rem 1.25rem 1rem 2.25rem; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); font-size: .95rem; }
-.readme > :is(p, ul, ol, blockquote) { max-width: 53ch; }
+.doc-body > .summary { margin: 0 0 1.5rem; padding: 1rem 1.25rem 1rem 2.25rem; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); font-size: .95rem; }
 /* A version: what a consumer does with it in three numbered steps, each marked with who acts, then its record and diff. */
 .vsteps { display: grid; gap: 1.5rem 2rem; padding-top: .5rem; }
 details.version .vstep h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: 0 0 .6rem; font-size: 1.1rem; }
