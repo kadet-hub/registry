@@ -17,8 +17,8 @@ ARG CONFTEST_SHA256=c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f
 ARG KRAB_VERSION=v2.0.0-alpha.5
 ARG KRAB_SHA256=c57cb602e6c89174894708e00b9d4373e67f08582fdd6f7b95517a6658ab9c85
 # renovate: datasource=github-release-attachments depName=etcd-io/etcd
-ARG ETCD_VERSION=v3.7.3
-ARG ETCD_SHA256=5dfa9cc3b3ce3b4b491fbcc2057d3daa166bcc6676f743fcd20f8e5760cb9775
+ARG ETCD_VERSION=v3.7.4
+ARG ETCD_SHA256=a0d47d07d081c12611fe69dc81a16ae8dd758401c0fe3a83d508823a1dac558e
 # GI-6: ADD cannot send a token, so the files from GitHub come through
 # github_fetch.py, with the job's token when the build gets the secret GH_TOKEN.
 # PUB-14a: etcd's archive and the kube-apiserver image ship no licence text,
