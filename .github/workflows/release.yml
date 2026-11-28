@@ -9,7 +9,10 @@ on:
     paths-ignore: # CI-2: files no release job reads
       - docs/**
       - tests/**
-      - "*.md"
+      - README.md # CHANGELOG.md stays: the index job reads it (CON-10)
+      - CONTRIBUTING.md
+      - SECURITY.md
+      - TERMS.md
       - renovate.json
       - ruff.toml
       - .github/ISSUE_TEMPLATE/**

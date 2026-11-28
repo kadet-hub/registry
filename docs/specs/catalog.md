@@ -1929,11 +1929,17 @@ Related: CAT-15, CAT-30, CON-2.
 - CAT-36h: `release.yml` MUST run on two daily schedules, at 04:17 and
   10:47 UTC.
 
-  GitHub starts scheduled workflows late under load and sometimes not at
-  all. On 11 and 12 November 2026 the 04:17 run had not started by 05:00,
-  and on 11 November the day's post went out only after a manual
-  dispatch. The second run publishes a post dated that day when the first
-  is missing. Like every release run, it also runs the publish jobs, which
+  GitHub starts scheduled workflows late. In 40 scheduled runs from 25
+  October to 22 November 2026 none was skipped, but the 04:17 run started
+  between 11:20 and 13:35 UTC and the 10:47 run between 16:44 and 20:41
+  UTC. On 11 and 12 November the 04:17 run had not started by 05:00, which
+  this lateness explains; on 11 November the day's post went out only
+  after a manual dispatch. The rescan of `scheduled.yml` (04:23) starts
+  about two minutes after the first run and takes about 40 minutes, so
+  the first run's catalog shows the previous day's security report and
+  the second run is the one that shows the day's rescan (CAT-39c). The
+  second run also publishes a post dated that day when the first is
+  missing. Like every release run, it also runs the publish jobs, which
   push only a version that no earlier run published (PUB-2). When both
   runs succeed, the second publishes nothing, builds the same site again
   and refreshes the counts of CAT-20.

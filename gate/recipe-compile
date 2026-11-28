@@ -160,14 +160,14 @@ sys.exit(1 if errors else 0)' "/recipes/$name" "$kind" "${rendered[@]}" || statu
 echo "### compile with CI set"
 compile "$work/out-ci" --env CI=true --env GITHUB_ACTIONS=true --env GITLAB_CI=true \
   "$project" compile --output-path /out --inventory-backend omegaconf
-if ! (cd -- "$work" && diff -r -- out out-ci) >"$work/ci.diff"; then
+if ! (cd -- "$work" && diff -r --no-dereference -- out out-ci) >"$work/ci.diff"; then
   echo "CMP-2: output differs with CI set:"
   head -n 20 -- "$work/ci.diff"
   status=1
 fi
 echo "### compile with --cache"
 compile "$work/out-cache" "$project" compile --output-path /out --inventory-backend omegaconf --cache
-if ! (cd -- "$work" && diff -r -- out out-cache) >"$work/cache.diff"; then
+if ! (cd -- "$work" && diff -r --no-dereference -- out out-cache) >"$work/cache.diff"; then
   echo "CMP-5: output differs with --cache on omegaconf:"
   head -n 20 -- "$work/cache.diff"
   status=1
