@@ -4,6 +4,7 @@ layout: prose
 description: How kadet-hub runs untrusted contributor code in CI inside a gVisor sandbox on GitHub Actions, what it adds over a plain container and what it misses.
 lastmod: 2026-11-07
 aliases: [/blog/gvisor-ci/]
+selected: true
 ---
 
 If your CI executes code that contributors send you, a plain container is not

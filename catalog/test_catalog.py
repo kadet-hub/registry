@@ -1145,7 +1145,7 @@ class Site(unittest.TestCase):
     def test_start_page(self):  # CAT-67, CAT-26a, CAT-67e
         home = self.page()
         order = ['<section class="home-hero wrap">', '<section class="harbour wrap"', '<section class="live-edit band"', '<h2 id="doors">Where to go next</h2>',
-                 '<h2 id="listing">']
+                 '<h2 id="selected">Selected guides</h2>', '<h2 id="listing">']
         self.assertEqual([home.index(m) for m in order], sorted(home.index(m) for m in order))
         hero = home[home.index(order[0]):home.index(order[1])]
         self.assertIn("<h1>", hero)
@@ -1164,6 +1164,14 @@ class Site(unittest.TestCase):
         self.assertNotIn('<ul class="cards', home)  # the catalog is on /generators/ (CAT-67a)
         self.assertLess(home.index('<ul class="dests">'), home.index(">Request a generator</a>"))
         self.assertLess(home.index(">Request a generator</a>"), home.index(">wanted generators</a>"))
+
+    def test_start_page_moved_guides(self):  # CAT-67k
+        section = self.page().split('<h2 id="selected">Selected guides</h2>', 1)[1].split("</section>", 1)[0]
+        links = re.findall(r'<a href="\./guides/([a-z0-9-]+)/">[^<]+</a>', section)
+        self.assertEqual(sorted(links), sorted(MOVED_POSTS))
+        marked = [name for name in MOVED_POSTS
+                  if re.search(r"^selected: true$", front_matter(os.path.join(CONTENT, "guides", f"{name}.md")), re.MULTILINE)]
+        self.assertEqual(sorted(marked), sorted(MOVED_POSTS))
 
     def test_catalog_page(self):  # CAT-67a, CAT-8, CAT-10, CAT-11, CAT-16, CAT-5, CAT-6
         catalog, home = self.page("generators"), self.page()

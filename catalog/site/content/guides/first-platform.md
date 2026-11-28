@@ -4,6 +4,7 @@ layout: prose
 description: Two Kapitan targets from four verified kadet-hub generators, from an empty directory to 23 schema-valid manifests and a CI workflow.
 lastmod: 2026-11-07
 aliases: [/blog/first-platform/]
+selected: true
 ---
 
 This guide builds a small platform from the catalog: a `dev` and a `prod`

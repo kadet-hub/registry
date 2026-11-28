@@ -4,6 +4,7 @@ layout: prose
 description: "Kustomize patch environment variable with valueFrom into Helm chart containers by name, and the same with Kapitan's mutate: KEDA HTTP add-on and Crossplane."
 lastmod: 2026-11-07
 aliases: [/blog/kustomize-patch-env-helm-chart/]
+selected: true
 ---
 
 Many charts take extra environment variables as a map of names to values

@@ -4,6 +4,7 @@ layout: prose
 description: "What kubeconform passes and the API server rejects: a GitHub Actions job that starts etcd and kube-apiserver, installs your CRDs and dry-runs every manifest."
 lastmod: 2026-11-07
 aliases: [/blog/apiserver-dry-run/]
+selected: true
 ---
 
 Most repositories that ship Kubernetes manifests, Helm charts or [CRDs](/glossary/#crd) check
