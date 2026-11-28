@@ -1,7 +1,7 @@
 # SEC-17: the image is distroless, without shell, pip or package manager.
 # The build stage is the same image plus busybox and uv, so the venvs link
 # and the bytecode matches the interpreter that runs them.
-FROM gcr.io/distroless/python3-debian13:latest@sha256:5bac3c3ab33426c460db63504cd1a267b3326b9f804d21c63359492858d1beda AS build
+FROM gcr.io/distroless/python3-debian13:latest@sha256:7fa0d47901299aa0017c9ef24b8306f72567889977242dce2316b5cb81a06a1f AS build
 COPY --from=gcr.io/distroless/python3-debian13:debug@sha256:9e30fa6c022c31f12617025954c329137dba28f45bc36e70f847f34cbb9d58ef /busybox /busybox
 COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff /uv /busybox/uv
 ENV PATH=/busybox:/usr/bin
@@ -60,7 +60,7 @@ RUN mkdir -p /usr/local/bin /home/gate \
  && echo 'gate:x:10001:' >>/etc/group \
  && chown 10001:10001 /home/gate
 
-FROM gcr.io/distroless/python3-debian13:latest@sha256:5bac3c3ab33426c460db63504cd1a267b3326b9f804d21c63359492858d1beda
+FROM gcr.io/distroless/python3-debian13:latest@sha256:7fa0d47901299aa0017c9ef24b8306f72567889977242dce2316b5cb81a06a1f
 COPY --from=build /usr/lib/python3.13 /usr/lib/python3.13
 COPY --from=build /usr/local /usr/local
 COPY --from=build /opt/krab-python /opt/krab-python
