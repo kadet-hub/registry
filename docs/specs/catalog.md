@@ -4255,7 +4255,7 @@ CAT-62, CAT-63, CAT-65.
   that moves later joins the list through its alias.
 
   - Test: `catalog/test_catalog.py` (`Site.test_start_page_moved_guides`)
-  - Since: this change
+  - Since: #730
 
 - CAT-67a: The catalog of CAT-8, CAT-10, CAT-22, CAT-26, CAT-29a and
   CAT-29e MUST be at `/generators/`, with its own title and description
