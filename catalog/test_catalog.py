@@ -1525,6 +1525,14 @@ class Site(unittest.TestCase):
         for heading in ("Consumer dispute resolution", "Liability for content", "Liability for links", "Copyright"):  # LEG-1a
             self.assertIn(f">{heading}</h2>", imprint)
         self.assertIn("§ 36 VSBG", imprint)
+        # LEG-1: the operator's name and the c/o address, no placeholder left.
+        self.assertIn("Danny Heinrich<br>", imprint)
+        self.assertIn("69214 Eppelheim", imprint)
+        self.assertIn("The controller is the operator of kadet-hub named in the", privacy)
+        self.assertNotIn("Heinrich", privacy)
+        for page in (imprint, privacy):
+            self.assertNotIn("tbd", page)
+            self.assertNotIn("placeholders", page)
         with open(os.path.join(HERE, "..", "README.md"), encoding="utf-8") as f:
             self.assertIn("not affiliated with or endorsed by\nthe Kapitan project or kapicorp", f.read())
 

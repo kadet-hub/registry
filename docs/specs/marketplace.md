@@ -559,19 +559,13 @@ coverage is named at each:
 
 ## Open questions
 
-- OQ-2: The operator supplies the name for the imprint and the privacy
-  notice, and the address of an address service for private persons
-  whose staffed reception accepts court and authority letters for the
-  operator, as the imprint's serviceable address (c/o); a
-  mail-forwarding address or PO box does not suffice, and the operator's
-  private address is not published. The services with an explicit power
-  to accept service (Zustellungsvollmacht) checked on 2026-11-21 accept
-  businesses only, so the operator asks the chosen service to confirm the
-  acceptance of service in writing before booking. § 18(1) MStV requires the
-  real full name; a pseudonym or group name does not satisfy it. Until then
-  the name reads `tbd` and the imprint says the address follows. The e-mail
-  addresses are decided: `contact@`, `privacy@`, `abuse@` and
-  `security@kadet-hub.org`, role addresses the operator routes.
+- OQ-2: Whether impressum-ohne-adresse.de has confirmed in writing that
+  its staffed reception accepts court and authority letters for the
+  operator, a private person, is not recorded. The imprint publishes its
+  c/o address as the serviceable address. A mail-forwarding address or PO
+  box would not suffice. The services checked on 2026-11-21 that grant an
+  explicit power to accept service (Zustellungsvollmacht) took businesses
+  only. The operator owns this check.
 
 ## Implementation inventory
 

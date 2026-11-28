@@ -16,10 +16,18 @@ law a provider who checks content and presents it as part of its own
 offering can be held to have adopted it (BGH I ZR 166/07). The texts below
 describe the generators as third-party work, offer a takedown route and
 state what the review does not promise. No lawyer reviews them
-(DEC-51), so they carry no "draft pending legal review" marker. The
-operator's name is `tbd` and the postal address follows from the c/o
-address service of OQ-2; until both are filled in, the imprint and the
-privacy notice say so in a line at their top.
+(DEC-51), so they carry no "draft pending legal review" marker.
+
+The imprint names the operator by full name, with the c/o address of
+the address service impressum-ohne-adresse.de in Eppelheim as the
+postal address. § 18(1) MStV requires the real full name. The operator's
+private address is not published. Whether the service has confirmed that
+it accepts court and authority letters for the operator is OQ-2 in
+[marketplace.md](marketplace.md). The privacy notice identifies the
+controller as the operator named in the imprint and gives `privacy@` as
+the contact. It does not repeat the name. The e-mail
+addresses are the role addresses `contact@`, `privacy@`, `abuse@` and
+`security@kadet-hub.org`, which the operator routes.
 
 - LEG-1: The site MUST have a privacy notice at `/privacy/` and an imprint at
   `/imprint/`, both linked from every page's footer.
@@ -32,11 +40,11 @@ privacy notice say so in a line at their top.
   `localStorage` only when the visitor uses the theme toggle or shares a
   post on Mastodon (catalog spec CAT-36d), and the rights under GDPR
   Articles 15 to 21. Whether §5 DDG requires an imprint
-  for an unpaid project is unsettled; §18 MStV likely requires name and
-  address, so the page exists with `tbd` values.
+  for an unpaid project is unsettled. §18 MStV likely requires name and
+  address, so the page exists either way.
 
-  - Test: `catalog/test_catalog.py`
-  - Since: #48
+  - Test: `catalog/test_catalog.py` (`test_legal_pages_and_notices`)
+  - Since: #48, this change
 
 - LEG-1a: The imprint MUST state that the operator does not take part in
   dispute resolution before a consumer arbitration board, and MUST carry
@@ -72,7 +80,7 @@ privacy notice say so in a line at their top.
 
   Rights holders and others report through the `generator-report` form
   ("License, copyright or trademark concern") or, for anything that must
-  not be public, privately to the contact in OQ-2. The maintainers answer
+  not be public, privately to `abuse@kadet-hub.org`. The maintainers answer
   with the decision and its reason, as DSA Articles 16 and 17 ask of
   hosting services; whether the DSA applies to an unpaid service is not
   settled, and the maintainers follow it either way (DEC-51).
