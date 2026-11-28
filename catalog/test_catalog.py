@@ -1131,11 +1131,16 @@ class Site(unittest.TestCase):
 
     def test_card_lists_span_the_column(self):  # CAT-79
         css = self.css()
-        self.assertIn(".prose-page:has(> .columns) { max-width: none; }", css)
         self.assertIn("@media (min-width: 64rem) { .columns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }", css)
         self.assertNotRegex(css, r"\.(guide-list|columns)[^{]*\{[^}]*max-width: (?!none)")
         for parts in (("guides",), ("blog",), ("stacks",), ("recipes",)):
             self.assertIn('<ul class="guide-list columns">', self.page(*parts), parts)
+
+    def test_text_spans_the_column(self):  # CAT-76: the band, the start page and the footer keep the only measure
+        css = self.css()
+        self.assertNotIn("max-width", re.search(r"\n\.prose-page \{([^}]*)\}", css).group(1))
+        self.assertEqual(re.findall(r"\n([^\n{]+) \{[^}]*max-width: [\d.]+ch", css),
+                         [":where(.page-head, main:has(> .home-hero), footer.site) :where(p, dd, blockquote, figcaption, ul:not([class]), ol:not([class]))"])
 
     def test_start_page(self):  # CAT-67, CAT-26a, CAT-67e
         home = self.page()

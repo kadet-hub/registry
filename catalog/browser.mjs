@@ -107,31 +107,31 @@ const contrast = () => {
   return [...new Set(low)];
 };
 
-// CAT-76: the longest line of running text, in characters. A line ends where the next character stands left of the last.
-const measure = () => {
-  let longest = { n: 0 };
-  const RUNNING = "p, li, dd, blockquote, figcaption";
-  for (const block of document.querySelectorAll(`:is(main, footer.site) :is(${RUNNING})`)) {
-    if (block.closest("pre, table, nav, svg, .station-tabs, .tag-filter, .toolbar") || !block.checkVisibility()) continue;
-    let n = 0, last = null, text = "";
-    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-    for (let node; (node = walker.nextNode());) {
-      if (node.parentElement.closest("pre, svg, .visually-hidden") || node.parentElement.closest(RUNNING) !== block) continue;
-      for (let i = 0; i < node.length; i++) {
-        const range = document.createRange();
-        range.setStart(node, i);
-        range.setEnd(node, i + 1);
-        const r = [...range.getClientRects()].find((b) => b.width > 0);
-        if (!r) continue;
-        if (last && (r.left < last.left - 1 || r.top > last.bottom)) { n = 0; text = ""; }
-        n++;
-        text += node.textContent[i];
-        last = r;
-        if (n > longest.n) longest = { n, text, where: `${block.tagName.toLowerCase()}.${[...block.classList].join(".")}` };
-      }
-    }
+// CAT-76: below the head band, text, code and the contents list end at their column's right edge, which is the band's or,
+// with the rail beside it, the main column's. Each block fills its parent from the column down; one inside a flex, grid
+// or multi-column box, such as a card, is laid out by its component and left out. Chrome reports a margin as specified, so a width limit
+// shows as a gap.
+const edges = () => {
+  const band = document.querySelector(".page-head");
+  if (!band) return [];
+  const right = (e) => e.getBoundingClientRect().right;
+  const inner = (e) => { const cs = getComputedStyle(e); return right(e) - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight); };
+  const name = (e) => `${e.tagName.toLowerCase()}.${[...e.classList].join(".")}`;
+  const col = band.parentElement.querySelector(".with-rail > .main-col") || band.nextElementSibling;
+  const rail = col.parentElement.querySelector(":scope > .rail");
+  const outer = rail?.checkVisibility() && rail.getBoundingClientRect().left >= right(col) ? rail : col;
+  const gaps = [];
+  if (Math.abs(right(outer) - right(band)) > 1) gaps.push(`${name(outer)} ends at ${right(outer)}px, the band at ${right(band)}px`);
+  const flow = (e) => { const cs = getComputedStyle(e); return ["block", "list-item", "flow-root"].includes(cs.display) && cs.float === "none" && cs.columnWidth === "auto" && cs.columnCount === "auto"; };
+  for (const e of col.querySelectorAll("p, li, dd, blockquote, figcaption, pre, nav.toc")) {
+    if (!e.checkVisibility() || e.closest("svg")) continue;
+    const chain = [];
+    for (let n = e; n !== col; n = n.parentElement) chain.push(n);
+    if (!chain.every((n) => flow(n) && (n.parentElement === col || flow(n.parentElement)))) continue;
+    const short = chain.find((n) => Math.abs(right(n) + parseFloat(getComputedStyle(n).marginRight) - inner(n.parentElement)) > 1);
+    if (short) gaps.push(`${name(short)} ends at ${right(short)}px, its parent's content at ${inner(short.parentElement)}px`);
   }
-  return longest;
+  return [...new Set(gaps)];
 };
 
 try {
@@ -142,8 +142,7 @@ try {
         const { context, page } = await open(path, { width, theme });
         for (const low of await page.evaluate(contrast)) fail(`CAT-54: ${path} ${theme} ${width}px: ${low}`);
         if (theme === "light") {
-          const line = await page.evaluate(measure);
-          if (line.n > 80) fail(`CAT-76: ${path} ${width}px: ${line.n} characters in ${line.where}: "${line.text}"`);
+          for (const gap of await page.evaluate(edges)) fail(`CAT-76: ${path} ${width}px: ${gap}`);
           if (width === 375 && await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) fail(`CAT-9: ${path} scrolls sideways at 375px`);
         }
         if (SHOTS[path] && width !== 1024 && shots) {
