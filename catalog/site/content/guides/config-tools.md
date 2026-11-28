@@ -4,6 +4,7 @@ layout: prose
 description: "Kubernetes configuration management tools: one app built with Tanka, cdk8s and Kapitan to identical manifests, with size, speed, type safety and GitOps."
 lastmod: 2026-11-07
 aliases: [/blog/config-tools/]
+selected: true
 ---
 
 Pick cdk8s if your team writes TypeScript and wants the compiler to reject a

@@ -4,6 +4,7 @@ layout: prose
 description: Verify SLSA provenance attestations on OCI artifacts with gh and cosign, using kadet-hub's signed index, real digests and the failures that matter.
 lastmod: 2026-11-07
 aliases: [/blog/verify-oci/]
+selected: true
 ---
 
 To verify an [OCI artifact](/glossary/#oci-artifact) that carries GitHub [artifact attestations](/glossary/#attestation), run

@@ -4,6 +4,7 @@ layout: prose
 description: "Kustomize JSON patch add and Kapitan's mutate for fields charts lack: appProtocol, trafficDistribution, topologySpreadConstraints, annotations, hostNetwork."
 lastmod: 2026-11-28
 aliases: [/blog/kustomize-json-patch-helm-chart/]
+selected: true
 ---
 
 A chart can only set the fields its templates write. When a Kubernetes
